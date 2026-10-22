@@ -1,0 +1,50 @@
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: ccadro-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ccadro}
+      POSTGRES_USER: ${POSTGRES_USER:-ccadro}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ccadro_dev_secret}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ccadro} -d ${POSTGRES_DB:-ccadro}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ../../infrastructure/postgres/init:/docker-entrypoint-initdb.d
+    networks:
+      - ccadro-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: ccadro-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    volumes:
+      - redis-data:/data
+    networks:
+      - ccadro-network
+
+volumes:
+  postgres-data:
+    name: ccadro-postgres-data
+  redis-data:
+    name: ccadro-redis-data
+
+networks:
+  ccadro-network:
+    name: ccadro-network
+    driver: bridge

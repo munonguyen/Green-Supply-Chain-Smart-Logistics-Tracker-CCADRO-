@@ -1,0 +1,24 @@
+spring:
+  config:
+    activate:
+      on-profile: test
+
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:ccadro}
+    username: ${POSTGRES_USER:ccadro}
+    password: ${POSTGRES_PASSWORD:ccadro_dev_secret}
+    driver-class-name: org.postgresql.Driver
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+  flyway:
+    enabled: true
+    clean-disabled: false
+
+logging:
+  level:
+    root: INFO
+    com.ccadro: DEBUG

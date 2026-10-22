@@ -1,0 +1,30 @@
+spring:
+  config:
+    activate:
+      on-profile: local
+
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:ccadro}
+    username: ${POSTGRES_USER:ccadro}
+    password: ${POSTGRES_PASSWORD:ccadro_dev_secret}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 20000
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2000ms
+
+server:
+  port: ${BACKEND_PORT:8080}
+
+logging:
+  level:
+    root: INFO
+    com.ccadro: DEBUG
+    org.flywaydb: INFO
+    org.springframework.web: INFO
