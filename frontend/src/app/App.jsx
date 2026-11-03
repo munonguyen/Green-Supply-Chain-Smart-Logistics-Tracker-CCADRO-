@@ -1,7 +1,11 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from '../context/AuthContext';
+import { ThemeProvider } from '../context/ThemeContext';
 import Sidebar from '../components/layout/Sidebar';
 import Header from '../components/layout/Header';
+import LandingPage from '../pages/LandingPage';
+import LoginPage from '../pages/LoginPage';
 import DashboardPage from '../pages/DashboardPage';
 import ShipmentsPage from '../pages/ShipmentsPage';
 import NewShipmentPage from '../pages/NewShipmentPage';
@@ -10,27 +14,121 @@ import DispatchPage from '../pages/DispatchPage';
 import TripTrackingPage from '../pages/TripTrackingPage';
 import TripCarbonPage from '../pages/TripCarbonPage';
 import BenchmarkPage from '../pages/BenchmarkPage';
+import GovernanceAndSafetyPage from '../pages/GovernanceAndSafetyPage';
+
+function ConsoleLayout({ children }) {
+  return (
+    <div className="app-container">
+      <Sidebar />
+      <main className="main-content">
+        <Header />
+        {children}
+      </main>
+    </div>
+  );
+}
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <div className="app-container">
-        <Sidebar />
-        <main className="main-content">
-          <Header />
+    <ThemeProvider>
+      <AuthProvider>
+        <BrowserRouter>
           <Routes>
-            <Route path="/" element={<DashboardPage />} />
-            <Route path="/shipments" element={<ShipmentsPage />} />
-            <Route path="/shipments/new" element={<NewShipmentPage />} />
-            <Route path="/planning/:shipmentId" element={<PlanningPage />} />
-            <Route path="/dispatch/:shipmentId" element={<DispatchPage />} />
-            <Route path="/trips/:tripId" element={<TripTrackingPage />} />
-            <Route path="/trips/:tripId/carbon" element={<TripCarbonPage />} />
-            <Route path="/analytics/benchmark" element={<BenchmarkPage />} />
+            {/* 1. Public Corporate Landing Page */}
+            <Route path="/" element={<LandingPage />} />
+
+            {/* 2. Enterprise Authentication */}
+            <Route path="/login" element={<LoginPage />} />
+
+            {/* 3. Internal Operations Console */}
+            <Route
+              path="/portal"
+              element={
+                <ConsoleLayout>
+                  <DashboardPage />
+                </ConsoleLayout>
+              }
+            />
+            <Route path="/dashboard" element={<Navigate to="/portal" replace />} />
+
+            <Route
+              path="/shipments"
+              element={
+                <ConsoleLayout>
+                  <ShipmentsPage />
+                </ConsoleLayout>
+              }
+            />
+            <Route
+              path="/shipments/new"
+              element={
+                <ConsoleLayout>
+                  <NewShipmentPage />
+                </ConsoleLayout>
+              }
+            />
+            <Route
+              path="/planning/:shipmentId"
+              element={
+                <ConsoleLayout>
+                  <PlanningPage />
+                </ConsoleLayout>
+              }
+            />
+            <Route
+              path="/dispatch/:shipmentId"
+              element={
+                <ConsoleLayout>
+                  <DispatchPage />
+                </ConsoleLayout>
+              }
+            />
+            <Route
+              path="/trips/:tripId"
+              element={
+                <ConsoleLayout>
+                  <TripTrackingPage />
+                </ConsoleLayout>
+              }
+            />
+            <Route
+              path="/trips/:tripId/tracking"
+              element={
+                <ConsoleLayout>
+                  <TripTrackingPage />
+                </ConsoleLayout>
+              }
+            />
+            <Route
+              path="/trips/:tripId/carbon"
+              element={
+                <ConsoleLayout>
+                  <TripCarbonPage />
+                </ConsoleLayout>
+              }
+            />
+            <Route
+              path="/analytics/benchmark"
+              element={
+                <ConsoleLayout>
+                  <BenchmarkPage />
+                </ConsoleLayout>
+              }
+            />
+            <Route
+              path="/governance"
+              element={
+                <ConsoleLayout>
+                  <GovernanceAndSafetyPage />
+                </ConsoleLayout>
+              }
+            />
+
+            {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-        </main>
-      </div>
-    </BrowserRouter>
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

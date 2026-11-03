@@ -7,16 +7,22 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint src --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "format": "prettier --write \"src/**/*.{js,jsx,css}\"",
+    "format:check": "prettier --check \"src/**/*.{js,jsx,css}\"",
     "test": "vitest run"
   },
   "dependencies": {
+    "clsx": "^2.1.1",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.453.0",
+    "motion": "^14.9.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.26.2"
+    "react-router-dom": "^6.26.2",
+    "tailwind-merge": "^3.7.0"
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^6.5.0",
     "@testing-library/react": "^16.0.1",
     "@types/leaflet": "^1.9.12",
@@ -27,6 +33,7 @@
     "eslint-plugin-react": "^7.36.1",
     "eslint-plugin-react-hooks": "^4.6.2",
     "jsdom": "^25.0.1",
+    "prettier": "^3.9.10",
     "vite": "^5.4.8",
     "vitest": "^2.1.1"
   }
