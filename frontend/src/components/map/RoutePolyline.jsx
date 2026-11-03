@@ -1,7 +1,14 @@
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 
-export default function RoutePolyline({ map, positions, color = '#10b981', weight = 5, opacity = 0.85, dashArray = null }) {
+export default function RoutePolyline({
+  map,
+  positions,
+  color = '#10b981',
+  weight = 5,
+  opacity = 0.85,
+  dashArray = null
+}) {
   const polylineRef = useRef(null);
 
   useEffect(() => {

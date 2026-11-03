@@ -4,6 +4,8 @@ import L from 'leaflet';
 export default function MapView({
   center = [10.8231, 106.74],
   zoom = 12,
+  focusPosition = null,
+  focusZoom = 15,
   children,
   className = ''
 }) {
@@ -33,6 +35,21 @@ export default function MapView({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (
+      mapInstanceRef.current &&
+      Array.isArray(focusPosition) &&
+      focusPosition.length === 2 &&
+      typeof focusPosition[0] === 'number' &&
+      typeof focusPosition[1] === 'number'
+    ) {
+      mapInstanceRef.current.flyTo(focusPosition, focusZoom, {
+        animate: true,
+        duration: 1.25
+      });
+    }
+  }, [focusPosition, focusZoom]);
 
   return (
     <div className={`map-view-container ${className}`} ref={mapContainerRef}>
