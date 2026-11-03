@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CCADRO - Sơ Đồ Kiến Trúc Cơ Sở Dữ Liệu Trực Quan</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0b0f19;
+      --bg-panel: #111827;
+      --bg-card: #1f2937;
+      --border: #374151;
+      --text-main: #f9fafb;
+      --text-muted: #9ca3af;
+      
+      /* Module Color Tokens */
+      --asset-color: #38bdf8;
+      --asset-glow: rgba(56, 189, 248, 0.15);
+      --shipment-color: #a855f7;
+      --shipment-glow: rgba(168, 85, 247, 0.15);
+      --routing-color: #10b981;
+      --routing-glow: rgba(16, 185, 129, 0.15);
+      --tracking-color: #f59e0b;
+      --tracking-glow: rgba(245, 158, 11, 0.15);
+      --carbon-color: #06b6d4;
+      --carbon-glow: rgba(6, 182, 212, 0.15);
+      --exception-color: #f43f5e;
+      --exception-glow: rgba(244, 63, 94, 0.15);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-dark);
+      color: var(--text-main);
+      font-family: 'Inter', sans-serif;
+      padding: 24px;
+      line-height: 1.5;
+    }
+
+    header {
+      background: linear-gradient(135deg, #111827 0%, #1e1b4b 50%, #064e3b 100%);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px 32px;
+      margin-bottom: 24px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      position: relative;
+      overflow: hidden;
+    }
+    header h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    header p {
+      color: #93c5fd;
+      font-size: 14px;
+      margin-top: 6px;
+      max-width: 800px;
+    }
+
+    .stats-bar {
+      display: flex;
+      gap: 16px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+    .stat-badge {
+      background: rgba(17, 24, 39, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(8px);
+      padding: 8px 16px;
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .stat-badge span { color: #38bdf8; font-weight: 700; }
+
+    /* Controls & Filter Bar */
+    .controls {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .filter-btn {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .filter-btn:hover, .filter-btn.active {
+      background: var(--bg-card);
+      color: #ffffff;
+      border-color: #60a5fa;
+    }
+    .filter-btn.active {
+      box-shadow: 0 0 15px rgba(96, 165, 250, 0.3);
+    }
+
+    .search-input {
+      margin-left: auto;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      color: #ffffff;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      width: 260px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .search-input:focus {
+      border-color: #38bdf8;
+    }
+
+    /* Modules Container */
+    .module-group {
+      margin-bottom: 32px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      position: relative;
+    }
+    .module-group.asset { border-left: 6px solid var(--asset-color); box-shadow: 0 0 25px var(--asset-glow); }
+    .module-group.shipment { border-left: 6px solid var(--shipment-color); box-shadow: 0 0 25px var(--shipment-glow); }
+    .module-group.routing { border-left: 6px solid var(--routing-color); box-shadow: 0 0 25px var(--routing-glow); }
+    .module-group.tracking { border-left: 6px solid var(--tracking-color); box-shadow: 0 0 25px var(--tracking-glow); }
+    .module-group.carbon { border-left: 6px solid var(--carbon-color); box-shadow: 0 0 25px var(--carbon-glow); }
+    .module-group.exception { border-left: 6px solid var(--exception-color); box-shadow: 0 0 25px var(--exception-glow); }
+
+    .module-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .module-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .module-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* Grid of Cards */
+    .table-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 16px;
+    }
+
+    /* Entity Table Card */
+    .table-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      transition: transform 0.2s, box-shadow 0.2s;
+      position: relative;
+    }
+    .table-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      border-color: #64748b;
+    }
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 8px;
+    }
+    .table-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 15px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+    .entity-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #94a3b8;
+      background: rgba(255,255,255,0.05);
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+    .table-purpose {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      line-height: 1.4;
+    }
+
+    .column-list {
+      list-style: none;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding-top: 10px;
+    }
+    .col-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 3px 0;
+    }
+    .col-name {
+      color: #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .col-type {
+      color: #94a3b8;
+      font-size: 11px;
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-block;
+      font-size: 9px;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 3px;
+      text-transform: uppercase;
+    }
+    .badge-pk { background: #eab308; color: #000; }
+    .badge-fk { background: #3b82f6; color: #fff; }
+    .badge-geom { background: #10b981; color: #fff; }
+    .badge-json { background: #ec4899; color: #fff; }
+    .badge-uc {
+      background: rgba(255,255,255,0.1);
+      color: #cbd5e1;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    /* Flow Section */
+    .flow-container {
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 32px;
+    }
+    .flow-step-bar {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      overflow-x: auto;
+      padding-bottom: 12px;
+    }
+    .flow-step {
+      flex: 1;
+      min-width: 200px;
+      background: #1e293b;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 14px;
+      position: relative;
+    }
+    .flow-step::after {
+      content: '➔';
+      position: absolute;
+      right: -12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #64748b;
+      font-size: 16px;
+      z-index: 2;
+    }
+    .flow-step:last-child::after { display: none; }
+    .flow-num {
+      font-size: 11px;
+      font-weight: 800;
+      color: #38bdf8;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .flow-title {
+      font-weight: 700;
+      font-size: 14px;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+    .flow-tables {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #94a3b8;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <h1>
+      <span>🌱</span> CCADRO - KIẾN TRÚC CƠ SỞ DỮ LIỆU TRỰC QUAN
+    </h1>
+    <p>
+      Hệ thống điều vận logistics thông minh nhận thức phát thải carbon & kế toán phát thải GLEC v3. 
+      Kiến trúc <b>Modular Monolith</b> với PostgreSQL 16 + PostGIS 3.4 (Single Source of Truth) và Redis 7 (Live Cache & Fanout).
+    </p>
+
+    <div class="stats-bar">
+      <div class="stat-badge">📦 Tổng số bảng: <span>24 Bảng</span></div>
+      <div class="stat-badge">🏛️ Module Bounded Contexts: <span>5 Module</span></div>
+      <div class="stat-badge">📍 Không gian PostGIS: <span>Point 4326 & LineString 4326</span></div>
+      <div class="stat-badge">🌿 Chuẩn phát thải: <span>GLEC Framework v3 / ISO 14083</span></div>
+      <div class="stat-badge">⚡ Bộ nhớ đệm: <span>Redis Ephemeral</span></div>
+    </div>
+  </header>
+
+  <!-- CONTROLS -->
+  <div class="controls">
+    <button class="filter-btn active" onclick="filterModule('all')">Toàn bộ 24 Bảng</button>
+    <button class="filter-btn" onclick="filterModule('asset')" style="border-color: var(--asset-color);">Asset (6)</button>
+    <button class="filter-btn" onclick="filterModule('shipment')" style="border-color: var(--shipment-color);">Shipment (2)</button>
+    <button class="filter-btn" onclick="filterModule('routing')" style="border-color: var(--routing-color);">Routing (3)</button>
+    <button class="filter-btn" onclick="filterModule('tracking')" style="border-color: var(--tracking-color);">Tracking (4)</button>
+    <button class="filter-btn" onclick="filterModule('carbon')" style="border-color: var(--carbon-color);">Carbon (6)</button>
+    <button class="filter-btn" onclick="filterModule('exception')" style="border-color: var(--exception-color);">Exception (3)</button>
+    
+    <input type="text" class="search-input" id="tableSearch" placeholder="🔍 Tìm tên bảng hoặc cột..." onkeyup="searchTables()">
+  </div>
+
+  <!-- FLOW PIPELINE -->
+  <div class="flow-container">
+    <h3 style="font-size: 15px; font-weight: 700; color: #cbd5e1; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.5px;">
+      🔄 Dòng Chảy Dữ Liệu Nghiệp Vụ Cốt Lõi (E2E Data Pipeline)
+    </h3>
+    <div class="flow-step-bar">
+      <div class="flow-step">
+        <div class="flow-num">Bước 1 • Khởi tạo</div>
+        <div class="flow-title">Nguồn Lực & Đơn Hàng</div>
+        <div class="flow-tables">
+          • vehicle / driver / cont<br>
+          • shipment (Point 4326)<br>
+          • pre_trip_inspection
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">Bước 2 • Tối ưu hóa</div>
+        <div class="flow-title">Lập Tuyến Carbon (UC05)</div>
+        <div class="flow-tables">
+          • route_candidate (Line 4326)<br>
+          • route_decision<br>
+          • route_version (v1 Active)
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">Bước 3 • Điều hành</div>
+        <div class="flow-title">Phát Lệnh & Chuyến Đi</div>
+        <div class="flow-tables">
+          • dispatch_order<br>
+          • trip (SCHEDULED -> EN_ROUTE)
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">Bước 4 • Giám sát GPS</div>
+        <div class="flow-title">Live Tracking (UC09-10)</div>
+        <div class="flow-tables">
+          • telemetry_event (1-5s)<br>
+          • deviation_alert (50m/200m)<br>
+          • reroute_proposal (v2)
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">Bước 5 • Hoàn tất</div>
+        <div class="flow-title">Kế Toán Carbon (UC12-13)</div>
+        <div class="flow-tables">
+          • proof_of_delivery (ePOD)<br>
+          • emission_calculation (GLEC v3)<br>
+          • carbon_benchmark_result
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODULE 1: ASSET -->
+  <div class="module-group asset" data-module="asset">
+    <div class="module-header">
+      <div>
+        <div class="module-title" style="color: var(--asset-color);">
+          <span>🚚</span> MODULE 1: ASSET & RESOURCE MANAGEMENT
+        </div>
+        <div class="module-desc">Quản lý phương tiện, tài xế, container và kiểm tra an toàn vận hành (UC01, UC02, UC03, UC15)</div>
+      </div>
+      <span class="badge-uc">6 Bảng</span>
+    </div>
+
+    <div class="table-grid">
+      <!-- vehicle -->
+      <div class="table-card">
+        <div class="card-head">
+          <span class="table-name">vehicle</span>
+          <span class="entity-tag">Vehicle.java</span>
+        </div>
+        <div class="table-purpose">Thông tin hồ sơ kỹ thuật xe tải/đầu kéo, tiêu chuẩn khí thải và tải trọng.</div>
+        <ul class="column-list">
+          <li class="col-item"><span class="col-name"><span class="badge badge-pk">PK</span> id</span><span class="col-type">UUID</span></li>
+          <li class="col-item"><span class="col-name">vehicle_code (UNIQUE)</span><span class="col-type">VARCHAR(50)</span></li>
+          <li class="col-item"><span class="col-name">plate_number</span><span class="col-type">VARCHAR(20)</span></li>
+          <li class="col-item"><span class="col-name">fuel_type, euro_standard</span><span class="col-type">ENUM</span></li>
+          <li class="col-item"><span class="col-name">max_payload_tons</span><span class="col-type">NUMERIC(10,2)</span></li>
+          <li class="col-item"><span class="col-name">empty_weight_tons</span><span class="col-type">NUMERIC(10,2)</span></li>
+          <li class="col-item"><span class="col-name">status</span><span class="col-type">AVAILABLE, MAINTENANCE...</span></li>
+        </ul>
+      </div>
+
+      <!-- driver -->
+      <div class="table-card">
+        <div class="card-head">
+          <span class="table-name">driver</span>
+          <span class="entity-tag">Driver.java</span>
+        </div>
+        <div class="table-purpose">Hồ sơ tài xế, giấy phép lái xe và tình trạng sẵn sàng nhận chuyến.</div>
+        <ul class="column-list">
+          <li class="col-item"><span class="col-name"><span class="badge badge-pk">PK</span> id</span><span class="col-type">UUID</span></li>
+          <li class="col-item"><span class="col-name">driver_code (UNIQUE)</span><span class="col-type">VARCHAR(50)</span></li>
+          <li class="col-item"><span class="col-name">full_name, phone</span><span class="col-type">VARCHAR</span></li>
+          <li class="col-item"><span class="col-name">license_number</span><span class="col-type">VARCHAR(50)</span></li>
+          <li class="col-item"><span class="col-name">status</span><span class="col-type">AVAILABLE, ON_TRIP...</span></li>
+        </ul>
+      </div>
+
+      <!-- container -->
+      <div class="table-card">
+        <div class="card-head">
+          <span class="table-name">container</span>
+          <span class="entity-tag">Container.java</span>
+        </div>
+        <div class="table-purpose">Vỏ container khô/lạnh, khối lượng vỏ và tải trọng đóng hàng tối đa.</div>
+        <ul class="column-list">
+          <li class="col-item"><span class="col-name"><span class="badge badge-pk">PK</span> id</span><span class="col-type">UUID</span></li>
+          <li class="col-item"><span class="col-name">container_code (UNIQUE)</span><span class="col-type">VARCHAR(50)</span></li>
+          <li class="col-item"><span class="col-name">container_type</span><span class="col-type">DRY_20FT, DRY_40FT...</span></li>
+          <li class="col-item"><span class="col-name">tare_weight_tons, max_payload</span><span class="col-type">NUMERIC(10,2)</span></li>
+          <li class="col-item"><span class="col-name">is_reefer</span><span class="col-type">BOOLEAN</span></li>
+        </ul>
+      </div>
+
+      <!-- vehicle_maintenance -->
+      <div class="table-card">
+        <div class="card-head">
+          <span class="table-name">vehicle_maintenance</span>
+          <span class="entity-tag">VehicleMaintenance.java</span>
+        </div>
+        <div class="table-purpose">Lịch và biên bản bảo dưỡng định kỳ, đảm bảo xe đủ điều kiện chạy (BRULE-01).</div>
+        <ul class="column-list">
+          <li class="col-item"><span class="col-name"><span class="badge badge-pk">PK</span> id</span><span class="col-type">UUID</span></li>
+          <li class="col-item"><span class="col-name"><span class="badge badge-fk">FK</span> vehicle_id</span><span class="col-type">UUID -> vehicle</span></li>
+          <li class="col-item"><span class="col-name">maintenance_type, status</span><span class="col-type">PERIODIC, COMPLETED...</span></li>
+          <li class="col-item"><span class="col-name">scheduled_date, completed_date</span><span class="col-type">DATE</span></li>
+          <li class="col-item"><span class="col-name">odometer_km, cost</span><span class="col-type">NUMERIC</span></li>
+        </ul>
+      </div>
+
+      <!-- pre_trip_inspection -->
+      <div class="table-card">
+        <div class="card-head">
+          <span class="table-name">pre_trip_inspection</span>
+          <span class="entity-tag">PreTripInspection.java</span>
+        </div>
+        <div class="table-purpose">Checklist kiểm tra an toàn xe trước khi xuất phát. Nếu FAILED cấm xuất chuyến.</div>
+        <ul class="column-list">
+          <li class="col-item"><span class="col-name"><span class="badge badge-pk">PK</span> id</span><span class="col-type">UUID</span></li>
+          <li class="col-item"><span class="col-name"><span class="badge badge-fk">FK</span> vehicle_id, driver_id</span><span class="col-type">UUID</span></li>
+          <li class="col-item"><span class="col-name">status</span><span class="col-type">PASSED, FAILED</span></li>
+          <li class="col-item"><span class="col-name"><span class="badge badge-json">JSON</span> checklist_json</span><span class="col-type">JSONB (phanh, lốp...)</span></li>
+          <li class="col-item"><span class="col-name">critical_failures_count</span><span class="col-type">INT</span></li>
+        </ul>
+      </div>
+
+      <!-- driver_shift -->
+      <div class="table-card">
+        <div class="card-head">
+          <span class="table-name">driver_shift</span>
+          <span class="entity-tag">DriverShift.java</span>
+        </div>
+        <div class="table-purpose">Quản lý ca trực, bàn giao phương tiện và thời gian cầm lái thực tế của tài xế.</div>
+        <ul class="column-list">
+          <li class="col-item"><span class="col-name"><span class="badge badge-pk">PK</span> id</span><span class="col-type">UUID</span></li>
+          <li class="col-item"><span class="col-name"><span class="badge badge-fk">FK</span> driver_id, vehicle_id</span><span class="col-type">UUID</span></li>
+          <li class="col-item"><span class="col-name">shift_start, shift_end</span><span class="col-type">TIMESTAMPTZ</span></li>
+          <li class="col-item"><span class="col-name">status</span><span class="col-type">SCHEDULED, ACTIVE...</span></li>
+          <li class="col-item"><span class="col-name">handover_notes</span><span class="col-type">TEXT</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODULE 2: SHIPMENT -->
+  <div class="module-group shipment" data-module="shipment">
+    <div class="module-header">
+      <div>
+        <div class="module-title" style="color: var(--shipment-color);">
+          <span>📦</span> MODULE 2: SHIPMENT & DISPATCH MANAGEMENT
+        </div>
+        <div class="module-desc">Quản lý đơn hàng vận tải, điểm đi/đến PostGIS Point, Time Windows và lệnh điều vận (UC04, UC06)</div>
+      </div>
+      <span class="badge-uc">2 Bảng</span>
+    </div>
+
+    <div class="table-grid">
+      <!-- shipment -->
+      <div class="table-card">
+        <div class="card-head">
+          <span class="table-name">shipment</span>
+          <span class="entity-tag">Shipment.java</span>
+        </div>
+        <div class="table-purpose">Đơn hàng vận tải chứa tọa độ địa lý xuất phát và đích đến WGS84 cùng SLA thời gian.</div>
+        <ul class="column-list">
+          <li class="col-item"><span class="col-name"><span class="badge badge-pk">PK</span> id</span><span class="col-type">UUID</span></li>
+          <li class="col-item"><span class="col-name">shipment_code (UNIQUE)</span><span class="col-type">VARCHAR(50)</span></li>
+          <li class="col-item"><span class="col-name">customer_id</span><span class="col-type">VARCHAR(50)</span></li>
+          <li class="col-item"><span class="col-name"><span class="badge badge-geom">Point</span> origin_geom</span><span class="col-type">Point 4326 (GIST)</span></li>
+          <li class="col-item"><span class="col-name"><span class="badge badge-geom">Point</span> destination_geom</span><span class="col-type">Point 4326 (GIST)</span></li>
+          <li class="col-item"><span class="col-name">cargo_weight_tons</span><span class="col-type">NUMERIC(10,2)</span></li>
+          <li class="col-item"><span class="col-name">pickup / delivery time window</span><span class="col-type">TIMESTAMPTZ</span></li>
+          <li class="col-item"><span class="col-name">status</span><span class="col-type">DRAFT, PLANNED, DISPATCHED...</span></li>
+        </ul>
+      </div>
+
+      <!-- dispatch_order -->
+      <div class="table-card">
+        <div class="card-head">
+          <span class="table-name">dispatch_order</span>
+          <span class="entity-tag">DispatchOrder.java</span>
+        </div>
+        <div class="table-purpose">Lệnh điều phối chính thức gán xe, tài xế, container và tuyến đường cho chuyến đi.</div>
+        <ul class="column-list">
+          <li class="col-item"><span class="col-name"><span class="badge badge-pk">PK</span> id</span><span class="col-type">UUID</span></li>
+          <li class="col-item"><span class="col-name">dispatch_code (UNIQUE)</span><span class="col-type">VARCHAR(50)</span></li>
+          <li class="col-item"><span class="col-name"><span class="badge badge-fk">FK</span> shipment_id</span><span class="col-type">UUID -> shipment</span></li>
+          <li class="col-item"><span class="col-name"><span class="badge badge-fk">FK</span> vehicle_id, driver_id</span><span class="col-type">UUID</span></li>
+          <li class="col-item"><span class="col-name"><span class="badge badge-fk">FK</span> assigned_route_version_id</span><span class="col-type">UUID -> route_version</span></li>
+          <li class="col-item"><span class="col-name">status</span><span class="col-type">ASSIGNED, ACKNOWLEDGED...</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODULE 3: ROUTING -->
+  <div class="module-group routing" data-module="routing">
+    <div class="module-header">
+      <div>
+        <div class="module-title" style="color: var(--routing-color);">
+          <span>🗺️</span> MODULE 3: CARBON-AWARE ROUTE OPTIMIZATION
+        </div>
+        <div class="module-desc">Lập tuyến xanh đa tiêu chí, tính điểm Min-Max Pareto và quản trị phiên bản tuyến (UC05)</div>
+      </div>
+      <span class="badge-uc">3 Bảng</span>
+    </div>
+
+    <div class="table-grid">
+      <!-- route_candidate -->
+      <div class="table-card">
+        <div class="card-head">
+          <span class="table-name">route_candidate</span>
+          <span class="entity-tag">RouteCandidate.java</span>
+        </div>
+        <div class="table-purpose">Phương án tuyến ứng viên do OSRM/GraphHopper sinh ra với điểm số Carbon, Time, Cost, Risk.</div>
+        <ul class="column-list">
+          <li class="col-item"><span class="col-name"><span class="badge badge-pk">PK</span> id</span><span class="col-type">UUID</span></li>
+          <li class="col-item"><span class="col-name"><span class="badge badge-fk">FK</span> shipment_id</span><span class="col-type">UUID -> shipment</span></li>
+          <li class="col-item"><span class="col-name"><span class="badge badge-geom">Line</span> route_geometry</span><span class="col-type">LineString 4326</span></li>
+          <li class="col-item"><span class="col-name">distance_meters, duration_seconds</span><span class="col-type">NUMERIC(12,2)</span></li>
+          <li class="col-item"><span class="col-name">estimated_co2_kg</span><span class="col-type">NUMERIC(10,2)</span></li>
+          <li class="col-item"><span class="col-name">composite_score (Pareto)</span><span class="col-type">NUMERIC(6,4)</span></li>
+          <li class="col-item"><span class="col-name"><span class="badge badge-json">JSON</span> waypoints_json</span><span class="col-type">JSONB</span></li>
+          <li class="col-item"><span class="col-name">is_selected</span><span class="col-type">BOOLEAN</span></li>
+        </ul>
+      </div>
+
+      <!-- route_decision -->
+      <div class="table-card">
+        <div class="card-head">
+          <span class="table-name">route_decision</span>
+          <span class="entity-tag">RouteDecision.java</span>
+        </div>
+        <div class="table-purpose">Lưu vết quyết định phê duyệt phương án tuyến của Dispatcher (Audit Trail).</div>
+        <ul class="column-list">
+          <li class="col-item"><span class="col-name"><span class="badge badge-pk">PK</span> id</span><span class="col-type">UUID</span></li>
+          <li class="col-item"><span class="col-name"><span class="badge badge-fk">FK</span> shipment_id</span><span class="col-type">UUID -> shipment</span></li>
+          <li class="col-item"><span class="col-name"><span class="badge badge-fk">FK</span> selected_candidate_id</span><span class="col-type">UUID -> candidate</span></li>
+          <li class="col-item"><span class="col-name">decision_type</span><span class="col-type">RECOMMENDED, MANUAL_OVERRIDE</span></li>
+          <li class="col-item"><span class="col-name">dispatcher_notes, decided_by</span><span class="col-type">TEXT, VARCHAR</span></li>
+        </ul>
+      </div>
+
+      <!-- route_version -->
+      <div class="table-card">
+        <div class="card-head">
+          <span class="table-name">route_version</span>
+          <span class="entity-tag">RouteVersion.java</span>
+        </div>
+        <div class="table-purpose">Quản lý lịch sử các phiên bản tuyến (v1: ban đầu; v2: sau tái định tuyến tránh tắc đường).</div>
+        <ul class="column-list">
+          <li class="col-item"><span class="col-name"><span class="badge badge-pk">PK</span> id</span><span class="col-type">UUID</span></li>
+          <li class="col-item"><span class="col-name"><span class="badge badge-fk">FK</span> shipment_id</span><span class="col-type">UUID -> shipment</span></li>
+          <li class="col-item"><span class="col-name">version_number</span><span class="col-type">INT (1, 2, 3...)</span></li>
+          <li class="col-item"><span class="col-name"><span class="badge badge-geom">Line</span> route_geometry</span><span class="col-type">LineString 4326</span></li>
+          <li class="col-item"><span class="col-name">is_active</span><span class="col-type">BOOLEAN (TRUE = đang chạy)</span></li>
+          <li class="col-item"><span class="col-name">reason</span><span class="col-type">INITIAL, REROUTE_DEVIATION...</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODULE 4: TRACKING -->
+  <div class="module-group tracking" data-module="tracking">
+    <div class="module-header">
+      <div>
+        <div class="module-title" style="color: var(--tracking-color);">
+          <span>🛰️</span> MODULE 4: REAL-TIME TRACKING & DYNAMIC REROUTING
+        </div>
+        <div class="module-desc">Giám sát tọa độ GPS vi mô, phát hiện lệch hành lang và tái định tuyến động (UC07, UC08, UC09, UC10)</div>
+      </div>
+      <span class="badge-uc">4 Bảng</span>
+    </div>
+
+    <div class="table-grid">
+      <!-- trip -->
+      <div class="table-card">
+        <div class="card-head">
+          <span class="table-name">trip</span>
+          <span class="entity-tag">Trip.java</span>
+        </div>
+        <div class="table-purpose">Chuyến xe thực tế đang di chuyển trên đường, kết nối đơn hàng, xe, tài xế và tuyến chạy.</div>
+        <ul class="column-list">
+          <li class="col-item"><span class="col-name"><span class="badge badge-pk">PK</span> id</span><span class="col-type">UUID</span></li>
+          <li class="col-item"><span class="col-name">trip_code (UNIQUE)</span><span class="col-type">VARCHAR(50)</span></li>
+          <li class="col-item"><span class="col-name"><span class="badge badge-fk">FK</span> shipment_id, vehicle_id, driver_id</span><span class="col-type">UUID</span></li>
+          <li class="col-item"><span class="col-name"><span class="badge badge-fk">FK</span> active_route_version_id</span><span class="col-type">UUID -> route_version</span></li>
+          <li class="col-item"><span class="col-name">status</span><span class="col-type">EN_ROUTE, DELAYED, COMPLETED...</span></li>
+          <li class="col-item"><span class="col-name">actual_distance_meters</span><span class="col-type">NUMERIC(12,2) (Vết GPS)</span></li>
+        </ul>
+      </div>
+
+      <!-- telemetry_event -->
+      <div class="table-card">
+        <div class="card-head">
+          <span class="table-name">telemetry_event</span>
+          <span class="entity-tag">TelemetryEvent.java</span>
+        </div>
+        <div class="table-purpose">Tọa độ GPS stream tần suất cao (1-5s) từ thiết bị IoT có lọc nhiễu Quality Gate.</div>
+        <ul class="column-list">
+          <li class="col-item"><span class="col-name"><span class="badge badge-pk">PK</span> id</span><span class="col-type">UUID</span></li>
+          <li class="col-item"><span class="col-name"><span class="badge badge-fk">FK</span> trip_id, vehicle_id</span><span class="col-type">UUID</span></li>
+          <li class="col-item"><span class="col-name">timestamp</span><span class="col-type">TIMESTAMPTZ (Index)</span></li>
+          <li class="col-item"><span class="col-name"><span class="badge badge-geom">Point</span> location_geom</span><span class="col-type">Point 4326</span></li>
+          <li class="col-item"><span class="col-name">speed_kmh, heading_degrees</span><span class="col-type">NUMERIC</span></li>
+          <li class="col-item"><span class="col-name">distance_from_route_meters</span><span class="col-type">Khoảng cách vuông góc</span></li>
+          <li class="col-item"><span class="col-name">accuracy_meters, quality_passed</span><span class="col-type">HDOP Filter</span></li>
+        </ul>
+      </div>
+
+      <!-- deviation_alert -->
+      <div class="table-card">
+        <div class="card-head">
+          <span class="table-name">deviation_alert</span>
+          <span class="entity-tag">DeviationAlert.java</span>
+        </div>
+        <div class="table-purpose">Cảnh báo xe lệch khỏi corridor an toàn: Vàng (>50m), Đỏ (>200m) trong >=3 điểm liên tiếp.</div>
+        <ul class="column-list">
+          <li class="col-item"><span class="col-name"><span class="badge badge-pk">PK</span> id</span><span class="col-type">UUID</span></li>
+          <li class="col-item"><span class="col-name"><span class="badge badge-fk">FK</span> trip_id</span><span class="col-type">UUID -> trip</span></li>
+          <li class="col-item"><span class="col-name">severity</span><span class="col-type">YELLOW (>50m), RED (>200m)</span></li>
+          <li class="col-item"><span class="col-name">deviation_distance_meters</span><span class="col-type">NUMERIC(10,2)</span></li>
+          <li class="col-item"><span class="col-name"><span class="badge badge-geom">Point</span> location_geom</span><span class="col-type">Point 4326</span></li>
+          <li class="col-item"><span class="col-name">persistence_count</span><span class="col-type">INT (>= 3 points)</span></li>
+          <li class="col-item"><span class="col-name">status</span><span class="col-type">OPEN, ACKNOWLEDGED, RESOLVED</span></li>
+        </ul>
+      </div>
+
+      <!-- reroute_proposal -->
+      <div class="table-card">
+        <div class="card-head">
+          <span class="table-name">reroute_proposal</span>
+          <span class="entity-tag">RerouteProposal.java</span>
+        </div>
+        <div class="table-purpose">Đề xuất lộ trình thay thế khi gặp tắc đường hoặc xe lệch tuyến Đỏ. Yêu cầu Dispatcher duyệt.</div>
+        <ul class="column-list">
+          <li class="col-item"><span class="col-name"><span class="badge badge-pk">PK</span> id</span><span class="col-type">UUID</span></li>
+          <li class="col-item"><span class="col-name"><span class="badge badge-fk">FK</span> trip_id</span><span class="col-type">UUID -> trip</span></li>
+          <li class="col-item"><span class="col-name">trigger_reason</span><span class="col-type">DEVIATION_RED, TRAFFIC...</span></li>
+          <li class="col-item"><span class="col-name">benefit_ratio</span><span class="col-type">NUMERIC (>= 10% cải thiện)</span></li>
+          <li class="col-item"><span class="col-name"><span class="badge badge-geom">Line</span> proposed_geometry</span><span class="col-type">LineString 4326</span></li>
+          <li class="col-item"><span class="col-name">status</span><span class="col-type">PENDING_DISPATCHER, ACCEPTED...</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODULE 5: CARBON -->
+  <div class="module-group carbon" data-module="carbon">
+    <div class="module-header">
+      <div>
+        <div class="module-title" style="color: var(--carbon-color);">
+          <span>🌱</span> MODULE 5: CARBON ACCOUNTING & CORRIDOR BENCHMARKING
+        </div>
+        <div class="module-desc">Kế toán phát thải sau chuyến chuẩn GLEC v3, ISO 14083 và đối chuẩn hành lang logistics (UC11, UC12, UC13, UC14)</div>
+      </div>
+      <span class="badge-uc">6 Bảng</span>
+    </div>
+
+    <div class="table-grid">
+      <!-- emission_factor -->
+      <div class="table-card">
+        <div class="card-head">
+          <span class="table-name">emission_factor</span>
+          <span class="entity-tag">EmissionFactor.java</span>
+        </div>
+        <div class="table-purpose">Thư viện hệ số phát thải có truy xuất nguồn gốc (Lineage): GLEC v3, DEFRA, Euro Standard.</div>
+        <ul class="column-list">
+          <li class="col-item"><span class="col-name"><span class="badge badge-pk">PK</span> id</span><span class="col-type">UUID</span></li>
+          <li class="col-item"><span class="col-name">factor_code (UNIQUE)</span><span class="col-type">VARCHAR(50)</span></li>
+          <li class="col-item"><span class="col-name">fuel_type, euro_standard</span><span class="col-type">DIESEL, EURO_5...</span></li>
+          <li class="col-item"><span class="col-name">empty_factor, full_factor</span><span class="col-type">NUMERIC(10,6) (kg/km)</span></li>
+          <li class="col-item"><span class="col-name">default_tonne_km_factor</span><span class="col-type">0.080000 kgCO2e/t-km</span></li>
+          <li class="col-item"><span class="col-name">source_reference</span><span class="col-type">GLEC_FRAMEWORK_V3</span></li>
+        </ul>
+      </div>
+
+      <!-- emission_calculation -->
+      <div class="table-card">
+        <div class="card-head">
+          <span class="table-name">emission_calculation</span>
+          <span class="entity-tag">EmissionCalculation.java</span>
+        </div>
+        <div class="table-purpose">Kết quả tính toán phát thải chính thức sau chuyến: WTW = TTW + WTT. Tính bất biến (Immutable).</div>
+        <ul class="column-list">
+          <li class="col-item"><span class="col-name"><span class="badge badge-pk">PK</span> id</span><span class="col-type">UUID</span></li>
+          <li class="col-item"><span class="col-name"><span class="badge badge-fk">FK</span> trip_id</span><span class="col-type">UUID -> trip</span></li>
+          <li class="col-item"><span class="col-name">calculation_type</span><span class="col-type">PLANNING, POST_TRIP...</span></li>
+          <li class="col-item"><span class="col-name">total_co2e_kg, wtw_co2e_kg</span><span class="col-type">NUMERIC(12,4)</span></li>
+          <li class="col-item"><span class="col-name">ttw_co2e_kg, wtt_co2e_kg</span><span class="col-type">Phân tách ống xả/thượng nguồn</span></li>
+          <li class="col-item"><span class="col-name">data_quality_tier</span><span class="col-type">TIER_1_PRIMARY, TIER_2...</span></li>
+          <li class="col-item"><span class="col-name">is_daf_applied</span><span class="col-type">FALSE (với GPS_ACTUAL)</span></li>
+          <li class="col-item"><span class="col-name">version_number</span><span class="col-type">INT (Lưu vết phiên bản)</span></li>
+        </ul>
+      </div>
+
+      <!-- carbon_benchmark -->
+      <div class="table-card">
+        <div class="card-head">
+          <span class="table-name">carbon_benchmark</span>
+          <span class="entity-tag">CarbonBenchmark.java</span>
+        </div>
+        <div class="table-purpose">Mức phát thải trung bình và chuẩn dẫn đầu xanh trên từng hành lang (VD: Cát Lái - VSIP 1).</div>
+        <ul class="column-list">
+          <li class="col-item"><span class="col-name"><span class="badge badge-pk">PK</span> id</span><span class="col-type">UUID</span></li>
+          <li class="col-item"><span class="col-name">benchmark_name</span><span class="col-type">VARCHAR(100)</span></li>
+          <li class="col-item"><span class="col-name">origin_zone, destination_zone</span><span class="col-type">HCMC_PORT -> VSIP</span></li>
+          <li class="col-item"><span class="col-name">average_co2e_per_tonne_km</span><span class="col-type">0.082000 kgCO2e/t-km</span></li>
+          <li class="col-item"><span class="col-name">best_in_class_co2e</span><span class="col-type">0.068000 kgCO2e/t-km</span></li>
+        </ul>
+      </div>
+
+      <!-- carbon_benchmark_result -->
+      <div class="table-card">
+        <div class="card-head">
+          <span class="table-name">carbon_benchmark_result</span>
+          <span class="entity-tag">CarbonBenchmarkResult.java</span>
+        </div>
+        <div class="table-purpose">Đối chứng chuyến xe thực tế với kịch bản cơ sở BAU / Tuyến ngắn nhất / Nhanh nhất.</div>
+        <ul class="column-list">
+          <li class="col-item"><span class="col-name"><span class="badge badge-pk">PK</span> id</span><span class="col-type">UUID</span></li>
+          <li class="col-item"><span class="col-name"><span class="badge badge-fk">FK</span> trip_id, benchmark_corridor_id</span><span class="col-type">UUID</span></li>
+          <li class="col-item"><span class="col-name">baseline_route_type</span><span class="col-type">SHORTEST, FASTEST, BAU...</span></li>
+          <li class="col-item"><span class="col-name">baseline_co2e vs ccadro_co2e</span><span class="col-type">NUMERIC(12,4)</span></li>
+          <li class="col-item"><span class="col-name">carbon_reduction_percent</span><span class="col-type">% Cắt giảm thực tế</span></li>
+          <li class="col-item"><span class="col-name">time_tradeoff, distance_tradeoff</span><span class="col-type">Đánh đổi thời gian & km</span></li>
+          <li class="col-item"><span class="col-name">comparability_status</span><span class="col-type">COMPARABLE, INCONCLUSIVE</span></li>
+        </ul>
+      </div>
+
+      <!-- proof_of_delivery -->
+      <div class="table-card">
+        <div class="card-head">
+          <span class="table-name">proof_of_delivery</span>
+          <span class="entity-tag">ProofOfDelivery.java</span>
+        </div>
+        <div class="table-purpose">Biên bản giao hàng điện tử ePOD, chữ ký số và chốt quãng đường thực tế (GPS_ACTUAL).</div>
+        <ul class="column-list">
+          <li class="col-item"><span class="col-name"><span class="badge badge-pk">PK</span> id</span><span class="col-type">UUID</span></li>
+          <li class="col-item"><span class="col-name"><span class="badge badge-fk">FK</span> trip_id, shipment_id</span><span class="col-type">UUID</span></li>
+          <li class="col-item"><span class="col-name">recipient_name, phone</span><span class="col-type">VARCHAR</span></li>
+          <li class="col-item"><span class="col-name">signature_url, photo_evidence_url</span><span class="col-type">TEXT</span></li>
+          <li class="col-item"><span class="col-name">actual_distance_km</span><span class="col-type">NUMERIC(10,3)</span></li>
+          <li class="col-item"><span class="col-name">distance_source</span><span class="col-type">GPS_ACTUAL, ODOMETER</span></li>
+        </ul>
+      </div>
+
+      <!-- carbon_report_export -->
+      <div class="table-card">
+        <div class="card-head">
+          <span class="table-name">carbon_report_export</span>
+          <span class="entity-tag">CarbonReportExport.java</span>
+        </div>
+        <div class="table-purpose">Lịch sử kết xuất báo cáo carbon phục vụ kiểm toán ESG kèm mã băm SHA-256.</div>
+        <ul class="column-list">
+          <li class="col-item"><span class="col-name"><span class="badge badge-pk">PK</span> id</span><span class="col-type">UUID</span></li>
+          <li class="col-item"><span class="col-name">report_name, export_format</span><span class="col-type">CSV, PDF, EXCEL</span></li>
+          <li class="col-item"><span class="col-name">total_shipments, total_co2e_kg</span><span class="col-type">NUMERIC</span></li>
+          <li class="col-item"><span class="col-name">file_hash</span><span class="col-type">SHA-256 Checksum</span></li>
+          <li class="col-item"><span class="col-name">exported_by, exported_at</span><span class="col-type">Audit User</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODULE 6: EXCEPTION -->
+  <div class="module-group exception" data-module="exception">
+    <div class="module-header">
+      <div>
+        <div class="module-title" style="color: var(--exception-color);">
+          <span>⚠️</span> MODULE 6: INCIDENT & EXCEPTION GOVERNANCE
+        </div>
+        <div class="module-desc">Báo cáo sự cố hiện trường, thẩm định ngoại lệ và quản trị điểm phạt tài xế (UC16, UC17, UC18)</div>
+      </div>
+      <span class="badge-uc">3 Bảng</span>
+    </div>
+
+    <div class="table-grid">
+      <!-- field_incident -->
+      <div class="table-card">
+        <div class="card-head">
+          <span class="table-name">field_incident</span>
+          <span class="entity-tag">FieldIncident.java</span>
+        </div>
+        <div class="table-purpose">Sự cố phát sinh trên đường (kẹt xe nghiêm trọng, ngập úng, tai nạn) do tài xế gửi về.</div>
+        <ul class="column-list">
+          <li class="col-item"><span class="col-name"><span class="badge badge-pk">PK</span> id</span><span class="col-type">UUID</span></li>
+          <li class="col-item"><span class="col-name">incident_code (UNIQUE)</span><span class="col-type">VARCHAR(50)</span></li>
+          <li class="col-item"><span class="col-name"><span class="badge badge-fk">FK</span> trip_id, driver_id</span><span class="col-type">UUID</span></li>
+          <li class="col-item"><span class="col-name">incident_type, severity</span><span class="col-type">CONGESTION, CRITICAL...</span></li>
+          <li class="col-item"><span class="col-name"><span class="badge badge-geom">Point</span> incident_location</span><span class="col-type">Point 4326</span></li>
+          <li class="col-item"><span class="col-name"><span class="badge badge-json">JSON</span> evidence_urls</span><span class="col-type">JSONB (mảng ảnh)</span></li>
+          <li class="col-item"><span class="col-name">status</span><span class="col-type">PENDING_REVIEW, APPROVED...</span></li>
+        </ul>
+      </div>
+
+      <!-- exception_resolution -->
+      <div class="table-card">
+        <div class="card-head">
+          <span class="table-name">exception_resolution</span>
+          <span class="entity-tag">ExceptionResolution.java</span>
+        </div>
+        <div class="table-purpose">Biên bản xử lý ngoại lệ của Dispatcher: Duyệt tái định tuyến, miễn trừ hay chuyển điểm phạt.</div>
+        <ul class="column-list">
+          <li class="col-item"><span class="col-name"><span class="badge badge-pk">PK</span> id</span><span class="col-type">UUID</span></li>
+          <li class="col-item"><span class="col-name"><span class="badge badge-fk">FK</span> incident_id</span><span class="col-type">UUID -> incident</span></li>
+          <li class="col-item"><span class="col-name">decision</span><span class="col-type">APPROVED_REROUTE, EXCUSED...</span></li>
+          <li class="col-item"><span class="col-name">reviewed_by, review_notes</span><span class="col-type">TEXT</span></li>
+          <li class="col-item"><span class="col-name">resolved_at</span><span class="col-type">TIMESTAMPTZ</span></li>
+        </ul>
+      </div>
+
+      <!-- demerit_record -->
+      <div class="table-card">
+        <div class="card-head">
+          <span class="table-name">demerit_record</span>
+          <span class="entity-tag">DemeritRecord.java</span>
+        </div>
+        <div class="table-purpose">Sổ điểm phạt vi phạm hành trình. Phải qua hội đồng thẩm duyệt, không tự động phạt (BRULE-18).</div>
+        <ul class="column-list">
+          <li class="col-item"><span class="col-name"><span class="badge badge-pk">PK</span> id</span><span class="col-type">UUID</span></li>
+          <li class="col-item"><span class="col-name"><span class="badge badge-fk">FK</span> driver_id, incident_id</span><span class="col-type">UUID</span></li>
+          <li class="col-item"><span class="col-name">points</span><span class="col-type">INT (1-10 điểm)</span></li>
+          <li class="col-item"><span class="col-name">violation_category</span><span class="col-type">ROUTE_DEVIATION, SPEEDING...</span></li>
+          <li class="col-item"><span class="col-name">status</span><span class="col-type">RECORDED, REVIEW_REQUIRED...</span></li>
+          <li class="col-item"><span class="col-name">reviewed_by, decision_notes</span><span class="col-type">Hội đồng kỷ luật</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function filterModule(moduleName) {
+      const groups = document.querySelectorAll('.module-group');
+      const buttons = document.querySelectorAll('.filter-btn');
+      
+      buttons.forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+
+      groups.forEach(group => {
+        if (moduleName === 'all' || group.getAttribute('data-module') === moduleName) {
+          group.style.display = 'block';
+        } else {
+          group.style.display = 'none';
+        }
+      });
+    }
+
+    function searchTables() {
+      const input = document.getElementById('tableSearch').value.toLowerCase();
+      const cards = document.querySelectorAll('.table-card');
+
+      cards.forEach(card => {
+        const text = card.innerText.toLowerCase();
+        if (text.includes(input)) {
+          card.style.display = 'block';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+  </script>
+</body>
+</html>

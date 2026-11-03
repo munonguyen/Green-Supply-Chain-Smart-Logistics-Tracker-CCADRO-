@@ -1,0 +1,454 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1160 720" width="100%" height="100%" style="background: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <defs>
+    <filter id="drop-shadow" x="-5%" y="-5%" width="115%" height="115%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.12" flood-color="#0f172a"/>
+    </filter>
+  </defs>
+
+  <!-- Title bar -->
+  <rect x="0" y="0" width="1160" height="42" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+  <circle cx="24" cy="21" r="5" fill="#ef4444"/>
+  <circle cx="40" cy="21" r="5" fill="#f59e0b"/>
+  <circle cx="56" cy="21" r="5" fill="#10b981"/>
+  <text x="580" y="26" text-anchor="middle" font-size="14" font-weight="bold" fill="#0f172a" letter-spacing="0.3">CCADRO LOGISTICS - CARBON EMISSION SNOWFLAKE SCHEMA (DATA WAREHOUSE / OLAP)</text>
+
+  <!-- Lines Group -->
+  <g id="connectors" stroke="#334155" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round">
+
+    <!-- dim_dates (1) to fact_trip_emission (N) -->
+    <path d="M 865 200 L 865 270 L 710 270" />
+
+    <line x1="859" y1="208" x2="871" y2="208" />
+
+    <!-- Crows foot at (710,270) -->
+    <line x1="710" y1="270" x2="702" y2="264" />
+    <line x1="710" y1="270" x2="702" y2="276" />
+    <line x1="710" y1="270" x2="702" y2="270" />
+
+    <!-- dim_corridor (1) to fact_trip_emission (N) -->
+    <path d="M 295 200 L 295 270 L 430 270" />
+
+    <line x1="289" y1="208" x2="301" y2="208" />
+
+    <!-- Crows foot at (430,270) -->
+    <line x1="430" y1="270" x2="438" y2="264" />
+    <line x1="430" y1="270" x2="438" y2="276" />
+    <line x1="430" y1="270" x2="438" y2="270" />
+
+    <!-- dim_vehicle (1) to fact_trip_emission (N) -->
+    <path d="M 295 470 L 295 450 L 430 450" />
+
+    <line x1="289" y1="462" x2="301" y2="462" />
+
+    <!-- Crows foot at (430,450) -->
+    <line x1="430" y1="450" x2="438" y2="444" />
+    <line x1="430" y1="450" x2="438" y2="456" />
+    <line x1="430" y1="450" x2="438" y2="450" />
+
+    <!-- dim_driver (1) to fact_trip_emission (N) -->
+    <path d="M 865 470 L 865 450 L 710 450" />
+
+    <line x1="859" y1="462" x2="871" y2="462" />
+
+    <!-- Crows foot at (710,450) -->
+    <line x1="710" y1="450" x2="702" y2="444" />
+    <line x1="710" y1="450" x2="702" y2="456" />
+    <line x1="710" y1="450" x2="702" y2="450" />
+
+    <!-- dim_dates (N) to dim_year, dim_month, dim_day (1) -->
+    <path d="M 940 140 L 970 140" />
+    <path d="M 970 60 L 1000 60" />
+    <path d="M 970 155 L 1000 155" />
+    <path d="M 970 255 L 1000 255" />
+    <path d="M 970 60 L 970 255" />
+
+    <!-- Crows foot at (940,140) -->
+    <line x1="940" y1="140" x2="932" y2="134" />
+    <line x1="940" y1="140" x2="932" y2="146" />
+    <line x1="940" y1="140" x2="932" y2="140" />
+
+    <line x1="992" y1="54" x2="992" y2="66" />
+
+    <line x1="992" y1="149" x2="992" y2="161" />
+
+    <line x1="992" y1="249" x2="992" y2="261" />
+
+    <!-- dim_corridor (N) to dim_origin_hub, dim_dest_hub (1) -->
+    <path d="M 220 140 L 190 140" />
+    <path d="M 190 80 L 165 80" />
+    <path d="M 190 190 L 165 190" />
+    <path d="M 190 80 L 190 190" />
+
+    <!-- Crows foot at (220,140) -->
+    <line x1="220" y1="140" x2="228" y2="134" />
+    <line x1="220" y1="140" x2="228" y2="146" />
+    <line x1="220" y1="140" x2="228" y2="140" />
+
+    <line x1="173" y1="74" x2="173" y2="86" />
+
+    <line x1="173" y1="184" x2="173" y2="196" />
+
+    <!-- dim_hubs (N) to dim_region (1) -->
+    <path d="M 85 235 L 85 265 L 165 265 L 165 305" />
+
+    <!-- Crows foot at (85,235) -->
+    <line x1="85" y1="235" x2="79" y2="227" />
+    <line x1="85" y1="235" x2="91" y2="227" />
+    <line x1="85" y1="235" x2="85" y2="227" />
+
+    <line x1="173" y1="299" x2="173" y2="311" />
+
+    <!-- dim_vehicle (N) to dim_euro_standard, dim_fuel_type (1) -->
+    <path d="M 220 520 L 190 520" />
+    <path d="M 190 485 L 165 485" />
+    <path d="M 190 595 L 165 595" />
+    <path d="M 190 485 L 190 595" />
+
+    <!-- Crows foot at (220,520) -->
+    <line x1="220" y1="520" x2="228" y2="514" />
+    <line x1="220" y1="520" x2="228" y2="526" />
+    <line x1="220" y1="520" x2="228" y2="520" />
+
+    <line x1="173" y1="479" x2="173" y2="491" />
+
+    <line x1="173" y1="589" x2="173" y2="601" />
+
+    <!-- dim_driver (N) to dim_license_class, dim_safety_tier (1) -->
+    <path d="M 940 520 L 970 520" />
+    <path d="M 970 485 L 1000 485" />
+    <path d="M 970 595 L 1000 595" />
+    <path d="M 970 485 L 970 595" />
+
+    <!-- Crows foot at (940,520) -->
+    <line x1="940" y1="520" x2="932" y2="514" />
+    <line x1="940" y1="520" x2="932" y2="526" />
+    <line x1="940" y1="520" x2="932" y2="520" />
+
+    <line x1="992" y1="479" x2="992" y2="491" />
+
+    <line x1="992" y1="589" x2="992" y2="601" />
+  </g>
+
+  <!-- Table: fact_trip_emission -->
+  <g id="table_fact_trip_emission" filter="url(#drop-shadow)">
+    <!-- Header -->
+    <path d="M 430 224 A 4 4 0 0 1 434 220 L 706 220 A 4 4 0 0 1 710 224 L 710 244 L 430 244 Z" 
+          fill="#73a5d8" stroke="#334155" stroke-width="1.2"/>
+    <text x="570.0" y="236" text-anchor="middle" font-size="11" font-weight="bold" fill="#ffffff">fact_trip_emission</text>
+    
+    <!-- Body -->
+    <path d="M 430 244 L 710 244 L 710 467 A 4 4 0 0 1 706 471 L 434 471 A 4 4 0 0 1 430 467 Z"
+          fill="#ffffff" stroke="#334155" stroke-width="1.2"/>
+    <text x="438" y="257" font-size="10" font-weight="bold" fill="#1e3a8a">trip_id</text>
+    <text x="702" y="257" text-anchor="end" font-size="9" fill="#2563eb" font-family="monospace">UUID PK</text>
+    <text x="438" y="274" font-size="10" font-weight="600" fill="#0f172a">dates_id</text>
+    <text x="702" y="274" text-anchor="end" font-size="9" fill="#7c3aed" font-family="monospace">INT FK</text>
+    <text x="438" y="291" font-size="10" font-weight="600" fill="#0f172a">corridor_id</text>
+    <text x="702" y="291" text-anchor="end" font-size="9" fill="#7c3aed" font-family="monospace">UUID FK</text>
+    <text x="438" y="308" font-size="10" font-weight="600" fill="#0f172a">vehicle_id</text>
+    <text x="702" y="308" text-anchor="end" font-size="9" fill="#7c3aed" font-family="monospace">UUID FK</text>
+    <text x="438" y="325" font-size="10" font-weight="600" fill="#0f172a">driver_id</text>
+    <text x="702" y="325" text-anchor="end" font-size="9" fill="#7c3aed" font-family="monospace">UUID FK</text>
+    <text x="438" y="342" font-size="10" font-weight="normal" fill="#0f172a">actual_distance_km</text>
+    <text x="702" y="342" text-anchor="end" font-size="9" fill="#475569" font-family="monospace">NUMERIC(10,2)</text>
+    <text x="438" y="359" font-size="10" font-weight="normal" fill="#0f172a">cargo_weight_tons</text>
+    <text x="702" y="359" text-anchor="end" font-size="9" fill="#475569" font-family="monospace">NUMERIC(10,2)</text>
+    <text x="438" y="376" font-size="10" font-weight="normal" fill="#0f172a">ton_km</text>
+    <text x="702" y="376" text-anchor="end" font-size="9" fill="#475569" font-family="monospace">NUMERIC(12,2)</text>
+    <text x="438" y="393" font-size="10" font-weight="normal" fill="#0f172a">fuel_consumed_liters</text>
+    <text x="702" y="393" text-anchor="end" font-size="9" fill="#475569" font-family="monospace">NUMERIC(10,2)</text>
+    <text x="438" y="410" font-size="10" font-weight="normal" fill="#0f172a">total_co2_kg</text>
+    <text x="702" y="410" text-anchor="end" font-size="9" fill="#475569" font-family="monospace">NUMERIC(10,2)</text>
+    <text x="438" y="427" font-size="10" font-weight="normal" fill="#0f172a">co2_per_ton_km</text>
+    <text x="702" y="427" text-anchor="end" font-size="9" fill="#475569" font-family="monospace">NUMERIC(8,4)</text>
+    <text x="438" y="444" font-size="10" font-weight="normal" fill="#0f172a">deviation_points_cnt</text>
+    <text x="702" y="444" text-anchor="end" font-size="9" fill="#475569" font-family="monospace">INT</text>
+    <text x="438" y="461" font-size="10" font-weight="normal" fill="#0f172a">incident_count</text>
+    <text x="702" y="461" text-anchor="end" font-size="9" fill="#475569" font-family="monospace">INT</text>
+  </g>
+
+  <!-- Table: dim_dates -->
+  <g id="table_dim_dates" filter="url(#drop-shadow)">
+    <!-- Header -->
+    <path d="M 790 84 A 4 4 0 0 1 794 80 L 936 80 A 4 4 0 0 1 940 84 L 940 104 L 790 104 Z" 
+          fill="#83bbe5" stroke="#334155" stroke-width="1.2"/>
+    <text x="865.0" y="96" text-anchor="middle" font-size="11" font-weight="bold" fill="#0f172a">dim_dates</text>
+    
+    <!-- Body -->
+    <path d="M 790 104 L 940 104 L 940 191 A 4 4 0 0 1 936 195 L 794 195 A 4 4 0 0 1 790 191 Z"
+          fill="#ffffff" stroke="#334155" stroke-width="1.2"/>
+    <text x="798" y="117" font-size="10" font-weight="bold" fill="#1e3a8a">id</text>
+    <text x="932" y="117" text-anchor="end" font-size="9" fill="#2563eb" font-family="monospace">INT PK</text>
+    <text x="798" y="134" font-size="10" font-weight="600" fill="#0f172a">year_id</text>
+    <text x="932" y="134" text-anchor="end" font-size="9" fill="#7c3aed" font-family="monospace">INT FK</text>
+    <text x="798" y="151" font-size="10" font-weight="600" fill="#0f172a">month_id</text>
+    <text x="932" y="151" text-anchor="end" font-size="9" fill="#7c3aed" font-family="monospace">INT FK</text>
+    <text x="798" y="168" font-size="10" font-weight="600" fill="#0f172a">day_id</text>
+    <text x="932" y="168" text-anchor="end" font-size="9" fill="#7c3aed" font-family="monospace">INT FK</text>
+    <text x="798" y="185" font-size="10" font-weight="normal" fill="#0f172a">start_dt</text>
+    <text x="932" y="185" text-anchor="end" font-size="9" fill="#475569" font-family="monospace">DATE</text>
+  </g>
+
+  <!-- Table: dim_year -->
+  <g id="table_dim_year" filter="url(#drop-shadow)">
+    <!-- Header -->
+    <path d="M 1000 29 A 4 4 0 0 1 1004 25 L 1126 25 A 4 4 0 0 1 1130 29 L 1130 49 L 1000 49 Z" 
+          fill="#83bbe5" stroke="#334155" stroke-width="1.2"/>
+    <text x="1065.0" y="41" text-anchor="middle" font-size="11" font-weight="bold" fill="#0f172a">dim_year</text>
+    
+    <!-- Body -->
+    <path d="M 1000 49 L 1130 49 L 1130 85 A 4 4 0 0 1 1126 89 L 1004 89 A 4 4 0 0 1 1000 85 Z"
+          fill="#ffffff" stroke="#334155" stroke-width="1.2"/>
+    <text x="1008" y="62" font-size="10" font-weight="bold" fill="#1e3a8a">id</text>
+    <text x="1122" y="62" text-anchor="end" font-size="9" fill="#2563eb" font-family="monospace">INT PK</text>
+    <text x="1008" y="79" font-size="10" font-weight="normal" fill="#0f172a">year</text>
+    <text x="1122" y="79" text-anchor="end" font-size="9" fill="#475569" font-family="monospace">INT</text>
+  </g>
+
+  <!-- Table: dim_month -->
+  <g id="table_dim_month" filter="url(#drop-shadow)">
+    <!-- Header -->
+    <path d="M 1000 119 A 4 4 0 0 1 1004 115 L 1126 115 A 4 4 0 0 1 1130 119 L 1130 139 L 1000 139 Z" 
+          fill="#83bbe5" stroke="#334155" stroke-width="1.2"/>
+    <text x="1065.0" y="131" text-anchor="middle" font-size="11" font-weight="bold" fill="#0f172a">dim_month</text>
+    
+    <!-- Body -->
+    <path d="M 1000 139 L 1130 139 L 1130 192 A 4 4 0 0 1 1126 196 L 1004 196 A 4 4 0 0 1 1000 192 Z"
+          fill="#ffffff" stroke="#334155" stroke-width="1.2"/>
+    <text x="1008" y="152" font-size="10" font-weight="bold" fill="#1e3a8a">id</text>
+    <text x="1122" y="152" text-anchor="end" font-size="9" fill="#2563eb" font-family="monospace">INT PK</text>
+    <text x="1008" y="169" font-size="10" font-weight="normal" fill="#0f172a">quarter</text>
+    <text x="1122" y="169" text-anchor="end" font-size="9" fill="#475569" font-family="monospace">VARCHAR</text>
+    <text x="1008" y="186" font-size="10" font-weight="normal" fill="#0f172a">name</text>
+    <text x="1122" y="186" text-anchor="end" font-size="9" fill="#475569" font-family="monospace">VARCHAR</text>
+  </g>
+
+  <!-- Table: dim_day -->
+  <g id="table_dim_day" filter="url(#drop-shadow)">
+    <!-- Header -->
+    <path d="M 1000 219 A 4 4 0 0 1 1004 215 L 1126 215 A 4 4 0 0 1 1130 219 L 1130 239 L 1000 239 Z" 
+          fill="#83bbe5" stroke="#334155" stroke-width="1.2"/>
+    <text x="1065.0" y="231" text-anchor="middle" font-size="11" font-weight="bold" fill="#0f172a">dim_day</text>
+    
+    <!-- Body -->
+    <path d="M 1000 239 L 1130 239 L 1130 292 A 4 4 0 0 1 1126 296 L 1004 296 A 4 4 0 0 1 1000 292 Z"
+          fill="#ffffff" stroke="#334155" stroke-width="1.2"/>
+    <text x="1008" y="252" font-size="10" font-weight="bold" fill="#1e3a8a">id</text>
+    <text x="1122" y="252" text-anchor="end" font-size="9" fill="#2563eb" font-family="monospace">INT PK</text>
+    <text x="1008" y="269" font-size="10" font-weight="normal" fill="#0f172a">day_num</text>
+    <text x="1122" y="269" text-anchor="end" font-size="9" fill="#475569" font-family="monospace">INT</text>
+    <text x="1008" y="286" font-size="10" font-weight="normal" fill="#0f172a">name</text>
+    <text x="1122" y="286" text-anchor="end" font-size="9" fill="#475569" font-family="monospace">VARCHAR</text>
+  </g>
+
+  <!-- Table: dim_corridor -->
+  <g id="table_dim_corridor" filter="url(#drop-shadow)">
+    <!-- Header -->
+    <path d="M 220 84 A 4 4 0 0 1 224 80 L 366 80 A 4 4 0 0 1 370 84 L 370 104 L 220 104 Z" 
+          fill="#83bbe5" stroke="#334155" stroke-width="1.2"/>
+    <text x="295.0" y="96" text-anchor="middle" font-size="11" font-weight="bold" fill="#0f172a">dim_corridor</text>
+    
+    <!-- Body -->
+    <path d="M 220 104 L 370 104 L 370 191 A 4 4 0 0 1 366 195 L 224 195 A 4 4 0 0 1 220 191 Z"
+          fill="#ffffff" stroke="#334155" stroke-width="1.2"/>
+    <text x="228" y="117" font-size="10" font-weight="bold" fill="#1e3a8a">id</text>
+    <text x="362" y="117" text-anchor="end" font-size="9" fill="#2563eb" font-family="monospace">UUID PK</text>
+    <text x="228" y="134" font-size="10" font-weight="normal" fill="#0f172a">corridor_cd</text>
+    <text x="362" y="134" text-anchor="end" font-size="9" fill="#475569" font-family="monospace">VARCHAR</text>
+    <text x="228" y="151" font-size="10" font-weight="600" fill="#0f172a">origin_id</text>
+    <text x="362" y="151" text-anchor="end" font-size="9" fill="#7c3aed" font-family="monospace">UUID FK</text>
+    <text x="228" y="168" font-size="10" font-weight="600" fill="#0f172a">dest_id</text>
+    <text x="362" y="168" text-anchor="end" font-size="9" fill="#7c3aed" font-family="monospace">UUID FK</text>
+    <text x="228" y="185" font-size="10" font-weight="normal" fill="#0f172a">distance_km</text>
+    <text x="362" y="185" text-anchor="end" font-size="9" fill="#475569" font-family="monospace">FLOAT</text>
+  </g>
+
+  <!-- Table: dim_origin_hub -->
+  <g id="table_dim_origin_hub" filter="url(#drop-shadow)">
+    <!-- Header -->
+    <path d="M 20 34 A 4 4 0 0 1 24 30 L 161 30 A 4 4 0 0 1 165 34 L 165 54 L 20 54 Z" 
+          fill="#83bbe5" stroke="#334155" stroke-width="1.2"/>
+    <text x="92.5" y="46" text-anchor="middle" font-size="11" font-weight="bold" fill="#0f172a">dim_origin_hub</text>
+    
+    <!-- Body -->
+    <path d="M 20 54 L 165 54 L 165 124 A 4 4 0 0 1 161 128 L 24 128 A 4 4 0 0 1 20 124 Z"
+          fill="#ffffff" stroke="#334155" stroke-width="1.2"/>
+    <text x="28" y="67" font-size="10" font-weight="bold" fill="#1e3a8a">id</text>
+    <text x="157" y="67" text-anchor="end" font-size="9" fill="#2563eb" font-family="monospace">UUID PK</text>
+    <text x="28" y="84" font-size="10" font-weight="normal" fill="#0f172a">hub_name</text>
+    <text x="157" y="84" text-anchor="end" font-size="9" fill="#475569" font-family="monospace">VARCHAR</text>
+    <text x="28" y="101" font-size="10" font-weight="600" fill="#0f172a">region_id</text>
+    <text x="157" y="101" text-anchor="end" font-size="9" fill="#7c3aed" font-family="monospace">INT FK</text>
+    <text x="28" y="118" font-size="10" font-weight="normal" fill="#0f172a">geom_point</text>
+    <text x="157" y="118" text-anchor="end" font-size="9" fill="#475569" font-family="monospace">GEOMETRY</text>
+  </g>
+
+  <!-- Table: dim_dest_hub -->
+  <g id="table_dim_dest_hub" filter="url(#drop-shadow)">
+    <!-- Header -->
+    <path d="M 20 149 A 4 4 0 0 1 24 145 L 161 145 A 4 4 0 0 1 165 149 L 165 169 L 20 169 Z" 
+          fill="#83bbe5" stroke="#334155" stroke-width="1.2"/>
+    <text x="92.5" y="161" text-anchor="middle" font-size="11" font-weight="bold" fill="#0f172a">dim_dest_hub</text>
+    
+    <!-- Body -->
+    <path d="M 20 169 L 165 169 L 165 239 A 4 4 0 0 1 161 243 L 24 243 A 4 4 0 0 1 20 239 Z"
+          fill="#ffffff" stroke="#334155" stroke-width="1.2"/>
+    <text x="28" y="182" font-size="10" font-weight="bold" fill="#1e3a8a">id</text>
+    <text x="157" y="182" text-anchor="end" font-size="9" fill="#2563eb" font-family="monospace">UUID PK</text>
+    <text x="28" y="199" font-size="10" font-weight="normal" fill="#0f172a">hub_name</text>
+    <text x="157" y="199" text-anchor="end" font-size="9" fill="#475569" font-family="monospace">VARCHAR</text>
+    <text x="28" y="216" font-size="10" font-weight="600" fill="#0f172a">region_id</text>
+    <text x="157" y="216" text-anchor="end" font-size="9" fill="#7c3aed" font-family="monospace">INT FK</text>
+    <text x="28" y="233" font-size="10" font-weight="normal" fill="#0f172a">geom_point</text>
+    <text x="157" y="233" text-anchor="end" font-size="9" fill="#475569" font-family="monospace">GEOMETRY</text>
+  </g>
+
+  <!-- Table: dim_region -->
+  <g id="table_dim_region" filter="url(#drop-shadow)">
+    <!-- Header -->
+    <path d="M 20 264 A 4 4 0 0 1 24 260 L 161 260 A 4 4 0 0 1 165 264 L 165 284 L 20 284 Z" 
+          fill="#83bbe5" stroke="#334155" stroke-width="1.2"/>
+    <text x="92.5" y="276" text-anchor="middle" font-size="11" font-weight="bold" fill="#0f172a">dim_region</text>
+    
+    <!-- Body -->
+    <path d="M 20 284 L 165 284 L 165 337 A 4 4 0 0 1 161 341 L 24 341 A 4 4 0 0 1 20 337 Z"
+          fill="#ffffff" stroke="#334155" stroke-width="1.2"/>
+    <text x="28" y="297" font-size="10" font-weight="bold" fill="#1e3a8a">id</text>
+    <text x="157" y="297" text-anchor="end" font-size="9" fill="#2563eb" font-family="monospace">INT PK</text>
+    <text x="28" y="314" font-size="10" font-weight="normal" fill="#0f172a">region_name</text>
+    <text x="157" y="314" text-anchor="end" font-size="9" fill="#475569" font-family="monospace">VARCHAR</text>
+    <text x="28" y="331" font-size="10" font-weight="normal" fill="#0f172a">province</text>
+    <text x="157" y="331" text-anchor="end" font-size="9" fill="#475569" font-family="monospace">VARCHAR</text>
+  </g>
+
+  <!-- Table: dim_vehicle -->
+  <g id="table_dim_vehicle" filter="url(#drop-shadow)">
+    <!-- Header -->
+    <path d="M 220 464 A 4 4 0 0 1 224 460 L 366 460 A 4 4 0 0 1 370 464 L 370 484 L 220 484 Z" 
+          fill="#83bbe5" stroke="#334155" stroke-width="1.2"/>
+    <text x="295.0" y="476" text-anchor="middle" font-size="11" font-weight="bold" fill="#0f172a">dim_vehicle</text>
+    
+    <!-- Body -->
+    <path d="M 220 484 L 370 484 L 370 571 A 4 4 0 0 1 366 575 L 224 575 A 4 4 0 0 1 220 571 Z"
+          fill="#ffffff" stroke="#334155" stroke-width="1.2"/>
+    <text x="228" y="497" font-size="10" font-weight="bold" fill="#1e3a8a">id</text>
+    <text x="362" y="497" text-anchor="end" font-size="9" fill="#2563eb" font-family="monospace">UUID PK</text>
+    <text x="228" y="514" font-size="10" font-weight="normal" fill="#0f172a">plate_no</text>
+    <text x="362" y="514" text-anchor="end" font-size="9" fill="#475569" font-family="monospace">VARCHAR</text>
+    <text x="228" y="531" font-size="10" font-weight="600" fill="#0f172a">euro_id</text>
+    <text x="362" y="531" text-anchor="end" font-size="9" fill="#7c3aed" font-family="monospace">INT FK</text>
+    <text x="228" y="548" font-size="10" font-weight="600" fill="#0f172a">fuel_id</text>
+    <text x="362" y="548" text-anchor="end" font-size="9" fill="#7c3aed" font-family="monospace">INT FK</text>
+    <text x="228" y="565" font-size="10" font-weight="normal" fill="#0f172a">max_payload_t</text>
+    <text x="362" y="565" text-anchor="end" font-size="9" fill="#475569" font-family="monospace">FLOAT</text>
+  </g>
+
+  <!-- Table: dim_euro_standard -->
+  <g id="table_dim_euro_standard" filter="url(#drop-shadow)">
+    <!-- Header -->
+    <path d="M 20 444 A 4 4 0 0 1 24 440 L 161 440 A 4 4 0 0 1 165 444 L 165 464 L 20 464 Z" 
+          fill="#83bbe5" stroke="#334155" stroke-width="1.2"/>
+    <text x="92.5" y="456" text-anchor="middle" font-size="11" font-weight="bold" fill="#0f172a">dim_euro_standard</text>
+    
+    <!-- Body -->
+    <path d="M 20 464 L 165 464 L 165 517 A 4 4 0 0 1 161 521 L 24 521 A 4 4 0 0 1 20 517 Z"
+          fill="#ffffff" stroke="#334155" stroke-width="1.2"/>
+    <text x="28" y="477" font-size="10" font-weight="bold" fill="#1e3a8a">id</text>
+    <text x="157" y="477" text-anchor="end" font-size="9" fill="#2563eb" font-family="monospace">INT PK</text>
+    <text x="28" y="494" font-size="10" font-weight="normal" fill="#0f172a">standard</text>
+    <text x="157" y="494" text-anchor="end" font-size="9" fill="#475569" font-family="monospace">VARCHAR</text>
+    <text x="28" y="511" font-size="10" font-weight="normal" fill="#0f172a">base_factor</text>
+    <text x="157" y="511" text-anchor="end" font-size="9" fill="#475569" font-family="monospace">FLOAT</text>
+  </g>
+
+  <!-- Table: dim_fuel_type -->
+  <g id="table_dim_fuel_type" filter="url(#drop-shadow)">
+    <!-- Header -->
+    <path d="M 20 554 A 4 4 0 0 1 24 550 L 161 550 A 4 4 0 0 1 165 554 L 165 574 L 20 574 Z" 
+          fill="#83bbe5" stroke="#334155" stroke-width="1.2"/>
+    <text x="92.5" y="566" text-anchor="middle" font-size="11" font-weight="bold" fill="#0f172a">dim_fuel_type</text>
+    
+    <!-- Body -->
+    <path d="M 20 574 L 165 574 L 165 627 A 4 4 0 0 1 161 631 L 24 631 A 4 4 0 0 1 20 627 Z"
+          fill="#ffffff" stroke="#334155" stroke-width="1.2"/>
+    <text x="28" y="587" font-size="10" font-weight="bold" fill="#1e3a8a">id</text>
+    <text x="157" y="587" text-anchor="end" font-size="9" fill="#2563eb" font-family="monospace">INT PK</text>
+    <text x="28" y="604" font-size="10" font-weight="normal" fill="#0f172a">fuel_name</text>
+    <text x="157" y="604" text-anchor="end" font-size="9" fill="#475569" font-family="monospace">VARCHAR</text>
+    <text x="28" y="621" font-size="10" font-weight="normal" fill="#0f172a">co2_per_liter</text>
+    <text x="157" y="621" text-anchor="end" font-size="9" fill="#475569" font-family="monospace">FLOAT</text>
+  </g>
+
+  <!-- Table: dim_driver -->
+  <g id="table_dim_driver" filter="url(#drop-shadow)">
+    <!-- Header -->
+    <path d="M 790 464 A 4 4 0 0 1 794 460 L 936 460 A 4 4 0 0 1 940 464 L 940 484 L 790 484 Z" 
+          fill="#83bbe5" stroke="#334155" stroke-width="1.2"/>
+    <text x="865.0" y="476" text-anchor="middle" font-size="11" font-weight="bold" fill="#0f172a">dim_driver</text>
+    
+    <!-- Body -->
+    <path d="M 790 484 L 940 484 L 940 571 A 4 4 0 0 1 936 575 L 794 575 A 4 4 0 0 1 790 571 Z"
+          fill="#ffffff" stroke="#334155" stroke-width="1.2"/>
+    <text x="798" y="497" font-size="10" font-weight="bold" fill="#1e3a8a">id</text>
+    <text x="932" y="497" text-anchor="end" font-size="9" fill="#2563eb" font-family="monospace">UUID PK</text>
+    <text x="798" y="514" font-size="10" font-weight="normal" fill="#0f172a">driver_name</text>
+    <text x="932" y="514" text-anchor="end" font-size="9" fill="#475569" font-family="monospace">VARCHAR</text>
+    <text x="798" y="531" font-size="10" font-weight="600" fill="#0f172a">license_id</text>
+    <text x="932" y="531" text-anchor="end" font-size="9" fill="#7c3aed" font-family="monospace">INT FK</text>
+    <text x="798" y="548" font-size="10" font-weight="600" fill="#0f172a">tier_id</text>
+    <text x="932" y="548" text-anchor="end" font-size="9" fill="#7c3aed" font-family="monospace">INT FK</text>
+    <text x="798" y="565" font-size="10" font-weight="normal" fill="#0f172a">safety_score</text>
+    <text x="932" y="565" text-anchor="end" font-size="9" fill="#475569" font-family="monospace">INT</text>
+  </g>
+
+  <!-- Table: dim_license_class -->
+  <g id="table_dim_license_class" filter="url(#drop-shadow)">
+    <!-- Header -->
+    <path d="M 1000 444 A 4 4 0 0 1 1004 440 L 1126 440 A 4 4 0 0 1 1130 444 L 1130 464 L 1000 464 Z" 
+          fill="#83bbe5" stroke="#334155" stroke-width="1.2"/>
+    <text x="1065.0" y="456" text-anchor="middle" font-size="11" font-weight="bold" fill="#0f172a">dim_license_class</text>
+    
+    <!-- Body -->
+    <path d="M 1000 464 L 1130 464 L 1130 517 A 4 4 0 0 1 1126 521 L 1004 521 A 4 4 0 0 1 1000 517 Z"
+          fill="#ffffff" stroke="#334155" stroke-width="1.2"/>
+    <text x="1008" y="477" font-size="10" font-weight="bold" fill="#1e3a8a">id</text>
+    <text x="1122" y="477" text-anchor="end" font-size="9" fill="#2563eb" font-family="monospace">INT PK</text>
+    <text x="1008" y="494" font-size="10" font-weight="normal" fill="#0f172a">class_cd</text>
+    <text x="1122" y="494" text-anchor="end" font-size="9" fill="#475569" font-family="monospace">VARCHAR</text>
+    <text x="1008" y="511" font-size="10" font-weight="normal" fill="#0f172a">max_gross_t</text>
+    <text x="1122" y="511" text-anchor="end" font-size="9" fill="#475569" font-family="monospace">FLOAT</text>
+  </g>
+
+  <!-- Table: dim_safety_tier -->
+  <g id="table_dim_safety_tier" filter="url(#drop-shadow)">
+    <!-- Header -->
+    <path d="M 1000 554 A 4 4 0 0 1 1004 550 L 1126 550 A 4 4 0 0 1 1130 554 L 1130 574 L 1000 574 Z" 
+          fill="#83bbe5" stroke="#334155" stroke-width="1.2"/>
+    <text x="1065.0" y="566" text-anchor="middle" font-size="11" font-weight="bold" fill="#0f172a">dim_safety_tier</text>
+    
+    <!-- Body -->
+    <path d="M 1000 574 L 1130 574 L 1130 627 A 4 4 0 0 1 1126 631 L 1004 631 A 4 4 0 0 1 1000 627 Z"
+          fill="#ffffff" stroke="#334155" stroke-width="1.2"/>
+    <text x="1008" y="587" font-size="10" font-weight="bold" fill="#1e3a8a">id</text>
+    <text x="1122" y="587" text-anchor="end" font-size="9" fill="#2563eb" font-family="monospace">INT PK</text>
+    <text x="1008" y="604" font-size="10" font-weight="normal" fill="#0f172a">tier_name</text>
+    <text x="1122" y="604" text-anchor="end" font-size="9" fill="#475569" font-family="monospace">VARCHAR</text>
+    <text x="1008" y="621" font-size="10" font-weight="normal" fill="#0f172a">demerit_pct</text>
+    <text x="1122" y="621" text-anchor="end" font-size="9" fill="#475569" font-family="monospace">FLOAT</text>
+  </g>
+
+  <!-- Legend Footer -->
+  <g transform="translate(430, 640)">
+    <rect x="0" y="0" width="280" height="48" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
+    <text x="140" y="18" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">CHÚ GIẢI KÝ HIỆU (CROW'S FOOT NOTATION)</text>
+    
+    <line x1="25" y1="34" x2="60" y2="34" stroke="#334155" stroke-width="1.3"/>
+    <line x1="32" y1="28" x2="32" y2="40" stroke="#334155" stroke-width="1.3"/>
+    <text x="70" y="37" font-size="10" fill="#475569">Quan hệ 1</text>
+    
+    <line x1="170" y1="34" x2="205" y2="34" stroke="#334155" stroke-width="1.3"/>
+    <line x1="205" y1="34" x2="197" y2="28" stroke="#334155" stroke-width="1.3"/>
+    <line x1="205" y1="34" x2="197" y2="40" stroke="#334155" stroke-width="1.3"/>
+    <text x="215" y="37" font-size="10" fill="#475569">Quan hệ N (Nhiều)</text>
+  </g>
+</svg>

@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CCADRO - Lịch Trình Phát Triển 1 Tháng & Cẩm Nang Kỹ Thuật Chi Tiết</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0b0f19;
+      --bg-surface: #111827;
+      --bg-card: #1f2937;
+      --bg-card-hover: #283548;
+      --border: #374151;
+      --border-focus: #38bdf8;
+      --text-main: #f9fafb;
+      --text-muted: #9ca3af;
+      --text-dim: #6b7280;
+
+      /* Module / Status Colors */
+      --color-w1: #38bdf8; /* Tuần 1: Blue */
+      --color-w2: #10b981; /* Tuần 2: Green */
+      --color-w3: #f59e0b; /* Tuần 3: Amber */
+      --color-w4: #a855f7; /* Tuần 4: Purple */
+      --color-danger: #f43f5e;
+      --color-success: #10b981;
+
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-dark);
+      color: var(--text-main);
+      font-family: 'Inter', sans-serif;
+      line-height: 1.6;
+      padding-bottom: 60px;
+    }
+
+    /* Container */
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Header */
+    header {
+      background: linear-gradient(135deg, #111827 0%, #1e1b4b 50%, #064e3b 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 40px 0 32px 0;
+      margin-bottom: 32px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    .header-title h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 32px;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .header-title p {
+      color: #93c5fd;
+      font-size: 15px;
+      margin-top: 8px;
+      max-width: 850px;
+    }
+
+    /* Progress Widget */
+    .progress-widget {
+      background: rgba(17, 24, 39, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(12px);
+      padding: 18px 24px;
+      border-radius: var(--radius-md);
+      min-width: 280px;
+    }
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      font-weight: 700;
+      color: #cbd5e1;
+      margin-bottom: 8px;
+    }
+    .progress-bar-bg {
+      background: #374151;
+      height: 10px;
+      border-radius: 5px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      background: linear-gradient(90deg, #38bdf8, #10b981);
+      height: 100%;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    .progress-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 6px;
+      text-align: right;
+    }
+
+    /* Navigation Tabs */
+    .nav-tabs {
+      display: flex;
+      gap: 8px;
+      background: var(--bg-surface);
+      padding: 6px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      margin-bottom: 32px;
+      position: sticky;
+      top: 16px;
+      z-index: 100;
+      backdrop-filter: blur(10px);
+      overflow-x: auto;
+    }
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 10px 20px;
+      border-radius: var(--radius-sm);
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .tab-btn:hover {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .tab-btn.active {
+      color: #ffffff;
+      background: #1e293b;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    /* Tab Content Panes */
+    .tab-pane {
+      display: none;
+    }
+    .tab-pane.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Week Cards */
+    .week-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      margin-bottom: 32px;
+      overflow: hidden;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+    .week-card.w1 { border-left: 6px solid var(--color-w1); }
+    .week-card.w2 { border-left: 6px solid var(--color-w2); }
+    .week-card.w3 { border-left: 6px solid var(--color-w3); }
+    .week-card.w4 { border-left: 6px solid var(--color-w4); }
+
+    .week-header {
+      padding: 24px 28px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .week-badge {
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 20px;
+      letter-spacing: 0.5px;
+    }
+    .w1 .week-badge { background: rgba(56, 189, 248, 0.15); color: var(--color-w1); }
+    .w2 .week-badge { background: rgba(16, 185, 129, 0.15); color: var(--color-w2); }
+    .w3 .week-badge { background: rgba(245, 158, 11, 0.15); color: var(--color-w3); }
+    .w4 .week-badge { background: rgba(168, 85, 247, 0.15); color: var(--color-w4); }
+
+    .week-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-top: 4px;
+    }
+    .week-objective {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    .week-dod {
+      font-size: 13px;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255,255,255,0.08);
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      color: #cbd5e1;
+    }
+    .week-dod strong { color: #38bdf8; }
+
+    /* Day List Grid */
+    .day-grid {
+      padding: 24px 28px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+      gap: 20px;
+    }
+    .day-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      transition: all 0.2s;
+    }
+    .day-box:hover {
+      background: var(--bg-card-hover);
+      border-color: #64748b;
+      transform: translateY(-2px);
+    }
+    .day-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .day-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .uc-tag {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.08);
+      color: #94a3b8;
+    }
+
+    .task-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 10px;
+      font-size: 13.5px;
+      color: #e2e8f0;
+      cursor: pointer;
+    }
+    .task-item input[type="checkbox"] {
+      margin-top: 4px;
+      accent-color: #10b981;
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+    .task-item.done span {
+      text-decoration: line-through;
+      color: #64748b;
+    }
+
+    .code-preview {
+      background: #0b0f19;
+      border: 1px solid #1e293b;
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      margin-top: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #38bdf8;
+      overflow-x: auto;
+    }
+
+    /* Guide Sections */
+    .guide-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      margin-bottom: 24px;
+    }
+    .guide-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .guide-content p {
+      font-size: 14.5px;
+      color: #cbd5e1;
+      margin-bottom: 14px;
+    }
+
+    /* Code Blocks */
+    pre {
+      background: #0b0f19;
+      border: 1px solid #1e293b;
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: #f1f5f9;
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+    .code-keyword { color: #f43f5e; font-weight: 600; }
+    .code-type { color: #38bdf8; }
+    .code-annotation { color: #eab308; }
+    .code-string { color: #10b981; }
+    .code-comment { color: #64748b; font-style: italic; }
+
+    /* Tables */
+    .custom-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 14px;
+      font-size: 13.5px;
+    }
+    .custom-table th, .custom-table td {
+      padding: 12px 16px;
+      border: 1px solid var(--border);
+      text-align: left;
+    }
+    .custom-table th {
+      background: #1e293b;
+      color: #ffffff;
+      font-weight: 600;
+    }
+    .custom-table tr:nth-child(even) {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+    .badge-rule { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); }
+
+    /* Alert Boxes */
+    .alert {
+      padding: 16px 20px;
+      border-radius: var(--radius-md);
+      margin-bottom: 20px;
+      font-size: 14px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .alert-tip { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #a7f3d0; }
+    .alert-warn { background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); color: #fde68a; }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="container header-content">
+      <div class="header-title">
+        <h1>
+          <span>🚀</span> CCADRO: LỊCH TRÌNH 4 TUẦN & CẨM NANG KỸ THUẬT
+        </h1>
+        <p>
+          Lộ trình làm việc chi tiết từng ngày, tiêu chuẩn Clean Code, quy ước Spring Modulith, 
+          hướng dẫn thiết kế 24 JPA Entities và kiểm thử nghiệm thu hệ thống <b>Green Supply Chain Smart Logistics Tracker</b>.
+        </p>
+      </div>
+
+      <!-- PROGRESS TRACKER -->
+      <div class="progress-widget">
+        <div class="progress-header">
+          <span>TIẾN ĐỘ HOÀN THÀNH</span>
+          <span id="progressPercent">0%</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" id="progressBar"></div>
+        </div>
+        <div class="progress-sub" id="progressTasks">0 / 28 đầu việc đã hoàn tất</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <!-- NAVIGATION TABS -->
+    <nav class="nav-tabs">
+      <button class="tab-btn active" onclick="switchTab('roadmap')">📅 Lịch Trình Chi Tiết 4 Tuần</button>
+      <button class="tab-btn" onclick="switchTab('guidelines')">🛠️ Cẩm Nang Code Chuẩn Doanh Nghiệp</button>
+      <button class="tab-btn" onclick="switchTab('entity-guide')">📐 Hướng Dẫn Thiết Kế 24 JPA Entities</button>
+      <button class="tab-btn" onclick="switchTab('devops')">⚡ Lệnh Vận Hành & Smoke Tests</button>
+      <button class="tab-btn" onclick="switchTab('brule')">📋 Ma Trận 18 Quy Tắc Nghiệp Vụ</button>
+    </nav>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 1: ROADMAP (LỊCH TRÌNH 4 TUẦN TỪNG NGÀY) -->
+    <!-- ========================================================================= -->
+    <div id="roadmap" class="tab-pane active">
+
+      <!-- TUẦN 1 -->
+      <div class="week-card w1">
+        <div class="week-header">
+          <div>
+            <span class="week-badge">Tuần 1 • Ngày 01 - 07</span>
+            <div class="week-title">Nền Tảng Dữ Liệu Không Gian & Master Data Quản Lý Nguồn Lực</div>
+            <div class="week-objective">Hoàn thành toàn bộ Entity JPA/Lombok, DTOs, Service cho Module Asset & Shipment, cấu hình Auditing.</div>
+          </div>
+          <div class="week-dod">
+            Tiêu chí nghiệm thu (DoD): <strong>mvn clean test pass 100%</strong> bao gồm cả test cấu trúc Modulith.
+          </div>
+        </div>
+
+        <div class="day-grid">
+          <!-- Ngày 1-2 -->
+          <div class="day-box">
+            <div class="day-header">
+              <span class="day-tag">📅 Ngày 01 - 02</span>
+              <span class="uc-tag">UC01, UC02</span>
+            </div>
+            <div class="task-list">
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>Tạo Entity <code>Vehicle</code> và <code>Driver</code> với Lombok <code>@FieldDefaults</code>.</span></label>
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>Tạo Entity <code>Container</code> (vỏ khô/lạnh) và <code>VehicleMaintenance</code> (bảo dưỡng).</span></label>
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>Tạo các Enum: <code>FuelType</code>, <code>EuroStandard</code>, <code>VehicleStatus</code>, <code>ContainerType</code>.</span></label>
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>Viết Spring Data JPA Repositories tương ứng trong <code>com.ccadro.asset.infrastructure</code>.</span></label>
+            </div>
+            <div class="code-preview">Package: com.ccadro.asset.domain</div>
+          </div>
+
+          <!-- Ngày 3-4 -->
+          <div class="day-box">
+            <div class="day-header">
+              <span class="day-tag">📅 Ngày 03 - 04</span>
+              <span class="uc-tag">UC03, UC15</span>
+            </div>
+            <div class="task-list">
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>Tạo Entity <code>PreTripInspection</code> kiểm tra an toàn xuất bến (<span class="badge badge-rule">BRULE-01</span>).</span></label>
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>Tạo Entity <code>DriverShift</code> quản lý bàn giao xe và ca lái.</span></label>
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>Xây dựng <code>AssetService</code> với các hàm kiểm tra xe sẵn sàng (Eligibility Check).</span></label>
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>Viết Controller REST API cho Asset: <code>/api/v1/assets/vehicles</code>.</span></label>
+            </div>
+            <div class="code-preview">Rule: Xe hỏng/Pre-trip FAILED cấm lăn bánh</div>
+          </div>
+
+          <!-- Ngày 5-7 -->
+          <div class="day-box">
+            <div class="day-header">
+              <span class="day-tag">📅 Ngày 05 - 07</span>
+              <span class="uc-tag">UC04, UC06</span>
+            </div>
+            <div class="task-list">
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>Tạo Entity <code>Shipment</code> chứa tọa độ PostGIS <code>Point</code> (4326) và Time Windows.</span></label>
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>Tạo Entity <code>DispatchOrder</code> (lệnh điều vận gán xe, tài xế, tuyến).</span></label>
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>Lập trình <code>ShipmentService</code> tạo đơn và kiểm tra cách ly khách hàng (<span class="badge badge-rule">BRULE-16</span>).</span></label>
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>Chạy bài test kiểm tra cấu trúc <code>verifyModularMonolithStructure</code>.</span></label>
+            </div>
+            <div class="code-preview">Spatial: Point origin_geom, destination_geom</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TUẦN 2 -->
+      <div class="week-card w2">
+        <div class="week-header">
+          <div>
+            <span class="week-badge">Tuần 2 • Ngày 08 - 14</span>
+            <div class="week-title">Lõi Lập Tuyến Nhận Thức Carbon Đa Tiêu Chí (Green Routing)</div>
+            <div class="week-objective">Xây dựng thuật toán tối ưu hóa đa mục tiêu (CO2, Thời gian, Cự ly, Rủi ro), tích hợp Provider và vẽ bản đồ Leaflet.</div>
+          </div>
+          <div class="week-dod">
+            Tiêu chí nghiệm thu (DoD): <strong>POST /api/v1/routing/plan</strong> trả về 3 tuyến ứng viên có GeoJSON LineString hợp lệ.
+          </div>
+        </div>
+
+        <div class="day-grid">
+          <!-- Ngày 8-9 -->
+          <div class="day-box">
+            <div class="day-header">
+              <span class="day-tag">📅 Ngày 08 - 09</span>
+              <span class="uc-tag">Provider Abstraction</span>
+            </div>
+            <div class="task-list">
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>Tạo Entity <code>RouteCandidate</code>, <code>RouteDecision</code>, <code>RouteVersion</code>.</span></label>
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>Định nghĩa các interface: <code>RoutingProvider</code>, <code>TrafficProvider</code>, <code>WeatherProvider</code>.</span></label>
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>Hoàn thiện <code>MockRoutingProvider</code> và <code>OsrmRoutingProvider</code> gọi REST OSRM.</span></label>
+            </div>
+            <div class="code-preview">Loại trừ hardcode: Cấu hình qua application.yml</div>
+          </div>
+
+          <!-- Ngày 10-12 -->
+          <div class="day-box">
+            <div class="day-header">
+              <span class="day-tag">📅 Ngày 10 - 12</span>
+              <span class="uc-tag">UC05 Multi-Criteria</span>
+            </div>
+            <div class="task-list">
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>Bộ lọc ràng buộc cứng (Hard constraints): Loại bỏ đường cấm tải trọng (<span class="badge badge-rule">BRULE-03</span>).</span></label>
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>Thuật toán chuẩn hóa Min-Max các chỉ số trong cùng candidate set (<span class="badge badge-rule">BRULE-04</span>).</span></label>
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>Tính điểm tổ hợp Composite Score với trọng số Carbon 0.4, Time 0.3, Cost 0.2, Risk 0.1 (<span class="badge badge-rule">BRULE-05</span>).</span></label>
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>Lưu vết phương án được chọn vào <code>route_decision</code> và kích hoạt <code>RouteVersion</code> 1.</span></label>
+            </div>
+            <div class="code-preview">Score = 0.4*CO2 + 0.3*Time + 0.2*Cost + 0.1*Risk</div>
+          </div>
+
+          <!-- Ngày 13-14 -->
+          <div class="day-box">
+            <div class="day-header">
+              <span class="day-tag">📅 Ngày 13 - 14</span>
+              <span class="uc-tag">UI Map Integration</span>
+            </div>
+            <div class="task-list">
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>Frontend: Xây dựng màn hình lập tuyến với bản đồ Leaflet.</span></label>
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>Vẽ đồng thời 3 polyline với màu khác nhau (Xanh lá = Tuyến ít carbon nhất, Xanh lam = Nhanh nhất, Cam = Ngắn nhất).</span></label>
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>Hiển thị bảng phân tích đánh đổi (Pareto Trade-offs) cho điều độ viên lựa chọn.</span></label>
+            </div>
+            <div class="code-preview">Leaflet GeoJSON LineString (4326) Rendering</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TUẦN 3 -->
+      <div class="week-card w3">
+        <div class="week-header">
+          <div>
+            <span class="week-badge">Tuần 3 • Ngày 15 - 21</span>
+            <div class="week-title">Giám Sát GPS Thời Gian Thực & Tái Định Tuyến Động (Dynamic Rerouting)</div>
+            <div class="week-objective">Tiếp nhận GPS stream, PostGIS spatial buffer 50m Vàng / 200m Đỏ, Engine đề xuất tuyến mới Human-in-the-Loop.</div>
+          </div>
+          <div class="week-dod">
+            Tiêu chí nghiệm thu (DoD): <strong>make simulate-deviation</strong> kích hoạt cảnh báo Đỏ, sinh đề xuất tái định tuyến và Dispatcher bấm duyệt.
+          </div>
+        </div>
+
+        <div class="day-grid">
+          <!-- Ngày 15-17 -->
+          <div class="day-box">
+            <div class="day-header">
+              <span class="day-tag">📅 Ngày 15 - 17</span>
+              <span class="uc-tag">UC07, UC08 Ingestion</span>
+            </div>
+            <div class="task-list">
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>Tạo Entity <code>Trip</code>, <code>TelemetryEvent</code>, <code>DeviationAlert</code>, <code>RerouteProposal</code>.</span></label>
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>API nạp GPS stream <code>POST /api/v1/tracking/telemetry</code> với Quality Gate lọc nhiễu HDOP & teleport.</span></label>
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>Đẩy tọa độ nóng lên Redis Cache để phục vụ Live Fanout lên Web Dashboard.</span></label>
+            </div>
+            <div class="code-preview">Redis Ephemeral: Cache GPS mới nhất của xe</div>
+          </div>
+
+          <!-- Ngày 18-19 -->
+          <div class="day-box">
+            <div class="day-header">
+              <span class="day-tag">📅 Ngày 18 - 19</span>
+              <span class="uc-tag">UC09 Deviation Engine</span>
+            </div>
+            <div class="task-list">
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>Viết hàm PostGIS <code>ST_Distance</code> tính khoảng cách từ điểm GPS tới polyline <code>route_geometry</code>.</span></label>
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>Bộ lọc Persistence Counter: Yêu cầu tối thiểu 3 điểm liên tiếp vượt ngưỡng (<span class="badge badge-rule">BRULE-10</span>).</span></label>
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>Tự động kích hoạt bản ghi <code>deviation_alert</code>: Vàng (&gt;50m), Đỏ (&gt;200m).</span></label>
+            </div>
+            <div class="code-preview">PostGIS ST_Distance(telemetry, route_geom)</div>
+          </div>
+
+          <!-- Ngày 20-21 -->
+          <div class="day-box">
+            <div class="day-header">
+              <span class="day-tag">📅 Ngày 20 - 21</span>
+              <span class="uc-tag">UC10 Dynamic Reroute</span>
+            </div>
+            <div class="task-list">
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>Engine sinh đề xuất tuyến mới khi có cảnh báo Đỏ hoặc sự cố kẹt xe.</span></label>
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>Kiểm tra ngưỡng lợi ích tối thiểu $\Delta \ge 10\%$ và thời gian nghỉ (cooldown) 300s (<span class="badge badge-rule">BRULE-08</span>).</span></label>
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>Modal Dispatcher Human-in-the-Loop: Chỉ khi bấm duyệt (ACCEPTED) mới kích hoạt <code>RouteVersion</code> 2 (<span class="badge badge-rule">BRULE-09</span>).</span></label>
+            </div>
+            <div class="code-preview">Human-in-the-loop: status PENDING_DISPATCHER</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TUẦN 4 -->
+      <div class="week-card w4">
+        <div class="week-header">
+          <div>
+            <span class="week-badge">Tuần 4 • Ngày 22 - 28</span>
+            <div class="week-title">Kế Toán Carbon GLEC v3, Đối Chuẩn Hành Lang & Nghiệm Thu E2E</div>
+            <div class="week-objective">Tính phát thải sau chuyến GLEC v3, đối chuẩn hành lang logistics, chốt ePOD, quản trị kỷ luật và chạy Smoke Test E2E.</div>
+          </div>
+          <div class="week-dod">
+            Tiêu chí nghiệm thu (DoD): <strong>make smoke pass 8/8 kịch bản</strong>, xuất báo cáo audit có mã băm SHA-256.
+          </div>
+        </div>
+
+        <div class="day-grid">
+          <!-- Ngày 22-23 -->
+          <div class="day-box">
+            <div class="day-header">
+              <span class="day-tag">📅 Ngày 22 - 23</span>
+              <span class="uc-tag">UC11, UC12 GLEC v3</span>
+            </div>
+            <div class="task-list">
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>Tạo Entity <code>ProofOfDelivery</code> (ePOD chốt cự ly thực tế <code>GPS_ACTUAL</code>).</span></label>
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>Engine tính phát thải GLEC v3: Phân tách rõ Well-to-Wheel (WTW = TTW + WTT) (<span class="badge badge-rule">BRULE-06</span>).</span></label>
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>Tuyệt đối không nhân hệ số DAF (1.05) lên cự ly GPS thực tế (<span class="badge badge-rule">BRULE-11</span>).</span></label>
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>Lưu vết Lineage hệ số phát thải và phiên bản tính toán (<span class="badge badge-rule">BRULE-12</span>, <span class="badge badge-rule">BRULE-14</span>).</span></label>
+            </div>
+            <div class="code-preview">Formula: CO2e = (Tons x km) x Factor (No DAF)</div>
+          </div>
+
+          <!-- Ngày 24-25 -->
+          <div class="day-box">
+            <div class="day-header">
+              <span class="day-tag">📅 Ngày 24 - 25</span>
+              <span class="uc-tag">UC13, UC14 Benchmarking</span>
+            </div>
+            <div class="task-list">
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>Tạo Entity <code>CarbonBenchmark</code> và <code>CarbonBenchmarkResult</code>.</span></label>
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>Đối chuẩn chuyến đi với kịch bản cơ sở BAU / Ngắn nhất, giữ nguyên kết quả âm (<span class="badge badge-rule">BRULE-15</span>).</span></label>
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>Xuất báo cáo carbon <code>CarbonReportExport</code> kèm mã băm SHA-256 chống sửa đổi.</span></label>
+            </div>
+            <div class="code-preview">Integrity: Giữ kết quả so sánh âm/chưa kết luận</div>
+          </div>
+
+          <!-- Ngày 26-28 -->
+          <div class="day-box">
+            <div class="day-header">
+              <span class="day-tag">📅 Ngày 26 - 28</span>
+              <span class="uc-tag">UC16-18 & Smoke Tests</span>
+            </div>
+            <div class="task-list">
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>Tạo Entity <code>FieldIncident</code>, <code>ExceptionResolution</code> và sổ điểm phạt <code>DemeritRecord</code>.</span></label>
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>Đảm bảo quy tắc điểm phạt do con người phê duyệt, không tự động phạt (<span class="badge badge-rule">BRULE-17</span>, <span class="badge badge-rule">BRULE-18</span>).</span></label>
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>Chạy toàn bộ bộ test hồi quy <code>make test</code> và kịch bản E2E <code>make smoke</code> (8/8 pass).</span></label>
+              <label class="task-item"><input type="checkbox" onchange="updateProgress(this)"><span>Đóng gói tài liệu Swagger OpenAPI và hướng dẫn vận hành hoàn thiện.</span></label>
+            </div>
+            <div class="code-preview">Command: make test && make smoke</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 2: GUIDELINES (CẨM NANG CODE CHUẨN DOANH NGHIỆP) -->
+    <!-- ========================================================================= -->
+    <div id="guidelines" class="tab-pane">
+      
+      <div class="guide-card">
+        <div class="guide-title">
+          <span>🏛️</span> 1. Quy Chuẩn Spring Modulith & Ranh Giới Module
+        </div>
+        <div class="guide-content">
+          <p>
+            Dự án CCADRO được xây dựng theo mô hình <strong>Modular Monolith</strong>. Các module (Asset, Shipment, Routing, Tracking, Carbon, Exception) được kiểm soát ranh giới nghiêm ngặt bằng Spring Modulith:
+          </p>
+
+          <div class="alert alert-warn">
+            <strong>⚠️ QUY TẮC CỐT TỬ:</strong> Trong cùng module được dùng <code>@ManyToOne</code>. Nhưng giữa 2 module khác nhau, <strong>TUYỆT ĐỐI KHÔNG</strong> khai báo entity quan hệ trực tiếp. Hãy chỉ lưu <code>UUID</code> để tránh phụ thuộc vòng và fail test kiến trúc.
+          </div>
+
+          <pre><code><span class="code-comment">// ❌ SAI - Phá vỡ ranh giới Module Tracking -> Asset:</span>
+<span class="code-annotation">@ManyToOne</span>
+<span class="code-keyword">private</span> <span class="code-type">Vehicle</span> vehicle;
+
+<span class="code-comment">// ✅ ĐÚNG - Giữ tính độc lập Modulith:</span>
+<span class="code-annotation">@Column</span>(name = <span class="code-string">"vehicle_id"</span>, nullable = <span class="code-keyword">false</span>)
+<span class="code-keyword">private</span> <span class="code-type">UUID</span> vehicleId;</code></pre>
+        </div>
+      </div>
+
+      <div class="guide-card">
+        <div class="guide-title">
+          <span>☕</span> 2. Chuẩn Thiết Kế Entity Với Lombok
+        </div>
+        <div class="guide-content">
+          <p>
+            Để code sạch sẽ và chuyên nghiệp nhất, áp dụng bộ Annotation chuẩn sau cho mọi Entity JPA:
+          </p>
+
+          <pre><code><span class="code-keyword">package</span> com.ccadro.asset.domain;
+
+<span class="code-keyword">import</span> jakarta.persistence.*;
+<span class="code-keyword">import</span> lombok.*;
+<span class="code-keyword">import</span> lombok.experimental.FieldDefaults;
+<span class="code-keyword">import</span> java.math.BigDecimal;
+<span class="code-keyword">import</span> java.time.Instant;
+<span class="code-keyword">import</span> java.util.UUID;
+
+<span class="code-annotation">@Entity</span>
+<span class="code-annotation">@Table</span>(name = <span class="code-string">"vehicle"</span>)
+<span class="code-annotation">@Getter</span>
+<span class="code-annotation">@Setter</span>
+<span class="code-annotation">@NoArgsConstructor</span>
+<span class="code-annotation">@AllArgsConstructor</span>
+<span class="code-annotation">@FieldDefaults</span>(level = AccessLevel.PRIVATE)
+<span class="code-keyword">public class</span> <span class="code-type">Vehicle</span> {
+
+    <span class="code-annotation">@Id</span>
+    <span class="code-annotation">@GeneratedValue</span>(strategy = GenerationType.AUTO)
+    <span class="code-type">UUID</span> id;
+
+    <span class="code-annotation">@Column</span>(name = <span class="code-string">"vehicle_code"</span>, nullable = <span class="code-keyword">false</span>, unique = <span class="code-keyword">true</span>, length = <span class="code-string">50</span>)
+    <span class="code-type">String</span> vehicleCode;
+
+    <span class="code-annotation">@Column</span>(name = <span class="code-string">"max_payload_tons"</span>, nullable = <span class="code-keyword">false</span>, precision = <span class="code-string">10</span>, scale = <span class="code-string">2</span>)
+    <span class="code-type">BigDecimal</span> maxPayloadTons;
+
+    <span class="code-annotation">@Column</span>(name = <span class="code-string">"created_at"</span>, nullable = <span class="code-keyword">false</span>, updatable = <span class="code-keyword">false</span>)
+    <span class="code-type">Instant</span> createdAt = Instant.now();
+}</code></pre>
+
+          <div class="alert alert-tip">
+            <strong>💡 Mẹo IntelliJ:</strong> Chú ý khi gõ <code>AccessLevel.PRIVATE</code>, luôn chọn <code>lombok.AccessLevel</code> thay vì class CloudFoundry của Spring Actuator nhé!
+          </div>
+        </div>
+      </div>
+
+      <div class="guide-card">
+        <div class="guide-title">
+          <span>📍</span> 3. Xử Lý Hình Học Không Gian PostGIS (JTS Spatial)
+        </div>
+        <div class="guide-content">
+          <p>
+            Hệ thống dùng <strong>Hibernate Spatial</strong> kết nối PostGIS. Điểm tọa độ và tuyến đường polyline được định nghĩa như sau:
+          </p>
+
+          <pre><code><span class="code-keyword">import</span> org.locationtech.jts.geom.Point;
+<span class="code-keyword">import</span> org.locationtech.jts.geom.LineString;
+<span class="code-keyword">import</span> com.fasterxml.jackson.annotation.JsonIgnore;
+
+<span class="code-comment">// 1. Tọa độ điểm xuất phát / đích đến (WGS 84 SRID 4326):</span>
+<span class="code-annotation">@JsonIgnore</span>
+<span class="code-annotation">@Column</span>(name = <span class="code-string">"origin_geom"</span>, nullable = <span class="code-keyword">false</span>, columnDefinition = <span class="code-string">"geometry(Point, 4326)"</span>)
+<span class="code-type">Point</span> originGeom;
+
+<span class="code-comment">// Getter tiện ích trả về kinh độ / vĩ độ cho REST API JSON:</span>
+<span class="code-keyword">public</span> <span class="code-type">Double</span> <span class="code-string">getOriginLatitude</span>() { <span class="code-keyword">return</span> originGeom != <span class="code-keyword">null</span> ? originGeom.getY() : <span class="code-keyword">null</span>; }
+<span class="code-keyword">public</span> <span class="code-type">Double</span> <span class="code-string">getOriginLongitude</span>() { <span class="code-keyword">return</span> originGeom != <span class="code-keyword">null</span> ? originGeom.getX() : <span class="code-keyword">null</span>; }
+
+<span class="code-comment">// 2. Polyline hình học tuyến đường:</span>
+<span class="code-annotation">@JsonIgnore</span>
+<span class="code-annotation">@Column</span>(name = <span class="code-string">"route_geometry"</span>, columnDefinition = <span class="code-string">"geometry(LineString, 4326)"</span>)
+<span class="code-type">LineString</span> routeGeometry;</code></pre>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 3: ENTITY GUIDE (HƯỚNG DẪN 24 BẢNG) -->
+    <!-- ========================================================================= -->
+    <div id="entity-guide" class="tab-pane">
+      <div class="guide-card">
+        <div class="guide-title">
+          <span>📚</span> Danh Mục 24 JPA Entities & Vị Trí Lưu Trữ
+        </div>
+        <p>Bảng tổng hợp chi tiết tên lớp Java, tên bảng SQL và Package tương ứng:</p>
+
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>Module</th>
+              <th>Java Entity Class</th>
+              <th>Bảng Database (PostgreSQL)</th>
+              <th>Package Domain</th>
+              <th>Đặc Điểm Kỹ Thuật</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Asset</td><td><strong>Vehicle</strong></td><td><code>vehicle</code></td><td><code>com.ccadro.asset.domain</code></td><td>Hồ sơ xe, tải trọng, Euro standard</td></tr>
+            <tr><td>Asset</td><td><strong>Driver</strong></td><td><code>driver</code></td><td><code>com.ccadro.asset.domain</code></td><td>Hồ sơ tài xế, GPLX</td></tr>
+            <tr><td>Asset</td><td><strong>Container</strong></td><td><code>container</code></td><td><code>com.ccadro.asset.domain</code></td><td>Vỏ cont khô/lạnh 20ft/40ft</td></tr>
+            <tr><td>Asset</td><td><strong>VehicleMaintenance</strong></td><td><code>vehicle_maintenance</code></td><td><code>com.ccadro.asset.domain</code></td><td>Lịch & chi phí bảo dưỡng xe</td></tr>
+            <tr><td>Asset</td><td><strong>PreTripInspection</strong></td><td><code>pre_trip_inspection</code></td><td><code>com.ccadro.asset.domain</code></td><td>JSONB Checklist an toàn BRULE-01</td></tr>
+            <tr><td>Asset</td><td><strong>DriverShift</strong></td><td><code>driver_shift</code></td><td><code>com.ccadro.asset.domain</code></td><td>Ca làm việc, bàn giao xe</td></tr>
+            
+            <tr><td>Shipment</td><td><strong>Shipment</strong></td><td><code>shipment</code></td><td><code>com.ccadro.shipment.domain</code></td><td>PostGIS Point (origin/dest), Time Windows</td></tr>
+            <tr><td>Shipment</td><td><strong>DispatchOrder</strong></td><td><code>dispatch_order</code></td><td><code>com.ccadro.shipment.domain</code></td><td>Lệnh điều xe, gán tài xế & tuyến chạy</td></tr>
+
+            <tr><td>Routing</td><td><strong>RouteCandidate</strong></td><td><code>route_candidate</code></td><td><code>com.ccadro.routing.domain</code></td><td>PostGIS LineString, Điểm Pareto UC05</td></tr>
+            <tr><td>Routing</td><td><strong>RouteDecision</strong></td><td><code>route_decision</code></td><td><code>com.ccadro.routing.domain</code></td><td>Lịch sử Dispatcher chọn phương án tuyến</td></tr>
+            <tr><td>Routing</td><td><strong>RouteVersion</strong></td><td><code>route_version</code></td><td><code>com.ccadro.routing.domain</code></td><td>Quản trị phiên bản tuyến (v1 ban đầu, v2 đổi tuyến)</td></tr>
+
+            <tr><td>Tracking</td><td><strong>Trip</strong></td><td><code>trip</code></td><td><code>com.ccadro.tracking.domain</code></td><td>Hành trình vận chuyển thực tế</td></tr>
+            <tr><td>Tracking</td><td><strong>TelemetryEvent</strong></td><td><code>telemetry_event</code></td><td><code>com.ccadro.tracking.domain</code></td><td>PostGIS Point GPS stream 1-5s, Quality Gate</td></tr>
+            <tr><td>Tracking</td><td><strong>DeviationAlert</strong></td><td><code>deviation_alert</code></td><td><code>com.ccadro.tracking.domain</code></td><td>Cảnh báo lệch hành lang (50m Vàng, 200m Đỏ)</td></tr>
+            <tr><td>Tracking</td><td><strong>RerouteProposal</strong></td><td><code>reroute_proposal</code></td><td><code>com.ccadro.tracking.domain</code></td><td>Đề xuất đổi tuyến khi kẹt xe / lệch tuyến Đỏ</td></tr>
+
+            <tr><td>Carbon</td><td><strong>EmissionFactor</strong></td><td><code>emission_factor</code></td><td><code>com.ccadro.carbon.domain</code></td><td>Thư viện hệ số GLEC v3, DEFRA có Lineage</td></tr>
+            <tr><td>Carbon</td><td><strong>EmissionCalculation</strong></td><td><code>emission_calculation</code></td><td><code>com.ccadro.carbon.domain</code></td><td>Tính phát thải WTW = TTW + WTT (Bất biến)</td></tr>
+            <tr><td>Carbon</td><td><strong>CarbonBenchmark</strong></td><td><code>carbon_benchmark</code></td><td><code>com.ccadro.carbon.domain</code></td><td>Chuẩn phát thải trung bình & xanh trên hành lang</td></tr>
+            <tr><td>Carbon</td><td><strong>CarbonBenchmarkResult</strong></td><td><code>carbon_benchmark_result</code></td><td><code>com.ccadro.carbon.domain</code></td><td>Đối chuẩn chuyến xe với tuyến cơ sở BAU/Shortest</td></tr>
+            <tr><td>Carbon</td><td><strong>ProofOfDelivery</strong></td><td><code>proof_of_delivery</code></td><td><code>com.ccadro.carbon.domain</code></td><td>Biên bản ePOD chốt cự ly thực tế GPS_ACTUAL</td></tr>
+            <tr><td>Carbon</td><td><strong>CarbonReportExport</strong></td><td><code>carbon_report_export</code></td><td><code>com.ccadro.carbon.domain</code></td><td>Lịch sử xuất báo cáo audit mã băm SHA-256</td></tr>
+
+            <tr><td>Exception</td><td><strong>FieldIncident</strong></td><td><code>field_incident</code></td><td><code>com.ccadro.exception.domain</code></td><td>Sự cố hiện trường (kẹt xe, tai nạn, ngập úng)</td></tr>
+            <tr><td>Exception</td><td><strong>ExceptionResolution</strong></td><td><code>exception_resolution</code></td><td><code>com.ccadro.exception.domain</code></td><td>Quyết định thẩm duyệt của Dispatcher</td></tr>
+            <tr><td>Exception</td><td><strong>DemeritRecord</strong></td><td><code>demerit_record</code></td><td><code>com.ccadro.exception.domain</code></td><td>Sổ điểm phạt vi phạm có hội đồng duyệt</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 4: DEVOPS (LỆNH CHẠY & SMOKE TESTS) -->
+    <!-- ========================================================================= -->
+    <div id="devops" class="tab-pane">
+      <div class="guide-card">
+        <div class="guide-title">
+          <span>⚡</span> Bộ Lệnh Điều Khiển Hệ Thống (Make Tooling)
+        </div>
+        <p>Hệ thống đã được đóng gói toàn diện bằng Makefile giúp bạn khởi động và kiểm thử chỉ bằng 1 dòng lệnh:</p>
+
+        <pre><code><span class="code-comment"># 1. Khởi tạo toàn bộ môi trường (Docker PostgreSQL 5433, Redis 6379, Flyway migration):</span>
+<span class="code-keyword">make</span> setup
+
+<span class="code-comment"># 2. Khởi động đồng thời Containers, Backend Spring Boot (8080) và Frontend Vite (5173):</span>
+<span class="code-keyword">make</span> start
+
+<span class="code-comment"># 3. Chạy kiểm thử song song Backend (JUnit/Modulith) và Frontend (Vitest):</span>
+<span class="code-keyword">make</span> test
+
+<span class="code-comment"># 4. Chạy bộ 8 bài kiểm tra smoke test đầu cuối (E2E Validation):</span>
+<span class="code-keyword">make</span> smoke
+
+<span class="code-comment"># 5. Các kịch bản mô phỏng GPS xe di chuyển:</span>
+<span class="code-keyword">make</span> simulate-normal       <span class="code-comment"># Xe di chuyển chuẩn theo tuyến</span>
+<span class="code-keyword">make</span> simulate-deviation    <span class="code-comment"># Xe lệch tuyến 300m (kích hoạt cảnh báo Đỏ UC09 và đề xuất đổi tuyến UC10)</span>
+<span class="code-keyword">make</span> simulate-traffic      <span class="code-comment"># Xe gặp điểm nghẽn tắc đường trên lộ trình</span>
+
+<span class="code-comment"># 6. Dọn dẹp tiến trình dev server:</span>
+<span class="code-keyword">make</span> stop</code></pre>
+      </div>
+
+      <div class="guide-card">
+        <div class="guide-title">
+          <span>🔍</span> Địa Chỉ Các Dịch Vụ Khi Chạy
+        </div>
+        <table class="custom-table">
+          <thead>
+            <tr><th>Dịch Vụ</th><th>Địa Chỉ URL / Port</th><th>Tài Khoản / Ghi Chú</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Backend API</td><td><code>http://localhost:8080</code></td><td>Spring Boot 3.3.4 REST API</td></tr>
+            <tr><td>OpenAPI Swagger UI</td><td><code>http://localhost:8080/swagger-ui.html</code></td><td>Tài liệu tương tác API trực tiếp</td></tr>
+            <tr><td>Frontend Dashboard</td><td><code>http://localhost:5173</code></td><td>Vite SPA + Bản đồ Leaflet</td></tr>
+            <tr><td>PostgreSQL + PostGIS</td><td><code>localhost:5433</code></td><td>Database: <code>ccadro</code> | User: <code>ccadro_user</code></td></tr>
+            <tr><td>Redis Ephemeral Cache</td><td><code>localhost:6379</code></td><td>Chỉ dùng làm cache đệm và live fanout</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 5: BRULE MATRIX (18 QUY TẮC NGHIỆP VỤ) -->
+    <!-- ========================================================================= -->
+    <div id="brule" class="tab-pane">
+      <div class="guide-card">
+        <div class="guide-title">
+          <span>📋</span> Ma Trận 18 Quy Tắc Nghiệp Vụ Bắt Buộc (BRULE-01 -&gt; BRULE-18)
+        </div>
+        <p>Bảng kiểm tra sự tuân thủ các quy tắc bất biến trong suốt quá trình triển khai dự án:</p>
+
+        <table class="custom-table">
+          <thead>
+            <tr><th>Mã Rule</th><th>Tên Nghiệp Vụ</th><th>Nội Dung Quy Tắc Bắt Buộc</th><th>Thực Thi Tại Đâu?</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>BRULE-01</strong></td><td>Safety eligibility</td><td>Xe đang bảo dưỡng hoặc kiểm tra Pre-trip FAILED không được xuất chuyến.</td><td><code>pre_trip_inspection.status</code>, <code>vehicle.status</code></td></tr>
+            <tr><td><strong>BRULE-02</strong></td><td>Master uniqueness</td><td>Biển số xe, mã container, mã shipment, mã chuyến phải là duy nhất.</td><td>Unique constraints trong PostgreSQL</td></tr>
+            <tr><td><strong>BRULE-03</strong></td><td>Hard constraints</td><td>Tuyến vi phạm tải trọng cầu đường hoặc time window bị loại ngay trước khi chấm điểm.</td><td><code>RoutingService#filterHardConstraints</code></td></tr>
+            <tr><td><strong>BRULE-04</strong></td><td>Normalization</td><td>Chuẩn hóa Min-Max chỉ thực hiện trong cùng tập ứng viên.</td><td><code>RoutingService#normalizeCandidates</code></td></tr>
+            <tr><td><strong>BRULE-05</strong></td><td>Weight integrity</td><td>Tổng các trọng số tối ưu hóa bằng 1.0 (Carbon 0.4, Time 0.3, Cost 0.2, Risk 0.1).</td><td><code>application.yml</code> (ccadro.optimization.*)</td></tr>
+            <tr><td><strong>BRULE-06</strong></td><td>Plan vs Accounting</td><td>Phát thải ước tính kế hoạch tách biệt hoàn toàn với kế toán sau chuyến.</td><td><code>emission_calculation.calculation_type</code></td></tr>
+            <tr><td><strong>BRULE-07</strong></td><td>Cross-time</td><td>Không so sánh điểm số min-max giữa các thời điểm khác nhau.</td><td><code>RerouteProposal</code> (so sánh raw deltas)</td></tr>
+            <tr><td><strong>BRULE-08</strong></td><td>Anti-oscillation</td><td>Tái định tuyến yêu cầu lợi ích tối thiểu $\ge 10\%$ và cooldown 300s.</td><td><code>ccadro.rerouting.*</code></td></tr>
+            <tr><td><strong>BRULE-09</strong></td><td>Human approval</td><td>Tuyến mới chỉ hiệu lực khi Dispatcher bấm duyệt (ACCEPTED).</td><td><code>reroute_proposal.status</code>, <code>route_version</code></td></tr>
+            <tr><td><strong>BRULE-10</strong></td><td>Persistence filter</td><td>Cảnh báo lệch tuyến kết hợp khoảng cách (50m/200m) và chuỗi 3 tọa độ liên tiếp.</td><td><code>deviation_alert.persistence_count</code></td></tr>
+            <tr><td><strong>BRULE-11</strong></td><td>Actual distance</td><td>Quãng đường thẩm định từ GPS (GPS_ACTUAL) không được nhân thêm hệ số DAF (1.05).</td><td><code>ccadro.carbon.applyDafOnActualGps: false</code></td></tr>
+            <tr><td><strong>BRULE-12</strong></td><td>Factor lineage</td><td>Kế toán phát thải phải lưu vết mã hệ số, phiên bản và nguồn gốc tra cứu.</td><td><code>emission_factor</code>, <code>emission_calculation</code></td></tr>
+            <tr><td><strong>BRULE-13</strong></td><td>Blocked calculation</td><td>Không có hệ số phát thải hợp lệ $\rightarrow$ trạng thái BLOCKED, không được bịa số.</td><td><code>emission_calculation.calculation_status</code></td></tr>
+            <tr><td><strong>BRULE-14</strong></td><td>Immutable calc</td><td>Tính toán lại phải tạo bản ghi phiên bản mới, không ghi đè dữ liệu cũ.</td><td><code>emission_calculation.version_number</code></td></tr>
+            <tr><td><strong>BRULE-15</strong></td><td>Benchmark integrity</td><td>Giữ lại đầy đủ kết quả âm/chưa kết luận trong đối chuẩn carbon, không ẩn giấu.</td><td><code>carbon_benchmark_result.comparability_status</code></td></tr>
+            <tr><td><strong>BRULE-16</strong></td><td>Customer isolation</td><td>Khách hàng chỉ được phép xem đơn hàng và báo cáo thuộc phạm vi của mình.</td><td><code>shipment.customer_id</code></td></tr>
+            <tr><td><strong>BRULE-17</strong></td><td>Incident governance</td><td>Lệch tuyến và sự cố hiện trường không tự động biến thành hình phạt nhân sự.</td><td><code>field_incident</code> $\rightarrow$ <code>exception_resolution</code></td></tr>
+            <tr><td><strong>BRULE-18</strong></td><td>Blacklist governance</td><td>Vượt ngưỡng điểm phạt chỉ tạo trạng thái REVIEW_REQUIRED; con người phê duyệt.</td><td><code>demerit_record.status</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Tab Switching
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+
+      event.target.classList.add('active');
+      document.getElementById(tabId).classList.add('active');
+    }
+
+    // Task Checklist & Progress Calculation
+    function updateProgress(checkbox) {
+      const parent = checkbox.closest('.task-item');
+      if (checkbox.checked) {
+        parent.classList.add('done');
+      } else {
+        parent.classList.remove('done');
+      }
+
+      saveTaskState();
+      calculateProgress();
+    }
+
+    function calculateProgress() {
+      const allCheckboxes = document.querySelectorAll('.task-item input[type="checkbox"]');
+      const checkedBoxes = document.querySelectorAll('.task-item input[type="checkbox"]:checked');
+      
+      const total = allCheckboxes.length;
+      const completed = checkedBoxes.length;
+      const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
+
+      document.getElementById('progressBar').style.width = percent + '%';
+      document.getElementById('progressPercent').innerText = percent + '%';
+      document.getElementById('progressTasks').innerText = `${completed} / ${total} đầu việc đã hoàn tất`;
+    }
+
+    function saveTaskState() {
+      const states = [];
+      document.querySelectorAll('.task-item input[type="checkbox"]').forEach((cb, index) => {
+        states.push(cb.checked);
+      });
+      localStorage.setItem('ccadro_task_progress', JSON.stringify(states));
+    }
+
+    function loadTaskState() {
+      const saved = localStorage.getItem('ccadro_task_progress');
+      if (saved) {
+        try {
+          const states = JSON.parse(saved);
+          document.querySelectorAll('.task-item input[type="checkbox"]').forEach((cb, index) => {
+            if (states[index]) {
+              cb.checked = true;
+              cb.closest('.task-item').classList.add('done');
+            }
+          });
+        } catch(e) {}
+      }
+      calculateProgress();
+    }
+
+    // Run on init
+    window.addEventListener('DOMContentLoaded', loadTaskState);
+  </script>
+</body>
+</html>

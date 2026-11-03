@@ -8,13 +8,14 @@ Supports three test scenarios:
 """
 
 import sys
+import os
 import json
 import time
 import urllib.request
 import urllib.error
 from datetime import datetime, timezone
 
-BACKEND_URL = "http://localhost:8080/api/v1/tracking/telemetry"
+BACKEND_URL = os.environ.get("BACKEND_URL", "http://localhost:8888/api/v1/tracking/telemetry")
 TRIP_ID = "f0000000-0000-0000-0000-000000000001"
 VEHICLE_ID = "a0000000-0000-0000-0000-000000000001"
 

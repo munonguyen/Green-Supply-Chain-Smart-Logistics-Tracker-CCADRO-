@@ -1,0 +1,365 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1380 860" width="100%" height="100%" style="background: #0f172a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <defs>
+    <linearGradient id="gw-grad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+    <linearGradient id="db-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Title bar -->
+  <rect x="0" y="0" width="1380" height="50" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+  <circle cx="28" cy="25" r="6" fill="#ef4444"/>
+  <circle cx="48" cy="25" r="6" fill="#f59e0b"/>
+  <circle cx="68" cy="25" r="6" fill="#10b981"/>
+  <text x="690" y="32" text-anchor="middle" font-size="16" font-weight="bold" fill="#f8fafc" letter-spacing="0.5">CCADRO ARCHITECTURE v4.0 - PATTERN DATABASE-PER-SERVICE (8 DỊCH VỤ + SAGA + OUTBOX + MULTI-FUEL)</text>
+
+  <!-- Rule Banner -->
+  <g transform="translate(40, 65)">
+    <rect x="0" y="0" width="1300" height="38" rx="6" fill="rgba(30, 41, 59, 0.7)" stroke="#334155" stroke-width="1"/>
+    <text x="20" y="24" font-size="12.5" font-weight="bold" fill="#38bdf8">🔒 NGUYÊN TẮC BẤT BIẾN CỦA MICROSERVICES:</text>
+    <text x="355" y="24" font-size="12" fill="#94a3b8">8 Service sở hữu 8 Schema/DB riêng biệt</text>
+    <text x="615" y="24" font-size="12" fill="#ef4444" font-weight="bold">❌ KHÔNG DÙNG Physical FK giữa các DB</text>
+    <text x="895" y="24" font-size="12" fill="#10b981" font-weight="bold">✅ Giao tiếp qua REST, Saga Orchestrator &amp; Kafka Outbox</text>
+  </g>
+
+  <!-- API Gateway Box -->
+  <g transform="translate(515, 120)">
+    <rect x="0" y="0" width="350" height="50" rx="8" fill="url(#gw-grad)" stroke="#60a5fa" stroke-width="1.5"/>
+    <text x="175" y="31" text-anchor="middle" font-size="15" font-weight="bold" fill="#ffffff">🌐 API GATEWAY (Port 8888)</text>
+  </g>
+
+  <!-- Lines from Gateway to 8 Services -->
+  <g stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="4,4" fill="none" opacity="0.6">
+    <path d="M 690 170 L 690 200 L 115 200 L 115 230" />
+    <path d="M 690 170 L 690 200 L 280 200 L 280 230" />
+    <path d="M 690 170 L 690 200 L 445 200 L 445 230" />
+    <path d="M 690 170 L 690 200 L 610 200 L 610 230" />
+    <path d="M 690 170 L 690 200 L 775 200 L 775 230" />
+    <path d="M 690 170 L 690 200 L 940 200 L 940 230" />
+    <path d="M 690 170 L 690 200 L 1105 200 L 1105 230" />
+    <path d="M 690 170 L 690 200 L 1265 200 L 1265 230" />
+  </g>
+
+  <!-- 1. Identity Service (:8080) -->
+  <g transform="translate(40, 230)">
+    <rect x="0" y="0" width="150" height="90" rx="8" fill="rgba(168, 85, 247, 0.15)" stroke="#a855f7" stroke-width="1.5"/>
+    <text x="75" y="24" text-anchor="middle" font-size="12" font-weight="bold" fill="#f8fafc">Identity Service</text>
+    <rect x="35" y="32" width="80" height="18" rx="4" fill="rgba(15, 23, 42, 0.6)"/>
+    <text x="75" y="45" text-anchor="middle" font-size="10.5" font-weight="bold" fill="#a855f7">PORT 8080</text>
+    <text x="75" y="70" text-anchor="middle" font-size="9" fill="#94a3b8">Auth, JWT, RBAC Management</text>
+
+    <line x1="75" y1="90" x2="75" y2="120" stroke="#a855f7" stroke-width="2"/>
+    <polygon points="75,123 71,115 79,115" fill="#a855f7"/>
+
+    <g transform="translate(0, 125)">
+      <rect x="0" y="0" width="150" height="250" rx="8" fill="#1e293b" stroke="#a855f7" stroke-width="1.2"/>
+      <path d="M 0 6 A 6 6 0 0 1 6 0 L 144 0 A 6 6 0 0 1 150 6 L 150 28 L 0 28 Z" fill="#a855f7" opacity="0.85"/>
+      <text x="75" y="19" text-anchor="middle" font-size="11" font-weight="bold" fill="#ffffff">🗄️ ccadro_identity</text>
+      <rect x="15" y="36" width="120" height="16" rx="3" fill="rgba(255,255,255,0.05)"/>
+      <text x="75" y="48" text-anchor="middle" font-size="8.5" fill="#a855f7" font-weight="bold">ISOLATED DATABASE</text>
+
+      <g transform="translate(10, 62)">
+        <rect x="0" y="0" width="130" height="20" rx="3" fill="#0f172a" stroke="#334155" stroke-width="0.8"/>
+        <text x="8" y="14" font-size="9.5" fill="#f8fafc" font-family="monospace">📄 users</text>
+        <rect x="0" y="24" width="130" height="20" rx="3" fill="#0f172a" stroke="#334155" stroke-width="0.8"/>
+        <text x="8" y="38" font-size="9.5" fill="#f8fafc" font-family="monospace">📄 roles</text>
+        <rect x="0" y="48" width="130" height="20" rx="3" fill="#0f172a" stroke="#334155" stroke-width="0.8"/>
+        <text x="8" y="62" font-size="9.5" fill="#f8fafc" font-family="monospace">📄 permissions</text>
+        <rect x="0" y="72" width="130" height="20" rx="3" fill="#0f172a" stroke="#334155" stroke-width="0.8"/>
+        <text x="8" y="86" font-size="9.5" fill="#f8fafc" font-family="monospace">📄 user_roles</text>
+        <rect x="0" y="96" width="130" height="20" rx="3" fill="#0f172a" stroke="#334155" stroke-width="0.8"/>
+        <text x="8" y="110" font-size="9.5" fill="#f8fafc" font-family="monospace">📄 invalidated_tokens</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- 2. Asset Service (:8081) -->
+  <g transform="translate(205, 230)">
+    <rect x="0" y="0" width="150" height="90" rx="8" fill="rgba(192, 132, 252, 0.15)" stroke="#c084fc" stroke-width="1.5"/>
+    <text x="75" y="24" text-anchor="middle" font-size="12" font-weight="bold" fill="#f8fafc">Asset Service</text>
+    <rect x="35" y="32" width="80" height="18" rx="4" fill="rgba(15, 23, 42, 0.6)"/>
+    <text x="75" y="45" text-anchor="middle" font-size="10.5" font-weight="bold" fill="#c084fc">PORT 8081</text>
+    <text x="75" y="70" text-anchor="middle" font-size="9" fill="#94a3b8">Xe (7 loại xăng), Tài xế</text>
+
+    <line x1="75" y1="90" x2="75" y2="120" stroke="#c084fc" stroke-width="2"/>
+    <polygon points="75,123 71,115 79,115" fill="#c084fc"/>
+
+    <g transform="translate(0, 125)">
+      <rect x="0" y="0" width="150" height="250" rx="8" fill="#1e293b" stroke="#c084fc" stroke-width="1.2"/>
+      <path d="M 0 6 A 6 6 0 0 1 6 0 L 144 0 A 6 6 0 0 1 150 6 L 150 28 L 0 28 Z" fill="#c084fc" opacity="0.85"/>
+      <text x="75" y="19" text-anchor="middle" font-size="11" font-weight="bold" fill="#ffffff">🗄️ ccadro_asset</text>
+      <rect x="15" y="36" width="120" height="16" rx="3" fill="rgba(255,255,255,0.05)"/>
+      <text x="75" y="48" text-anchor="middle" font-size="8.5" fill="#c084fc" font-weight="bold">ISOLATED DATABASE</text>
+
+      <g transform="translate(10, 62)">
+        <rect x="0" y="0" width="130" height="20" rx="3" fill="#0f172a" stroke="#334155" stroke-width="0.8"/>
+        <text x="8" y="14" font-size="9.5" fill="#f8fafc" font-family="monospace">📄 vehicle (fuel_type)</text>
+        <rect x="0" y="24" width="130" height="20" rx="3" fill="#0f172a" stroke="#334155" stroke-width="0.8"/>
+        <text x="8" y="38" font-size="9.5" fill="#f8fafc" font-family="monospace">📄 driver</text>
+        <rect x="0" y="48" width="130" height="20" rx="3" fill="#0f172a" stroke="#334155" stroke-width="0.8"/>
+        <text x="8" y="62" font-size="9.5" fill="#f8fafc" font-family="monospace">📄 driver_shift</text>
+        <rect x="0" y="72" width="130" height="20" rx="3" fill="#0f172a" stroke="#334155" stroke-width="0.8"/>
+        <text x="8" y="86" font-size="9.5" fill="#f8fafc" font-family="monospace">📄 container</text>
+        <rect x="0" y="96" width="130" height="20" rx="3" fill="#0f172a" stroke="#334155" stroke-width="0.8"/>
+        <text x="8" y="110" font-size="9.5" fill="#f8fafc" font-family="monospace">📄 pre_trip_inspection</text>
+        <rect x="0" y="120" width="130" height="20" rx="3" fill="#0f172a" stroke="#334155" stroke-width="0.8"/>
+        <text x="8" y="134" font-size="9.5" fill="#f8fafc" font-family="monospace">📄 vehicle_maintenance</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- 3. Shipment Service (:8082) -->
+  <g transform="translate(370, 230)">
+    <rect x="0" y="0" width="150" height="90" rx="8" fill="rgba(245, 158, 11, 0.15)" stroke="#f59e0b" stroke-width="1.5"/>
+    <text x="75" y="24" text-anchor="middle" font-size="12" font-weight="bold" fill="#f8fafc">Shipment Service</text>
+    <rect x="35" y="32" width="80" height="18" rx="4" fill="rgba(15, 23, 42, 0.6)"/>
+    <text x="75" y="45" text-anchor="middle" font-size="10.5" font-weight="bold" fill="#f59e0b">PORT 8082</text>
+    <text x="75" y="70" text-anchor="middle" font-size="9" fill="#94a3b8">Đơn hàng &amp; Saga Orchestrator</text>
+
+    <line x1="75" y1="90" x2="75" y2="120" stroke="#f59e0b" stroke-width="2"/>
+    <polygon points="75,123 71,115 79,115" fill="#f59e0b"/>
+
+    <g transform="translate(0, 125)">
+      <rect x="0" y="0" width="150" height="250" rx="8" fill="#1e293b" stroke="#f59e0b" stroke-width="1.2"/>
+      <path d="M 0 6 A 6 6 0 0 1 6 0 L 144 0 A 6 6 0 0 1 150 6 L 150 28 L 0 28 Z" fill="#f59e0b" opacity="0.85"/>
+      <text x="75" y="19" text-anchor="middle" font-size="11" font-weight="bold" fill="#ffffff">🗄️ ccadro_shipment</text>
+      <rect x="15" y="36" width="120" height="16" rx="3" fill="rgba(255,255,255,0.05)"/>
+      <text x="75" y="48" text-anchor="middle" font-size="8.5" fill="#f59e0b" font-weight="bold">ISOLATED DATABASE</text>
+
+      <g transform="translate(10, 62)">
+        <rect x="0" y="0" width="130" height="20" rx="3" fill="#0f172a" stroke="#334155" stroke-width="0.8"/>
+        <text x="8" y="14" font-size="9.5" fill="#f8fafc" font-family="monospace">📄 shipment</text>
+        <rect x="0" y="24" width="130" height="20" rx="3" fill="#0f172a" stroke="#334155" stroke-width="0.8"/>
+        <text x="8" y="38" font-size="9.5" fill="#f8fafc" font-family="monospace">📄 dispatch_order</text>
+        <rect x="0" y="48" width="130" height="20" rx="3" fill="#0f172a" stroke="#f59e0b" stroke-width="1"/>
+        <text x="8" y="62" font-size="9.5" fill="#fbbf24" font-family="monospace">⚡ saga_state_log</text>
+        <rect x="0" y="72" width="130" height="20" rx="3" fill="#0f172a" stroke="#a855f7" stroke-width="1"/>
+        <text x="8" y="86" font-size="9.5" fill="#c084fc" font-family="monospace">📤 outbox_event</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- 4. Routing Service (:8083) -->
+  <g transform="translate(535, 230)">
+    <rect x="0" y="0" width="150" height="90" rx="8" fill="rgba(56, 189, 248, 0.15)" stroke="#38bdf8" stroke-width="1.5"/>
+    <text x="75" y="24" text-anchor="middle" font-size="12" font-weight="bold" fill="#f8fafc">Routing Service</text>
+    <rect x="35" y="32" width="80" height="18" rx="4" fill="rgba(15, 23, 42, 0.6)"/>
+    <text x="75" y="45" text-anchor="middle" font-size="10.5" font-weight="bold" fill="#38bdf8">PORT 8083</text>
+    <text x="75" y="70" text-anchor="middle" font-size="9" fill="#94a3b8">Đa tiêu chí OSRM, Buffer 3857</text>
+
+    <line x1="75" y1="90" x2="75" y2="120" stroke="#38bdf8" stroke-width="2"/>
+    <polygon points="75,123 71,115 79,115" fill="#38bdf8"/>
+
+    <g transform="translate(0, 125)">
+      <rect x="0" y="0" width="150" height="250" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="1.2"/>
+      <path d="M 0 6 A 6 6 0 0 1 6 0 L 144 0 A 6 6 0 0 1 150 6 L 150 28 L 0 28 Z" fill="#38bdf8" opacity="0.85"/>
+      <text x="75" y="19" text-anchor="middle" font-size="11" font-weight="bold" fill="#ffffff">🗄️ ccadro_routing</text>
+      <rect x="15" y="36" width="120" height="16" rx="3" fill="rgba(255,255,255,0.05)"/>
+      <text x="75" y="48" text-anchor="middle" font-size="8.5" fill="#38bdf8" font-weight="bold">ISOLATED DATABASE</text>
+
+      <g transform="translate(10, 62)">
+        <rect x="0" y="0" width="130" height="20" rx="3" fill="#0f172a" stroke="#334155" stroke-width="0.8"/>
+        <text x="8" y="14" font-size="9.5" fill="#f8fafc" font-family="monospace">📄 route_candidate</text>
+        <rect x="0" y="24" width="130" height="20" rx="3" fill="#0f172a" stroke="#334155" stroke-width="0.8"/>
+        <text x="8" y="38" font-size="9.5" fill="#f8fafc" font-family="monospace">📄 route_version</text>
+        <rect x="0" y="48" width="130" height="20" rx="3" fill="#0f172a" stroke="#334155" stroke-width="0.8"/>
+        <text x="8" y="62" font-size="9.5" fill="#f8fafc" font-family="monospace">📄 route_decision</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- 5. Tracking Service (:8084) -->
+  <g transform="translate(700, 230)">
+    <rect x="0" y="0" width="150" height="90" rx="8" fill="rgba(244, 63, 94, 0.15)" stroke="#f43f5e" stroke-width="1.5"/>
+    <text x="75" y="24" text-anchor="middle" font-size="12" font-weight="bold" fill="#f8fafc">Tracking Service</text>
+    <rect x="35" y="32" width="80" height="18" rx="4" fill="rgba(15, 23, 42, 0.6)"/>
+    <text x="75" y="45" text-anchor="middle" font-size="10.5" font-weight="bold" fill="#f43f5e">PORT 8084</text>
+    <text x="75" y="70" text-anchor="middle" font-size="9" fill="#94a3b8">GPS Realtime, Buffer, Reroute</text>
+
+    <line x1="75" y1="90" x2="75" y2="120" stroke="#f43f5e" stroke-width="2"/>
+    <polygon points="75,123 71,115 79,115" fill="#f43f5e"/>
+
+    <g transform="translate(0, 125)">
+      <rect x="0" y="0" width="150" height="250" rx="8" fill="#1e293b" stroke="#f43f5e" stroke-width="1.2"/>
+      <path d="M 0 6 A 6 6 0 0 1 6 0 L 144 0 A 6 6 0 0 1 150 6 L 150 28 L 0 28 Z" fill="#f43f5e" opacity="0.85"/>
+      <text x="75" y="19" text-anchor="middle" font-size="11" font-weight="bold" fill="#ffffff">🗄️ ccadro_tracking</text>
+      <rect x="15" y="36" width="120" height="16" rx="3" fill="rgba(255,255,255,0.05)"/>
+      <text x="75" y="48" text-anchor="middle" font-size="8.5" fill="#f43f5e" font-weight="bold">ISOLATED DATABASE</text>
+
+      <g transform="translate(10, 62)">
+        <rect x="0" y="0" width="130" height="20" rx="3" fill="#0f172a" stroke="#334155" stroke-width="0.8"/>
+        <text x="8" y="14" font-size="9.5" fill="#f8fafc" font-family="monospace">📄 trip</text>
+        <rect x="0" y="24" width="130" height="20" rx="3" fill="#0f172a" stroke="#334155" stroke-width="0.8"/>
+        <text x="8" y="38" font-size="9.5" fill="#f8fafc" font-family="monospace">📄 telemetry_event</text>
+        <rect x="0" y="48" width="130" height="20" rx="3" fill="#0f172a" stroke="#334155" stroke-width="0.8"/>
+        <text x="8" y="62" font-size="9.5" fill="#f8fafc" font-family="monospace">📄 deviation_alert</text>
+        <rect x="0" y="72" width="130" height="20" rx="3" fill="#0f172a" stroke="#334155" stroke-width="0.8"/>
+        <text x="8" y="86" font-size="9.5" fill="#f8fafc" font-family="monospace">📄 reroute_proposal</text>
+        <rect x="0" y="96" width="130" height="20" rx="3" fill="#0f172a" stroke="#a855f7" stroke-width="1"/>
+        <text x="8" y="110" font-size="9.5" fill="#c084fc" font-family="monospace">📤 outbox_event</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- 6. Carbon Service (:8085) -->
+  <g transform="translate(865, 230)">
+    <rect x="0" y="0" width="150" height="90" rx="8" fill="rgba(16, 185, 129, 0.15)" stroke="#10b981" stroke-width="1.5"/>
+    <text x="75" y="24" text-anchor="middle" font-size="12" font-weight="bold" fill="#f8fafc">Carbon Service</text>
+    <rect x="35" y="32" width="80" height="18" rx="4" fill="rgba(15, 23, 42, 0.6)"/>
+    <text x="75" y="45" text-anchor="middle" font-size="10.5" font-weight="bold" fill="#10b981">PORT 8085</text>
+    <text x="75" y="70" text-anchor="middle" font-size="9" fill="#94a3b8">Chi phí Xăng ➔ Lít ➔ CO2e</text>
+
+    <line x1="75" y1="90" x2="75" y2="120" stroke="#10b981" stroke-width="2"/>
+    <polygon points="75,123 71,115 79,115" fill="#10b981"/>
+
+    <g transform="translate(0, 125)">
+      <rect x="0" y="0" width="150" height="250" rx="8" fill="#1e293b" stroke="#10b981" stroke-width="1.2"/>
+      <path d="M 0 6 A 6 6 0 0 1 6 0 L 144 0 A 6 6 0 0 1 150 6 L 150 28 L 0 28 Z" fill="#10b981" opacity="0.85"/>
+      <text x="75" y="19" text-anchor="middle" font-size="11" font-weight="bold" fill="#ffffff">🗄️ ccadro_carbon</text>
+      <rect x="15" y="36" width="120" height="16" rx="3" fill="rgba(255,255,255,0.05)"/>
+      <text x="75" y="48" text-anchor="middle" font-size="8.5" fill="#10b981" font-weight="bold">ISOLATED DATABASE</text>
+
+      <g transform="translate(10, 62)">
+        <rect x="0" y="0" width="130" height="20" rx="3" fill="#0f172a" stroke="#334155" stroke-width="0.8"/>
+        <text x="8" y="14" font-size="9.5" fill="#f8fafc" font-family="monospace">📄 emission_factor</text>
+        <rect x="0" y="24" width="130" height="20" rx="3" fill="#0f172a" stroke="#10b981" stroke-width="1"/>
+        <text x="8" y="38" font-size="9.5" fill="#34d399" font-family="monospace">⛽ fuel_price_catalog</text>
+        <rect x="0" y="48" width="130" height="20" rx="3" fill="#0f172a" stroke="#334155" stroke-width="0.8"/>
+        <text x="8" y="62" font-size="9.5" fill="#f8fafc" font-family="monospace">📄 emission_calculation</text>
+        <rect x="0" y="72" width="130" height="20" rx="3" fill="#0f172a" stroke="#334155" stroke-width="0.8"/>
+        <text x="8" y="86" font-size="9.5" fill="#f8fafc" font-family="monospace">📄 carbon_benchmark</text>
+        <rect x="0" y="96" width="130" height="20" rx="3" fill="#0f172a" stroke="#334155" stroke-width="0.8"/>
+        <text x="8" y="110" font-size="9.5" fill="#f8fafc" font-family="monospace">📄 proof_of_delivery</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- 7. Incident Service (:8086) -->
+  <g transform="translate(1030, 230)">
+    <rect x="0" y="0" width="150" height="90" rx="8" fill="rgba(251, 146, 60, 0.15)" stroke="#fb923c" stroke-width="1.5"/>
+    <text x="75" y="24" text-anchor="middle" font-size="12" font-weight="bold" fill="#f8fafc">Incident Service</text>
+    <rect x="35" y="32" width="80" height="18" rx="4" fill="rgba(15, 23, 42, 0.6)"/>
+    <text x="75" y="45" text-anchor="middle" font-size="10.5" font-weight="bold" fill="#fb923c">PORT 8086</text>
+    <text x="75" y="70" text-anchor="middle" font-size="9" fill="#94a3b8">Sự cố SOS, Trừ điểm an toàn</text>
+
+    <line x1="75" y1="90" x2="75" y2="120" stroke="#fb923c" stroke-width="2"/>
+    <polygon points="75,123 71,115 79,115" fill="#fb923c"/>
+
+    <g transform="translate(0, 125)">
+      <rect x="0" y="0" width="150" height="250" rx="8" fill="#1e293b" stroke="#fb923c" stroke-width="1.2"/>
+      <path d="M 0 6 A 6 6 0 0 1 6 0 L 144 0 A 6 6 0 0 1 150 6 L 150 28 L 0 28 Z" fill="#fb923c" opacity="0.85"/>
+      <text x="75" y="19" text-anchor="middle" font-size="11" font-weight="bold" fill="#ffffff">🗄️ ccadro_incident</text>
+      <rect x="15" y="36" width="120" height="16" rx="3" fill="rgba(255,255,255,0.05)"/>
+      <text x="75" y="48" text-anchor="middle" font-size="8.5" fill="#fb923c" font-weight="bold">ISOLATED DATABASE</text>
+
+      <g transform="translate(10, 62)">
+        <rect x="0" y="0" width="130" height="20" rx="3" fill="#0f172a" stroke="#334155" stroke-width="0.8"/>
+        <text x="8" y="14" font-size="9.5" fill="#f8fafc" font-family="monospace">📄 field_incident</text>
+        <rect x="0" y="24" width="130" height="20" rx="3" fill="#0f172a" stroke="#334155" stroke-width="0.8"/>
+        <text x="8" y="38" font-size="9.5" fill="#f8fafc" font-family="monospace">📄 demerit_record</text>
+        <rect x="0" y="48" width="130" height="20" rx="3" fill="#0f172a" stroke="#334155" stroke-width="0.8"/>
+        <text x="8" y="62" font-size="9.5" fill="#f8fafc" font-family="monospace">📄 exception_resolution</text>
+        <rect x="0" y="72" width="130" height="20" rx="3" fill="#0f172a" stroke="#a855f7" stroke-width="1"/>
+        <text x="8" y="86" font-size="9.5" fill="#c084fc" font-family="monospace">📤 outbox_event</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- 8. Notification Service (:8087) -->
+  <g transform="translate(1195, 230)">
+    <rect x="0" y="0" width="150" height="90" rx="8" fill="rgba(239, 68, 68, 0.2)" stroke="#ef4444" stroke-width="2"/>
+    <text x="75" y="24" text-anchor="middle" font-size="12" font-weight="bold" fill="#f8fafc">Notification Service</text>
+    <rect x="35" y="32" width="80" height="18" rx="4" fill="rgba(15, 23, 42, 0.6)"/>
+    <text x="75" y="45" text-anchor="middle" font-size="10.5" font-weight="bold" fill="#ef4444">PORT 8087</text>
+    <text x="75" y="70" text-anchor="middle" font-size="9" fill="#fca5a5">Kafka Consumer + SSE Push</text>
+
+    <line x1="75" y1="90" x2="75" y2="120" stroke="#ef4444" stroke-width="2"/>
+    <polygon points="75,123 71,115 79,115" fill="#ef4444"/>
+
+    <g transform="translate(0, 125)">
+      <rect x="0" y="0" width="150" height="250" rx="8" fill="#1e293b" stroke="#ef4444" stroke-width="1.5"/>
+      <path d="M 0 6 A 6 6 0 0 1 6 0 L 144 0 A 6 6 0 0 1 150 6 L 150 28 L 0 28 Z" fill="#ef4444" opacity="0.9"/>
+      <text x="75" y="19" text-anchor="middle" font-size="10.5" font-weight="bold" fill="#ffffff">🗄️ ccadro_notification</text>
+      <rect x="15" y="36" width="120" height="16" rx="3" fill="rgba(255,255,255,0.05)"/>
+      <text x="75" y="48" text-anchor="middle" font-size="8.5" fill="#f87171" font-weight="bold">ISOLATED DATABASE</text>
+
+      <g transform="translate(10, 62)">
+        <rect x="0" y="0" width="130" height="20" rx="3" fill="#0f172a" stroke="#ef4444" stroke-width="0.9"/>
+        <text x="6" y="14" font-size="8.8" fill="#fca5a5" font-family="monospace">🔔 emergency_notification</text>
+        <rect x="0" y="24" width="130" height="20" rx="3" fill="#0f172a" stroke="#334155" stroke-width="0.8"/>
+        <text x="6" y="38" font-size="9" fill="#f8fafc" font-family="monospace">🛡️ processed_event</text>
+        <rect x="0" y="48" width="130" height="20" rx="3" fill="#0f172a" stroke="#334155" stroke-width="0.8"/>
+        <text x="6" y="62" font-size="9" fill="#f8fafc" font-family="monospace">📄 ack_audit_trail</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- Bottom Architecture Explanation: Microservices Communication, Saga/Outbox &amp; Snowflake OLAP Sync -->
+  <g transform="translate(40, 635)">
+    <rect x="0" y="0" width="1305" height="195" rx="10" fill="#1e293b" stroke="#334155" stroke-width="1.2"/>
+    
+    <!-- Title -->
+    <text x="24" y="30" font-size="14" font-weight="bold" fill="#38bdf8">🔗 CƠ CHẾ GIAO TIẾP DỮ LIỆU ĐỘC LẬP: SAGA ORCHESTRATION + TRANSACTIONAL OUTBOX + MULTI-FUEL GLEC v3</text>
+    
+    <!-- Box 1: Logical References & Saga -->
+    <g transform="translate(24, 45)">
+      <rect x="0" y="0" width="410" height="130" rx="6" fill="#0f172a" stroke="#334155" stroke-width="1"/>
+      <text x="14" y="22" font-size="11.5" font-weight="bold" fill="#f59e0b">1. Khóa Ngoại Logic &amp; Saga Orchestration (UC06)</text>
+      <text x="14" y="44" font-size="10" fill="#94a3b8">
+        - Không dùng Foreign Key cứng giữa 8 DB; tham chiếu qua Logical UUID.
+      </text>
+      <text x="14" y="64" font-size="10" fill="#94a3b8">
+        - Khi khởi tạo chuyến xe (UC06), <tspan fill="#fbbf24" font-family="monospace">Shipment</tspan> điều phối Saga qua
+      </text>
+      <text x="14" y="82" font-size="10" fill="#94a3b8">
+        <tspan fill="#c084fc" font-family="monospace">Asset</tspan> ➔ <tspan fill="#38bdf8" font-family="monospace">Routing</tspan> ➔ <tspan fill="#f43f5e" font-family="monospace">Tracking</tspan>.
+      </text>
+      <text x="14" y="102" font-size="10" fill="#10b981">
+        - Nếu lỗi ở bước sau: Tự động kích hoạt <tspan font-weight="bold">Compensating Transaction</tspan>
+      </text>
+      <text x="14" y="118" font-size="10" fill="#10b981">
+        để mở khóa xe/tài xế, chống treo tài nguyên (Zero Zombie Assets).
+      </text>
+    </g>
+
+    <!-- Box 2: Transactional Outbox + Kafka -->
+    <g transform="translate(450, 45)">
+      <rect x="0" y="0" width="410" height="130" rx="6" fill="#0f172a" stroke="rgba(168, 85, 247, 0.4)" stroke-width="1"/>
+      <text x="14" y="22" font-size="11.5" font-weight="bold" fill="#c084fc">2. Transactional Outbox + Kafka (:9092) + Idempotency</text>
+      <text x="14" y="44" font-size="10" fill="#94a3b8">
+        - Sự cố SOS / Lệch tuyến Đỏ được ghi vào bảng nghiệp vụ + <tspan fill="#c084fc" font-family="monospace">outbox_event</tspan>
+      </text>
+      <text x="14" y="64" font-size="10" fill="#94a3b8">
+        trong cùng 1 giao dịch <tspan fill="#f8fafc" font-family="monospace">@Transactional</tspan> (loại bỏ lỗi Dual-Write).
+      </text>
+      <text x="14" y="84" font-size="10" fill="#94a3b8">
+        - Outbox Relay đẩy sự kiện lên Kafka topic <tspan fill="#fca5a5" font-family="monospace">ccadro.emergency.notifications</tspan>.
+      </text>
+      <text x="14" y="104" font-size="10" fill="#38bdf8">
+        - <tspan fill="#ef4444" font-weight="bold">Notification Service (:8087)</tspan> kiểm tra chống trùng 300s &amp; đẩy SSE tức thì.
+      </text>
+    </g>
+
+    <!-- Box 3: Multi-Fuel Cost -> Liters -> CO2e -->
+    <g transform="translate(876, 45)">
+      <rect x="0" y="0" width="405" height="130" rx="6" fill="#0f172a" stroke="rgba(16, 185, 129, 0.4)" stroke-width="1"/>
+      <text x="14" y="22" font-size="11.5" font-weight="bold" fill="#10b981">3. Chi Phí Xăng (VND) ➔ Số Lít ➔ CO2e Đa Nhiên Liệu</text>
+      <text x="14" y="44" font-size="10" fill="#94a3b8">
+        - Hỗ trợ 7 loại nhiên liệu (<tspan fill="#34d399" font-family="monospace">RON95, E5, DO 0.05S, DO 0.001S, B20, CNG, EV</tspan>).
+      </text>
+      <text x="14" y="64" font-size="10" fill="#94a3b8">
+        - Công thức quy đổi: <tspan fill="#f8fafc" font-family="monospace">Liters = actualFuelCostVnd / unitPriceVnd</tspan>.
+      </text>
+      <text x="14" y="84" font-size="10" fill="#94a3b8">
+        - Tính phát thải chuẩn GLEC v3: <tspan fill="#34d399" font-family="monospace">WTW = Liters × (EF_TTW + EF_WTT)</tspan>.
+      </text>
+      <text x="14" y="104" font-size="10" fill="#10b981">
+        - Tự động cảnh báo gian lận hóa đơn nhiên liệu khi lệch &gt; 25% định mức GPS!
+      </text>
+    </g>
+  </g>
+</svg>

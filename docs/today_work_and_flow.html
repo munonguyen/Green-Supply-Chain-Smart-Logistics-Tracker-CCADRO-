@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CCADRO - Chi Tiết Công Việc Hôm Nay & Flow Xử Lý Nghiệp Vụ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0b0f19;
+      --bg-surface: #111827;
+      --bg-card: #1f2937;
+      --bg-card-hover: #263345;
+      --border: #374151;
+      --border-accent: #38bdf8;
+      
+      --text-main: #f9fafb;
+      --text-muted: #9ca3af;
+      --text-dim: #64748b;
+
+      --blue: #38bdf8;
+      --green: #10b981;
+      --amber: #f59e0b;
+      --red: #f43f5e;
+      --purple: #a855f7;
+
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-dark);
+      color: var(--text-main);
+      font-family: 'Inter', sans-serif;
+      line-height: 1.6;
+      padding-bottom: 80px;
+    }
+
+    .container {
+      max-width: 1350px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Header */
+    header {
+      background: linear-gradient(135deg, #111827 0%, #0f2b38 50%, #064e3b 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 36px 0 28px 0;
+      margin-bottom: 32px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    .header-badge {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: rgba(56, 189, 248, 0.2);
+      color: var(--blue);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-bottom: 10px;
+    }
+    h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 30px;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .header-desc {
+      color: #93c5fd;
+      font-size: 15px;
+      margin-top: 6px;
+      max-width: 800px;
+    }
+
+    /* Target Box */
+    .target-pill {
+      background: rgba(17, 24, 39, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(10px);
+      padding: 16px 22px;
+      border-radius: var(--radius-md);
+      text-align: right;
+    }
+    .target-pill-label { font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+    .target-pill-val { font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 700; color: #10b981; }
+
+    /* Navigation */
+    .nav-bar {
+      display: flex;
+      gap: 10px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      padding: 6px;
+      border-radius: var(--radius-md);
+      margin-bottom: 28px;
+      position: sticky;
+      top: 16px;
+      z-index: 100;
+      backdrop-filter: blur(10px);
+    }
+    .nav-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 10px 20px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .nav-btn:hover { color: #fff; background: rgba(255,255,255,0.05); }
+    .nav-btn.active {
+      color: #fff;
+      background: #1e293b;
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    .section-pane { display: none; }
+    .section-pane.active { display: block; animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Section Cards */
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      margin-bottom: 28px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    }
+    .card-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 21px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Task Checklist */
+    .task-group {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+    .task-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 18px;
+      transition: all 0.2s;
+    }
+    .task-card:hover {
+      background: var(--bg-card-hover);
+      border-color: #64748b;
+    }
+    .task-card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .task-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--blue);
+    }
+    .task-prio {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    .prio-must { background: rgba(244, 63, 94, 0.2); color: #f87171; border: 1px solid rgba(244,63,94,0.4); }
+    .prio-high { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245,158,11,0.4); }
+
+    .task-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 10px;
+      font-size: 13.5px;
+      color: #e2e8f0;
+      cursor: pointer;
+    }
+    .task-item input[type="checkbox"] {
+      margin-top: 4px;
+      accent-color: var(--green);
+      width: 17px;
+      height: 17px;
+    }
+    .task-item.done span {
+      text-decoration: line-through;
+      color: #64748b;
+    }
+
+    /* Flow Diagrams */
+    .flow-box {
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      margin-top: 20px;
+    }
+    .flow-step-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+    .flow-node {
+      background: #1e293b;
+      border: 1px solid #475569;
+      border-radius: 8px;
+      padding: 12px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #f8fafc;
+      min-width: 180px;
+      text-align: center;
+      position: relative;
+    }
+    .flow-node.driver { border-color: var(--blue); background: rgba(56, 189, 248, 0.1); color: #7dd3fc; }
+    .flow-node.service { border-color: var(--green); background: rgba(16, 185, 129, 0.1); color: #6ee7b7; }
+    .flow-node.decision { border-color: var(--amber); background: rgba(245, 158, 11, 0.15); color: #fde047; }
+    .flow-node.block { border-color: var(--red); background: rgba(244, 63, 94, 0.2); color: #fda4af; }
+    .flow-node.pass { border-color: var(--green); background: rgba(16, 185, 129, 0.2); color: #a7f3d0; }
+
+    .flow-arrow {
+      color: #94a3b8;
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    /* Code Blocks */
+    pre {
+      background: #0b0f19;
+      border: 1px solid #1e293b;
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12.5px;
+      color: #f1f5f9;
+      margin-top: 14px;
+      line-height: 1.5;
+    }
+    .kw { color: #f43f5e; font-weight: 600; }
+    .tp { color: #38bdf8; }
+    .an { color: #eab308; }
+    .st { color: #10b981; }
+    .cm { color: #64748b; font-style: italic; }
+
+    /* Tables */
+    .rule-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 13px;
+    }
+    .rule-table th, .rule-table td {
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      text-align: left;
+    }
+    .rule-table th { background: #1e293b; color: #fff; font-weight: 600; }
+    .rule-table tr:nth-child(even) { background: rgba(255,255,255,0.02); }
+
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+    .badge-rule { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); }
+    .badge-sql { background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168,85,247,0.3); }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="container header-content">
+      <div>
+        <span class="header-badge">HÔM NAY: TUẦN 1 • NGÀY 01</span>
+        <h1><span>🎯</span> CHI TIẾT CÔNG VIỆC HÔM NAY & FLOW HỆ THỐNG</h1>
+        <p class="header-desc">
+          Hoàn thiện tầng Entity Model cho Module Asset, thiết lập cơ chế kiểm tra an toàn xuất bến <b>BRULE-01</b> 
+          và luồng nghiệp vụ kiểm định trước chuyến (Pre-trip Inspection).
+        </p>
+      </div>
+      <div class="target-pill">
+        <div class="target-pill-label">Mục Tiêu Hôm Nay</div>
+        <div class="target-pill-val">Pass 100% Compile & Test</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <!-- NAVIGATION -->
+    <nav class="nav-bar">
+      <button class="nav-btn active" onclick="switchSection('tasks')">✅ 1. Danh Sách Công Việc Cần Code Hôm Nay</button>
+      <button class="nav-btn" onclick="switchSection('business')">📋 2. Nghiệp Vụ Cốt Lõi (BRULE-01, 02)</button>
+      <button class="nav-btn" onclick="switchSection('flow')">🔄 3. Flow Luồng Xử Lý Hệ Thống</button>
+      <button class="nav-btn" onclick="switchSection('code-ready')">💻 4. Code Mẫu Để Bạn Copy-Paste Ngay</button>
+    </nav>
+
+    <!-- ========================================================================= -->
+    <!-- SECTION 1: TASKS -->
+    <!-- ========================================================================= -->
+    <div id="tasks" class="section-pane active">
+      <div class="card">
+        <div class="card-title"><span>📝</span> 5 Đầu Việc Cần Làm Xong Trong Ngày Hôm Nay</div>
+        <p style="color: var(--text-muted); font-size: 14px;">
+          Bạn vừa chỉnh sửa file <code>Vehicle.java</code> với Lombok. Dưới đây là các file tiếp theo cần tạo và hoàn thiện để đóng gói trọn vẹn <b>Module Asset</b>:
+        </p>
+
+        <div class="task-group">
+          <!-- Task 1 -->
+          <div class="task-card">
+            <div class="task-card-head">
+              <span class="task-num">TASK 01 • ASSET DOMAIN</span>
+              <span class="task-prio prio-must">MUST DO</span>
+            </div>
+            <div style="font-weight: 700; color: #fff; margin-bottom: 8px;">Chuẩn hóa Vehicle.java & Driver.java</div>
+            <label class="task-item"><input type="checkbox" onchange="toggleDone(this)"><span>Sửa import <code>lombok.AccessLevel</code> trong <code>Vehicle.java</code>.</span></label>
+            <label class="task-item"><input type="checkbox" onchange="toggleDone(this)"><span>Áp dụng Lombok tương tự cho <code>Driver.java</code>.</span></label>
+            <label class="task-item"><input type="checkbox" onchange="toggleDone(this)"><span>Tạo enum <code>FuelType</code>, <code>EuroStandard</code>, <code>VehicleStatus</code>, <code>DriverStatus</code>.</span></label>
+          </div>
+
+          <!-- Task 2 -->
+          <div class="task-card">
+            <div class="task-card-head">
+              <span class="task-num">TASK 02 • NEW ENTITIES</span>
+              <span class="task-prio prio-must">MUST DO</span>
+            </div>
+            <div style="font-weight: 700; color: #fff; margin-bottom: 8px;">Tạo 4 Entities Mới Của Asset</div>
+            <label class="task-item"><input type="checkbox" onchange="toggleDone(this)"><span>Tạo <code>Container.java</code> (vỏ khô/lạnh 20ft/40ft theo bảng <code>container</code>).</span></label>
+            <label class="task-item"><input type="checkbox" onchange="toggleDone(this)"><span>Tạo <code>VehicleMaintenance.java</code> (bảng <code>vehicle_maintenance</code>).</span></label>
+            <label class="task-item"><input type="checkbox" onchange="toggleDone(this)"><span>Tạo <code>PreTripInspection.java</code> (bảng <code>pre_trip_inspection</code>).</span></label>
+            <label class="task-item"><input type="checkbox" onchange="toggleDone(this)"><span>Tạo <code>DriverShift.java</code> (bảng <code>driver_shift</code>).</span></label>
+          </div>
+
+          <!-- Task 3 -->
+          <div class="task-card">
+            <div class="task-card-head">
+              <span class="task-num">TASK 03 • REPOSITORIES</span>
+              <span class="task-prio prio-high">HIGH</span>
+            </div>
+            <div style="font-weight: 700; color: #fff; margin-bottom: 8px;">Mở Rộng Spring Data JPA Repositories</div>
+            <label class="task-item"><input type="checkbox" onchange="toggleDone(this)"><span>Tạo <code>ContainerRepository</code> trong <code>asset/infrastructure</code>.</span></label>
+            <label class="task-item"><input type="checkbox" onchange="toggleDone(this)"><span>Tạo <code>VehicleMaintenanceRepository</code> (tìm bảo dưỡng đang chạy).</span></label>
+            <label class="task-item"><input type="checkbox" onchange="toggleDone(this)"><span>Tạo <code>PreTripInspectionRepository</code> (tìm biên bản gần nhất).</span></label>
+          </div>
+
+          <!-- Task 4 -->
+          <div class="task-card">
+            <div class="task-card-head">
+              <span class="task-num">TASK 04 • BUSINESS LOGIC</span>
+              <span class="task-prio prio-must">MUST DO</span>
+            </div>
+            <div style="font-weight: 700; color: #fff; margin-bottom: 8px;">Cài Đặt Logic BRULE-01 Trong AssetService</div>
+            <label class="task-item"><input type="checkbox" onchange="toggleDone(this)"><span>Viết hàm <code>validateVehicleEligibility(UUID vehicleId)</code>.</span></label>
+            <label class="task-item"><input type="checkbox" onchange="toggleDone(this)"><span>Chặn xuất bến nếu xe đang MAINTENANCE hoặc checklist FAILED.</span></label>
+            <label class="task-item"><input type="checkbox" onchange="toggleDone(this)"><span>Ném <code>BusinessRuleViolationException</code> khi vi phạm.</span></label>
+          </div>
+
+          <!-- Task 5 -->
+          <div class="task-card">
+            <div class="task-card-head">
+              <span class="task-num">TASK 05 • VERIFICATION</span>
+              <span class="task-prio prio-must">TEST</span>
+            </div>
+            <div style="font-weight: 700; color: #fff; margin-bottom: 8px;">Kiểm Thử & Build Thành Công</div>
+            <label class="task-item"><input type="checkbox" onchange="toggleDone(this)"><span>Chạy <code>mvn clean test</code> đảm bảo test Modulith pass.</span></label>
+            <label class="task-item"><input type="checkbox" onchange="toggleDone(this)"><span>Bấm <code>Cmd + F9</code> trên IntelliJ không còn báo đỏ.</span></label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- SECTION 2: BUSINESS RULES -->
+    <!-- ========================================================================= -->
+    <div id="business" class="section-pane">
+      <div class="card">
+        <div class="card-title"><span>📋</span> Nghiệp Vụ Cốt Lõi Của Module Asset</div>
+
+        <table class="rule-table">
+          <thead>
+            <tr>
+              <th style="width: 130px;">Mã Nghiệp Vụ</th>
+              <th style="width: 220px;">Tên Quy Tắc</th>
+              <th>Đặc Tả Nghiệp Vụ Chi Tiết</th>
+              <th>Cách Xử Lý Khi Vi Phạm</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="badge badge-rule">BRULE-01</span></td>
+              <td><strong>Safety Eligibility Gate</strong></td>
+              <td>
+                Phương tiện đang bảo dưỡng (<code>MAINTENANCE</code>) hoặc biên bản kiểm định <code>pre_trip_inspection</code> có trạng thái <code>FAILED</code> 
+                <strong>tuyệt đối không được phép điều vận hoặc khởi hành chuyến đi</strong>.
+              </td>
+              <td>
+                Hệ thống từ chối tạo lệnh <code>dispatch_order</code> và chặn không cho tài xế bấm nút "Bắt đầu chuyến". Ném ngoại lệ <code>BusinessRuleViolationException</code>.
+              </td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-rule">BRULE-02</span></td>
+              <td><strong>Master Uniqueness</strong></td>
+              <td>
+                Mã xe (<code>vehicle_code</code>), Biển số (<code>plate_number</code>), Mã tài xế (<code>driver_code</code>) và Mã container (<code>container_code</code>) 
+                phải là duy nhất trên toàn hệ thống.
+              </td>
+              <td>
+                PostgreSQL kích hoạt ràng buộc <code>UNIQUE constraint</code>; Service bắt lỗi và trả về HTTP 409 Conflict với thông điệp rõ ràng cho người dùng.
+              </td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-sql">Checklist Audit</span></td>
+              <td><strong>Pre-Trip 6 Điểm An Toàn</strong></td>
+              <td>
+                Tài xế phải xác nhận 6 hạng mục an toàn trong <code>checklist_json</code>:
+                1. Lốp xe (tires), 2. Phanh (brakes), 3. Đèn (lights), 4. Dầu phanh/nước làm mát (fluids), 5. Bình cứu hỏa (fire_extinguisher), 6. Khóa chốt container (cargo_securing).
+              </td>
+              <td>
+                Nếu có bất kỳ mục nào = <code>FAIL</code> $\rightarrow$ <code>critical_failures_count &gt; 0</code> $\rightarrow$ Biên bản tự động đánh dấu <code>FAILED</code>.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- SECTION 3: SYSTEM FLOW -->
+    <!-- ========================================================================= -->
+    <div id="flow" class="section-pane">
+      <div class="card">
+        <div class="card-title"><span>🔄</span> Flow 1: Luồng Kiểm Tra An Toàn Trước Chuyến (Pre-trip Inspection Flow)</div>
+        <p style="color: var(--text-muted); font-size: 14px;">
+          Luồng xử lý khi tài xế đăng nhập vào ứng dụng và điền biên bản an toàn tại bãi xe trước khi xuất phát:
+        </p>
+
+        <div class="flow-box">
+          <div class="flow-step-row">
+            <div class="flow-node driver">1. Tài xế D001 nhận xe V001 tại bến</div>
+            <div class="flow-arrow">➔</div>
+            <div class="flow-node driver">2. Điền Checklist 6 điểm an toàn trên App</div>
+            <div class="flow-arrow">➔</div>
+            <div class="flow-node service">3. Gửi POST /api/v1/assets/inspections</div>
+          </div>
+
+          <div class="flow-step-row">
+            <div class="flow-arrow" style="transform: rotate(90deg); margin-left: 80px;">➔</div>
+          </div>
+
+          <div class="flow-step-row">
+            <div class="flow-node decision">4. Backend kiểm tra: Có hạng mục nào FAIL không?</div>
+          </div>
+
+          <div style="margin: 16px 0 0 20px; display: flex; flex-direction: column; gap: 14px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="color: var(--red); font-weight: 800; width: 80px;">NẾU CÓ ✘:</span>
+              <div class="flow-node block">
+                • status = FAILED<br>
+                • vehicle.status = MAINTENANCE<br>
+                • Báo động Dispatcher: Xe hỏng, cấm khởi hành!
+              </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="color: var(--green); font-weight: 800; width: 80px;">NẾU ĐẠT ✔:</span>
+              <div class="flow-node pass">
+                • status = PASSED<br>
+                • vehicle.status = AVAILABLE (Sẵn sàng nhận chuyến)<br>
+                • Cho phép bước tiếp theo: Điều phối & Lập tuyến!
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span>🔄</span> Flow 2: Luồng Dispatcher Thẩm Định Điều Xe (Eligibility Gate)</div>
+        <p style="color: var(--text-muted); font-size: 14px;">
+          Khi điều độ viên chuẩn bị gán xe vào đơn hàng, hệ thống tự động chạy qua 3 chốt kiểm soát an toàn:
+        </p>
+
+        <div class="flow-box">
+          <div class="flow-step-row">
+            <div class="flow-node driver">Dispatcher chọn xe V001 cho Đơn SH001</div>
+            <div class="flow-arrow">➔</div>
+            <div class="flow-node service">AssetService.validateVehicleReadiness(V001)</div>
+          </div>
+
+          <div style="margin-top: 14px; padding-left: 20px; border-left: 2px dashed #475569;">
+            <div style="margin-bottom: 8px;"><strong>Chốt 1:</strong> <code>vehicle.status == AVAILABLE</code>? <i>(Nếu = IN_TRANSIT hoặc MAINTENANCE $\rightarrow$ Chặn)</i></div>
+            <div style="margin-bottom: 8px;"><strong>Chốt 2:</strong> Có lịch bảo dưỡng nào đang ở trạng thái <code>IN_PROGRESS</code> không? <i>(Nếu có $\rightarrow$ Chặn)</i></div>
+            <div style="margin-bottom: 8px;"><strong>Chốt 3:</strong> Biên bản kiểm tra an toàn <code>PreTripInspection</code> gần nhất có phải <code>PASSED</code> không? <i>(Nếu FAILED $\rightarrow$ Chặn)</i></div>
+          </div>
+
+          <div style="margin-top: 14px; color: var(--green); font-weight: 700;">
+            ✔ VƯỢT QUA CẢ 3 CHỐT $\rightarrow$ HỢP LỆ $\rightarrow$ TẠO BẢN GHI DISPATCH_ORDER THÀNH CÔNG.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- SECTION 4: READY CODE TEMPLATES -->
+    <!-- ========================================================================= -->
+    <div id="code-ready" class="section-pane">
+      <div class="card">
+        <div class="card-title"><span>💻</span> Code Mẫu 4 Entity Của Asset (Sẵn Sàng Để Bạn Copy Vào Project)</div>
+
+        <!-- 1. Container.java -->
+        <h4 style="color: var(--blue); margin-top: 12px;">1. Container.java (Tạo tại: com.ccadro.asset.domain)</h4>
+        <pre><code><span class="kw">package</span> com.ccadro.asset.domain;
+
+<span class="kw">import</span> jakarta.persistence.*;
+<span class="kw">import</span> lombok.*;
+<span class="kw">import</span> lombok.experimental.FieldDefaults;
+<span class="kw">import</span> java.math.BigDecimal;
+<span class="kw">import</span> java.time.Instant;
+<span class="kw">import</span> java.util.UUID;
+
+<span class="an">@Entity</span>
+<span class="an">@Table</span>(name = <span class="st">"container"</span>)
+<span class="an">@Getter</span>
+<span class="an">@Setter</span>
+<span class="an">@NoArgsConstructor</span>
+<span class="an">@AllArgsConstructor</span>
+<span class="an">@FieldDefaults</span>(level = AccessLevel.PRIVATE)
+<span class="kw">public class</span> <span class="tp">Container</span> {
+
+    <span class="an">@Id</span>
+    <span class="an">@GeneratedValue</span>(strategy = GenerationType.AUTO)
+    <span class="tp">UUID</span> id;
+
+    <span class="an">@Column</span>(name = <span class="st">"container_code"</span>, nullable = <span class="kw">false</span>, unique = <span class="kw">true</span>, length = <span class="st">50</span>)
+    <span class="tp">String</span> containerCode;
+
+    <span class="an">@Column</span>(name = <span class="st">"container_type"</span>, nullable = <span class="kw">false</span>, length = <span class="st">30</span>)
+    <span class="tp">String</span> containerType; <span class="cm">// DRY_20FT, DRY_40FT, REEFER_20FT, REEFER_40FT...</span>
+
+    <span class="an">@Column</span>(name = <span class="st">"tare_weight_tons"</span>, nullable = <span class="kw">false</span>, precision = <span class="st">10</span>, scale = <span class="st">2</span>)
+    <span class="tp">BigDecimal</span> tareWeightTons;
+
+    <span class="an">@Column</span>(name = <span class="st">"max_payload_tons"</span>, nullable = <span class="kw">false</span>, precision = <span class="st">10</span>, scale = <span class="st">2</span>)
+    <span class="tp">BigDecimal</span> maxPayloadTons;
+
+    <span class="an">@Column</span>(name = <span class="st">"is_reefer"</span>, nullable = <span class="kw">false</span>)
+    <span class="tp">Boolean</span> isReefer = <span class="kw">false</span>;
+
+    <span class="an">@Column</span>(name = <span class="st">"status"</span>, nullable = <span class="kw">false</span>, length = <span class="st">30</span>)
+    <span class="tp">String</span> status = <span class="st">"AVAILABLE"</span>;
+
+    <span class="an">@Column</span>(name = <span class="st">"created_at"</span>, nullable = <span class="kw">false</span>, updatable = <span class="kw">false</span>)
+    <span class="tp">Instant</span> createdAt = Instant.now();
+}</code></pre>
+
+        <!-- 2. PreTripInspection.java -->
+        <h4 style="color: var(--blue); margin-top: 24px;">2. PreTripInspection.java (Tạo tại: com.ccadro.asset.domain)</h4>
+        <pre><code><span class="kw">package</span> com.ccadro.asset.domain;
+
+<span class="kw">import</span> jakarta.persistence.*;
+<span class="kw">import</span> lombok.*;
+<span class="kw">import</span> lombok.experimental.FieldDefaults;
+<span class="kw">import</span> java.time.Instant;
+<span class="kw">import</span> java.util.UUID;
+
+<span class="an">@Entity</span>
+<span class="an">@Table</span>(name = <span class="st">"pre_trip_inspection"</span>)
+<span class="an">@Getter</span>
+<span class="an">@Setter</span>
+<span class="an">@NoArgsConstructor</span>
+<span class="an">@AllArgsConstructor</span>
+<span class="an">@FieldDefaults</span>(level = AccessLevel.PRIVATE)
+<span class="kw">public class</span> <span class="tp">PreTripInspection</span> {
+
+    <span class="an">@Id</span>
+    <span class="an">@GeneratedValue</span>(strategy = GenerationType.AUTO)
+    <span class="tp">UUID</span> id;
+
+    <span class="an">@Column</span>(name = <span class="st">"vehicle_id"</span>, nullable = <span class="kw">false</span>)
+    <span class="tp">UUID</span> vehicleId;
+
+    <span class="an">@Column</span>(name = <span class="st">"driver_id"</span>, nullable = <span class="kw">false</span>)
+    <span class="tp">UUID</span> driverId;
+
+    <span class="an">@Column</span>(name = <span class="st">"shipment_id"</span>)
+    <span class="tp">UUID</span> shipmentId;
+
+    <span class="an">@Column</span>(name = <span class="st">"status"</span>, nullable = <span class="kw">false</span>, length = <span class="st">20</span>)
+    <span class="tp">String</span> status = <span class="st">"PASSED"</span>; <span class="cm">// PASSED, FAILED</span>
+
+    <span class="an">@Column</span>(name = <span class="st">"checklist_json"</span>, columnDefinition = <span class="st">"jsonb"</span>)
+    <span class="tp">String</span> checklistJson;
+
+    <span class="an">@Column</span>(name = <span class="st">"critical_failures_count"</span>, nullable = <span class="kw">false</span>)
+    <span class="tp">Integer</span> criticalFailuresCount = <span class="st">0</span>;
+
+    <span class="an">@Column</span>(name = <span class="st">"remarks"</span>, columnDefinition = <span class="st">"text"</span>)
+    <span class="tp">String</span> remarks;
+
+    <span class="an">@Column</span>(name = <span class="st">"inspection_time"</span>, nullable = <span class="kw">false</span>)
+    <span class="tp">Instant</span> inspectionTime = Instant.now();
+}</code></pre>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    function switchSection(sectionId) {
+      document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.section-pane').forEach(pane => pane.classList.remove('active'));
+
+      event.target.classList.add('active');
+      document.getElementById(sectionId).classList.add('active');
+    }
+
+    function toggleDone(checkbox) {
+      const parent = checkbox.closest('.task-item');
+      if (checkbox.checked) {
+        parent.classList.add('done');
+      } else {
+        parent.classList.remove('done');
+      }
+    }
+  </script>
+</body>
+</html>

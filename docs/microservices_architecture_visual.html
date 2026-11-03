@@ -1,0 +1,1380 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CCADRO - Enterprise Microservices Architecture Design</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: rgba(18, 26, 43, 0.82);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-hover: rgba(28, 40, 68, 0.95);
+      
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-faint: #64748b;
+
+      --primary: #10b981;
+      --primary-glow: rgba(16, 185, 129, 0.25);
+      --blue: #3b82f6;
+      --blue-glow: rgba(59, 130, 246, 0.25);
+      --purple: #8b5cf6;
+      --purple-glow: rgba(139, 92, 246, 0.25);
+      --amber: #f59e0b;
+      --amber-glow: rgba(245, 158, 11, 0.25);
+      --cyan: #06b6d4;
+      --cyan-glow: rgba(6, 182, 212, 0.25);
+      --red: #ef4444;
+      --red-glow: rgba(239, 68, 68, 0.25);
+
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      background-color: var(--bg);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.08) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(59, 130, 246, 0.08) 0px, transparent 50%),
+        radial-gradient(at 50% 100%, rgba(139, 92, 246, 0.06) 0px, transparent 50%);
+      color: var(--text-main);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      line-height: 1.6;
+      padding-bottom: 80px;
+      min-height: 100vh;
+    }
+
+    /* Header & Nav */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(9, 13, 22, 0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--card-border);
+      padding: 16px 36px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-logo {
+      width: 42px;
+      height: 42px;
+      background: linear-gradient(135deg, #10b981, #06b6d4);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      font-weight: 800;
+      color: #fff;
+      box-shadow: 0 4px 16px var(--primary-glow);
+    }
+
+    .brand-title h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      background: linear-gradient(90deg, #fff, #cbd5e1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-title p {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .nav-tabs {
+      display: flex;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      padding: 4px;
+      border-radius: 12px;
+      border: 1px solid var(--card-border);
+    }
+
+    .nav-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 8px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .nav-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .nav-btn.active {
+      color: #fff;
+      background: linear-gradient(135deg, var(--primary), #059669);
+      box-shadow: 0 4px 12px var(--primary-glow);
+    }
+
+    /* Container */
+    .container {
+      max-width: 1400px;
+      margin: 32px auto;
+      padding: 0 24px;
+    }
+
+    /* Section Header */
+    .section-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.8px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .section-subtitle {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+
+    /* Architecture Visual Canvas */
+    .topology-board {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 12px 36px rgba(0,0,0,0.4);
+      margin-bottom: 40px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .layer-group {
+      margin-bottom: 28px;
+    }
+
+    .layer-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-faint);
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .layer-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .grid-row {
+      display: grid;
+      gap: 18px;
+    }
+
+    .grid-clients { grid-template-columns: repeat(3, 1fr); }
+    .grid-edge { grid-template-columns: 2fr 1fr 1fr; }
+    .grid-services { grid-template-columns: repeat(3, 1fr); }
+    .grid-messaging { grid-template-columns: 2fr 1fr; }
+    .grid-dbs { grid-template-columns: repeat(6, 1fr); }
+
+    /* Microservice Box Card */
+    .node-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      transition: var(--transition);
+      cursor: pointer;
+      position: relative;
+    }
+
+    .node-card:hover {
+      background: var(--card-hover);
+      transform: translateY(-3px);
+      border-color: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 10px 24px rgba(0,0,0,0.3);
+    }
+
+    .node-card.active-selected {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px var(--primary), 0 12px 30px var(--primary-glow);
+    }
+
+    .node-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .node-title-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .node-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .node-name {
+      font-family: 'Outfit', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .port-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 3px 8px;
+      border-radius: 6px;
+      color: #cbd5e1;
+    }
+
+    .node-desc {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+      line-height: 1.5;
+    }
+
+    .tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .tag-badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.05);
+      color: #94a3b8;
+    }
+
+    /* Colors per domain */
+    .c-asset .node-icon { background: rgba(59, 130, 246, 0.2); color: var(--blue); }
+    .c-asset:hover { border-color: var(--blue); }
+    
+    .c-shipment .node-icon { background: rgba(139, 92, 246, 0.2); color: var(--purple); }
+    .c-shipment:hover { border-color: var(--purple); }
+
+    .c-routing .node-icon { background: rgba(16, 185, 129, 0.2); color: var(--primary); }
+    .c-routing:hover { border-color: var(--primary); }
+
+    .c-tracking .node-icon { background: rgba(245, 158, 11, 0.2); color: var(--amber); }
+    .c-tracking:hover { border-color: var(--amber); }
+
+    .c-carbon .node-icon { background: rgba(6, 182, 212, 0.2); color: var(--cyan); }
+    .c-carbon:hover { border-color: var(--cyan); }
+
+    .c-exception .node-icon { background: rgba(239, 68, 68, 0.2); color: var(--red); }
+    .c-exception:hover { border-color: var(--red); }
+
+    /* Flow connector beam */
+    .flow-connector {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 12px 0;
+      color: var(--text-faint);
+      font-size: 14px;
+      font-weight: 700;
+      gap: 8px;
+    }
+
+    .flow-connector span {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* Saga Simulator Pane */
+    .saga-board {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      margin-bottom: 40px;
+    }
+
+    .saga-control-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .btn-action {
+      background: linear-gradient(135deg, var(--primary), #059669);
+      color: #fff;
+      border: none;
+      padding: 10px 22px;
+      font-size: 14px;
+      font-weight: 700;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 14px var(--primary-glow);
+      transition: var(--transition);
+    }
+
+    .btn-action:hover {
+      transform: scale(1.02);
+      filter: brightness(1.1);
+    }
+
+    .btn-rollback {
+      background: linear-gradient(135deg, var(--red), #dc2626);
+      box-shadow: 0 4px 14px var(--red-glow);
+    }
+
+    .saga-steps-container {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 16px;
+      position: relative;
+    }
+
+    .saga-step-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      padding: 18px;
+      transition: var(--transition);
+      opacity: 0.5;
+    }
+
+    .saga-step-card.active {
+      opacity: 1;
+      border-color: var(--primary);
+      background: rgba(16, 185, 129, 0.08);
+      box-shadow: 0 0 20px var(--primary-glow);
+    }
+
+    .saga-step-card.rollback {
+      opacity: 1;
+      border-color: var(--red);
+      background: rgba(239, 68, 68, 0.1);
+      box-shadow: 0 0 20px var(--red-glow);
+    }
+
+    .step-number {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--text-faint);
+      margin-bottom: 8px;
+    }
+
+    .step-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .step-service {
+      font-size: 12px;
+      color: var(--cyan);
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .step-detail {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    /* Table Matrix */
+    .matrix-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .matrix-table th {
+      background: rgba(255, 255, 255, 0.03);
+      padding: 14px 18px;
+      text-align: left;
+      font-weight: 700;
+      color: #cbd5e1;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .matrix-table td {
+      padding: 14px 18px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      color: #94a3b8;
+    }
+
+    .matrix-table tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+      color: #fff;
+    }
+
+    .code-chip {
+      font-family: 'JetBrains Mono', monospace;
+      background: rgba(255, 255, 255, 0.07);
+      padding: 3px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #38bdf8;
+    }
+
+    /* Modal / Inspector Pane */
+    .inspector-pane {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin-top: 24px;
+      display: none;
+    }
+
+    .inspector-pane.show { display: block; animation: fadeIn 0.3s ease; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-logo">⚡</div>
+      <div class="brand-title">
+        <h1>CCADRO Enterprise Microservices Blueprint</h1>
+        <p>Kiến Trúc Cloud-Native Microservices Giám Sát Chuỗi Cung Ứng Xanh</p>
+      </div>
+    </div>
+
+    <nav class="nav-tabs">
+      <button class="nav-btn active" onclick="switchTab('topology')"><span>🗺️</span> Topology Tổng Thể</button>
+      <button class="nav-btn" onclick="switchTab('saga')"><span>🔄</span> Saga Pattern Simulator</button>
+      <button class="nav-btn" onclick="switchTab('data')"><span>🗄️</span> Database-per-Service (24 Bảng)</button>
+      <button class="nav-btn" onclick="switchTab('kafka')"><span>📬</span> Event Streaming & Kafka</button>
+    </nav>
+  </header>
+
+  <div class="container">
+
+    <!-- ========================================================================= -->
+    <!-- TAB 1: TOPOLOGY TỔNG THỂ -->
+    <!-- ========================================================================= -->
+    <div id="tab-topology">
+      <div class="section-title">
+        <span>🌐</span> Sơ Đồ Kiến Trúc C4 - Container Level
+      </div>
+      <p class="section-subtitle">
+        Bấm vào từng Service box bên dưới để xem chi tiết API Contracts, Ports, Database riêng và cơ chế chống nghẽn (Resilience).
+      </p>
+
+      <div class="topology-board">
+        
+        <!-- Client Layer -->
+        <div class="layer-group">
+          <div class="layer-label">1. Lớp Thiết Bị Ngoại Vi & Người Dùng (Client Layer)</div>
+          <div class="grid-row grid-clients">
+            <div class="node-card">
+              <div class="node-header">
+                <div class="node-title-box">
+                  <div class="node-icon" style="background: rgba(16,185,129,0.15); color: var(--primary);">🖥️</div>
+                  <div class="node-name">Web Portal Điều Phối</div>
+                </div>
+                <span class="port-pill">Port 3000</span>
+              </div>
+              <p class="node-desc">Giao diện điều độ viên (React 18, Vite, Leaflet Maps). Theo dõi xe live, xử lý cảnh báo lệch tuyến và duyệt Reroute.</p>
+              <div class="tag-list">
+                <span class="tag-badge">WebSocket</span>
+                <span class="tag-badge">REST Client</span>
+              </div>
+            </div>
+
+            <div class="node-card">
+              <div class="node-header">
+                <div class="node-title-box">
+                  <div class="node-icon" style="background: rgba(59,130,246,0.15); color: var(--blue);">📱</div>
+                  <div class="node-name">App Tài Xế Di Động</div>
+                </div>
+                <span class="port-pill">Mobile Client</span>
+              </div>
+              <p class="node-desc">Ứng dụng tài xế (Flutter/React Native). Điền checklist 6 điểm an toàn, nhận lộ trình, báo sự cố và ký nhận ePOD.</p>
+              <div class="tag-list">
+                <span class="tag-badge">Offline Buffer</span>
+                <span class="tag-badge">GPS Streamer</span>
+              </div>
+            </div>
+
+            <div class="node-card">
+              <div class="node-header">
+                <div class="node-title-box">
+                  <div class="node-icon" style="background: rgba(245,158,11,0.15); color: var(--amber);">📡</div>
+                  <div class="node-name">IoT OBD-II / GPS Tracker</div>
+                </div>
+                <span class="port-pill">Hardware Telemetry</span>
+              </div>
+              <p class="node-desc">Hộp đen gắn trên đầu kéo container. Bắn tọa độ GPS, tốc độ, góc lái tần suất 1-3 giây/lần qua 4G/LTE.</p>
+              <div class="tag-list">
+                <span class="tag-badge">MQTT / TCP</span>
+                <span class="tag-badge">High Frequency</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flow-connector">
+          <span>HTTPS / WSS / mTLS</span> ↓
+        </div>
+
+        <!-- Edge Layer -->
+        <div class="layer-group">
+          <div class="layer-label">2. Lớp Biên Mạng & Cổng Điều Hướng (Edge & Gateway Layer)</div>
+          <div class="grid-row grid-edge">
+            <div class="node-card" style="border-color: rgba(59, 130, 246, 0.4);">
+              <div class="node-header">
+                <div class="node-title-box">
+                  <div class="node-icon" style="background: rgba(59,130,246,0.2); color: var(--blue);">🛡️</div>
+                  <div class="node-name">Spring Cloud API Gateway</div>
+                </div>
+                <span class="port-pill">Port 8080</span>
+              </div>
+              <p class="node-desc">Cổng duy nhất tiếp nhận request từ bên ngoài. Xác thực JWT, phân quyền RBAC, cân bằng tải động và giới hạn tần suất (Rate Limiting) bằng Redis Token Bucket.</p>
+              <div class="tag-list">
+                <span class="tag-badge">JWT Validator</span>
+                <span class="tag-badge">Rate Limiting</span>
+                <span class="tag-badge">SSL Termination</span>
+                <span class="tag-badge">CORS Filter</span>
+              </div>
+            </div>
+
+            <div class="node-card">
+              <div class="node-header">
+                <div class="node-title-box">
+                  <div class="node-icon" style="background: rgba(139,92,246,0.2); color: var(--purple);">🔍</div>
+                  <div class="node-name">Service Discovery</div>
+                </div>
+                <span class="port-pill">Port 8761</span>
+              </div>
+              <p class="node-desc">Netflix Eureka / HashiCorp Consul. Quản lý danh bạ IP và kiểm tra sức khỏe (Health Check) của các microservice.</p>
+            </div>
+
+            <div class="node-card">
+              <div class="node-header">
+                <div class="node-title-box">
+                  <div class="node-icon" style="background: rgba(6,182,212,0.2); color: var(--cyan);">⚙️</div>
+                  <div class="node-name">Config Server</div>
+                </div>
+                <span class="port-pill">Port 8888</span>
+              </div>
+              <p class="node-desc">Quản lý cấu hình tập trung (Git-backed). Lưu trữ ngưỡng lệch tuyến, hệ số trọng số và API keys bí mật.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="flow-connector">
+          <span>Internal Routing & Load Balancing</span> ↓
+        </div>
+
+        <!-- Core Domain Microservices -->
+        <div class="layer-group">
+          <div class="layer-label">3. Lớp Dịch Vụ Nghiệp Vụ Cốt Lõi (Domain Microservices Layer)</div>
+          <div class="grid-row grid-services">
+            
+            <!-- Asset Service -->
+            <div class="node-card c-asset" onclick="inspectService('asset')">
+              <div class="node-header">
+                <div class="node-title-box">
+                  <div class="node-icon">🚛</div>
+                  <div class="node-name">asset-service</div>
+                </div>
+                <span class="port-pill">Port 8081</span>
+              </div>
+              <p class="node-desc">Quản lý xe, tài xế, vỏ container và lịch bảo dưỡng. Thực thi <strong>Pre-Trip 6 Điểm An Toàn</strong> trước chuyến.</p>
+              <div class="tag-list">
+                <span class="tag-badge">DB: ccadro_asset_db</span>
+                <span class="tag-badge">BRULE-01 Safety</span>
+              </div>
+            </div>
+
+            <!-- Shipment Service -->
+            <div class="node-card c-shipment" onclick="inspectService('shipment')">
+              <div class="node-header">
+                <div class="node-title-box">
+                  <div class="node-icon">📦</div>
+                  <div class="node-name">shipment-service</div>
+                </div>
+                <span class="port-pill">Port 8082</span>
+              </div>
+              <p class="node-desc">Quản lý đơn vận chuyển và lệnh điều phối. Đóng vai trò <strong>Saga Orchestrator</strong> quản lý luồng Dispatch.</p>
+              <div class="tag-list">
+                <span class="tag-badge">DB: ccadro_shipment_db</span>
+                <span class="tag-badge">Saga Coordinator</span>
+              </div>
+            </div>
+
+            <!-- Routing Service -->
+            <div class="node-card c-routing" onclick="inspectService('routing')">
+              <div class="node-header">
+                <div class="node-title-box">
+                  <div class="node-icon">🗺️</div>
+                  <div class="node-name">routing-service</div>
+                </div>
+                <span class="port-pill">Port 8083</span>
+              </div>
+              <p class="node-desc">Tính toán định tuyến xanh đa mục tiêu (CO2, Thời gian, Chi phí, Rủi ro). Tích hợp OSRM / OpenRouteService.</p>
+              <div class="tag-list">
+                <span class="tag-badge">DB: ccadro_routing_db</span>
+                <span class="tag-badge">UC05 Green Multi-Criteria</span>
+              </div>
+            </div>
+
+            <!-- Tracking Service -->
+            <div class="node-card c-tracking" onclick="inspectService('tracking')">
+              <div class="node-header">
+                <div class="node-title-box">
+                  <div class="node-icon">📍</div>
+                  <div class="node-name">tracking-service</div>
+                </div>
+                <span class="port-pill">Port 8084</span>
+              </div>
+              <p class="node-desc">Xử lý luồng tọa độ GPS cao tần, phát hiện xe chạy lệch tuyến (Buffer 50m / 200m) và đề xuất Reroute.</p>
+              <div class="tag-list">
+                <span class="tag-badge">DB: ccadro_tracking_db</span>
+                <span class="tag-badge">Spatial PostGIS Engine</span>
+              </div>
+            </div>
+
+            <!-- Carbon Service -->
+            <div class="node-card c-carbon" onclick="inspectService('carbon')">
+              <div class="node-header">
+                <div class="node-title-box">
+                  <div class="node-icon">🌱</div>
+                  <div class="node-name">carbon-service</div>
+                </div>
+                <span class="port-pill">Port 8085</span>
+              </div>
+              <p class="node-desc">Kế toán phát thải sau chuyến chuẩn GLEC v3 (WTW = WTT + TTW), đối chuẩn hành lang và xuất báo cáo kiểm toán ESG.</p>
+              <div class="tag-list">
+                <span class="tag-badge">DB: ccadro_carbon_db</span>
+                <span class="tag-badge">GLEC v3 Standard</span>
+              </div>
+            </div>
+
+            <!-- Exception Service -->
+            <div class="node-card c-exception" onclick="inspectService('exception')">
+              <div class="node-header">
+                <div class="node-title-box">
+                  <div class="node-icon">⚠️</div>
+                  <div class="node-name">exception-service</div>
+                </div>
+                <span class="port-pill">Port 8086</span>
+              </div>
+              <p class="node-desc">Tiếp nhận báo cáo sự cố hiện trường, thẩm định giải trình của tài xế và quản trị sổ điểm phạt (Demerit Points).</p>
+              <div class="tag-list">
+                <span class="tag-badge">DB: ccadro_exception_db</span>
+                <span class="tag-badge">Human-in-the-Loop</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="flow-connector">
+          <span>Event Streaming & State Sync</span> ↓
+        </div>
+
+        <!-- Messaging & Database Layer -->
+        <div class="layer-group">
+          <div class="layer-label">4. Lớp Message Broker & Lưu Trữ Dữ Liệu Riêng Biệt (Database-per-Service)</div>
+          <div class="grid-row grid-messaging" style="margin-bottom: 18px;">
+            <div class="node-card">
+              <div class="node-header">
+                <div class="node-title-box">
+                  <div class="node-icon" style="background: rgba(6,182,212,0.2); color: var(--cyan);">📬</div>
+                  <div class="node-name">Apache Kafka Cluster (Event Broker)</div>
+                </div>
+                <span class="port-pill">Port 9092</span>
+              </div>
+              <p class="node-desc">Hệ thống phân luồng sự kiện phân tán. Topics: <code>telemetry.ingested</code>, <code>deviation.alerts</code>, <code>reroute.proposed</code>, <code>trip.dispatched</code>, <code>carbon.calculated</code>.</p>
+            </div>
+
+            <div class="node-card">
+              <div class="node-header">
+                <div class="node-title-box">
+                  <div class="node-icon" style="background: rgba(239,68,68,0.2); color: var(--red);">⚡</div>
+                  <div class="node-name">Redis 7 (Ephemeral Cache & Live Fanout)</div>
+                </div>
+                <span class="port-pill">Port 6379</span>
+              </div>
+              <p class="node-desc">Đệm tọa độ tức thời cho Web Portal (Pub/Sub Fanout) và lưu trữ Token Bucket cho Rate Limiter.</p>
+            </div>
+          </div>
+
+          <div class="grid-row grid-dbs">
+            <div class="node-card" style="text-align: center; padding: 14px;">
+              <div style="font-size: 20px; margin-bottom: 6px;">🗄️</div>
+              <div style="font-size: 13px; font-weight: 700; color: #fff;">asset_db</div>
+              <div style="font-size: 11px; color: var(--text-faint);">PostgreSQL 16</div>
+            </div>
+
+            <div class="node-card" style="text-align: center; padding: 14px;">
+              <div style="font-size: 20px; margin-bottom: 6px;">🗺️</div>
+              <div style="font-size: 13px; font-weight: 700; color: #fff;">shipment_db</div>
+              <div style="font-size: 11px; color: var(--text-faint);">PostGIS 3.4</div>
+            </div>
+
+            <div class="node-card" style="text-align: center; padding: 14px;">
+              <div style="font-size: 20px; margin-bottom: 6px;">📐</div>
+              <div style="font-size: 13px; font-weight: 700; color: #fff;">routing_db</div>
+              <div style="font-size: 11px; color: var(--text-faint);">PostGIS 3.4</div>
+            </div>
+
+            <div class="node-card" style="text-align: center; padding: 14px;">
+              <div style="font-size: 20px; margin-bottom: 6px;">📈</div>
+              <div style="font-size: 13px; font-weight: 700; color: #fff;">tracking_db</div>
+              <div style="font-size: 11px; color: var(--text-faint);">TimescaleDB</div>
+            </div>
+
+            <div class="node-card" style="text-align: center; padding: 14px;">
+              <div style="font-size: 20px; margin-bottom: 6px;">🌿</div>
+              <div style="font-size: 13px; font-weight: 700; color: #fff;">carbon_db</div>
+              <div style="font-size: 11px; color: var(--text-faint);">PostgreSQL 16</div>
+            </div>
+
+            <div class="node-card" style="text-align: center; padding: 14px;">
+              <div style="font-size: 20px; margin-bottom: 6px;">⚖️</div>
+              <div style="font-size: 13px; font-weight: 700; color: #fff;">exception_db</div>
+              <div style="font-size: 11px; color: var(--text-faint);">PostgreSQL 16</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Service Detail Inspector -->
+      <div id="inspectorPane" class="inspector-pane">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h3 id="inspectTitle" style="font-size: 20px; font-family: 'Outfit';">Service Inspector</h3>
+          <button onclick="closeInspector()" style="background: transparent; border: none; color: #94a3b8; font-size: 18px; cursor: pointer;">✕</button>
+        </div>
+        <div id="inspectContent"></div>
+      </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 2: SAGA PATTERN SIMULATOR -->
+    <!-- ========================================================================= -->
+    <div id="tab-saga" style="display: none;">
+      <div class="section-title">
+        <span>🔄</span> Bộ Mô Phỏng Giao Dịch Phân Tán (Trip Dispatch Saga Simulator)
+      </div>
+      <p class="section-subtitle">
+        Trong kiến trúc Microservices, quy trình xuất chuyến kéo dài qua 4 microservices khác nhau. Hãy bấm nút để xem cách Saga Orchestrator phối hợp hoặc kích hoạt bù trừ (Rollback) khi có lỗi.
+      </p>
+
+      <div class="saga-board">
+        <div class="saga-control-bar">
+          <div>
+            <span style="font-weight: 700; font-size: 15px;">Kịch bản mô phỏng:</span>
+            <span style="font-size: 13px; color: var(--text-muted); margin-left: 8px;">Xuất bến đơn hàng <code>SHP-2026-001</code> với xe đầu kéo <code>51D-999.88</code></span>
+          </div>
+          <div style="display: flex; gap: 12px;">
+            <button class="btn-action" onclick="runSagaSuccess()">
+              <span>▶</span> Chạy Luồng Thành Công
+            </button>
+            <button class="btn-action btn-rollback" onclick="runSagaFailure()">
+              <span>⚠️</span> Mô Phỏng Lỗi & Bù Trừ (Rollback)
+            </button>
+          </div>
+        </div>
+
+        <div class="saga-steps-container">
+          
+          <div id="saga-step-1" class="saga-step-card">
+            <div class="step-number">BƯỚC 1</div>
+            <div class="step-title">Thẩm Định Điều Kiện Xe</div>
+            <div class="step-service">asset-service</div>
+            <div class="step-detail">
+              Kiểm tra Pre-Trip 6 điểm = PASSED và không có lịch bảo dưỡng dở dang (Rule BRULE-01).
+            </div>
+          </div>
+
+          <div id="saga-step-2" class="saga-step-card">
+            <div class="step-number">BƯỚC 2</div>
+            <div class="step-title">Khóa Tuyến Đường</div>
+            <div class="step-service">routing-service</div>
+            <div class="step-detail">
+              Khóa phiên bản lộ trình chính thức (RouteVersionId), chốt khoảng cách và lượng CO2 dự toán.
+            </div>
+          </div>
+
+          <div id="saga-step-3" class="saga-step-card">
+            <div class="step-number">BƯỚC 3</div>
+            <div class="step-title">Tạo Chuyến Giám Sát</div>
+            <div class="step-service">tracking-service</div>
+            <div class="step-detail">
+              Khởi tạo bản ghi Trip mới với trạng thái <code>SCHEDULED</code>, sẵn sàng nhận stream GPS.
+            </div>
+          </div>
+
+          <div id="saga-step-4" class="saga-step-card">
+            <div class="step-number">BƯỚC 4</div>
+            <div class="step-title">Khóa Tài Sản</div>
+            <div class="step-service">asset-service</div>
+            <div class="step-detail">
+              Cập nhật xe sang <code>ASSIGNED</code> và tài xế sang <code>ON_TRIP</code>.
+            </div>
+          </div>
+
+          <div id="saga-step-5" class="saga-step-card">
+            <div class="step-number">BƯỚC 5</div>
+            <div class="step-title">Xuất Bản Sự Kiện</div>
+            <div class="step-service">Apache Kafka</div>
+            <div class="step-detail">
+              Bắn event <code>ccadro.trip.dispatched</code> thông báo Web Portal và hệ thống kho hàng.
+            </div>
+          </div>
+
+        </div>
+
+        <div id="saga-status-log" style="margin-top: 24px; padding: 14px; background: rgba(0,0,0,0.3); border-radius: 8px; font-family: 'JetBrains Mono'; font-size: 13px; color: #94a3b8;">
+          Trạng thái: Sẵn sàng chạy mô phỏng...
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 3: DATABASE-PER-SERVICE (24 BẢNG) -->
+    <!-- ========================================================================= -->
+    <div id="tab-data" style="display: none;">
+      <div class="section-title">
+        <span>🗄️</span> Danh Mục 24 Bảng Dữ Liệu Theo Từng Microservice Database
+      </div>
+      <p class="section-subtitle">
+        Tuân thủ nguyên tắc cô lập dữ liệu tuyệt đối: Không truy vấn chéo DB (No Cross-DB Joins). Tất cả liên kết sử dụng UUID.
+      </p>
+
+      <div style="background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius-lg); overflow: hidden;">
+        <table class="matrix-table">
+          <thead>
+            <tr>
+              <th>Microservice</th>
+              <th>Cơ Sở Dữ Liệu Riêng</th>
+              <th>Bảng Dữ Liệu (Table Name)</th>
+              <th>Khóa Chính / Kiểu Tọa Độ</th>
+              <th>Nhiệm Vụ Nghiệp Vụ Cốt Lõi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="code-chip" style="color: var(--blue);">asset-service</span></td>
+              <td><code>ccadro_asset_db</code></td>
+              <td><strong style="color: #fff;">vehicle</strong></td>
+              <td><code>UUID</code></td>
+              <td>Đội xe, tải trọng, loại nhiên liệu, tiêu chuẩn Euro.</td>
+            </tr>
+            <tr>
+              <td><span class="code-chip" style="color: var(--blue);">asset-service</span></td>
+              <td><code>ccadro_asset_db</code></td>
+              <td><strong style="color: #fff;">driver</strong></td>
+              <td><code>UUID</code></td>
+              <td>Hồ sơ tài xế, số bằng lái, trạng thái điều xe.</td>
+            </tr>
+            <tr>
+              <td><span class="code-chip" style="color: var(--blue);">asset-service</span></td>
+              <td><code>ccadro_asset_db</code></td>
+              <td><strong style="color: #fff;">container</strong></td>
+              <td><code>UUID</code></td>
+              <td>Vỏ container khô/lạnh (20ft, 40ft, 45ft).</td>
+            </tr>
+            <tr>
+              <td><span class="code-chip" style="color: var(--blue);">asset-service</span></td>
+              <td><code>ccadro_asset_db</code></td>
+              <td><strong style="color: #fff;">vehicle_maintenance</strong></td>
+              <td><code>UUID</code></td>
+              <td>Lịch bảo dưỡng, chi phí, odometer hiện tại.</td>
+            </tr>
+            <tr>
+              <td><span class="code-chip" style="color: var(--blue);">asset-service</span></td>
+              <td><code>ccadro_asset_db</code></td>
+              <td><strong style="color: #fff;">pre_trip_inspection</strong></td>
+              <td><code>UUID (JSONB)</code></td>
+              <td>Biên bản 6 điểm an toàn trước chuyến (BRULE-01).</td>
+            </tr>
+            <tr>
+              <td><span class="code-chip" style="color: var(--blue);">asset-service</span></td>
+              <td><code>ccadro_asset_db</code></td>
+              <td><strong style="color: #fff;">driver_shift</strong></td>
+              <td><code>UUID</code></td>
+              <td>Ca trực và biên bản bàn giao xe.</td>
+            </tr>
+
+            <tr>
+              <td><span class="code-chip" style="color: var(--purple);">shipment-service</span></td>
+              <td><code>ccadro_shipment_db</code></td>
+              <td><strong style="color: #fff;">shipment</strong></td>
+              <td><code>Point (4326)</code></td>
+              <td>Vận đơn hàng hóa, tọa độ xuất phát & điểm dỡ hàng.</td>
+            </tr>
+            <tr>
+              <td><span class="code-chip" style="color: var(--purple);">shipment-service</span></td>
+              <td><code>ccadro_shipment_db</code></td>
+              <td><strong style="color: #fff;">dispatch_order</strong></td>
+              <td><code>UUID</code></td>
+              <td>Lệnh điều phối ghép nối xe, tài xế, lộ trình.</td>
+            </tr>
+
+            <tr>
+              <td><span class="code-chip" style="color: var(--primary);">routing-service</span></td>
+              <td><code>ccadro_routing_db</code></td>
+              <td><strong style="color: #fff;">route_candidate</strong></td>
+              <td><code>LineString (4326)</code></td>
+              <td>Các phương án lộ trình xanh đa mục tiêu.</td>
+            </tr>
+            <tr>
+              <td><span class="code-chip" style="color: var(--primary);">routing-service</span></td>
+              <td><code>ccadro_routing_db</code></td>
+              <td><strong style="color: #fff;">route_decision</strong></td>
+              <td><code>UUID</code></td>
+              <td>Biên bản quyết định chọn tuyến của điều độ viên.</td>
+            </tr>
+            <tr>
+              <td><span class="code-chip" style="color: var(--primary);">routing-service</span></td>
+              <td><code>ccadro_routing_db</code></td>
+              <td><strong style="color: #fff;">route_version</strong></td>
+              <td><code>LineString (4326)</code></td>
+              <td>Phiên bản lộ trình chuẩn để đối soát GPS.</td>
+            </tr>
+
+            <tr>
+              <td><span class="code-chip" style="color: var(--amber);">tracking-service</span></td>
+              <td><code>ccadro_tracking_db</code></td>
+              <td><strong style="color: #fff;">trip</strong></td>
+              <td><code>UUID</code></td>
+              <td>Chuyến xe đang vận hành trên đường.</td>
+            </tr>
+            <tr>
+              <td><span class="code-chip" style="color: var(--amber);">tracking-service</span></td>
+              <td><code>ccadro_tracking_db</code></td>
+              <td><strong style="color: #fff;">telemetry_event</strong></td>
+              <td><code>Point (4326)</code></td>
+              <td>Chuỗi thời gian tọa độ GPS thời gian thực (TimescaleDB).</td>
+            </tr>
+            <tr>
+              <td><span class="code-chip" style="color: var(--amber);">tracking-service</span></td>
+              <td><code>ccadro_tracking_db</code></td>
+              <td><strong style="color: #fff;">deviation_alert</strong></td>
+              <td><code>Point (4326)</code></td>
+              <td>Cảnh báo xe lệch hành lang (50m Vàng, 200m Đỏ).</td>
+            </tr>
+            <tr>
+              <td><span class="code-chip" style="color: var(--amber);">tracking-service</span></td>
+              <td><code>ccadro_tracking_db</code></td>
+              <td><strong style="color: #fff;">reroute_proposal</strong></td>
+              <td><code>LineString (4326)</code></td>
+              <td>Đề xuất tuyến mới khi kẹt xe (tiết kiệm >= 10%).</td>
+            </tr>
+
+            <tr>
+              <td><span class="code-chip" style="color: var(--cyan);">carbon-service</span></td>
+              <td><code>ccadro_carbon_db</code></td>
+              <td><strong style="color: #fff;">emission_factor</strong></td>
+              <td><code>UUID</code></td>
+              <td>Hệ số phát thải GLEC v3 chuẩn quốc tế.</td>
+            </tr>
+            <tr>
+              <td><span class="code-chip" style="color: var(--cyan);">carbon-service</span></td>
+              <td><code>ccadro_carbon_db</code></td>
+              <td><strong style="color: #fff;">emission_calculation</strong></td>
+              <td><code>UUID (JSONB)</code></td>
+              <td>Kết quả kế toán CO2 sau chuyến (WTW/WTT/TTW).</td>
+            </tr>
+            <tr>
+              <td><span class="code-chip" style="color: var(--cyan);">carbon-service</span></td>
+              <td><code>ccadro_carbon_db</code></td>
+              <td><strong style="color: #fff;">carbon_benchmark</strong></td>
+              <td><code>UUID</code></td>
+              <td>Chuẩn đối sánh hành lang vận tải xanh.</td>
+            </tr>
+            <tr>
+              <td><span class="code-chip" style="color: var(--cyan);">carbon-service</span></td>
+              <td><code>ccadro_carbon_db</code></td>
+              <td><strong style="color: #fff;">carbon_benchmark_result</strong></td>
+              <td><code>UUID</code></td>
+              <td>Bảng so sánh tuyến CCADRO với đường ngắn/nhanh nhất.</td>
+            </tr>
+            <tr>
+              <td><span class="code-chip" style="color: var(--cyan);">carbon-service</span></td>
+              <td><code>ccadro_carbon_db</code></td>
+              <td><strong style="color: #fff;">proof_of_delivery</strong></td>
+              <td><code>UUID</code></td>
+              <td>Ký nhận giao hàng (ePOD) & chốt cự ly thực tế.</td>
+            </tr>
+            <tr>
+              <td><span class="code-chip" style="color: var(--cyan);">carbon-service</span></td>
+              <td><code>ccadro_carbon_db</code></td>
+              <td><strong style="color: #fff;">carbon_report_export</strong></td>
+              <td><code>UUID</code></td>
+              <td>Lịch sử kết xuất báo cáo kiểm toán ESG.</td>
+            </tr>
+
+            <tr>
+              <td><span class="code-chip" style="color: var(--red);">exception-service</span></td>
+              <td><code>ccadro_exception_db</code></td>
+              <td><strong style="color: #fff;">field_incident</strong></td>
+              <td><code>Point (4326)</code></td>
+              <td>Báo cáo sự cố tai nạn, ngập lụt, tắc đường từ app.</td>
+            </tr>
+            <tr>
+              <td><span class="code-chip" style="color: var(--red);">exception-service</span></td>
+              <td><code>ccadro_exception_db</code></td>
+              <td><strong style="color: #fff;">exception_resolution</strong></td>
+              <td><code>UUID</code></td>
+              <td>Quyết định thẩm định của điều phối viên.</td>
+            </tr>
+            <tr>
+              <td><span class="code-chip" style="color: var(--red);">exception-service</span></td>
+              <td><code>ccadro_exception_db</code></td>
+              <td><strong style="color: #fff;">demerit_record</strong></td>
+              <td><code>UUID</code></td>
+              <td>Sổ trừ điểm hành vi và kỷ luật tài xế.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 4: EVENT STREAMING & KAFKA -->
+    <!-- ========================================================================= -->
+    <div id="tab-kafka" style="display: none;">
+      <div class="section-title">
+        <span>📬</span> Kiến Trúc Hướng Sự Kiện (Event-Driven Architecture với Kafka)
+      </div>
+      <p class="section-subtitle">
+        Danh mục các Kafka Topics chính thức dùng để đồng bộ trạng thái bất đồng bộ giữa các microservices.
+      </p>
+
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+        <div class="node-card">
+          <div class="node-header">
+            <span class="code-chip" style="color: var(--amber);">ccadro.telemetry.ingested</span>
+            <span class="port-pill">High Throughput</span>
+          </div>
+          <p class="node-desc"><strong>Producer:</strong> <code>tracking-service</code><br><strong>Consumers:</strong> <code>routing-service</code>, Web Dashboard</p>
+          <pre style="background: rgba(0,0,0,0.4); padding: 12px; border-radius: 8px; font-family: 'JetBrains Mono'; font-size: 11.5px; color: #a5f3fc; overflow-x: auto;">
+{
+  "eventId": "evt-88392",
+  "tripId": "d3b07384-d113-40aa-9a74-b529ef88764b",
+  "latitude": 10.762622,
+  "longitude": 106.660172,
+  "speedKmh": 54.2,
+  "headingDegrees": 182.0,
+  "distanceFromRouteMeters": 14.5,
+  "timestamp": "2026-10-24T14:40:00Z"
+}</pre>
+        </div>
+
+        <div class="node-card">
+          <div class="node-header">
+            <span class="code-chip" style="color: var(--red);">ccadro.deviation.alerts</span>
+            <span class="port-pill">Critical Alert</span>
+          </div>
+          <p class="node-desc"><strong>Producer:</strong> <code>tracking-service</code><br><strong>Consumers:</strong> <code>exception-service</code>, <code>routing-service</code></p>
+          <pre style="background: rgba(0,0,0,0.4); padding: 12px; border-radius: 8px; font-family: 'JetBrains Mono'; font-size: 11.5px; color: #fca5a5; overflow-x: auto;">
+{
+  "alertId": "alr-19284",
+  "tripId": "d3b07384-d113-40aa-9a74-b529ef88764b",
+  "severity": "RED",
+  "deviationMeters": 245.8,
+  "routeVersionId": "rv-102",
+  "timestamp": "2026-10-24T14:42:10Z"
+}</pre>
+        </div>
+
+        <div class="node-card">
+          <div class="node-header">
+            <span class="code-chip" style="color: var(--primary);">ccadro.trip.dispatched</span>
+            <span class="port-pill">Saga Complete</span>
+          </div>
+          <p class="node-desc"><strong>Producer:</strong> <code>shipment-service</code><br><strong>Consumers:</strong> <code>asset-service</code>, <code>tracking-service</code></p>
+          <pre style="background: rgba(0,0,0,0.4); padding: 12px; border-radius: 8px; font-family: 'JetBrains Mono'; font-size: 11.5px; color: #86efac; overflow-x: auto;">
+{
+  "dispatchId": "dsp-9921",
+  "tripCode": "TRP-2026-SG-HP-001",
+  "vehicleId": "v-001",
+  "driverId": "d-001",
+  "routeVersionId": "rv-102",
+  "dispatchedAt": "2026-10-24T14:45:00Z"
+}</pre>
+        </div>
+
+        <div class="node-card">
+          <div class="node-header">
+            <span class="code-chip" style="color: var(--cyan);">ccadro.carbon.calculated</span>
+            <span class="port-pill">ESG Audit Sealed</span>
+          </div>
+          <p class="node-desc"><strong>Producer:</strong> <code>carbon-service</code><br><strong>Consumers:</strong> Web Portal, ESG Reporting Service</p>
+          <pre style="background: rgba(0,0,0,0.4); padding: 12px; border-radius: 8px; font-family: 'JetBrains Mono'; font-size: 11.5px; color: #bae6fd; overflow-x: auto;">
+{
+  "calculationId": "calc-5541",
+  "tripId": "d3b07384-d113-40aa-9a74-b529ef88764b",
+  "totalCo2eKg": 142.85,
+  "wtwCo2eKg": 142.85,
+  "actualDistanceKm": 85.2,
+  "standard": "GLEC_v3.0",
+  "certifiedAt": "2026-10-24T17:30:00Z"
+}</pre>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Tab Switching
+    function switchTab(tabId) {
+      document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+
+      document.getElementById('tab-topology').style.display = tabId === 'topology' ? 'block' : 'none';
+      document.getElementById('tab-saga').style.display = tabId === 'saga' ? 'block' : 'none';
+      document.getElementById('tab-data').style.display = tabId === 'data' ? 'block' : 'none';
+      document.getElementById('tab-kafka').style.display = tabId === 'kafka' ? 'block' : 'none';
+    }
+
+    // Service Inspector Data
+    const serviceSpecs = {
+      asset: {
+        title: "🚛 asset-service (Port 8081)",
+        db: "ccadro_asset_db (PostgreSQL 16)",
+        resp: "Quản trị phương tiện xe tải, tài xế, container và thực thi biên bản Pre-Trip 6 điểm an toàn.",
+        apis: [
+          "POST /api/v1/assets/inspections (Nộp biên bản an toàn 6 điểm)",
+          "GET /api/v1/assets/vehicles/{id}/readiness (Thẩm định điều kiện xuất bến BRULE-01)",
+          "GET /api/v1/assets/containers (Danh sách container sẵn sàng)",
+          "POST /api/v1/assets/maintenance (Lập lịch bảo dưỡng)"
+        ],
+        resilience: "Resilience4j Circuit Breaker, DB Connection Pool (Hikari 20 connections max)."
+      },
+      shipment: {
+        title: "📦 shipment-service (Port 8082)",
+        db: "ccadro_shipment_db (PostGIS 3.4)",
+        resp: "Quản lý đơn vận hàng hóa, đóng vai trò Saga Orchestrator cho chu trình điều vận chuyến đi.",
+        apis: [
+          "POST /api/v1/shipments (Tạo vận đơn mới)",
+          "POST /api/v1/shipments/{id}/dispatch (Kích hoạt luồng Saga điều vận)",
+          "GET /api/v1/shipments/{id}/status (Tra cứu trạng thái)"
+        ],
+        resilience: "Transactional Outbox Pattern xuất bản sự kiện sang Kafka không sợ mất mát dữ liệu."
+      },
+      routing: {
+        title: "🗺️ routing-service (Port 8083)",
+        db: "ccadro_routing_db (PostGIS 3.4)",
+        resp: "Lập lộ trình đa tiêu chí xanh (Green Multi-Criteria), kết nối OSRM, tính toán cân bằng CO2 - Thời gian - Chi phí.",
+        apis: [
+          "POST /api/v1/routes/plan (Định tuyến đa tiêu chí)",
+          "POST /api/v1/routes/select (Dispatcher duyệt lộ trình)",
+          "POST /api/v1/routes/replan (Tính toán đường tránh tắc nghẽn)"
+        ],
+        resilience: "Fallback Provider tự động kích hoạt OpenRouteService nếu OSRM timeout > 3000ms."
+      },
+      tracking: {
+        title: "📍 tracking-service (Port 8084)",
+        db: "ccadro_tracking_db (PostGIS + TimescaleDB)",
+        resp: "Nuốt luồng GPS viễn thông tần suất cao, phát hiện lệch hành lang an toàn (Buffer 50m / 200m) và đề xuất Reroute.",
+        apis: [
+          "POST /api/v1/tracking/telemetry (Nhận GPS 1-3s)",
+          "GET /api/v1/tracking/trips/{id}/live (Lấy tọa độ realtime)",
+          "PUT /api/v1/tracking/reroute-proposals/{id}/decision (Duyệt đổi đường)"
+        ],
+        resilience: "Kafka Queue Buffer chống sốc tải khi hàng ngàn xe cùng gửi vị trí sau khi qua vùng mất sóng."
+      },
+      carbon: {
+        title: "🌱 carbon-service (Port 8085)",
+        db: "ccadro_carbon_db (PostgreSQL 16)",
+        resp: "Tính toán phát thải GLEC v3 chính thức sau chuyến, đối chuẩn hành lang và hỗ trợ bằng chứng giao hàng ePOD.",
+        apis: [
+          "POST /api/v1/carbon/calculate (Tính toán phát thải chuyến)",
+          "POST /api/v1/carbon/pod (Xác nhận giao hàng & chốt khoảng cách)",
+          "POST /api/v1/carbon/reports/export (Xuất báo cáo ESG)"
+        ],
+        resilience: "Tính toán bất đồng bộ qua Kafka Worker, không chặn luồng giao hàng của tài xế."
+      },
+      exception: {
+        title: "⚠️ exception-service (Port 8086)",
+        db: "ccadro_exception_db (PostgreSQL 16)",
+        resp: "Xử lý sự cố hiện trường, biên bản giải trình và quản trị điểm phạt kỷ luật tài xế.",
+        apis: [
+          "POST /api/v1/exceptions/incidents (Tài xế báo cáo sự cố)",
+          "PUT /api/v1/exceptions/incidents/{id}/resolve (Dispatcher thẩm định giải trình)",
+          "GET /api/v1/exceptions/drivers/{driverId}/demerits (Lịch sử điểm phạt)"
+        ],
+        resilience: "Human-in-the-Loop: Không cho phép thuật toán tự động cấm tài xế khi chưa có người duyệt."
+      }
+    };
+
+    function inspectService(key) {
+      const spec = serviceSpecs[key];
+      const pane = document.getElementById('inspectorPane');
+      const title = document.getElementById('inspectTitle');
+      const content = document.getElementById('inspectContent');
+
+      title.innerHTML = spec.title;
+      content.innerHTML = `
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; font-size: 13.5px;">
+          <div>
+            <p style="margin-bottom: 8px;"><strong>Cơ sở dữ liệu độc quyền:</strong> <code style="color: var(--cyan);">${spec.db}</code></p>
+            <p style="margin-bottom: 12px; color: var(--text-muted);">${spec.resp}</p>
+            <p><strong>Cơ chế chịu lỗi (Fault-Tolerance):</strong></p>
+            <p style="color: #cbd5e1; font-size: 13px;">${spec.resilience}</p>
+          </div>
+          <div>
+            <p style="margin-bottom: 8px;"><strong>REST API Endpoints:</strong></p>
+            <ul style="list-style: none; display: flex; flex-direction: column; gap: 6px;">
+              ${spec.apis.map(api => `<li style="background: rgba(0,0,0,0.3); padding: 6px 10px; border-radius: 6px; font-family: 'JetBrains Mono'; font-size: 12px; color: #a5f3fc;">${api}</li>`).join('')}
+            </ul>
+          </div>
+        </div>
+      `;
+
+      pane.classList.add('show');
+      pane.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function closeInspector() {
+      document.getElementById('inspectorPane').classList.remove('show');
+    }
+
+    // Saga Simulation Logic
+    function resetSagaSteps() {
+      for (let i = 1; i <= 5; i++) {
+        const el = document.getElementById(`saga-step-${i}`);
+        el.className = 'saga-step-card';
+      }
+    }
+
+    function runSagaSuccess() {
+      resetSagaSteps();
+      const log = document.getElementById('saga-status-log');
+      log.innerHTML = "⏳ [Khởi chạy] shipment-service bắt đầu quy trình Trip Dispatch Saga...";
+
+      setTimeout(() => {
+        document.getElementById('saga-step-1').classList.add('active');
+        log.innerHTML = "✅ [Bước 1/5] asset-service: Xe 51D-999.88 Pre-Trip = PASSED. Đạt chuẩn an toàn!";
+      }, 700);
+
+      setTimeout(() => {
+        document.getElementById('saga-step-2').classList.add('active');
+        log.innerHTML = "✅ [Bước 2/5] routing-service: Khóa RouteVersion RV-102 (CO2 ước tính: 142 kg).";
+      }, 1600);
+
+      setTimeout(() => {
+        document.getElementById('saga-step-3').classList.add('active');
+        log.innerHTML = "✅ [Bước 3/5] tracking-service: Tạo chuyến TRP-991, nạp geofence buffer 50m.";
+      }, 2500);
+
+      setTimeout(() => {
+        document.getElementById('saga-step-4').classList.add('active');
+        log.innerHTML = "✅ [Bước 4/5] asset-service: Chuyển trạng thái xe sang ASSIGNED, tài xế ON_TRIP.";
+      }, 3400);
+
+      setTimeout(() => {
+        document.getElementById('saga-step-5').classList.add('active');
+        log.innerHTML = "🎉 [Hoàn Tất] Đã xuất bản ccadro.trip.dispatched sang Kafka! Chuyến xe chính thức xuất bến.";
+      }, 4300);
+    }
+
+    function runSagaFailure() {
+      resetSagaSteps();
+      const log = document.getElementById('saga-status-log');
+      log.innerHTML = "⏳ [Khởi chạy] Bắt đầu mô phỏng luồng thất bại và kích hoạt Bù trừ (Rollback)...";
+
+      setTimeout(() => {
+        document.getElementById('saga-step-1').classList.add('active');
+        log.innerHTML = "✅ [Bước 1] asset-service: Xe đạt điều kiện an toàn.";
+      }, 600);
+
+      setTimeout(() => {
+        document.getElementById('saga-step-2').classList.add('active');
+        log.innerHTML = "✅ [Bước 2] routing-service: Đã tạo RouteVersion RV-102.";
+      }, 1400);
+
+      setTimeout(() => {
+        const step3 = document.getElementById('saga-step-3');
+        step3.className = 'saga-step-card rollback';
+        log.innerHTML = "❌ [Bước 3 THẤT BẠI] tracking-service: Lỗi kết nối TimescaleDB (Connection Timeout)!";
+      }, 2300);
+
+      setTimeout(() => {
+        const step2 = document.getElementById('saga-step-2');
+        step2.className = 'saga-step-card rollback';
+        log.innerHTML = "🔄 [Bù Trừ 1/2] shipment-service gửi lệnh Rollback tới routing-service: Hủy RouteVersion RV-102.";
+      }, 3300);
+
+      setTimeout(() => {
+        const step1 = document.getElementById('saga-step-1');
+        step1.className = 'saga-step-card rollback';
+        log.innerHTML = "🔄 [Bù Trừ 2/2] shipment-service mở khóa xe tại asset-service: Giữ xe ở trạng thái AVAILABLE.";
+      }, 4300);
+
+      setTimeout(() => {
+        log.innerHTML = "🛑 [Saga Aborted] Quy trình bù trừ hoàn tất! Dữ liệu được bảo toàn nhất quán, không có dữ liệu rác.";
+      }, 5300);
+    }
+  </script>
+</body>
+</html>

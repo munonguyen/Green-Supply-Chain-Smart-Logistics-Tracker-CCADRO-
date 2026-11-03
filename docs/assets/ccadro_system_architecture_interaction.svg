@@ -1,0 +1,375 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1480 1040" width="100%" height="100%" style="background: #080d1a; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <defs>
+    <filter id="shadow">
+      <feOffset dx="0" dy="0"/>
+    </filter>
+    <filter id="glow-purple">
+      <feOffset dx="0" dy="0"/>
+    </filter>
+
+    <!-- Arrow Markers -->
+    <marker id="arr-gray" viewBox="0 0 10 10" refX="7.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#94a3b8"/>
+    </marker>
+    <marker id="arr-blue" viewBox="0 0 10 10" refX="7.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#38bdf8"/>
+    </marker>
+    <marker id="arr-green" viewBox="0 0 10 10" refX="7.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#10b981"/>
+    </marker>
+    <marker id="arr-purple" viewBox="0 0 10 10" refX="7.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#a855f7"/>
+    </marker>
+    <marker id="arr-amber" viewBox="0 0 10 10" refX="7.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#f59e0b"/>
+    </marker>
+    <marker id="arr-red" viewBox="0 0 10 10" refX="7.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#f43f5e"/>
+    </marker>
+
+    <linearGradient id="bg-canvas" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#070b14"/>
+      <stop offset="50%" stop-color="#0d1526"/>
+      <stop offset="100%" stop-color="#07121c"/>
+    </linearGradient>
+    <linearGradient id="gw-box" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#17253b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="kafka-box" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#6b21a8"/>
+      <stop offset="100%" stop-color="#3b0764"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Canvas Background -->
+  <rect width="1480" height="1040" fill="url(#bg-canvas)"/>
+
+  <!-- Top Window Title Bar -->
+  <rect x="0" y="0" width="1480" height="52" fill="#0b1120" stroke="#1e293b" stroke-width="1"/>
+  <circle cx="26" cy="26" r="6" fill="#f43f5e"/>
+  <circle cx="46" cy="26" r="6" fill="#f59e0b"/>
+  <circle cx="66" cy="26" r="6" fill="#10b981"/>
+  <text x="740" y="32" text-anchor="middle" font-size="15.5" font-weight="800" fill="#f8fafc" letter-spacing="0.4">
+    KIẾN TRÚC HỆ THỐNG CCADRO ENTERPRISE v4.0 HOÀN CHỈNH (8 MICROSERVICES • KAFKA + OUTBOX • SAGA • MULTI-FUEL GLEC v3)
+  </text>
+
+  <!-- Rocket Badge at Top Center (matching Bookteria header) -->
+  <g transform="translate(718, 60)">
+    <circle cx="22" cy="20" r="20" fill="rgba(244, 63, 94, 0.14)" stroke="#f43f5e" stroke-width="1.2"/>
+    <text x="22" y="27" text-anchor="middle" font-size="20">🚀</text>
+  </g>
+
+  <!-- ==================== LAYER 1: CLIENT APPLICATIONS ==================== -->
+  <!-- Client 1: CCADRO Webapp (React JS + Leaflet) -->
+  <g transform="translate(390, 96)">
+    <!-- WWW Browser Icon -->
+    <g transform="translate(112, 0)">
+      <rect x="0" y="0" width="56" height="42" rx="6" fill="#1e293b" stroke="#38bdf8" stroke-width="1.6"/>
+      <rect x="0" y="0" width="56" height="11" rx="4" fill="#38bdf8"/>
+      <circle cx="7" cy="5.5" r="2" fill="#0f172a"/>
+      <circle cx="14" cy="5.5" r="2" fill="#0f172a"/>
+      <text x="28" y="30" text-anchor="middle" font-size="12" font-weight="800" fill="#38bdf8">WWW</text>
+    </g>
+    <rect x="0" y="50" width="280" height="66" rx="12" fill="#131d31" stroke="#38bdf8" stroke-width="1.8"/>
+    <text x="140" y="74" text-anchor="middle" font-size="13.5" font-weight="800" fill="#f8fafc">CCADRO Webapp</text>
+    <text x="140" y="92" text-anchor="middle" font-size="11.5" font-weight="700" fill="#38bdf8">(React 18 + Leaflet GIS :5173)</text>
+    <text x="140" y="107" text-anchor="middle" font-size="9.5" fill="#94a3b8">Dispatcher • Safety Manager • ESG Auditor</text>
+  </g>
+
+  <!-- Client 2: CCADRO Mobile App & IoT GPS -->
+  <g transform="translate(810, 96)">
+    <!-- Smartphone Icon -->
+    <g transform="translate(122, 0)">
+      <rect x="4" y="0" width="32" height="44" rx="5" fill="#1e293b" stroke="#10b981" stroke-width="1.6"/>
+      <rect x="8" y="5" width="24" height="28" rx="2" fill="#064e3b"/>
+      <circle cx="20" cy="39" r="2" fill="#10b981"/>
+      <text x="20" y="24" text-anchor="middle" font-size="12">📱</text>
+    </g>
+    <rect x="0" y="50" width="280" height="66" rx="12" fill="#131d31" stroke="#10b981" stroke-width="1.8"/>
+    <text x="140" y="74" text-anchor="middle" font-size="13.5" font-weight="800" fill="#f8fafc">CCADRO Mobile &amp; GPS Box</text>
+    <text x="140" y="92" text-anchor="middle" font-size="11.5" font-weight="700" fill="#10b981">(Flutter App / OBD-II Telemetry)</text>
+    <text x="140" y="107" text-anchor="middle" font-size="9.5" fill="#94a3b8">Pre-Trip 6 Điểm • GPS 1-5s • Sự Cố • ePOD</text>
+  </g>
+
+  <!-- Arrows from Clients to API Gateway -->
+  <path d="M 530 212 L 690 258" stroke="#94a3b8" stroke-width="2" fill="none" marker-end="url(#arr-gray)"/>
+  <path d="M 950 212 L 790 258" stroke="#94a3b8" stroke-width="2" fill="none" marker-end="url(#arr-gray)"/>
+
+  <!-- ==================== LAYER 2: API GATEWAY (:8888) ==================== -->
+  <g transform="translate(560, 262)">
+    <rect x="0" y="0" width="360" height="76" rx="14" fill="url(#gw-box)" stroke="#38bdf8" stroke-width="2.2"/>
+    <text x="180" y="27" text-anchor="middle" font-size="15.5" font-weight="800" fill="#f8fafc">Api gateway</text>
+    <text x="180" y="46" text-anchor="middle" font-size="12.5" font-weight="700" fill="#38bdf8">(Spring cloud gateway :8888)</text>
+    <text x="180" y="64" text-anchor="middle" font-size="10" fill="#94a3b8">JWT AuthFilter • Global CORS • Rate Limit • Swagger Hub</text>
+
+    <!-- AWS/Spring API Gateway Icon on Right (exact Bookteria style) -->
+    <g transform="translate(376, 9)">
+      <rect x="0" y="0" width="58" height="58" rx="10" fill="#162033" stroke="#38bdf8" stroke-width="1.6"/>
+      <path d="M 14 13 L 14 45 M 44 13 L 44 45" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round"/>
+      <text x="29" y="34" text-anchor="middle" font-size="13" font-weight="800" fill="#38bdf8">&lt;/&gt;</text>
+    </g>
+  </g>
+
+  <!-- ==================== LAYER 3: DASHED BACKEND BOUNDARY BOX ==================== -->
+  <rect x="36" y="382" width="1408" height="582" rx="18" fill="rgba(13, 21, 38, 0.55)" stroke="#475569" stroke-width="2" stroke-dasharray="9,6"/>
+
+  <!-- Bookteria-style Backend Label at Bottom-Left of Dashed Box -->
+  <g transform="translate(56, 916)">
+    <text x="0" y="18" font-size="17" font-weight="800" fill="#f8fafc">CCADRO</text>
+    <text x="0" y="35" font-size="11.5" font-weight="600" fill="#94a3b8">[CCADRO backend • 8 Microservices • Database-per-Service]</text>
+  </g>
+
+  <!-- ==================== AUTHENTICATION BRANCH (GATEWAY <-> IDENTITY :8080) ==================== -->
+  <path d="M 185 458 L 185 300 L 552 300" stroke="#10b981" stroke-width="2.2" fill="none" marker-end="url(#arr-green)" marker-start="url(#arr-green)"/>
+  <rect x="255" y="286" width="215" height="24" rx="6" fill="#0b1120" stroke="#10b981" stroke-width="1.2"/>
+  <text x="362" y="302" text-anchor="middle" font-size="11" font-weight="700" fill="#10b981">authentication (/auth/introspect)</text>
+
+  <!-- ==================== GATEWAY FAN-OUT ARROWS TO ALL SERVICES ==================== -->
+  <!-- Gateway -> Asset (:8081) -->
+  <path d="M 660 338 L 460 452" stroke="#94a3b8" stroke-width="1.8" fill="none" marker-end="url(#arr-gray)"/>
+  <!-- Gateway -> Shipment (:8082) -->
+  <path d="M 715 338 L 745 452" stroke="#94a3b8" stroke-width="1.8" fill="none" marker-end="url(#arr-gray)"/>
+  <!-- Gateway -> Routing (:8083) -->
+  <path d="M 770 338 L 1030 452" stroke="#94a3b8" stroke-width="1.8" fill="none" marker-end="url(#arr-gray)"/>
+  <!-- Gateway -> Tracking (:8084) -->
+  <path d="M 830 338 L 1295 452" stroke="#94a3b8" stroke-width="1.8" fill="none" marker-end="url(#arr-gray)"/>
+
+  <!-- Gateway -> Notification (:8087 - SSE Stream & ACK) -->
+  <path d="M 610 338 L 315 415 L 245 778" stroke="#38bdf8" stroke-width="1.6" stroke-dasharray="5,3" fill="none" marker-end="url(#arr-blue)"/>
+  <!-- Gateway -> Incident (:8086) -->
+  <path d="M 690 338 L 595 415 L 555 778" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="5,3" fill="none" marker-end="url(#arr-gray)"/>
+  <!-- Gateway -> File/ePOD Service -->
+  <path d="M 790 338 L 885 415 L 875 778" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="5,3" fill="none" marker-end="url(#arr-gray)"/>
+  <!-- Gateway -> Carbon & Multi-Fuel (:8085) -->
+  <path d="M 880 338 L 1165 415 L 1215 778" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="5,3" fill="none" marker-end="url(#arr-gray)"/>
+
+  <!-- ==================== ROW 1: 5 CORE OPERATIONAL MICROSERVICES (:8080 - :8084) ==================== -->
+
+  <!-- 1. Identity Service (:8080) -->
+  <g transform="translate(58, 458)">
+    <!-- Green Key Icon (exact Bookteria style) -->
+    <g transform="translate(0, 18)">
+      <rect x="0" y="0" width="46" height="56" rx="10" fill="rgba(16, 185, 129, 0.15)" stroke="#10b981" stroke-width="1.6"/>
+      <text x="23" y="36" text-anchor="middle" font-size="24">🔑</text>
+    </g>
+    <rect x="54" y="0" width="198" height="96" rx="12" fill="#141e33" stroke="#10b981" stroke-width="2"/>
+    <text x="153" y="24" text-anchor="middle" font-size="13.5" font-weight="800" fill="#f8fafc">Identity Service</text>
+    <text x="153" y="42" text-anchor="middle" font-size="11.5" font-weight="700" fill="#10b981">(PostgreSQL • :8080)</text>
+    <line x1="68" y1="51" x2="238" y2="51" stroke="#1e293b" stroke-width="1"/>
+    <text x="153" y="67" text-anchor="middle" font-size="10" fill="#cbd5e1">JWT Auth • RBAC 5 Roles</text>
+    <text x="153" y="83" text-anchor="middle" font-size="9.5" fill="#94a3b8">InvalidatedToken Blacklist</text>
+  </g>
+
+  <!-- 2. Asset Service (:8081) -->
+  <g transform="translate(340, 458)">
+    <g transform="translate(0, 18)">
+      <rect x="0" y="0" width="46" height="56" rx="10" fill="rgba(168, 85, 247, 0.15)" stroke="#a855f7" stroke-width="1.6"/>
+      <text x="23" y="21" text-anchor="middle" font-size="8.5" font-weight="800" fill="#c084fc">ASSET</text>
+      <text x="23" y="43" text-anchor="middle" font-size="20">🚛</text>
+    </g>
+    <rect x="54" y="0" width="198" height="96" rx="12" fill="#141e33" stroke="#a855f7" stroke-width="2"/>
+    <text x="153" y="24" text-anchor="middle" font-size="13.5" font-weight="800" fill="#f8fafc">Asset Service</text>
+    <text x="153" y="42" text-anchor="middle" font-size="11.5" font-weight="700" fill="#c084fc">(PostgreSQL • :8081)</text>
+    <line x1="68" y1="51" x2="238" y2="51" stroke="#1e293b" stroke-width="1"/>
+    <text x="153" y="67" text-anchor="middle" font-size="10" fill="#cbd5e1">Xe • Tài Xế • Container • Bảo Dưỡng</text>
+    <text x="153" y="83" text-anchor="middle" font-size="9.5" fill="#94a3b8">UC03 Pre-Trip 6 Điểm (BRULE-01)</text>
+  </g>
+
+  <!-- 3. Shipment Service (:8082 - Saga Orchestrator) -->
+  <g transform="translate(622, 458)">
+    <g transform="translate(0, 18)">
+      <rect x="0" y="0" width="46" height="56" rx="10" fill="rgba(245, 158, 11, 0.15)" stroke="#f59e0b" stroke-width="1.6"/>
+      <text x="23" y="21" text-anchor="middle" font-size="8.5" font-weight="800" fill="#fbbf24">SAGA</text>
+      <text x="23" y="43" text-anchor="middle" font-size="20">📦</text>
+    </g>
+    <rect x="54" y="0" width="204" height="96" rx="12" fill="#141e33" stroke="#f59e0b" stroke-width="2"/>
+    <text x="156" y="24" text-anchor="middle" font-size="13.5" font-weight="800" fill="#f8fafc">Shipment Service</text>
+    <text x="156" y="42" text-anchor="middle" font-size="11.5" font-weight="700" fill="#fbbf24">(PostGIS 3.4 • :8082)</text>
+    <line x1="68" y1="51" x2="244" y2="51" stroke="#1e293b" stroke-width="1"/>
+    <text x="156" y="67" text-anchor="middle" font-size="10" fill="#cbd5e1">Point(4326) • UC06 Dispatch Saga</text>
+    <text x="156" y="83" text-anchor="middle" font-size="9.5" fill="#fde68a">BRULE-03 Overweight + Outbox</text>
+  </g>
+
+  <!-- 4. Routing Service (:8083) -->
+  <g transform="translate(910, 458)">
+    <g transform="translate(0, 18)">
+      <rect x="0" y="0" width="46" height="56" rx="10" fill="rgba(56, 189, 248, 0.15)" stroke="#38bdf8" stroke-width="1.6"/>
+      <text x="23" y="21" text-anchor="middle" font-size="8.5" font-weight="800" fill="#38bdf8">UC05</text>
+      <text x="23" y="43" text-anchor="middle" font-size="20">🛣️</text>
+    </g>
+    <rect x="54" y="0" width="204" height="96" rx="12" fill="#141e33" stroke="#38bdf8" stroke-width="2"/>
+    <text x="156" y="24" text-anchor="middle" font-size="13.5" font-weight="800" fill="#f8fafc">Routing Service</text>
+    <text x="156" y="42" text-anchor="middle" font-size="11.5" font-weight="700" fill="#38bdf8">(PostGIS + OSRM • :8083)</text>
+    <line x1="68" y1="51" x2="244" y2="51" stroke="#1e293b" stroke-width="1"/>
+    <text x="156" y="67" text-anchor="middle" font-size="10" fill="#cbd5e1">Pareto: CO₂ • Time • Fuel Cost</text>
+    <text x="156" y="83" text-anchor="middle" font-size="9.5" fill="#94a3b8">LineString(4326) • RouteVersion</text>
+  </g>
+
+  <!-- 5. Tracking Service (:8084) -->
+  <g transform="translate(1198, 458)">
+    <rect x="0" y="0" width="222" height="96" rx="12" fill="#141e33" stroke="#f43f5e" stroke-width="2"/>
+    <text x="111" y="24" text-anchor="middle" font-size="13.5" font-weight="800" fill="#f8fafc">Tracking Service</text>
+    <text x="111" y="42" text-anchor="middle" font-size="11.5" font-weight="700" fill="#fb7185">(PostGIS + Redis • :8084)</text>
+    <line x1="14" y1="51" x2="208" y2="51" stroke="#1e293b" stroke-width="1"/>
+    <text x="111" y="67" text-anchor="middle" font-size="10" fill="#cbd5e1">UC09 Lệch 3 Điểm (50m/200m)</text>
+    <text x="111" y="83" text-anchor="middle" font-size="9.5" fill="#fecdd3">UC10 Reroute (300s, ≥10%) + Outbox</text>
+  </g>
+
+  <!-- Synchronous Saga & Hard-Gate Arrows between Row 1 Services -->
+  <!-- Shipment <-> Asset (Saga Step 1: Reserve & Safety/Payload Check) -->
+  <path d="M 622 504 L 598 504" stroke="#f59e0b" stroke-width="2.2" marker-end="url(#arr-amber)"/>
+  <!-- Shipment -> Routing (Saga Step 2: Lock RouteVersion) -->
+  <path d="M 880 504 L 906 504" stroke="#38bdf8" stroke-width="2.2" marker-end="url(#arr-blue)"/>
+  <!-- Tracking <-> Routing (UC10 Dynamic Reroute) -->
+  <path d="M 1198 504 L 1172 504" stroke="#f43f5e" stroke-width="2.2" marker-end="url(#arr-red)"/>
+
+  <!-- ==================== MIDDLE LAYER: APACHE KAFKA + TRANSACTIONAL OUTBOX + REDIS ==================== -->
+
+  <!-- Apache Kafka Hub (Purple Box in Center, matching Bookteria!) -->
+  <g transform="translate(470, 616)">
+    <!-- Purple Kafka Square Icon -->
+    <rect x="0" y="0" width="88" height="84" rx="14" fill="url(#kafka-box)" stroke="#c084fc" stroke-width="2.2"/>
+    <circle cx="44" cy="25" r="7.5" fill="none" stroke="#f3e8ff" stroke-width="2.2"/>
+    <circle cx="25" cy="52" r="6.5" fill="none" stroke="#f3e8ff" stroke-width="2"/>
+    <circle cx="63" cy="52" r="6.5" fill="none" stroke="#f3e8ff" stroke-width="2"/>
+    <line x1="39" y1="31" x2="29" y2="46" stroke="#f3e8ff" stroke-width="2"/>
+    <line x1="49" y1="31" x2="59" y2="46" stroke="#f3e8ff" stroke-width="2"/>
+    <line x1="32" y1="52" x2="56" y2="52" stroke="#f3e8ff" stroke-width="2"/>
+    <text x="44" y="75" text-anchor="middle" font-size="9.5" font-weight="800" fill="#f3e8ff">APACHE KAFKA</text>
+
+    <!-- Kafka + Transactional Outbox Specification Card -->
+    <rect x="102" y="4" width="385" height="76" rx="12" fill="#141e33" stroke="#a855f7" stroke-width="1.8"/>
+    <text x="294" y="25" text-anchor="middle" font-size="12.5" font-weight="800" fill="#e9d5ff">
+      Event Streaming Bus (:9092) + Transactional Outbox
+    </text>
+    <text x="294" y="44" text-anchor="middle" font-size="10" fill="#cbd5e1">
+      • Topics: ccadro.emergency.notifications • ccadro.trip.delivered
+    </text>
+    <text x="294" y="60" text-anchor="middle" font-size="10" fill="#34d399">
+      • Outbox Pattern (outbox_event PENDING ➔ PUBLISHED) chống mất tin
+    </text>
+    <text x="294" y="74" text-anchor="middle" font-size="9.5" fill="#94a3b8">
+      • Idempotent Consumer (Deduplication 300s = Exactly-Once Delivery)
+    </text>
+  </g>
+
+  <!-- Redis 7 Ephemeral Geo Cache Box (Right of Kafka) -->
+  <g transform="translate(1015, 620)">
+    <rect x="0" y="0" width="320" height="76" rx="12" fill="#141e33" stroke="#f43f5e" stroke-width="1.6"/>
+    <text x="160" y="25" text-anchor="middle" font-size="12.5" font-weight="800" fill="#fda4af">
+      ⚡ Redis 7 Ephemeral Geo Cache (:6379)
+    </text>
+    <text x="160" y="44" text-anchor="middle" font-size="10" fill="#cbd5e1">
+      • Live GPS Position Cache (trip:loc:{id} TTL 300s)
+    </text>
+    <text x="160" y="60" text-anchor="middle" font-size="10" fill="#94a3b8">
+      • Reroute Cooldown Lock (300s) &amp; Alert Dedup Window
+    </text>
+  </g>
+
+  <!-- Tracking <-> Redis Live Cache Arrow -->
+  <path d="M 1265 554 L 1210 620" stroke="#f43f5e" stroke-width="1.8" stroke-dasharray="4,3" fill="none" marker-end="url(#arr-red)"/>
+
+  <!-- Producer Arrows into Apache Kafka (Outbox Relay) -->
+  <!-- Asset -> Kafka (Pre-Trip Failed) -->
+  <path d="M 465 554 L 510 616" stroke="#a855f7" stroke-width="1.8" fill="none" marker-end="url(#arr-purple)"/>
+  <!-- Shipment -> Kafka (Trip Dispatched Saga) -->
+  <path d="M 750 554 L 660 616" stroke="#a855f7" stroke-width="1.8" fill="none" marker-end="url(#arr-purple)"/>
+  <!-- Tracking -> Kafka (RED Deviation Alert >200m) -->
+  <path d="M 1220 554 L 860 635" stroke="#f43f5e" stroke-width="2" fill="none" marker-end="url(#arr-red)"/>
+  <!-- Incident -> Kafka (Critical Field Incident UC16) -->
+  <path d="M 555 782 L 540 704" stroke="#f59e0b" stroke-width="2" fill="none" marker-end="url(#arr-amber)"/>
+
+  <!-- Consumer Arrows from Apache Kafka to Downstream Services -->
+  <!-- Kafka -> Notification Service (:8087) -->
+  <path d="M 470 675 L 265 778" stroke="#a855f7" stroke-width="2.4" fill="none" marker-end="url(#arr-purple)"/>
+  <!-- Kafka -> File/ePOD Service -->
+  <path d="M 740 696 L 835 778" stroke="#a855f7" stroke-width="1.8" fill="none" marker-end="url(#arr-purple)"/>
+  <!-- Kafka -> Carbon & Multi-Fuel Service (:8085) -->
+  <path d="M 880 696 L 1140 778" stroke="#10b981" stroke-width="2.2" fill="none" marker-end="url(#arr-green)"/>
+
+  <!-- ==================== ROW 2: NOTIFICATION (:8087), INCIDENT (:8086), FILE/S3 & CARBON MULTI-FUEL (:8085) ==================== -->
+
+  <!-- 6. Notification Service (:8087) - Separate Standalone Microservice (Bookteria Pattern!) -->
+  <g transform="translate(68, 782)">
+    <!-- Red Notification Icon Badge on Left (exact Bookteria style!) -->
+    <g transform="translate(0, 16)">
+      <rect x="0" y="0" width="64" height="64" rx="14" fill="#ef4444" stroke="#fca5a5" stroke-width="1.6"/>
+      <rect x="13" y="13" width="38" height="38" rx="8" fill="none" stroke="#ffffff" stroke-width="2.4"/>
+      <circle cx="47" cy="17" r="5.5" fill="#fde047"/>
+      <text x="32" y="39" text-anchor="middle" font-size="19">🔔</text>
+    </g>
+    <rect x="76" y="0" width="236" height="98" rx="12" fill="#141e33" stroke="#ef4444" stroke-width="2.2"/>
+    <text x="194" y="23" text-anchor="middle" font-size="13.5" font-weight="800" fill="#f8fafc">Notification Service</text>
+    <text x="194" y="41" text-anchor="middle" font-size="11.5" font-weight="700" fill="#f87171">(PostgreSQL + SSE • :8087)</text>
+    <line x1="90" y1="50" x2="298" y2="50" stroke="#1e293b" stroke-width="1"/>
+    <text x="194" y="66" text-anchor="middle" font-size="10" fill="#cbd5e1">Kafka Consumer • Dedup 300s</text>
+    <text x="194" y="81" text-anchor="middle" font-size="9.5" fill="#fde047">Dispatcher ACK • FlyTo Map Leaflet</text>
+  </g>
+
+  <!-- 7. Incident Service (:8086) - Separate Standalone Microservice -->
+  <g transform="translate(415, 782)">
+    <g transform="translate(0, 18)">
+      <rect x="0" y="0" width="48" height="58" rx="10" fill="rgba(249, 115, 22, 0.16)" stroke="#fb923c" stroke-width="1.6"/>
+      <text x="24" y="21" text-anchor="middle" font-size="8.5" font-weight="800" fill="#fdba74">UC16</text>
+      <text x="24" y="44" text-anchor="middle" font-size="20">⚠️</text>
+    </g>
+    <rect x="58" y="0" width="222" height="98" rx="12" fill="#141e33" stroke="#fb923c" stroke-width="2"/>
+    <text x="169" y="23" text-anchor="middle" font-size="13.5" font-weight="800" fill="#f8fafc">Incident Service</text>
+    <text x="169" y="41" text-anchor="middle" font-size="11.5" font-weight="700" fill="#fdba74">(PostGIS 3.4 • :8086)</text>
+    <line x1="72" y1="50" x2="266" y2="50" stroke="#1e293b" stroke-width="1"/>
+    <text x="169" y="66" text-anchor="middle" font-size="10" fill="#cbd5e1">Sự Cố Hiện Trường Point(4326)</text>
+    <text x="169" y="81" text-anchor="middle" font-size="9.5" fill="#94a3b8">BRULE-17/18 Điểm Trừ Công Bằng</text>
+  </g>
+
+  <!-- 8. File & ePOD Service (PostgreSQL + AWS S3 / SHA-256) -->
+  <g transform="translate(725, 782)">
+    <rect x="0" y="0" width="218" height="98" rx="12" fill="#141e33" stroke="#22c55e" stroke-width="2"/>
+    <text x="109" y="23" text-anchor="middle" font-size="13.5" font-weight="800" fill="#f8fafc">File &amp; ePOD Service</text>
+    <text x="109" y="41" text-anchor="middle" font-size="11" font-weight="700" fill="#4ade80">(PostgreSQL + S3 / SHA-256)</text>
+    <line x1="14" y1="50" x2="204" y2="50" stroke="#1e293b" stroke-width="1"/>
+    <text x="109" y="66" text-anchor="middle" font-size="10" fill="#cbd5e1">UC11 ePOD • Hóa Đơn Xăng Dầu</text>
+    <text x="109" y="81" text-anchor="middle" font-size="9.5" fill="#94a3b8">UC14 Báo Cáo ESG Băm SHA-256</text>
+
+    <!-- Green 3D S3 Storage Icon on Right (exact Bookteria style!) -->
+    <g transform="translate(228, 17)">
+      <rect x="0" y="0" width="62" height="64" rx="10" fill="rgba(34, 197, 94, 0.14)" stroke="#22c55e" stroke-width="1.6"/>
+      <rect x="9" y="12" width="12" height="22" rx="2" fill="#4ade80"/>
+      <rect x="25" y="10" width="12" height="24" rx="2" fill="#22c55e"/>
+      <rect x="41" y="12" width="12" height="22" rx="2" fill="#16a34a"/>
+      <path d="M 8 44 L 31 54 L 54 44 L 31 36 Z" fill="#22c55e"/>
+    </g>
+  </g>
+
+  <!-- 9. Carbon & Multi-Fuel Analytics Service (:8085) -->
+  <g transform="translate(1045, 782)">
+    <rect x="0" y="0" width="302" height="98" rx="12" fill="#141e33" stroke="#10b981" stroke-width="2.2"/>
+    <text x="151" y="23" text-anchor="middle" font-size="13.5" font-weight="800" fill="#f8fafc">Carbon &amp; Multi-Fuel Service</text>
+    <text x="151" y="41" text-anchor="middle" font-size="11" font-weight="700" fill="#34d399">(PostgreSQL + Snowflake OLAP • :8085)</text>
+    <line x1="16" y1="50" x2="286" y2="50" stroke="#1e293b" stroke-width="1"/>
+    <text x="151" y="66" text-anchor="middle" font-size="10" fill="#fde047">⛽ Chi Phí (VNĐ) ➔ Lít Xăng/Dầu ➔ CO₂e (7 Nhiên Liệu)</text>
+    <text x="151" y="81" text-anchor="middle" font-size="9.5" fill="#cbd5e1">UC12 GLEC v3 (WTW=TTW+WTT) • UC13 Đối Chuẩn Hành Lang</text>
+
+    <!-- Analytics Chart + Magnifying Glass Icon on Right (exact Bookteria style!) -->
+    <g transform="translate(312, 17)">
+      <rect x="0" y="0" width="64" height="64" rx="10" fill="#162033" stroke="#38bdf8" stroke-width="1.6"/>
+      <rect x="12" y="34" width="7" height="16" fill="#38bdf8"/>
+      <rect x="23" y="24" width="7" height="26" fill="#10b981"/>
+      <rect x="34" y="15" width="7" height="35" fill="#f59e0b"/>
+      <circle cx="38" cy="28" r="13" fill="rgba(15, 23, 42, 0.72)" stroke="#f8fafc" stroke-width="2.2"/>
+      <line x1="47" y1="37" x2="56" y2="46" stroke="#f8fafc" stroke-width="2.8" stroke-linecap="round"/>
+    </g>
+  </g>
+
+  <!-- ==================== BOTTOM ARCHITECTURAL LEGEND STRIP ==================== -->
+  <g transform="translate(445, 912)">
+    <rect x="0" y="0" width="975" height="38" rx="8" fill="#0b1120" stroke="#1e293b" stroke-width="1.2"/>
+    <text x="18" y="23" font-size="10.5" font-weight="700" fill="#10b981">━━▶ Auth / GLEC v3 Carbon</text>
+    <text x="195" y="23" font-size="10.5" font-weight="700" fill="#f59e0b">━━▶ Orchestration Saga (UC06)</text>
+    <text x="395" y="23" font-size="10.5" font-weight="700" fill="#a855f7">━━▶ Kafka + Outbox Event Bus</text>
+    <text x="595" y="23" font-size="10.5" font-weight="700" fill="#f43f5e">━━▶ GPS Alert / Redis Geo Cache</text>
+    <text x="805" y="23" font-size="10.5" font-weight="700" fill="#38bdf8">┅┅▶ Gateway Route / SSE Stream</text>
+  </g>
+
+</svg>
