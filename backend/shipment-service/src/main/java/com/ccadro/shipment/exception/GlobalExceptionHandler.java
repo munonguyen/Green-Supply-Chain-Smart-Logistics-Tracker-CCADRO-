@@ -62,7 +62,7 @@ public class GlobalExceptionHandler {
         if (enumKey != null) {
             try {
                 errorCode = ErrorCode.valueOf(enumKey);
-                var constraintViolation = ex.getBindingResult().getAllErrors().get(0)
+                ConstraintViolation<?> constraintViolation = ex.getBindingResult().getAllErrors().get(0)
                         .unwrap(ConstraintViolation.class);
                 attributes = constraintViolation.getConstraintDescriptor().getAttributes();
             } catch (Exception e) {

@@ -60,7 +60,8 @@ fi
 # 3. Seed data verification
 echo -n "==> [4/8] Verifying Database Seed Entities (SH001, V001, EF001)... "
 SEED_COUNT=$(docker compose exec -T postgres psql -U ${POSTGRES_USER:-ccadro} -d ${POSTGRES_DB:-ccadro} -t -c "SELECT count(*) FROM shipment WHERE shipment_code='SH001';" 2>/dev/null | tr -d '[:space:]')
-if [ "$SEED_COUNT" -ge 1 ]; then
+SEED_COUNT=${SEED_COUNT:-0}
+if [[ "$SEED_COUNT" =~ ^[0-9]+$ ]] && [ "$SEED_COUNT" -ge 1 ]; then
   echo "✓ [PASS] (Seed entities verified)"
 else
   echo "✗ [FAIL] (Missing seed data)"

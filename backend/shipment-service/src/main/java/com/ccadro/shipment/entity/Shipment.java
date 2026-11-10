@@ -94,7 +94,6 @@ public class Shipment {
     @Builder.Default
     String distanceUnit = "KM";
 
-
     @Column(name = "created_at", nullable = false, updatable = false)
     @Builder.Default
     Instant createdAt = Instant.now();
@@ -102,6 +101,4 @@ public class Shipment {
     @Column(name = "updated_at", nullable = false)
     @Builder.Default
     Instant updatedAt = Instant.now();
-
-
 }
