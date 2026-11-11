@@ -1,12 +1,16 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import L from 'leaflet';
 import { AnimatePresence, motion } from 'motion/react';
 import {
+  ArrowLeftRight,
   ArrowRight,
   Award,
   BarChart3,
   Calculator,
   Download,
   Leaf,
+  MapPin,
+  Navigation,
   PieChart,
   X
 } from 'lucide-react';
@@ -19,88 +23,457 @@ import {
   POWERTRAINS
 } from './landingContent';
 import { CountingNumber } from '../ui/CountingNumber';
+import MapView from '../map/MapView';
+import RoutePolyline from '../map/RoutePolyline';
+import VehicleMarker from '../map/VehicleMarker';
 
-/* ── SVG corridor connections ── */
-const CONNECTIONS = [
-  ['vsip', 'songthan'],
-  ['songthan', 'catlai'],
-  ['catlai', 'nhontrach'],
-  ['nhontrach', 'caimep'],
-  ['catlai', 'hiepphuoc'],
-  ['tanbinh', 'hiepphuoc'],
-  ['tanbinh', 'songthan'],
-  ['hiepphuoc', 'caimep']
-];
+/* ── Detailed real-world GPS coordinates & addresses for Southern Vietnam hubs ── */
+const HUB_DETAILS = {
+  vsip: {
+    id: 'vsip',
+    label: 'KCN VSIP 1',
+    area: 'Thuận An, Bình Dương',
+    address: 'Số 8 Đại lộ Hữu Nghị, KCN VSIP 1, Thuận An, Bình Dương',
+    coords: [10.9242, 106.7145],
+    highway: 'Quốc lộ 13 – Đại lộ Bình Dương'
+  },
+  songthan: {
+    id: 'songthan',
+    label: 'ICD Sóng Thần',
+    area: 'Dĩ An, Bình Dương',
+    address: 'Khu phố Bình Đường 3, Phường An Bình, Dĩ An, Bình Dương',
+    coords: [10.8925, 106.7428],
+    highway: 'Độc Lập – Quốc lộ 1A – Xa lộ Hà Nội'
+  },
+  tanbinh: {
+    id: 'tanbinh',
+    label: 'KCN Tân Bình',
+    area: 'Tân Phú, TP. HCM',
+    address: 'Đường Tây Thạnh, KCN Tân Bình, Quận Tân Phú, TP. HCM',
+    coords: [10.8184, 106.6286],
+    highway: 'Trường Chinh – Quốc lộ 1A'
+  },
+  catlai: {
+    id: 'catlai',
+    label: 'Cảng Cát Lái',
+    area: 'TP. Thủ Đức, TP. HCM',
+    address: '1295B Nguyễn Thị Định, Phường Cát Lái, TP. Thủ Đức',
+    coords: [10.7623, 106.7824],
+    highway: 'Vành Đai 2 – Võ Chí Công – Mai Chí Thọ'
+  },
+  nhontrach: {
+    id: 'nhontrach',
+    label: 'KCN Nhơn Trạch',
+    area: 'Nhơn Trạch, Đồng Nai',
+    address: 'Đường Tôn Đức Thắng (25B), KCN Nhơn Trạch, Đồng Nai',
+    coords: [10.7352, 106.8954],
+    highway: 'Cao tốc TP.HCM – Long Thành – Quốc lộ 51'
+  },
+  hiepphuoc: {
+    id: 'hiepphuoc',
+    label: 'Cảng Hiệp Phước',
+    area: 'Nhà Bè, TP. HCM',
+    address: 'Khu B, Đường số 1, KCN Hiệp Phước, Nhà Bè, TP. HCM',
+    coords: [10.6354, 106.7522],
+    highway: 'Nguyễn Văn Tạo – Nguyễn Hữu Thọ – Cầu Phú Mỹ'
+  },
+  caimep: {
+    id: 'caimep',
+    label: 'Cảng Cái Mép',
+    area: 'Phú Mỹ, Bà Rịa – Vũng Tàu',
+    address: 'Khu phố Tân Lộc, Phường Phước Hòa, Phú Mỹ, Bà Rịa – Vũng Tàu',
+    coords: [10.5256, 107.0225],
+    highway: 'Liên cảng Cái Mép – Thị Vải – Quốc lộ 51'
+  }
+};
 
 function nodeById(id) {
-  return MAP_NODES.find((n) => n.id === id);
+  return HUB_DETAILS[id] || MAP_NODES.find((n) => n.id === id) || HUB_DETAILS.catlai;
 }
 
-/* ── Simplified SVG corridor map ── */
-function CorridorMap({ origin, dest, onSelect }) {
+function buildDetailedWaypoints(originId, destId) {
+  const start = (HUB_DETAILS[originId] || HUB_DETAILS.catlai).coords;
+  const end = (HUB_DETAILS[destId] || HUB_DETAILS.vsip).coords;
+  const [lat1, lon1] = start;
+  const [lat2, lon2] = end;
+  const dLat = lat2 - lat1;
+  const dLon = lon2 - lon1;
+
+  return [
+    [lat1, lon1],
+    [lat1 + dLat * 0.2 + 0.007, lon1 + dLon * 0.16 + 0.005],
+    [lat1 + dLat * 0.42 + 0.011, lon1 + dLon * 0.39 - 0.004],
+    [lat1 + dLat * 0.65 + 0.008, lon1 + dLon * 0.63 + 0.006],
+    [lat1 + dLat * 0.84 + 0.003, lon1 + dLon * 0.85 - 0.002],
+    [lat2, lon2]
+  ];
+}
+
+function interpolateLatLng(waypoints, progressPct) {
+  if (!waypoints || waypoints.length === 0) return [10.7623, 106.7824];
+  if (waypoints.length === 1) return waypoints[0];
+  const clamped = Math.max(0, Math.min(100, progressPct)) / 100;
+  const totalSegs = waypoints.length - 1;
+  const exact = clamped * totalSegs;
+  const idx = Math.min(Math.floor(exact), totalSegs - 1);
+  const ratio = exact - idx;
+  const [lat1, lon1] = waypoints[idx];
+  const [lat2, lon2] = waypoints[idx + 1];
+  return [lat1 + (lat2 - lat1) * ratio, lon1 + (lon2 - lon1) * ratio];
+}
+
+/* ── Interactive Leaflet markers for all 7 hubs on the real Google Map ── */
+function HubNetworkMarkers({ map, origin, dest, onSelect }) {
+  useEffect(() => {
+    if (!map) return undefined;
+
+    const markers = Object.values(HUB_DETAILS).map((hub) => {
+      const isOrigin = hub.id === origin;
+      const isDest = hub.id === dest;
+
+      const badgeColor = isOrigin ? '#38bdf8' : isDest ? '#10b981' : '#94a3b8';
+      const badgeBg = isOrigin
+        ? 'rgba(3, 105, 161, 0.94)'
+        : isDest
+          ? 'rgba(4, 120, 87, 0.95)'
+          : 'rgba(15, 23, 42, 0.88)';
+      const rolePrefix = isOrigin ? 'ĐIỂM ĐI • ' : isDest ? 'ĐIỂM ĐẾN • ' : '';
+      const dotSize = isOrigin || isDest ? 18 : 13;
+
+      const icon = L.divIcon({
+        className: 'ccadro-hub-network-pin',
+        html: `
+          <div style="
+            position: relative;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+          ">
+            <div style="
+              position: absolute;
+              top: -28px;
+              left: 50%;
+              transform: translateX(-50%);
+              white-space: nowrap;
+              background: ${badgeBg};
+              border: 1.5px solid ${badgeColor};
+              color: #ffffff;
+              font-size: ${isOrigin || isDest ? '10.5px' : '9.5px'};
+              font-weight: 800;
+              padding: 3px 8px;
+              border-radius: 999px;
+              box-shadow: 0 6px 16px rgba(0,0,0,0.55);
+              letter-spacing: 0.02em;
+            ">
+              ${rolePrefix}${hub.label}
+            </div>
+            <div style="
+              width: ${dotSize}px;
+              height: ${dotSize}px;
+              border-radius: 50%;
+              background: ${badgeColor};
+              border: 3px solid #ffffff;
+              box-shadow: 0 0 16px ${badgeColor};
+            "></div>
+          </div>
+        `,
+        iconSize: [36, 36],
+        iconAnchor: [18, 18]
+      });
+
+      const marker = L.marker(hub.coords, {
+        icon,
+        zIndexOffset: isOrigin || isDest ? 900 : 400
+      }).addTo(map);
+
+      marker.on('click', () => {
+        onSelect(hub.id);
+      });
+
+      marker.bindTooltip(
+        `<div style="font-size:12px;line-height:1.45;">
+          <strong>${hub.label} (${hub.area})</strong><br/>
+          <span>${hub.address}</span><br/>
+          <span style="color:#10b981;font-weight:700;">Nhấn để chọn làm Điểm đi / Điểm đến</span>
+        </div>`,
+        { direction: 'top', offset: [0, -24] }
+      );
+
+      return marker;
+    });
+
+    return () => {
+      markers.forEach((m) => map.removeLayer(m));
+    };
+  }, [map, origin, dest, onSelect]);
+
+  return null;
+}
+
+/* ── Detailed Interactive 3D Location Corridor Map ── */
+function CorridorMap({ origin, dest, onSelect, onSetOrigin, onSetDest, onSwap, powertrain }) {
+  const [progress, setProgress] = useState(42);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setProgress((prev) => (prev >= 95 ? 12 : prev + 1.8));
+    }, 1200);
+    return () => clearInterval(timer);
+  }, []);
+
+  const originHub = nodeById(origin);
+  const destHub = nodeById(dest);
+  const waypoints = useMemo(() => buildDetailedWaypoints(origin, dest), [origin, dest]);
+  const vehiclePos = useMemo(() => interpolateLatLng(waypoints, progress), [waypoints, progress]);
+
+  const mapCenter = useMemo(() => {
+    const [lat1, lon1] = originHub.coords;
+    const [lat2, lon2] = destHub.coords;
+    return [(lat1 + lat2) / 2, (lon1 + lon2) / 2];
+  }, [originHub, destHub]);
+
+  const ptLabel =
+    powertrain === 'ev'
+      ? 'EV 51C-888.99'
+      : powertrain === 'euro5'
+        ? 'Euro5 51D-662.18'
+        : 'Diesel 51C-402.11';
+
   return (
-    <div className="lp-map">
-      <svg viewBox="0 0 560 420" aria-label="Bản đồ hành lang vận tải">
-        <defs>
-          <radialGradient id="glow" cx="50%" cy="50%" r="45%">
-            <stop offset="0%" stopColor="#10b981" stopOpacity="0.16" />
-            <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
-          </radialGradient>
-        </defs>
-        <rect width="560" height="420" fill="url(#glow)" />
+    <div
+      className="lp-panel"
+      style={{
+        padding: 18,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 14,
+        border: '1px solid rgba(16, 185, 129, 0.28)'
+      }}
+    >
+      {/* Quick Location Selector Header */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: 10,
+          flexWrap: 'wrap'
+        }}
+      >
+        <div>
+          <span className="lp-panel__label" style={{ marginBottom: 2, display: 'block' }}>
+            BẢN ĐỒ ĐỊA LÝ 3D CHI TIẾT HÀNH LANG VẬN TẢI PHÍA NAM
+          </span>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+            Nhấn trực tiếp vào các cảng / KCN trên bản đồ Google Maps hoặc chọn nhanh bên dưới
+          </div>
+        </div>
 
-        {/* Connections */}
-        {CONNECTIONS.map(([a, b]) => {
-          const na = nodeById(a);
-          const nb = nodeById(b);
-          if (!na || !nb) return null;
-          const isActive = (origin === a && dest === b) || (origin === b && dest === a);
-          return (
-            <line
-              key={`${a}-${b}`}
-              x1={na.x}
-              y1={na.y}
-              x2={nb.x}
-              y2={nb.y}
-              stroke={isActive ? '#10b981' : 'rgba(110,231,183,0.18)'}
-              strokeWidth={isActive ? 3 : 1.5}
-              strokeDasharray={isActive ? undefined : '6 4'}
-              className={isActive ? 'lp-flow' : undefined}
-            />
-          );
-        })}
+        <button
+          type="button"
+          onClick={onSwap}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '7px 12px',
+            borderRadius: 10,
+            border: '1px solid rgba(16, 185, 129, 0.35)',
+            background: 'rgba(16, 185, 129, 0.14)',
+            color: '#6ee7b7',
+            fontSize: '0.76rem',
+            fontWeight: 700,
+            cursor: 'pointer'
+          }}
+        >
+          <ArrowLeftRight size={14} /> Đổi chiều hành trình
+        </button>
+      </div>
 
-        {/* Nodes */}
-        {MAP_NODES.map((node) => {
-          const selected = node.id === origin || node.id === dest;
-          return (
-            <g
-              key={node.id}
-              className="lp-map__node"
-              onClick={() => onSelect(node.id)}
-              tabIndex={0}
-              role="button"
-              aria-label={node.label}
-            >
-              <circle cx={node.x} cy={node.y} r={selected ? 22 : 16} fill="rgba(16,185,129,0.12)" />
-              <circle
-                cx={node.x}
-                cy={node.y}
-                r={selected ? 7 : 5}
-                className="lp-map__core"
-                fill={selected ? '#10b981' : '#6ee7b7'}
-                stroke={selected ? '#a7f3d0' : 'none'}
-                strokeWidth={2}
-              />
-              <text x={node.x} y={node.y - 20} textAnchor="middle">
-                {node.label}
-              </text>
-            </g>
-          );
-        })}
-      </svg>
+      {/* Origin & Destination Dropdown Selectors */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: 10
+        }}
+      >
+        <div
+          style={{
+            padding: '9px 12px',
+            borderRadius: 12,
+            background: 'rgba(3, 105, 161, 0.16)',
+            border: '1px solid rgba(56, 189, 248, 0.35)'
+          }}
+        >
+          <label
+            style={{
+              display: 'block',
+              fontSize: '0.68rem',
+              fontWeight: 800,
+              color: '#38bdf8',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              marginBottom: 4
+            }}
+          >
+            ● Điểm xuất phát (Origin)
+          </label>
+          <select
+            value={origin}
+            onChange={(e) => onSetOrigin(e.target.value)}
+            style={{
+              width: '100%',
+              background: 'transparent',
+              border: 'none',
+              color: '#f8fafc',
+              fontWeight: 700,
+              fontSize: '0.86rem',
+              cursor: 'pointer',
+              outline: 'none'
+            }}
+          >
+            {Object.values(HUB_DETAILS).map((h) => (
+              <option key={h.id} value={h.id} style={{ background: '#071a14', color: '#f8fafc' }}>
+                {h.label} ({h.area})
+              </option>
+            ))}
+          </select>
+        </div>
 
-      <div className="lp-map__hint">Nhấn vào các điểm trên bản đồ để chọn điểm đi và điểm đến</div>
+        <div
+          style={{
+            padding: '9px 12px',
+            borderRadius: 12,
+            background: 'rgba(4, 120, 87, 0.18)',
+            border: '1px solid rgba(16, 185, 129, 0.4)'
+          }}
+        >
+          <label
+            style={{
+              display: 'block',
+              fontSize: '0.68rem',
+              fontWeight: 800,
+              color: '#34d399',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              marginBottom: 4
+            }}
+          >
+            ◉ Điểm giao hàng (Destination)
+          </label>
+          <select
+            value={dest}
+            onChange={(e) => onSetDest(e.target.value)}
+            style={{
+              width: '100%',
+              background: 'transparent',
+              border: 'none',
+              color: '#f8fafc',
+              fontWeight: 700,
+              fontSize: '0.86rem',
+              cursor: 'pointer',
+              outline: 'none'
+            }}
+          >
+            {Object.values(HUB_DETAILS).map((h) => (
+              <option key={h.id} value={h.id} style={{ background: '#071a14', color: '#f8fafc' }}>
+                {h.label} ({h.area})
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Real 3D Google Maps Location View */}
+      <MapView
+        center={mapCenter}
+        zoom={10}
+        height="380px"
+        defaultTile="google_hybrid"
+        default3D={true}
+        defaultPitch={34}
+        overlayTitle={`${originHub.label} → ${destHub.label} • ${originHub.highway}`}
+      >
+        <RoutePolyline positions={waypoints} color="#10b981" weight={5} showCorridorBuffer={true} />
+        <HubNetworkMarkers origin={origin} dest={dest} onSelect={onSelect} />
+        <VehicleMarker
+          position={vehiclePos}
+          vehicleCode={ptLabel}
+          speedKmh={56}
+          status="ON_ROUTE"
+          label={`Hành trình xanh: ${originHub.label} → ${destHub.label}`}
+        />
+      </MapView>
+
+      {/* Detailed GPS & Street Address Cards */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
+          gap: 10,
+          fontSize: '0.76rem'
+        }}
+      >
+        <div
+          style={{
+            padding: '10px 12px',
+            borderRadius: 10,
+            background: 'rgba(15, 23, 42, 0.65)',
+            border: '1px solid rgba(56, 189, 248, 0.24)'
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              color: '#38bdf8',
+              fontWeight: 800,
+              marginBottom: 3
+            }}
+          >
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+              <MapPin size={13} /> {originHub.label}
+            </span>
+            <code>
+              {originHub.coords[0].toFixed(4)}°N, {originHub.coords[1].toFixed(4)}°E
+            </code>
+          </div>
+          <div style={{ color: '#cbd5e1', lineHeight: 1.4 }}>{originHub.address}</div>
+        </div>
+
+        <div
+          style={{
+            padding: '10px 12px',
+            borderRadius: 10,
+            background: 'rgba(15, 23, 42, 0.65)',
+            border: '1px solid rgba(16, 185, 129, 0.28)'
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              color: '#34d399',
+              fontWeight: 800,
+              marginBottom: 3
+            }}
+          >
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+              <Navigation size={13} /> {destHub.label}
+            </span>
+            <code>
+              {destHub.coords[0].toFixed(4)}°N, {destHub.coords[1].toFixed(4)}°E
+            </code>
+          </div>
+          <div style={{ color: '#cbd5e1', lineHeight: 1.4 }}>{destHub.address}</div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -281,22 +654,37 @@ export default function CarbonSavingsHub() {
   const handleMapSelect = (id) => {
     if (id === origin) return;
     if (id === dest) return;
-    if (!origin || origin === dest) {
-      setOrigin(id);
-    } else {
-      setDest(id);
+    setDest(id);
+  };
+
+  const handleSetOrigin = (newOrigin) => {
+    if (newOrigin === dest) {
+      setDest(origin);
     }
+    setOrigin(newOrigin);
+  };
+
+  const handleSetDest = (newDest) => {
+    if (newDest === origin) {
+      setOrigin(dest);
+    }
+    setDest(newDest);
+  };
+
+  const handleSwap = () => {
+    setOrigin(dest);
+    setDest(origin);
   };
 
   /* Calculation */
   const calc = useMemo(() => {
-    const a = nodeById(origin);
-    const b = nodeById(dest);
+    const a = MAP_NODES.find((n) => n.id === origin);
+    const b = MAP_NODES.find((n) => n.id === dest);
     if (!a || !b) return null;
     const dx = a.x - b.x;
     const dy = a.y - b.y;
     const mapDist = Math.sqrt(dx * dx + dy * dy);
-    const km = Math.round(mapDist * ESTIMATOR.kmPerMapUnit * 10) / 10;
+    const km = Math.max(14.5, Math.round(mapDist * ESTIMATOR.kmPerMapUnit * 10) / 10);
     const tkm = km * payload;
     const baseline = tkm * ESTIMATOR.dieselBaselineKgPerTkm;
     const pt = POWERTRAINS.find((p) => p.id === powertrain);
@@ -459,8 +847,16 @@ export default function CarbonSavingsHub() {
                 transition={{ duration: 0.2 }}
                 className="lp-estimator"
               >
-                {/* Left: corridor map */}
-                <CorridorMap origin={origin} dest={dest} onSelect={handleMapSelect} />
+                {/* Left: Detailed 3D Google Maps corridor map */}
+                <CorridorMap
+                  origin={origin}
+                  dest={dest}
+                  onSelect={handleMapSelect}
+                  onSetOrigin={handleSetOrigin}
+                  onSetDest={handleSetDest}
+                  onSwap={handleSwap}
+                  powertrain={powertrain}
+                />
 
                 {/* Right: controls + result */}
                 <div>
