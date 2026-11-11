@@ -6,6 +6,7 @@ import CarbonBenchmarkChart from '../components/charts/CarbonBenchmarkChart';
 import FleetStatusDonutChart from '../components/charts/FleetStatusDonutChart';
 import CorridorEfficiencyBarChart from '../components/charts/CorridorEfficiencyBarChart';
 import DeviationTrendSparkline from '../components/charts/DeviationTrendSparkline';
+import RealTimeFleetMap3D from '../components/map/RealTimeFleetMap3D';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { loadStoredUserShipments } from './CustomerPortalPage';
@@ -427,6 +428,12 @@ export default function DashboardPage() {
           <Bell size={32} color="#ef4444" />
         </motion.div>
       </div>
+
+      {/* 2B. REAL-TIME 3D GOOGLE HYBRID SATELLITE FLEET MAP */}
+      <RealTimeFleetMap3D
+        height={490}
+        title="Bản Đồ Vệ Tinh 3D Giám Sát Toàn Đội Xe Thời Gian Thực (Google Hybrid 3D)"
+      />
 
       {/* 3. FOUR STATISTICAL CHARTS (2x2 GRID) */}
       <div className="grid-2">

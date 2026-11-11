@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
@@ -7,6 +7,7 @@ import {
   Building2,
   CheckCircle2,
   Clock,
+  Crosshair,
   Download,
   FileCheck2,
   Gauge,
@@ -15,6 +16,8 @@ import {
   Moon,
   Navigation,
   Package,
+  Pause,
+  Play,
   PlusCircle,
   Radar,
   Search,
@@ -29,10 +32,53 @@ import { useTheme } from '../context/ThemeContext';
 import { api } from '../services/api';
 import CcadroLogo from '../components/ui/CcadroLogo';
 import { CountingNumber } from '../components/ui/CountingNumber';
+import MapView from '../components/map/MapView';
+import RoutePolyline from '../components/map/RoutePolyline';
+import OriginMarker from '../components/map/OriginMarker';
+import DestinationMarker from '../components/map/DestinationMarker';
+import VehicleMarker from '../components/map/VehicleMarker';
+import RealTimeFleetMap3D from '../components/map/RealTimeFleetMap3D';
 import { MAP_NODES, POWERTRAINS } from '../components/landing/landingContent';
 import '../styles/landing.css';
 
 export const USER_SHIPMENTS_STORAGE_KEY = 'ccadro_user_shipments';
+
+const NODE_COORDINATES = {
+  vsip: [10.924, 106.714],
+  songthan: [10.892, 106.742],
+  tanbinh: [10.818, 106.628],
+  catlai: [10.762, 106.782],
+  nhontrach: [10.735, 106.895],
+  hiepphuoc: [10.635, 106.752],
+  caimep: [10.525, 107.022]
+};
+
+function buildCorridorWaypoints(originLatLng, destLatLng) {
+  const [lat1, lon1] = originLatLng;
+  const [lat2, lon2] = destLatLng;
+  const dLat = lat2 - lat1;
+  const dLon = lon2 - lon1;
+  return [
+    [lat1, lon1],
+    [lat1 + dLat * 0.22 + 0.008, lon1 + dLon * 0.18 + 0.005],
+    [lat1 + dLat * 0.48 + 0.012, lon1 + dLon * 0.45 - 0.004],
+    [lat1 + dLat * 0.76 + 0.005, lon1 + dLon * 0.78 + 0.004],
+    [lat2, lon2]
+  ];
+}
+
+function interpolateOnPath(waypoints, progressPct) {
+  if (!waypoints || waypoints.length === 0) return [10.82, 106.75];
+  if (waypoints.length === 1) return waypoints[0];
+  const clamped = Math.max(0, Math.min(100, progressPct)) / 100;
+  const totalSegs = waypoints.length - 1;
+  const exact = clamped * totalSegs;
+  const idx = Math.min(Math.floor(exact), totalSegs - 1);
+  const ratio = exact - idx;
+  const [lat1, lon1] = waypoints[idx];
+  const [lat2, lon2] = waypoints[idx + 1];
+  return [lat1 + (lat2 - lat1) * ratio, lon1 + (lon2 - lon1) * ratio];
+}
 
 const INITIAL_CUSTOMER_SHIPMENTS = [
   {
@@ -42,6 +88,17 @@ const INITIAL_CUSTOMER_SHIPMENTS = [
     customerName: 'Công ty CP Sữa Việt Nam (Vinamilk)',
     originName: 'Cảng Cát Lái, TP. Thủ Đức',
     destinationName: 'KCN VSIP 1, Bình Dương',
+    originCoords: [10.762, 106.782],
+    destCoords: [10.924, 106.714],
+    waypoints: [
+      [10.762, 106.782],
+      [10.784, 106.791],
+      [10.812, 106.784],
+      [10.848, 106.768],
+      [10.882, 106.748],
+      [10.905, 106.731],
+      [10.924, 106.714]
+    ],
     cargoType: 'Chuỗi lạnh tiêu chuẩn (-18°C)',
     cargoWeightTons: 14.5,
     distanceKm: 27.3,
@@ -69,6 +126,15 @@ const INITIAL_CUSTOMER_SHIPMENTS = [
     customerName: 'Công ty CP Sữa Việt Nam (Vinamilk)',
     originName: 'ICD Sóng Thần, Bình Dương',
     destinationName: 'Cảng Hiệp Phước, TP. HCM',
+    originCoords: [10.892, 106.742],
+    destCoords: [10.635, 106.752],
+    waypoints: [
+      [10.892, 106.742],
+      [10.835, 106.755],
+      [10.775, 106.748],
+      [10.712, 106.745],
+      [10.635, 106.752]
+    ],
     cargoType: 'Hàng tiêu dùng nhanh (FMCG)',
     cargoWeightTons: 18.0,
     distanceKm: 38.6,
@@ -96,6 +162,15 @@ const INITIAL_CUSTOMER_SHIPMENTS = [
     customerName: 'Samsung Electronics HCMC CE Complex',
     originName: 'Cảng Cái Mép, Bà Rịa – Vũng Tàu',
     destinationName: 'KCN Nhơn Trạch, Đồng Nai',
+    originCoords: [10.525, 107.022],
+    destCoords: [10.735, 106.895],
+    waypoints: [
+      [10.525, 107.022],
+      [10.578, 106.995],
+      [10.632, 106.962],
+      [10.685, 106.928],
+      [10.735, 106.895]
+    ],
     cargoType: 'Linh kiện điện tử giá trị cao',
     cargoWeightTons: 21.0,
     distanceKm: 46.8,
@@ -124,7 +199,21 @@ export function loadStoredUserShipments() {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+        return parsed.map((item, idx) => {
+          const fallback = INITIAL_CUSTOMER_SHIPMENTS[idx % INITIAL_CUSTOMER_SHIPMENTS.length];
+          return {
+            ...fallback,
+            ...item,
+            originCoords: item.originCoords || fallback.originCoords,
+            destCoords: item.destCoords || fallback.destCoords,
+            waypoints:
+              item.waypoints ||
+              buildCorridorWaypoints(
+                item.originCoords || fallback.originCoords,
+                item.destCoords || fallback.destCoords
+              )
+          };
+        });
       }
     }
   } catch (_) {
@@ -137,6 +226,7 @@ export default function CustomerPortalPage() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
+  const mapInstanceRef = useRef(null);
 
   const [activeTab, setActiveTab] = useState('tracking'); // 'tracking' | 'booking' | 'carbon' | 'profile'
   const [allShipments, setAllShipments] = useState(() => loadStoredUserShipments());
@@ -144,6 +234,8 @@ export default function CustomerPortalPage() {
   const [selectedCode, setSelectedCode] = useState('SH-2026-081');
   const [selectedCertificate, setSelectedCertificate] = useState(null);
   const [bookingSuccess, setBookingSuccess] = useState(null);
+  const [isLiveSim, setIsLiveSim] = useState(true);
+  const [followVehicle, setFollowVehicle] = useState(false);
 
   // Booking form state
   const [bookingForm, setBookingForm] = useState({
@@ -165,7 +257,28 @@ export default function CustomerPortalPage() {
     monthlyEsgDigest: true
   });
 
-  // Filter shipments belonging to the logged-in customer (or show all if none match yet so new user sees their own + demo reference)
+  // Live GPS simulation tick for in-transit customer shipments
+  useEffect(() => {
+    if (!isLiveSim) return undefined;
+    const timer = setInterval(() => {
+      setAllShipments((prev) =>
+        prev.map((s) => {
+          if (s.status !== 'IN_TRANSIT') return s;
+          const nextProg = s.progress >= 96 ? 22 : Number((s.progress + 1.2).toFixed(1));
+          const speedDelta = (Math.random() - 0.48) * 2.2;
+          const nextSpeed = Math.round(Math.max(42, Math.min(68, s.speedKmh + speedDelta)));
+          return {
+            ...s,
+            progress: nextProg,
+            speedKmh: nextSpeed
+          };
+        })
+      );
+    }, 1600);
+    return () => clearInterval(timer);
+  }, [isLiveSim]);
+
+  // Filter shipments belonging to the logged-in customer
   const customerShipments = useMemo(() => {
     const custId = (user?.customerId || 'VINAMILK').toUpperCase();
     const own = allShipments.filter(
@@ -188,11 +301,34 @@ export default function CustomerPortalPage() {
     customerShipments[0] ||
     INITIAL_CUSTOMER_SHIPMENTS[0];
 
+  const activeShipmentWaypoints = useMemo(() => {
+    if (activeShipment?.waypoints?.length >= 2) return activeShipment.waypoints;
+    return buildCorridorWaypoints(
+      activeShipment?.originCoords || [10.762, 106.782],
+      activeShipment?.destCoords || [10.924, 106.714]
+    );
+  }, [activeShipment]);
+
+  const activeVehiclePosition = useMemo(
+    () => interpolateOnPath(activeShipmentWaypoints, activeShipment?.progress || 65),
+    [activeShipmentWaypoints, activeShipment?.progress]
+  );
+
+  useEffect(() => {
+    if (followVehicle && mapInstanceRef.current && activeVehiclePosition) {
+      mapInstanceRef.current.panTo(activeVehiclePosition, { animate: true, duration: 0.8 });
+    }
+  }, [followVehicle, activeVehiclePosition]);
+
   // Live quote calculation for Booking tab
   const bookingQuote = useMemo(() => {
     const originNode = MAP_NODES.find((n) => n.id === bookingForm.originId) || MAP_NODES[3];
     const destNode = MAP_NODES.find((n) => n.id === bookingForm.destinationId) || MAP_NODES[0];
     const powertrain = POWERTRAINS.find((p) => p.id === bookingForm.powertrainId) || POWERTRAINS[0];
+
+    const originCoords = NODE_COORDINATES[originNode.id] || [10.762, 106.782];
+    const destCoords = NODE_COORDINATES[destNode.id] || [10.924, 106.714];
+    const previewWaypoints = buildCorridorWaypoints(originCoords, destCoords);
 
     const dx = destNode.x - originNode.x;
     const dy = destNode.y - originNode.y;
@@ -210,6 +346,9 @@ export default function CustomerPortalPage() {
     return {
       originNode,
       destNode,
+      originCoords,
+      destCoords,
+      previewWaypoints,
       powertrain,
       distanceKm,
       baselineCo2Kg,
@@ -241,6 +380,9 @@ export default function CustomerPortalPage() {
       createdByUsername: user?.username || 'shipper',
       originName: originLabel,
       destinationName: destLabel,
+      originCoords: bookingQuote.originCoords,
+      destCoords: bookingQuote.destCoords,
+      waypoints: bookingQuote.previewWaypoints,
       cargoType: bookingForm.cargoType,
       cargoWeightTons: Number(bookingForm.cargoWeightTons),
       distanceKm: bookingQuote.distanceKm,
@@ -249,7 +391,7 @@ export default function CustomerPortalPage() {
       status: 'IN_TRANSIT',
       statusLabel: 'Đã điều xe xanh • Đang trên hành lang vận tải',
       currentLocation: `Trạm kiểm soát ${bookingQuote.originNode.label}`,
-      speedKmh: 48,
+      speedKmh: 52,
       etaMinutes: bookingQuote.etaMinutes,
       temperatureC: bookingForm.cargoType.includes('-18°C') ? -18.0 : 18.5,
       baselineCo2Kg: bookingQuote.baselineCo2Kg,
@@ -269,10 +411,10 @@ export default function CustomerPortalPage() {
         shipmentCode: newCode,
         originAddress: originLabel,
         destinationAddress: destLabel,
-        originLat: 10.762,
-        originLon: 106.782,
-        destinationLat: 10.924,
-        destinationLon: 106.714,
+        originLat: bookingQuote.originCoords[0],
+        originLon: bookingQuote.originCoords[1],
+        destinationLat: bookingQuote.destCoords[0],
+        destinationLon: bookingQuote.destCoords[1],
         weightTons: Number(bookingForm.cargoWeightTons)
       });
     } catch (_) {
@@ -345,7 +487,7 @@ export default function CustomerPortalPage() {
           position: 'sticky',
           top: 0,
           zIndex: 40,
-          background: isDark ? 'rgba(6, 22, 17, 0.92)' : 'rgba(255, 255, 255, 0.94)',
+          background: isDark ? 'rgba(6, 22, 17, 0.94)' : 'rgba(255, 255, 255, 0.96)',
           backdropFilter: 'blur(16px)',
           borderBottom: isDark
             ? '1px solid rgba(110, 231, 183, 0.16)'
@@ -385,12 +527,12 @@ export default function CustomerPortalPage() {
 
             <span
               style={{
-                padding: '4px 11px',
+                padding: '5px 12px',
                 borderRadius: 999,
                 background: 'rgba(16, 185, 129, 0.15)',
                 border: '1px solid rgba(16, 185, 129, 0.35)',
                 color: '#10b981',
-                fontSize: '0.72rem',
+                fontSize: '0.73rem',
                 fontWeight: 800,
                 letterSpacing: '0.04em'
               }}
@@ -409,7 +551,7 @@ export default function CustomerPortalPage() {
             }}
           >
             {[
-              { id: 'tracking', label: 'Theo Dõi Vận Đơn', icon: Navigation },
+              { id: 'tracking', label: 'Theo Dõi Bản Đồ 3D Real-Time', icon: Navigation },
               { id: 'booking', label: 'Đặt Lịch Vận Chuyển Xanh', icon: PlusCircle },
               { id: 'carbon', label: 'Chứng Nhận CO2e & ePOD', icon: FileCheck2 },
               { id: 'profile', label: 'Hồ Sơ Doanh Nghiệp', icon: Building2 }
@@ -514,7 +656,7 @@ export default function CustomerPortalPage() {
       {/* ── Customer Executive Summary Banner ── */}
       <section
         style={{
-          padding: '28px 0 18px',
+          padding: '26px 0 18px',
           borderBottom: isDark
             ? '1px solid rgba(255,255,255,0.06)'
             : '1px solid rgba(15,23,42,0.08)'
@@ -526,9 +668,9 @@ export default function CustomerPortalPage() {
               padding: '22px 26px',
               borderRadius: 20,
               background: isDark
-                ? 'linear-gradient(135deg, rgba(6, 78, 59, 0.42) 0%, rgba(15, 23, 42, 0.85) 100%)'
-                : 'linear-gradient(135deg, rgba(209, 250, 229, 0.85) 0%, rgba(255, 255, 255, 0.96) 100%)',
-              border: '1px solid rgba(16, 185, 129, 0.3)',
+                ? 'linear-gradient(135deg, rgba(6, 78, 59, 0.42) 0%, rgba(15, 23, 42, 0.88) 100%)'
+                : 'linear-gradient(135deg, rgba(209, 250, 229, 0.88) 0%, rgba(255, 255, 255, 0.98) 100%)',
+              border: '1px solid rgba(16, 185, 129, 0.32)',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
@@ -543,17 +685,17 @@ export default function CustomerPortalPage() {
                   alignItems: 'center',
                   gap: 8,
                   fontSize: '0.74rem',
-                  fontWeight: 700,
+                  fontWeight: 800,
                   color: '#10b981',
                   textTransform: 'uppercase',
                   letterSpacing: '0.08em',
                   marginBottom: 6
                 }}
               >
-                <ShieldCheck size={15} /> HỆ THỐNG DÀNH RIÊNG CHO KHÁCH HÀNG &amp; ĐỐI TÁC CHỦ HÀNG
+                <ShieldCheck size={15} /> KHÔNG GIAN KHÁCH HÀNG &amp; CHỦ HÀNG B2B ĐỘC LẬP
                 (BRULE-16)
               </div>
-              <h1 style={{ fontSize: '1.55rem', fontWeight: 800, margin: '0 0 6px' }}>
+              <h1 style={{ fontSize: '1.52rem', fontWeight: 800, margin: '0 0 6px' }}>
                 Xin chào, {user?.fullName || 'Đại Diện Chủ Hàng'} •{' '}
                 <span style={{ color: '#10b981' }}>
                   {user?.companyName || 'Vinamilk Logistics'}
@@ -561,15 +703,16 @@ export default function CustomerPortalPage() {
               </h1>
               <p
                 style={{
-                  fontSize: '0.86rem',
-                  opacity: 0.82,
+                  fontSize: '0.88rem',
+                  opacity: 0.85,
                   margin: 0,
-                  maxWidth: 760
+                  maxWidth: 780,
+                  lineHeight: 1.55
                 }}
               >
-                Không gian quản lý vận đơn độc lập của doanh nghiệp bạn: theo dõi tọa độ GPS trực
-                tuyến, đặt lịch vận chuyển xanh đa tiêu chí và tải chứng nhận giảm phát thải chuẩn
-                quốc tế ISO 14083.
+                Theo dõi vị trí xe tải chở hàng trên bản đồ vệ tinh 3D Google Maps thời gian thực,
+                đặt lịch điều xe xanh đa tiêu chí và tải chứng nhận giảm phát thải chuẩn quốc tế ISO
+                14083.
               </p>
             </div>
 
@@ -617,7 +760,7 @@ export default function CustomerPortalPage() {
                 label: 'Đang Lưu Thông Trên Tuyến',
                 value: customerShipments.filter((s) => s.status === 'IN_TRANSIT').length,
                 unit: 'chuyến',
-                sub: 'Giám sát hành lang GPS 24/7',
+                sub: 'Giám sát bản đồ 3D trực tuyến 24/7',
                 icon: Truck,
                 color: '#38bdf8'
               },
@@ -646,17 +789,18 @@ export default function CustomerPortalPage() {
                   style={{
                     padding: '18px 20px',
                     borderRadius: 16,
-                    background: isDark ? 'rgba(15, 29, 24, 0.85)' : '#ffffff',
+                    background: isDark ? 'rgba(15, 29, 24, 0.88)' : '#ffffff',
                     border: isDark
-                      ? '1px solid rgba(110, 231, 183, 0.14)'
+                      ? '1px solid rgba(110, 231, 183, 0.16)'
                       : '1px solid rgba(15, 23, 42, 0.08)',
                     display: 'flex',
                     justifyContent: 'space-between',
-                    alignItems: 'flex-start'
+                    alignItems: 'flex-start',
+                    boxShadow: isDark ? 'none' : '0 8px 24px rgba(15, 23, 42, 0.04)'
                   }}
                 >
                   <div>
-                    <div style={{ fontSize: '0.76rem', opacity: 0.72, fontWeight: 600 }}>
+                    <div style={{ fontSize: '0.78rem', opacity: 0.78, fontWeight: 700 }}>
                       {kpi.label}
                     </div>
                     <div
@@ -670,12 +814,12 @@ export default function CustomerPortalPage() {
                       <CountingNumber value={kpi.value} decimals={kpi.decimals || 0} />{' '}
                       <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>{kpi.unit}</span>
                     </div>
-                    <div style={{ fontSize: '0.73rem', opacity: 0.68 }}>{kpi.sub}</div>
+                    <div style={{ fontSize: '0.75rem', opacity: 0.72 }}>{kpi.sub}</div>
                   </div>
                   <div
                     style={{
-                      width: 40,
-                      height: 40,
+                      width: 42,
+                      height: 42,
                       borderRadius: 12,
                       background: 'rgba(16, 185, 129, 0.12)',
                       color: kpi.color,
@@ -728,484 +872,534 @@ export default function CustomerPortalPage() {
           </div>
         )}
 
-        {/* TAB 1: MY SHIPMENTS & LIVE TRACKING */}
+        {/* TAB 1: MY SHIPMENTS & 3D REAL-TIME GOOGLE MAP TRACKING */}
         {activeTab === 'tracking' && (
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
-              gap: 24,
-              alignItems: 'start'
-            }}
-          >
-            {/* Left: Customer Shipments List */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 26 }}>
             <div
               style={{
-                padding: 22,
-                borderRadius: 20,
-                background: isDark ? 'rgba(12, 26, 21, 0.9)' : '#ffffff',
-                border: isDark
-                  ? '1px solid rgba(110, 231, 183, 0.16)'
-                  : '1px solid rgba(15, 23, 42, 0.08)'
+                display: 'grid',
+                gridTemplateColumns: 'minmax(320px, 1fr) minmax(420px, 1.55fr)',
+                gap: 24,
+                alignItems: 'start'
               }}
             >
+              {/* Left: Customer Shipments List */}
               <div
                 style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: 14,
-                  gap: 12,
-                  flexWrap: 'wrap'
-                }}
-              >
-                <h2 style={{ fontSize: '1.12rem', fontWeight: 800, margin: 0 }}>
-                  Danh Sách Vận Đơn Của Doanh Nghiệp
-                </h2>
-                <div style={{ position: 'relative', minWidth: 210 }}>
-                  <Search
-                    size={14}
-                    style={{
-                      position: 'absolute',
-                      left: 11,
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      opacity: 0.55
-                    }}
-                  />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Tìm mã đơn, cảng, KCN..."
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px 8px 32px',
-                      borderRadius: 999,
-                      border: '1px solid rgba(148, 163, 184, 0.3)',
-                      background: 'transparent',
-                      color: 'inherit',
-                      fontSize: '0.8rem'
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gap: 12 }}>
-                {customerShipments.map((s) => {
-                  const isSelected = activeShipment?.shipmentCode === s.shipmentCode;
-                  return (
-                    <div
-                      key={s.shipmentCode}
-                      onClick={() => setSelectedCode(s.shipmentCode)}
-                      style={{
-                        padding: '16px 18px',
-                        borderRadius: 15,
-                        cursor: 'pointer',
-                        background: isSelected
-                          ? 'rgba(16, 185, 129, 0.14)'
-                          : isDark
-                            ? 'rgba(15, 23, 42, 0.55)'
-                            : '#f8fafc',
-                        border: isSelected
-                          ? '1.5px solid #10b981'
-                          : '1px solid rgba(148, 163, 184, 0.18)',
-                        transition: 'all 0.2s'
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          marginBottom: 8
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <code
-                            style={{
-                              fontWeight: 800,
-                              fontSize: '0.9rem',
-                              color: '#10b981'
-                            }}
-                          >
-                            {s.shipmentCode}
-                          </code>
-                          <span
-                            style={{
-                              fontSize: '0.72rem',
-                              padding: '2px 8px',
-                              borderRadius: 999,
-                              background:
-                                s.status === 'IN_TRANSIT'
-                                  ? 'rgba(16, 185, 129, 0.18)'
-                                  : 'rgba(56, 189, 248, 0.18)',
-                              color: s.status === 'IN_TRANSIT' ? '#34d399' : '#38bdf8',
-                              fontWeight: 700
-                            }}
-                          >
-                            {s.status === 'IN_TRANSIT' ? '● Đang vận chuyển' : '✓ Hoàn tất'}
-                          </span>
-                        </div>
-                        <span style={{ fontSize: '0.76rem', fontWeight: 700, color: '#10b981' }}>
-                          -{s.co2SavedKg} kg CO2e ({s.co2ReductionPct}%)
-                        </span>
-                      </div>
-
-                      <div
-                        style={{
-                          fontSize: '0.86rem',
-                          fontWeight: 700,
-                          marginBottom: 4
-                        }}
-                      >
-                        {s.originName} → {s.destinationName}
-                      </div>
-
-                      <div
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          fontSize: '0.76rem',
-                          opacity: 0.75,
-                          flexWrap: 'wrap',
-                          gap: 8
-                        }}
-                      >
-                        <span>
-                          {s.vehicleType} • Biển số: <strong>{s.licensePlate}</strong>
-                        </span>
-                        <span>
-                          Tải trọng: <strong>{s.cargoWeightTons} tấn</strong> • {s.distanceKm} km
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Right: Live Shipment Telemetry & Corridor Map Inspector */}
-            {activeShipment && (
-              <div
-                style={{
-                  padding: 24,
+                  padding: 22,
                   borderRadius: 20,
-                  background: isDark ? 'rgba(12, 26, 21, 0.94)' : '#ffffff',
-                  border: '1px solid rgba(16, 185, 129, 0.28)'
+                  background: isDark ? 'rgba(12, 26, 21, 0.92)' : '#ffffff',
+                  border: isDark
+                    ? '1px solid rgba(110, 231, 183, 0.18)'
+                    : '1px solid rgba(15, 23, 42, 0.08)',
+                  boxShadow: isDark ? 'none' : '0 10px 30px rgba(15, 23, 42, 0.05)'
                 }}
               >
                 <div
                   style={{
                     display: 'flex',
                     justifyContent: 'space-between',
-                    alignItems: 'flex-start',
-                    marginBottom: 16,
-                    flexWrap: 'wrap',
-                    gap: 10
+                    alignItems: 'center',
+                    marginBottom: 14,
+                    gap: 12,
+                    flexWrap: 'wrap'
                   }}
                 >
                   <div>
-                    <span
-                      style={{
-                        fontSize: '0.72rem',
-                        fontWeight: 800,
-                        color: '#10b981',
-                        letterSpacing: '0.08em',
-                        textTransform: 'uppercase'
-                      }}
-                    >
-                      GIÁM SÁT HÀNH TRÌNH TRỰC TUYẾN • {activeShipment.shipmentCode}
-                    </span>
-                    <h3 style={{ fontSize: '1.22rem', fontWeight: 800, margin: '4px 0' }}>
-                      {activeShipment.originName} → {activeShipment.destinationName}
-                    </h3>
-                    <p style={{ fontSize: '0.8rem', opacity: 0.75, margin: 0 }}>
-                      {activeShipment.statusLabel} • Vị trí hiện tại:{' '}
-                      <strong>{activeShipment.currentLocation}</strong>
-                    </p>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => handleDownloadCertificate(activeShipment)}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      padding: '8px 14px',
-                      borderRadius: 10,
-                      border: '1px solid rgba(16, 185, 129, 0.4)',
-                      background: 'rgba(16, 185, 129, 0.14)',
-                      color: '#10b981',
-                      fontSize: '0.78rem',
-                      fontWeight: 700,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <Download size={14} /> Chứng nhận ISO 14083
-                  </button>
-                </div>
-
-                {/* Stylized Live Corridor Map SVG */}
-                <div
-                  style={{
-                    borderRadius: 16,
-                    padding: '18px 20px',
-                    background: 'linear-gradient(135deg, #042f2e 0%, #0f172a 100%)',
-                    border: '1px solid rgba(52, 211, 153, 0.25)',
-                    color: '#f8fafc',
-                    marginBottom: 18
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      fontSize: '0.74rem',
-                      color: '#a7f3d0',
-                      marginBottom: 10
-                    }}
-                  >
-                    <span>HÀNH LANG AN TOÀN POSTGIS: {activeShipment.corridorState}</span>
-                    <span>TIẾN ĐỘ: {activeShipment.progress}%</span>
-                  </div>
-
-                  <svg
-                    viewBox="0 0 500 110"
-                    style={{ width: '100%', height: 96, display: 'block' }}
-                  >
-                    {/* Safe buffer corridor */}
-                    <path
-                      d="M 40 75 Q 180 20, 260 55 T 460 35"
-                      fill="none"
-                      stroke="rgba(16, 185, 129, 0.18)"
-                      strokeWidth="22"
-                      strokeLinecap="round"
-                    />
-                    {/* Planned green route */}
-                    <path
-                      d="M 40 75 Q 180 20, 260 55 T 460 35"
-                      fill="none"
-                      stroke="#10b981"
-                      strokeWidth="3.5"
-                      strokeDasharray="6 4"
-                    />
-                    {/* Origin Node */}
-                    <circle cx="40" cy="75" r="7" fill="#38bdf8" />
-                    <text x="28" y="98" fill="#cbd5e1" fontSize="11" fontWeight="700">
-                      Điểm đi
-                    </text>
-
-                    {/* Active Vehicle Node */}
-                    <circle
-                      cx={40 + (420 * activeShipment.progress) / 100}
-                      cy={activeShipment.progress > 50 ? 44 : 52}
-                      r="9"
-                      fill="#34d399"
-                      stroke="#042f2e"
-                      strokeWidth="2.5"
-                    />
-                    <text
-                      x={Math.min(390, Math.max(40, 20 + (420 * activeShipment.progress) / 100))}
-                      y="24"
-                      fill="#fef08a"
-                      fontSize="11"
-                      fontWeight="800"
-                    >
-                      {activeShipment.licensePlate} ({activeShipment.speedKmh} km/h)
-                    </text>
-
-                    {/* Destination Node */}
-                    <circle cx="460" cy="35" r="7" fill="#fef08a" />
-                    <text x="425" y="60" fill="#cbd5e1" fontSize="11" fontWeight="700">
-                      Điểm đến
-                    </text>
-                  </svg>
-                </div>
-
-                {/* 4 Live Telemetry Gauges */}
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-                    gap: 12,
-                    marginBottom: 18
-                  }}
-                >
-                  <motion.div
-                    whileHover={{ y: -3 }}
-                    style={{
-                      padding: 12,
-                      borderRadius: 12,
-                      background: isDark ? 'rgba(15, 23, 42, 0.65)' : '#f8fafc',
-                      border: '1px solid rgba(148, 163, 184, 0.16)'
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: '0.72rem',
-                        opacity: 0.7,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 5
-                      }}
-                    >
-                      <Gauge size={13} color="#38bdf8" /> Vận tốc GPS
-                    </div>
-                    <strong style={{ fontSize: '1.15rem' }}>
-                      <CountingNumber
-                        value={activeShipment.speedKmh}
-                        startOnView={false}
-                        liveStep={activeShipment.speedKmh > 0 ? 0.2 : 0}
-                        decimals={1}
-                        liveIntervalMs={3000}
-                      />{' '}
-                      km/h
-                    </strong>
-                  </motion.div>
-
-                  <motion.div
-                    whileHover={{ y: -3 }}
-                    style={{
-                      padding: 12,
-                      borderRadius: 12,
-                      background: isDark ? 'rgba(15, 23, 42, 0.65)' : '#f8fafc',
-                      border: '1px solid rgba(148, 163, 184, 0.16)'
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: '0.72rem',
-                        opacity: 0.7,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 5
-                      }}
-                    >
-                      <Clock size={13} color="#f59e0b" /> Dự kiến đến (ETA)
-                    </div>
-                    <strong style={{ fontSize: '1.15rem' }}>
-                      {activeShipment.etaMinutes > 0 ? (
-                        <>
-                          <CountingNumber value={activeShipment.etaMinutes} startOnView={false} />{' '}
-                          phút
-                        </>
-                      ) : (
-                        'Đã đến nơi'
-                      )}
-                    </strong>
-                  </motion.div>
-
-                  <motion.div
-                    whileHover={{ y: -3 }}
-                    style={{
-                      padding: 12,
-                      borderRadius: 12,
-                      background: isDark ? 'rgba(15, 23, 42, 0.65)' : '#f8fafc',
-                      border: '1px solid rgba(148, 163, 184, 0.16)'
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: '0.72rem',
-                        opacity: 0.7,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 5
-                      }}
-                    >
-                      <Thermometer size={13} color="#34d399" /> Nhiệt độ thùng
-                    </div>
-                    <strong style={{ fontSize: '1.15rem' }}>
-                      <CountingNumber
-                        value={activeShipment.temperatureC}
-                        decimals={1}
-                        startOnView={false}
-                      />
-                      °C
-                    </strong>
-                  </motion.div>
-
-                  <motion.div
-                    whileHover={{ y: -3 }}
-                    style={{
-                      padding: 12,
-                      borderRadius: 12,
-                      background: isDark ? 'rgba(15, 23, 42, 0.65)' : '#f8fafc',
-                      border: '1px solid rgba(16, 185, 129, 0.3)'
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: '0.72rem',
-                        color: '#10b981',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 5
-                      }}
-                    >
-                      <Leaf size={13} /> CO2e Tiết kiệm
-                    </div>
-                    <strong style={{ fontSize: '1.15rem', color: '#10b981' }}>
-                      -
-                      <CountingNumber
-                        value={activeShipment.co2SavedKg}
-                        decimals={1}
-                        startOnView={false}
-                      />{' '}
-                      kg
-                    </strong>
-                  </motion.div>
-                </div>
-
-                {/* Carbon Comparison Bar */}
-                <div
-                  style={{
-                    padding: '14px 16px',
-                    borderRadius: 14,
-                    background: 'rgba(16, 185, 129, 0.08)',
-                    border: '1px solid rgba(16, 185, 129, 0.22)',
-                    fontSize: '0.8rem'
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      marginBottom: 6,
-                      fontWeight: 700
-                    }}
-                  >
-                    <span>Đối chứng phát thải GLEC v3 (Well-to-Wheel)</span>
-                    <span style={{ color: '#10b981' }}>
-                      Giảm {activeShipment.co2ReductionPct}% phát thải
+                    <h2 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0 }}>
+                      Danh Sách Vận Đơn Doanh Nghiệp
+                    </h2>
+                    <span style={{ fontSize: '0.76rem', opacity: 0.72 }}>
+                      Chọn vận đơn để định vị trực tiếp trên bản đồ vệ tinh 3D
                     </span>
                   </div>
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      opacity: 0.85
-                    }}
-                  >
-                    <span>Mốc Diesel thông thường: {activeShipment.baselineCo2Kg} kg CO2e</span>
-                    <span>
-                      Thực tế lộ trình xanh: <strong>{activeShipment.actualCo2Kg} kg CO2e</strong>
-                    </span>
+                  <div style={{ position: 'relative', width: '100%' }}>
+                    <Search
+                      size={14}
+                      style={{
+                        position: 'absolute',
+                        left: 12,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        opacity: 0.6
+                      }}
+                    />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Tìm mã vận đơn, cảng đi/đến, biển số xe..."
+                      style={{
+                        width: '100%',
+                        padding: '9px 12px 9px 34px',
+                        borderRadius: 12,
+                        border: '1px solid rgba(148, 163, 184, 0.3)',
+                        background: isDark ? 'rgba(15, 23, 42, 0.6)' : '#f8fafc',
+                        color: 'inherit',
+                        fontSize: '0.82rem'
+                      }}
+                    />
                   </div>
+                </div>
+
+                <div style={{ display: 'grid', gap: 12 }}>
+                  {customerShipments.map((s) => {
+                    const isSelected = activeShipment?.shipmentCode === s.shipmentCode;
+                    return (
+                      <div
+                        key={s.shipmentCode}
+                        onClick={() => setSelectedCode(s.shipmentCode)}
+                        style={{
+                          padding: '15px 17px',
+                          borderRadius: 15,
+                          cursor: 'pointer',
+                          background: isSelected
+                            ? 'rgba(16, 185, 129, 0.14)'
+                            : isDark
+                              ? 'rgba(15, 23, 42, 0.58)'
+                              : '#f8fafc',
+                          border: isSelected
+                            ? '1.5px solid #10b981'
+                            : '1px solid rgba(148, 163, 184, 0.2)',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: 8
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <code
+                              style={{
+                                fontWeight: 800,
+                                fontSize: '0.9rem',
+                                color: '#10b981'
+                              }}
+                            >
+                              {s.shipmentCode}
+                            </code>
+                            <span
+                              style={{
+                                fontSize: '0.72rem',
+                                padding: '2px 9px',
+                                borderRadius: 999,
+                                background:
+                                  s.status === 'IN_TRANSIT'
+                                    ? 'rgba(16, 185, 129, 0.18)'
+                                    : 'rgba(56, 189, 248, 0.18)',
+                                color: s.status === 'IN_TRANSIT' ? '#10b981' : '#0284c7',
+                                fontWeight: 700
+                              }}
+                            >
+                              {s.status === 'IN_TRANSIT' ? '● Đang vận chuyển' : '✓ Hoàn tất'}
+                            </span>
+                          </div>
+                          <span style={{ fontSize: '0.76rem', fontWeight: 800, color: '#10b981' }}>
+                            -{s.co2SavedKg} kg CO2e ({s.co2ReductionPct}%)
+                          </span>
+                        </div>
+
+                        <div
+                          style={{
+                            fontSize: '0.88rem',
+                            fontWeight: 700,
+                            marginBottom: 6
+                          }}
+                        >
+                          {s.originName} → {s.destinationName}
+                        </div>
+
+                        {/* Progress bar */}
+                        <div
+                          style={{
+                            width: '100%',
+                            height: 6,
+                            borderRadius: 999,
+                            background: 'rgba(148, 163, 184, 0.2)',
+                            overflow: 'hidden',
+                            marginBottom: 8
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: `${s.progress}%`,
+                              height: '100%',
+                              borderRadius: 999,
+                              background: 'linear-gradient(90deg, #10b981, #38bdf8)',
+                              transition: 'width 0.5s ease'
+                            }}
+                          />
+                        </div>
+
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            fontSize: '0.76rem',
+                            opacity: 0.8,
+                            flexWrap: 'wrap',
+                            gap: 8
+                          }}
+                        >
+                          <span>
+                            {s.vehicleType} • <strong>{s.licensePlate}</strong>
+                          </span>
+                          <span>
+                            Tiến độ: <strong>{Math.round(s.progress)}%</strong> • {s.distanceKm} km
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-            )}
+
+              {/* Right: Live 3D Google Maps Shipment Inspector */}
+              {activeShipment && (
+                <div
+                  style={{
+                    padding: 24,
+                    borderRadius: 20,
+                    background: isDark ? 'rgba(12, 26, 21, 0.94)' : '#ffffff',
+                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                    boxShadow: isDark ? 'none' : '0 12px 32px rgba(15, 23, 42, 0.06)'
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                      marginBottom: 14,
+                      flexWrap: 'wrap',
+                      gap: 10
+                    }}
+                  >
+                    <div>
+                      <span
+                        style={{
+                          fontSize: '0.72rem',
+                          fontWeight: 800,
+                          color: '#10b981',
+                          letterSpacing: '0.08em',
+                          textTransform: 'uppercase'
+                        }}
+                      >
+                        BẢN ĐỒ VỆ TINH 3D GOOGLE HYBRID • ĐỊNH VỊ TRỰC TUYẾN{' '}
+                        {activeShipment.shipmentCode}
+                      </span>
+                      <h3 style={{ fontSize: '1.22rem', fontWeight: 800, margin: '4px 0' }}>
+                        {activeShipment.originName} → {activeShipment.destinationName}
+                      </h3>
+                      <p style={{ fontSize: '0.82rem', opacity: 0.82, margin: 0 }}>
+                        {activeShipment.statusLabel} • Tọa độ GPS thực tế:{' '}
+                        <code style={{ color: '#10b981', fontWeight: 700 }}>
+                          {activeVehiclePosition[0].toFixed(4)}°N,{' '}
+                          {activeVehiclePosition[1].toFixed(4)}°E
+                        </code>
+                      </p>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        onClick={() => setFollowVehicle((v) => !v)}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          padding: '7px 12px',
+                          borderRadius: 10,
+                          border: followVehicle
+                            ? '1px solid #38bdf8'
+                            : '1px solid rgba(148, 163, 184, 0.3)',
+                          background: followVehicle ? 'rgba(56, 189, 248, 0.16)' : 'transparent',
+                          color: followVehicle ? '#38bdf8' : 'inherit',
+                          fontSize: '0.76rem',
+                          fontWeight: 700,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <Crosshair size={14} />
+                        {followVehicle ? 'Đang Khóa Camera Xe' : 'Khóa Camera Theo Xe'}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setIsLiveSim((v) => !v)}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          padding: '7px 12px',
+                          borderRadius: 10,
+                          border: '1px solid rgba(16, 185, 129, 0.35)',
+                          background: 'rgba(16, 185, 129, 0.12)',
+                          color: '#10b981',
+                          fontSize: '0.76rem',
+                          fontWeight: 700,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {isLiveSim ? <Pause size={13} /> : <Play size={13} />}
+                        {isLiveSim ? 'Tạm dừng luồng GPS' : 'Tiếp tục GPS'}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDownloadCertificate(activeShipment)}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          padding: '7px 13px',
+                          borderRadius: 10,
+                          border: '1px solid rgba(16, 185, 129, 0.45)',
+                          background: 'linear-gradient(135deg, #10b981, #059669)',
+                          color: '#042f2e',
+                          fontSize: '0.76rem',
+                          fontWeight: 800,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <Download size={14} /> Chứng nhận ISO 14083
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Interactive 3D Google Maps View for Selected Shipment */}
+                  <div style={{ marginBottom: 18 }}>
+                    <MapView
+                      center={activeVehiclePosition}
+                      zoom={11}
+                      height="375px"
+                      defaultTile="google_hybrid"
+                      default3D={true}
+                      defaultPitch={38}
+                      overlayTitle={`${activeShipment.shipmentCode} • ${activeShipment.licensePlate} (${activeShipment.corridorState})`}
+                      onMapReady={(m) => {
+                        mapInstanceRef.current = m;
+                      }}
+                    >
+                      <RoutePolyline
+                        positions={activeShipmentWaypoints}
+                        color="#10b981"
+                        weight={5}
+                        showCorridorBuffer={true}
+                      />
+                      <OriginMarker
+                        position={activeShipmentWaypoints[0]}
+                        label={`Điểm đi: ${activeShipment.originName}`}
+                      />
+                      <DestinationMarker
+                        position={activeShipmentWaypoints[activeShipmentWaypoints.length - 1]}
+                        label={`Điểm đến: ${activeShipment.destinationName}`}
+                      />
+                      <VehicleMarker
+                        position={activeVehiclePosition}
+                        vehicleCode={activeShipment.licensePlate}
+                        speedKmh={activeShipment.speedKmh}
+                        status="ON_ROUTE"
+                        label={`${activeShipment.vehicleType} • Đích: ${activeShipment.destinationName}`}
+                      />
+                    </MapView>
+                  </div>
+
+                  {/* 4 Live Telemetry Gauges */}
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))',
+                      gap: 12,
+                      marginBottom: 16
+                    }}
+                  >
+                    <motion.div
+                      whileHover={{ y: -2 }}
+                      style={{
+                        padding: 13,
+                        borderRadius: 12,
+                        background: isDark ? 'rgba(15, 23, 42, 0.65)' : '#f8fafc',
+                        border: '1px solid rgba(148, 163, 184, 0.18)'
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: '0.74rem',
+                          opacity: 0.78,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 5,
+                          marginBottom: 4
+                        }}
+                      >
+                        <Gauge size={14} color="#38bdf8" /> Vận tốc GPS
+                      </div>
+                      <strong style={{ fontSize: '1.18rem' }}>
+                        <CountingNumber
+                          value={activeShipment.speedKmh}
+                          startOnView={false}
+                          decimals={0}
+                        />{' '}
+                        km/h
+                      </strong>
+                    </motion.div>
+
+                    <motion.div
+                      whileHover={{ y: -2 }}
+                      style={{
+                        padding: 13,
+                        borderRadius: 12,
+                        background: isDark ? 'rgba(15, 23, 42, 0.65)' : '#f8fafc',
+                        border: '1px solid rgba(148, 163, 184, 0.18)'
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: '0.74rem',
+                          opacity: 0.78,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 5,
+                          marginBottom: 4
+                        }}
+                      >
+                        <Clock size={14} color="#f59e0b" /> Dự kiến đến (ETA)
+                      </div>
+                      <strong style={{ fontSize: '1.18rem' }}>
+                        {activeShipment.etaMinutes > 0 ? (
+                          <>
+                            <CountingNumber value={activeShipment.etaMinutes} startOnView={false} />{' '}
+                            phút
+                          </>
+                        ) : (
+                          'Đã đến nơi'
+                        )}
+                      </strong>
+                    </motion.div>
+
+                    <motion.div
+                      whileHover={{ y: -2 }}
+                      style={{
+                        padding: 13,
+                        borderRadius: 12,
+                        background: isDark ? 'rgba(15, 23, 42, 0.65)' : '#f8fafc',
+                        border: '1px solid rgba(148, 163, 184, 0.18)'
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: '0.74rem',
+                          opacity: 0.78,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 5,
+                          marginBottom: 4
+                        }}
+                      >
+                        <Thermometer size={14} color="#34d399" /> Nhiệt độ thùng
+                      </div>
+                      <strong style={{ fontSize: '1.18rem' }}>
+                        <CountingNumber
+                          value={activeShipment.temperatureC}
+                          decimals={1}
+                          startOnView={false}
+                        />
+                        °C
+                      </strong>
+                    </motion.div>
+
+                    <motion.div
+                      whileHover={{ y: -2 }}
+                      style={{
+                        padding: 13,
+                        borderRadius: 12,
+                        background: isDark ? 'rgba(15, 23, 42, 0.65)' : '#f8fafc',
+                        border: '1px solid rgba(16, 185, 129, 0.3)'
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: '0.74rem',
+                          color: '#10b981',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 5,
+                          marginBottom: 4,
+                          fontWeight: 700
+                        }}
+                      >
+                        <Leaf size={14} /> CO2e Tiết kiệm
+                      </div>
+                      <strong style={{ fontSize: '1.18rem', color: '#10b981' }}>
+                        -
+                        <CountingNumber
+                          value={activeShipment.co2SavedKg}
+                          decimals={1}
+                          startOnView={false}
+                        />{' '}
+                        kg
+                      </strong>
+                    </motion.div>
+                  </div>
+
+                  {/* Carbon Comparison Bar */}
+                  <div
+                    style={{
+                      padding: '14px 16px',
+                      borderRadius: 14,
+                      background: 'rgba(16, 185, 129, 0.09)',
+                      border: '1px solid rgba(16, 185, 129, 0.25)',
+                      fontSize: '0.82rem'
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        marginBottom: 6,
+                        fontWeight: 700
+                      }}
+                    >
+                      <span>Đối chứng phát thải GLEC v3 (Well-to-Wheel)</span>
+                      <span style={{ color: '#10b981' }}>
+                        Giảm {activeShipment.co2ReductionPct}% phát thải
+                      </span>
+                    </div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        opacity: 0.88,
+                        flexWrap: 'wrap',
+                        gap: 8
+                      }}
+                    >
+                      <span>Mốc Diesel thông thường: {activeShipment.baselineCo2Kg} kg CO2e</span>
+                      <span>
+                        Thực tế lộ trình xanh: <strong>{activeShipment.actualCo2Kg} kg CO2e</strong>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Full Corridor Multi-Vehicle 3D Radar for Customer */}
+            <RealTimeFleetMap3D mode="customer" height="440px" />
           </div>
         )}
 
-        {/* TAB 2: BOOK GREEN SHIPMENT */}
+        {/* TAB 2: BOOK GREEN SHIPMENT WITH LIVE 3D ROUTE PREVIEW */}
         {activeTab === 'booking' && (
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
               gap: 24,
               alignItems: 'start'
             }}
@@ -1217,15 +1411,16 @@ export default function CustomerPortalPage() {
                 background: isDark ? 'rgba(12, 26, 21, 0.92)' : '#ffffff',
                 border: isDark
                   ? '1px solid rgba(110, 231, 183, 0.2)'
-                  : '1px solid rgba(15, 23, 42, 0.08)'
+                  : '1px solid rgba(15, 23, 42, 0.08)',
+                boxShadow: isDark ? 'none' : '0 10px 28px rgba(15, 23, 42, 0.05)'
               }}
             >
               <h2 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: 6 }}>
                 Đặt Lịch Vận Chuyển Xanh &amp; Yêu Cầu Điều Xe
               </h2>
-              <p style={{ fontSize: '0.84rem', opacity: 0.76, marginBottom: 20 }}>
-                Hệ thống tự động tính toán lộ trình tối ưu đa tiêu chí Pareto (UC05) và cấp chứng
-                nhận dự toán CO2e theo chuẩn ISO 14083 ngay khi tạo đơn.
+              <p style={{ fontSize: '0.85rem', opacity: 0.8, marginBottom: 20, lineHeight: 1.5 }}>
+                Hệ thống tự động tính toán lộ trình tối ưu đa tiêu chí Pareto (UC05), hiển thị trực
+                quan hành lang 3D và cấp chứng nhận dự toán CO2e theo chuẩn ISO 14083.
               </p>
 
               <form onSubmit={handleCreateShipment}>
@@ -1495,10 +1690,10 @@ export default function CustomerPortalPage() {
               </form>
             </div>
 
-            {/* Right: Instant Green Routing & Carbon Quote Preview */}
+            {/* Right: Instant Green Routing 3D Map & Carbon Quote Preview */}
             <div
               style={{
-                padding: 26,
+                padding: 24,
                 borderRadius: 20,
                 background: 'linear-gradient(145deg, #042f2e 0%, #091e1a 100%)',
                 border: '1px solid rgba(52, 211, 153, 0.35)',
@@ -1514,19 +1709,47 @@ export default function CustomerPortalPage() {
                   textTransform: 'uppercase'
                 }}
               >
-                DỰ TOÁN LỘ TRÌNH XANH &amp; CARBON (UC05 • GLEC V3)
+                MÔ PHỎNG LỘ TRÌNH 3D &amp; DỰ TOÁN CARBON (UC05 • GLEC V3)
               </span>
-              <h3 style={{ fontSize: '1.3rem', fontWeight: 800, margin: '6px 0 16px' }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '6px 0 14px' }}>
                 {bookingQuote.originNode.label} → {bookingQuote.destNode.label}
               </h3>
 
+              {/* 3D Route Preview Map */}
+              <div style={{ marginBottom: 16 }}>
+                <MapView
+                  center={bookingQuote.originCoords}
+                  zoom={10}
+                  height="250px"
+                  defaultTile="google_hybrid"
+                  default3D={true}
+                  defaultPitch={36}
+                  overlayTitle={`Hành lang xanh dự kiến: ${bookingQuote.distanceKm} km`}
+                >
+                  <RoutePolyline
+                    positions={bookingQuote.previewWaypoints}
+                    color="#10b981"
+                    weight={5}
+                    showCorridorBuffer={true}
+                  />
+                  <OriginMarker
+                    position={bookingQuote.originCoords}
+                    label={bookingQuote.originNode.label}
+                  />
+                  <DestinationMarker
+                    position={bookingQuote.destCoords}
+                    label={bookingQuote.destNode.label}
+                  />
+                </MapView>
+              </div>
+
               <div
                 style={{
-                  padding: 18,
+                  padding: 16,
                   borderRadius: 16,
                   background: 'rgba(16, 185, 129, 0.14)',
                   border: '1px solid rgba(110, 231, 183, 0.3)',
-                  marginBottom: 18
+                  marginBottom: 16
                 }}
               >
                 <div style={{ fontSize: '0.78rem', color: '#a7f3d0' }}>
@@ -1534,7 +1757,7 @@ export default function CustomerPortalPage() {
                 </div>
                 <div
                   style={{
-                    fontSize: '2.2rem',
+                    fontSize: '2rem',
                     fontWeight: 800,
                     color: '#6ee7b7',
                     lineHeight: 1.15,
@@ -1641,7 +1864,8 @@ export default function CustomerPortalPage() {
               background: isDark ? 'rgba(12, 26, 21, 0.92)' : '#ffffff',
               border: isDark
                 ? '1px solid rgba(110, 231, 183, 0.18)'
-                : '1px solid rgba(15, 23, 42, 0.08)'
+                : '1px solid rgba(15, 23, 42, 0.08)',
+              boxShadow: isDark ? 'none' : '0 10px 28px rgba(15, 23, 42, 0.05)'
             }}
           >
             <div
@@ -1658,7 +1882,7 @@ export default function CustomerPortalPage() {
                 <h2 style={{ fontSize: '1.22rem', fontWeight: 800, margin: '0 0 4px' }}>
                   Sổ Cái Kiểm Toán Phát Thải Scope 3 &amp; Chứng Nhận Số ePOD (ISO 14083)
                 </h2>
-                <p style={{ fontSize: '0.82rem', opacity: 0.75, margin: 0 }}>
+                <p style={{ fontSize: '0.84rem', opacity: 0.78, margin: 0 }}>
                   Mỗi chuyến hàng hoàn tất hoặc đang vận hành đều được băm xác thực SHA-256 phục vụ
                   báo cáo phát triển bền vững ESG và xuất khẩu EU CBAM.
                 </p>
@@ -1666,7 +1890,7 @@ export default function CustomerPortalPage() {
             </div>
 
             <div className="table-wrapper">
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.84rem' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                 <thead>
                   <tr
                     style={{
@@ -1707,11 +1931,11 @@ export default function CustomerPortalPage() {
                             type="button"
                             onClick={() => setSelectedCertificate(s)}
                             style={{
-                              padding: '5px 10px',
+                              padding: '6px 11px',
                               borderRadius: 8,
                               border: '1px solid rgba(56, 189, 248, 0.35)',
                               background: 'rgba(56, 189, 248, 0.12)',
-                              color: '#38bdf8',
+                              color: '#0284c7',
                               fontSize: '0.75rem',
                               fontWeight: 700,
                               cursor: 'pointer'
@@ -1723,7 +1947,7 @@ export default function CustomerPortalPage() {
                             type="button"
                             onClick={() => handleDownloadCertificate(s)}
                             style={{
-                              padding: '5px 10px',
+                              padding: '6px 11px',
                               borderRadius: 8,
                               border: '1px solid rgba(16, 185, 129, 0.35)',
                               background: 'rgba(16, 185, 129, 0.12)',
@@ -1787,7 +2011,7 @@ export default function CustomerPortalPage() {
                     display: 'grid',
                     gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
                     gap: 14,
-                    fontSize: '0.83rem'
+                    fontSize: '0.84rem'
                   }}
                 >
                   <div>
@@ -1879,7 +2103,7 @@ export default function CustomerPortalPage() {
                       borderBottom: '1px solid rgba(148, 163, 184, 0.14)'
                     }}
                   >
-                    <span style={{ opacity: 0.72 }}>{row.label}</span>
+                    <span style={{ opacity: 0.75 }}>{row.label}</span>
                     <strong>{row.value}</strong>
                   </div>
                 ))}
@@ -1956,7 +2180,7 @@ export default function CustomerPortalPage() {
                       <strong style={{ display: 'block', fontSize: '0.86rem', marginBottom: 2 }}>
                         {item.title}
                       </strong>
-                      <span style={{ fontSize: '0.76rem', opacity: 0.75 }}>{item.desc}</span>
+                      <span style={{ fontSize: '0.76rem', opacity: 0.78 }}>{item.desc}</span>
                     </div>
                   </label>
                 ))}

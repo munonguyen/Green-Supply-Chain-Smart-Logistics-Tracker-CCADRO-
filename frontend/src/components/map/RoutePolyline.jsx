@@ -5,36 +5,66 @@ export default function RoutePolyline({
   map,
   positions,
   color = '#10b981',
-  weight = 5,
-  opacity = 0.85,
-  dashArray = null
+  weight = 6,
+  opacity = 0.95,
+  dashArray = null,
+  showCorridorBuffer = true,
+  autoFit = true
 }) {
-  const polylineRef = useRef(null);
+  const groupRef = useRef(null);
+  const fittedRef = useRef(false);
 
   useEffect(() => {
     if (!map || !positions || positions.length < 2) return;
 
-    if (polylineRef.current) {
-      polylineRef.current.remove();
+    if (groupRef.current) {
+      groupRef.current.remove();
     }
 
-    const polyline = L.polyline(positions, {
+    const layers = [];
+
+    if (showCorridorBuffer && !dashArray) {
+      // Outer 200m corridor safety halo
+      const outerHalo = L.polyline(positions, {
+        color,
+        weight: weight + 14,
+        opacity: 0.16,
+        lineCap: 'round',
+        lineJoin: 'round'
+      });
+      // Inner 50m corridor buffer
+      const innerHalo = L.polyline(positions, {
+        color: '#ffffff',
+        weight: weight + 4,
+        opacity: 0.45,
+        lineCap: 'round',
+        lineJoin: 'round'
+      });
+      layers.push(outerHalo, innerHalo);
+    }
+
+    const mainLine = L.polyline(positions, {
       color,
       weight,
       opacity,
       dashArray,
       lineCap: 'round',
       lineJoin: 'round'
-    }).addTo(map);
+    });
+    layers.push(mainLine);
 
-    polylineRef.current = polyline;
+    const group = L.layerGroup(layers).addTo(map);
+    groupRef.current = group;
 
-    map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
+    if (autoFit && !fittedRef.current) {
+      map.fitBounds(mainLine.getBounds(), { padding: [55, 55] });
+      fittedRef.current = true;
+    }
 
     return () => {
-      polyline.remove();
+      group.remove();
     };
-  }, [map, positions, color, weight, opacity, dashArray]);
+  }, [map, positions, color, weight, opacity, dashArray, showCorridorBuffer, autoFit]);
 
   return null;
 }
