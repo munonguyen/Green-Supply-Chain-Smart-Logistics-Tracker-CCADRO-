@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'motion/react';
 import {
   ArrowRight,
   Bell,
@@ -1032,7 +1033,8 @@ export default function CustomerPortalPage() {
                     marginBottom: 18
                   }}
                 >
-                  <div
+                  <motion.div
+                    whileHover={{ y: -3 }}
                     style={{
                       padding: 12,
                       borderRadius: 12,
@@ -1051,10 +1053,20 @@ export default function CustomerPortalPage() {
                     >
                       <Gauge size={13} color="#38bdf8" /> Vận tốc GPS
                     </div>
-                    <strong style={{ fontSize: '1.15rem' }}>{activeShipment.speedKmh} km/h</strong>
-                  </div>
+                    <strong style={{ fontSize: '1.15rem' }}>
+                      <CountingNumber
+                        value={activeShipment.speedKmh}
+                        startOnView={false}
+                        liveStep={activeShipment.speedKmh > 0 ? 0.2 : 0}
+                        decimals={1}
+                        liveIntervalMs={3000}
+                      />{' '}
+                      km/h
+                    </strong>
+                  </motion.div>
 
-                  <div
+                  <motion.div
+                    whileHover={{ y: -3 }}
                     style={{
                       padding: 12,
                       borderRadius: 12,
@@ -1074,13 +1086,19 @@ export default function CustomerPortalPage() {
                       <Clock size={13} color="#f59e0b" /> Dự kiến đến (ETA)
                     </div>
                     <strong style={{ fontSize: '1.15rem' }}>
-                      {activeShipment.etaMinutes > 0
-                        ? `${activeShipment.etaMinutes} phút`
-                        : 'Đã đến nơi'}
+                      {activeShipment.etaMinutes > 0 ? (
+                        <>
+                          <CountingNumber value={activeShipment.etaMinutes} startOnView={false} />{' '}
+                          phút
+                        </>
+                      ) : (
+                        'Đã đến nơi'
+                      )}
                     </strong>
-                  </div>
+                  </motion.div>
 
-                  <div
+                  <motion.div
+                    whileHover={{ y: -3 }}
                     style={{
                       padding: 12,
                       borderRadius: 12,
@@ -1099,10 +1117,18 @@ export default function CustomerPortalPage() {
                     >
                       <Thermometer size={13} color="#34d399" /> Nhiệt độ thùng
                     </div>
-                    <strong style={{ fontSize: '1.15rem' }}>{activeShipment.temperatureC}°C</strong>
-                  </div>
+                    <strong style={{ fontSize: '1.15rem' }}>
+                      <CountingNumber
+                        value={activeShipment.temperatureC}
+                        decimals={1}
+                        startOnView={false}
+                      />
+                      °C
+                    </strong>
+                  </motion.div>
 
-                  <div
+                  <motion.div
+                    whileHover={{ y: -3 }}
                     style={{
                       padding: 12,
                       borderRadius: 12,
@@ -1122,9 +1148,15 @@ export default function CustomerPortalPage() {
                       <Leaf size={13} /> CO2e Tiết kiệm
                     </div>
                     <strong style={{ fontSize: '1.15rem', color: '#10b981' }}>
-                      -{activeShipment.co2SavedKg} kg
+                      -
+                      <CountingNumber
+                        value={activeShipment.co2SavedKg}
+                        decimals={1}
+                        startOnView={false}
+                      />{' '}
+                      kg
                     </strong>
-                  </div>
+                  </motion.div>
                 </div>
 
                 {/* Carbon Comparison Bar */}
@@ -1509,14 +1541,37 @@ export default function CustomerPortalPage() {
                     margin: '4px 0'
                   }}
                 >
-                  -{bookingQuote.savedCo2Kg} kg CO2e{' '}
+                  -
+                  <CountingNumber
+                    value={bookingQuote.savedCo2Kg}
+                    decimals={1}
+                    startOnView={false}
+                  />{' '}
+                  kg CO2e{' '}
                   <span style={{ fontSize: '1rem', color: '#fef08a' }}>
-                    (-{bookingQuote.reductionPct}%)
+                    (-
+                    <CountingNumber
+                      value={bookingQuote.reductionPct}
+                      decimals={1}
+                      startOnView={false}
+                    />
+                    %)
                   </span>
                 </div>
                 <div style={{ fontSize: '0.76rem', color: '#cbd5e1' }}>
-                  So với xe Diesel tiêu chuẩn ({bookingQuote.baselineCo2Kg} kg CO2e xuống còn{' '}
-                  {bookingQuote.actualCo2Kg} kg CO2e)
+                  So với xe Diesel tiêu chuẩn (
+                  <CountingNumber
+                    value={bookingQuote.baselineCo2Kg}
+                    decimals={1}
+                    startOnView={false}
+                  />{' '}
+                  kg CO2e xuống còn{' '}
+                  <CountingNumber
+                    value={bookingQuote.actualCo2Kg}
+                    decimals={1}
+                    startOnView={false}
+                  />{' '}
+                  kg CO2e)
                 </div>
               </div>
 
@@ -1530,7 +1585,14 @@ export default function CustomerPortalPage() {
                   }}
                 >
                   <span style={{ color: '#94a3b8' }}>Cự ly hành lang tối ưu Pareto</span>
-                  <strong>{bookingQuote.distanceKm} km</strong>
+                  <strong>
+                    <CountingNumber
+                      value={bookingQuote.distanceKm}
+                      decimals={1}
+                      startOnView={false}
+                    />{' '}
+                    km
+                  </strong>
                 </div>
                 <div
                   style={{
@@ -1541,7 +1603,9 @@ export default function CustomerPortalPage() {
                   }}
                 >
                   <span style={{ color: '#94a3b8' }}>Thời gian hành trình dự kiến</span>
-                  <strong>{bookingQuote.etaMinutes} phút</strong>
+                  <strong>
+                    <CountingNumber value={bookingQuote.etaMinutes} startOnView={false} /> phút
+                  </strong>
                 </div>
                 <div
                   style={{

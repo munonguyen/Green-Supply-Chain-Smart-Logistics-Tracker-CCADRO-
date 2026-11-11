@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'motion/react';
 import {
   ArrowRight,
   Building2,
@@ -105,35 +106,49 @@ export default function LandingPage() {
 
           {/* Right: live carbon panel */}
           <Reveal delay={0.35} y={40}>
-            <div className="lp-live">
+            <motion.div
+              whileHover={{ y: -5, scale: 1.01 }}
+              transition={{ type: 'spring', stiffness: 280, damping: 20 }}
+              className="lp-live"
+            >
               <div className="lp-live__head">
                 <span>CARBON DASHBOARD • LIVE</span>
                 <span className="radar-dot" />
               </div>
               <div className="lp-live__value">
-                <CountingNumber value={318460} />
+                <CountingNumber value={318460} liveStep={3} liveIntervalMs={3200} duration={1400} />
                 <span className="lp-live__unit">kg CO2e</span>
               </div>
-              <p className="lp-live__sub">Tổng lượng phát thải đã tránh (12 tháng qua)</p>
+              <p className="lp-live__sub">
+                Tổng lượng phát thải đã tránh (12 tháng qua • cập nhật trực tiếp)
+              </p>
               <div className="lp-live__rows">
                 <div className="lp-live__row">
                   <span>Chuyến hàng xanh</span>
-                  <strong>12.450</strong>
+                  <strong>
+                    <CountingNumber value={12450} liveStep={1} liveIntervalMs={5500} />
+                  </strong>
                 </div>
                 <div className="lp-live__row">
                   <span>Đội xe phát thải thấp</span>
-                  <strong>42%</strong>
+                  <strong>
+                    <CountingNumber value={42} suffix="%" />
+                  </strong>
                 </div>
                 <div className="lp-live__row">
                   <span>Giao hàng đúng hẹn</span>
-                  <strong>98,6%</strong>
+                  <strong>
+                    <CountingNumber value={98.6} decimals={1} suffix="%" />
+                  </strong>
                 </div>
                 <div className="lp-live__row">
                   <span>Chứng nhận ISO 14083</span>
-                  <strong>648</strong>
+                  <strong>
+                    <CountingNumber value={648} />
+                  </strong>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </Reveal>
         </div>
       </section>
@@ -171,7 +186,11 @@ export default function LandingPage() {
               const Icon = m.icon;
               return (
                 <Reveal key={m.label} delay={idx * 0.08}>
-                  <div className="lp-metric">
+                  <motion.div
+                    whileHover={{ y: -6, scale: 1.015 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 22 }}
+                    className="lp-metric"
+                  >
                     <div className="lp-metric__icon">
                       <Icon size={22} />
                     </div>
@@ -184,10 +203,20 @@ export default function LandingPage() {
                     <div className="lp-metric__hint">{m.hint}</div>
                     <div className="lp-metric__bars">
                       {m.bars.map((h, i) => (
-                        <span key={i} style={{ height: `${h}%` }} />
+                        <motion.span
+                          key={i}
+                          initial={{ height: '8%' }}
+                          whileInView={{ height: `${h}%` }}
+                          viewport={{ once: true }}
+                          transition={{
+                            duration: 0.7,
+                            delay: idx * 0.08 + i * 0.05,
+                            ease: [0.22, 1, 0.36, 1]
+                          }}
+                        />
                       ))}
                     </div>
-                  </div>
+                  </motion.div>
                 </Reveal>
               );
             })}
@@ -249,34 +278,45 @@ export default function LandingPage() {
           </Reveal>
 
           <Reveal delay={0.15}>
-            <div className="lp-live">
+            <motion.div
+              whileHover={{ y: -5, scale: 1.01 }}
+              transition={{ type: 'spring', stiffness: 280, damping: 20 }}
+              className="lp-live"
+            >
               <div className="lp-live__head">
                 <span>CONTROL TOWER • TELEMETRY SLA</span>
                 <span className="radar-dot" />
               </div>
               <div className="lp-live__value">
-                99,94<span className="lp-live__unit">% Uptime</span>
+                <CountingNumber value={99.94} decimals={2} />
+                <span className="lp-live__unit">% Uptime</span>
               </div>
               <p className="lp-live__sub">Giám sát liên tục 4 hành lang cảng biển trọng điểm</p>
               <div className="lp-live__rows">
                 <div className="lp-live__row">
                   <span>Ngưỡng cảnh báo đệm vàng</span>
-                  <strong>50m (PostGIS)</strong>
+                  <strong>
+                    <CountingNumber value={50} suffix="m (PostGIS)" />
+                  </strong>
                 </div>
                 <div className="lp-live__row">
                   <span>Ngưỡng báo động lệch tuyến đỏ</span>
-                  <strong>200m (3 nhịp GPS)</strong>
+                  <strong>
+                    <CountingNumber value={200} suffix="m (3 nhịp GPS)" />
+                  </strong>
                 </div>
                 <div className="lp-live__row">
                   <span>Lợi ích tối thiểu để tái định tuyến</span>
-                  <strong>&ge; 10% CO2e / ETA</strong>
+                  <strong>
+                    &ge; <CountingNumber value={10} suffix="% CO2e / ETA" />
+                  </strong>
                 </div>
                 <div className="lp-live__row">
                   <span>Chuẩn hạch toán phát thải</span>
                   <strong>GLEC v3 • WTW</strong>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </Reveal>
         </div>
       </section>

@@ -13,12 +13,13 @@ import {
   Truck
 } from 'lucide-react';
 import { DEMO_SHIPMENTS } from './landingContent';
+import { CountingNumber } from '../ui/CountingNumber';
 
 const CODES = Object.keys(DEMO_SHIPMENTS);
 
 /**
  * Interactive tracking console that overlaps the hero section.
- * Uses lp-track* CSS classes from landing.css.
+ * Uses lp-track* CSS classes from landing.css with smooth metric animations.
  */
 export default function HeroTrackingWidget() {
   const [query, setQuery] = useState('');
@@ -60,7 +61,7 @@ export default function HeroTrackingWidget() {
             <div>
               <h2 className="lp-track__title">Theo Dõi Vận Đơn Trực Tuyến</h2>
               <p className="lp-track__subtitle">
-                Nhập mã vận đơn để xem trạng thái chuyến hàng thời gian thực
+                Nhập mã vận đơn để xem trạng thái chuyến hàng và chỉ số telemetry thời gian thực
               </p>
             </div>
 
@@ -106,7 +107,7 @@ export default function HeroTrackingWidget() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.25 }}
+              transition={{ duration: 0.28 }}
             >
               {/* Step progress bar */}
               <div className="lp-steps">
@@ -115,7 +116,7 @@ export default function HeroTrackingWidget() {
                     className="lp-steps__fill"
                     initial={{ width: 0 }}
                     animate={{ width: `${fillPercent}%` }}
-                    transition={{ duration: 0.6, ease: 'easeOut' }}
+                    transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
                   />
                 </div>
                 {shipment.steps.map((step, idx) => (
@@ -195,10 +196,14 @@ export default function HeroTrackingWidget() {
                   </div>
                 </div>
 
-                {/* Right: telemetry tiles */}
+                {/* Right: Animated telemetry tiles */}
                 <div>
                   <div className="lp-tiles">
-                    <div className="lp-tile lp-tile--accent">
+                    <motion.div
+                      whileHover={{ y: -4, scale: 1.01 }}
+                      transition={{ type: 'spring', stiffness: 320, damping: 20 }}
+                      className="lp-tile lp-tile--accent"
+                    >
                       <div className="lp-tile__label">
                         <Leaf size={13} /> CO2 tiết kiệm
                       </div>
@@ -206,41 +211,123 @@ export default function HeroTrackingWidget() {
                         className="lp-tile__value"
                         style={{ color: 'var(--accent-green-light)' }}
                       >
-                        -{shipment.co2SavedKg} kg
+                        -
+                        <CountingNumber
+                          value={shipment.co2SavedKg}
+                          decimals={1}
+                          startOnView={false}
+                        />{' '}
+                        kg
                       </div>
-                      <div className="lp-tile__hint">↓ {shipment.co2Percent}% so với diesel</div>
-                    </div>
+                      <div className="lp-tile__hint">
+                        ↓{' '}
+                        <CountingNumber
+                          value={shipment.co2Percent}
+                          decimals={1}
+                          startOnView={false}
+                        />
+                        % so với diesel
+                      </div>
+                      <div className="lp-tile__meter">
+                        <motion.span
+                          initial={{ width: 0 }}
+                          animate={{ width: `${Math.min(100, shipment.co2Percent * 2.8)}%` }}
+                          transition={{ duration: 0.7, ease: 'easeOut' }}
+                        />
+                      </div>
+                    </motion.div>
 
-                    <div className="lp-tile">
+                    <motion.div
+                      whileHover={{ y: -4, scale: 1.01 }}
+                      transition={{ type: 'spring', stiffness: 320, damping: 20 }}
+                      className="lp-tile"
+                    >
                       <div className="lp-tile__label">
-                        <Clock size={13} /> ETA
+                        <Clock size={13} /> Dự kiến đến (ETA)
                       </div>
-                      <div className="lp-tile__value">{shipment.etaMinutes} phút</div>
-                      <div className="lp-tile__hint">{shipment.distanceKm} km tổng quãng đường</div>
-                    </div>
+                      <div className="lp-tile__value">
+                        <CountingNumber value={shipment.etaMinutes} startOnView={false} /> phút
+                      </div>
+                      <div className="lp-tile__hint">
+                        <CountingNumber
+                          value={shipment.distanceKm}
+                          decimals={1}
+                          startOnView={false}
+                        />{' '}
+                        km tổng quãng đường
+                      </div>
+                      <div className="lp-tile__meter">
+                        <motion.span
+                          initial={{ width: 0 }}
+                          animate={{ width: `${shipment.progress}%` }}
+                          transition={{ duration: 0.7, ease: 'easeOut' }}
+                        />
+                      </div>
+                    </motion.div>
 
-                    <div className="lp-tile">
+                    <motion.div
+                      whileHover={{ y: -4, scale: 1.01 }}
+                      transition={{ type: 'spring', stiffness: 320, damping: 20 }}
+                      className="lp-tile"
+                    >
                       <div className="lp-tile__label">
-                        <Gauge size={13} /> Tốc độ
+                        <Gauge size={13} /> Vận tốc GPS
                       </div>
-                      <div className="lp-tile__value">{shipment.speed} km/h</div>
-                      <div className="lp-tile__hint">Đang lưu thông bình thường</div>
-                    </div>
+                      <div className="lp-tile__value">
+                        <CountingNumber
+                          value={shipment.speed}
+                          startOnView={false}
+                          liveStep={0.2}
+                          decimals={1}
+                          liveIntervalMs={2800}
+                        />{' '}
+                        km/h
+                      </div>
+                      <div className="lp-tile__hint">Đang lưu thông ổn định</div>
+                      <div className="lp-tile__meter">
+                        <motion.span
+                          initial={{ width: 0 }}
+                          animate={{ width: `${Math.min(100, (shipment.speed / 80) * 100)}%` }}
+                          transition={{ duration: 0.7, ease: 'easeOut' }}
+                        />
+                      </div>
+                    </motion.div>
 
-                    <div className="lp-tile">
+                    <motion.div
+                      whileHover={{ y: -4, scale: 1.01 }}
+                      transition={{ type: 'spring', stiffness: 320, damping: 20 }}
+                      className="lp-tile"
+                    >
                       <div className="lp-tile__label">
-                        <Thermometer size={13} /> Nhiệt độ
+                        <Thermometer size={13} /> Nhiệt độ thùng
                       </div>
-                      <div className="lp-tile__value">{shipment.temperature}°C</div>
-                      <div className="lp-tile__hint">Chuỗi lạnh ổn định</div>
-                    </div>
+                      <div className="lp-tile__value">
+                        <CountingNumber
+                          value={shipment.temperature}
+                          decimals={1}
+                          startOnView={false}
+                        />
+                        °C
+                      </div>
+                      <div className="lp-tile__hint">Chuỗi lạnh chuẩn ±0,1°C</div>
+                      <div className="lp-tile__meter">
+                        <motion.span
+                          initial={{ width: 0 }}
+                          animate={{ width: '92%' }}
+                          transition={{ duration: 0.7, ease: 'easeOut' }}
+                        />
+                      </div>
+                    </motion.div>
                   </div>
 
                   {/* Footer link */}
                   <div className="lp-track__foot">
-                    <span>Dữ liệu được cập nhật mỗi 2 giây (demo)</span>
-                    <a href="/login" className="lp-link">
-                      Xem bản đồ GPS đầy đủ <ArrowRight size={14} />
+                    <span>
+                      <span className="radar-dot" style={{ marginRight: 6 }} />
+                      Đồng bộ vệ tinh liên tục mỗi 2 giây
+                    </span>
+                    <a href="/customer" className="lp-link">
+                      Mở Cổng Khách Hàng B2B <ArrowRight size={14} />
                     </a>
                   </div>
                 </div>

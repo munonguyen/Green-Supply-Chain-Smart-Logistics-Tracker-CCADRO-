@@ -15,6 +15,7 @@ import '../styles/landing.css';
 import LandingNavbar from '../components/landing/LandingNavbar';
 import LandingFooter from '../components/landing/LandingFooter';
 import Reveal from '../components/ui/Reveal';
+import { CountingNumber } from '../components/ui/CountingNumber';
 import { IMAGES, PILLARS, ROADMAP, VIDEOS } from '../components/landing/landingContent';
 
 const ESG_COMMITMENTS = [
@@ -101,34 +102,45 @@ export default function NetZeroPage() {
           </div>
 
           <Reveal delay={0.2}>
-            <div className="lp-live">
+            <motion.div
+              whileHover={{ y: -5, scale: 1.01 }}
+              transition={{ type: 'spring', stiffness: 280, damping: 20 }}
+              className="lp-live"
+            >
               <div className="lp-live__head">
                 <span>NET-ZERO 2030 • SCORECARD</span>
                 <span className="radar-dot" />
               </div>
               <div className="lp-live__value">
-                -50<span className="lp-live__unit">% gCO2e / tấn.km</span>
+                -<CountingNumber value={50} />
+                <span className="lp-live__unit">% gCO2e / tấn.km</span>
               </div>
               <p className="lp-live__sub">Mục tiêu giảm cường độ phát thải toàn mạng lưới</p>
               <div className="lp-live__rows">
                 <div className="lp-live__row">
                   <span>Tỷ lệ xe điện &amp; Euro 5 hiện tại</span>
-                  <strong>42% hạm đội</strong>
+                  <strong>
+                    <CountingNumber value={42} suffix="% hạm đội" />
+                  </strong>
                 </div>
                 <div className="lp-live__row">
                   <span>Mục tiêu điện hóa chặng đô thị 2028</span>
-                  <strong>60% hạm đội</strong>
+                  <strong>
+                    <CountingNumber value={60} suffix="% hạm đội" />
+                  </strong>
                 </div>
                 <div className="lp-live__row">
                   <span>Hạ tầng trạm sạc điện mặt trời</span>
-                  <strong>4 Depot trọng điểm</strong>
+                  <strong>
+                    <CountingNumber value={4} suffix=" Depot trọng điểm" />
+                  </strong>
                 </div>
                 <div className="lp-live__row">
                   <span>Khung kiểm kê phát thải</span>
                   <strong>GLEC v3 &amp; ISO 14083</strong>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </Reveal>
         </div>
       </section>

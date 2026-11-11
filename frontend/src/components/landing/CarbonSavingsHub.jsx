@@ -133,8 +133,25 @@ function TrendChart() {
             <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
           </linearGradient>
         </defs>
-        <path d={area} fill="url(#trendFill)" />
-        <path d={line} fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinejoin="round" />
+        <motion.path
+          d={area}
+          fill="url(#trendFill)"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.9, delay: 0.2 }}
+        />
+        <motion.path
+          d={line}
+          fill="none"
+          stroke="#10b981"
+          strokeWidth="2.5"
+          strokeLinejoin="round"
+          initial={{ pathLength: 0 }}
+          whileInView={{ pathLength: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 1.3, ease: [0.22, 1, 0.36, 1] }}
+        />
 
         {points.map((p, i) => (
           <circle
@@ -326,7 +343,12 @@ export default function CarbonSavingsHub() {
             <div className="lp-panel lp-panel--highlight">
               <span className="lp-panel__label">TỔNG CO2e ĐÃ TRÁNH PHÁT THẢI</span>
               <div className="lp-carbon__counter">
-                <CountingNumber value={CARBON_SUMMARY.savedKg} locale="vi-VN" />
+                <CountingNumber
+                  value={CARBON_SUMMARY.savedKg}
+                  locale="vi-VN"
+                  liveStep={2}
+                  liveIntervalMs={3800}
+                />
                 <small>kg CO2e</small>
               </div>
 
@@ -335,22 +357,39 @@ export default function CarbonSavingsHub() {
                 <div className="lp-compare__row">
                   <span>Mốc đối chứng</span>
                   <div className="lp-compare__bar">
-                    <span style={{ width: '100%', background: '#6b7280' }} />
+                    <motion.span
+                      initial={{ width: 0 }}
+                      whileInView={{ width: '100%' }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+                      style={{ background: '#6b7280' }}
+                    />
                   </div>
-                  <strong>{CARBON_SUMMARY.baselineTonnes.toLocaleString('vi-VN')} t</strong>
+                  <strong>
+                    <CountingNumber
+                      value={CARBON_SUMMARY.baselineTonnes}
+                      decimals={1}
+                      suffix=" t"
+                    />
+                  </strong>
                 </div>
                 <div className="lp-compare__row">
                   <span>Thực tế CCADRO</span>
                   <div className="lp-compare__bar">
-                    <span
+                    <motion.span
+                      initial={{ width: 0 }}
+                      whileInView={{
+                        width: `${(CARBON_SUMMARY.actualTonnes / CARBON_SUMMARY.baselineTonnes) * 100}%`
+                      }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 1.1, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
                       style={{
-                        width: `${(CARBON_SUMMARY.actualTonnes / CARBON_SUMMARY.baselineTonnes) * 100}%`,
                         background: 'linear-gradient(90deg, #059669, #6ee7b7)'
                       }}
                     />
                   </div>
                   <strong style={{ color: '#6ee7b7' }}>
-                    {CARBON_SUMMARY.actualTonnes.toLocaleString('vi-VN')} t
+                    <CountingNumber value={CARBON_SUMMARY.actualTonnes} decimals={1} suffix=" t" />
                   </strong>
                 </div>
               </div>
@@ -497,28 +536,32 @@ export default function CarbonSavingsHub() {
                         <div>
                           <div className="lp-result__label">Quãng đường</div>
                           <div className="lp-result__value">
-                            {calc.km}
+                            <CountingNumber value={calc.km} decimals={1} startOnView={false} />
                             <small>km</small>
                           </div>
                         </div>
                         <div>
                           <div className="lp-result__label">Phát thải mốc đối chứng</div>
                           <div className="lp-result__value">
-                            {calc.baseline}
+                            <CountingNumber
+                              value={calc.baseline}
+                              decimals={1}
+                              startOnView={false}
+                            />
                             <small>kg CO2e</small>
                           </div>
                         </div>
                         <div>
                           <div className="lp-result__label">CO2e tránh được / chuyến</div>
                           <div className="lp-result__value" style={{ color: 'var(--lp-mint)' }}>
-                            -{calc.saved}
+                            -<CountingNumber value={calc.saved} decimals={1} startOnView={false} />
                             <small>kg</small>
                           </div>
                         </div>
                         <div>
                           <div className="lp-result__label">Tiết kiệm / tháng (26 chuyến)</div>
                           <div className="lp-result__value" style={{ color: 'var(--lp-mint)' }}>
-                            -{calc.monthly}
+                            -<CountingNumber value={calc.monthly} startOnView={false} />
                             <small>kg</small>
                           </div>
                         </div>
@@ -526,7 +569,10 @@ export default function CarbonSavingsHub() {
 
                       <div className="lp-result__saving">
                         <span>
-                          Tổng giảm phát thải: <strong>-{calc.pctReduction}%</strong>
+                          Tổng giảm phát thải:{' '}
+                          <strong>
+                            -<CountingNumber value={calc.pctReduction} startOnView={false} />%
+                          </strong>
                         </span>
                       </div>
 
@@ -591,11 +637,13 @@ export default function CarbonSavingsHub() {
                               overflow: 'hidden'
                             }}
                           >
-                            <div
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${(c.actual / c.baseline) * 100}%` }}
+                              transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }}
                               style={{
                                 height: '100%',
                                 borderRadius: 6,
-                                width: `${(c.actual / c.baseline) * 100}%`,
                                 background: 'linear-gradient(90deg, #059669, #6ee7b7)'
                               }}
                             />

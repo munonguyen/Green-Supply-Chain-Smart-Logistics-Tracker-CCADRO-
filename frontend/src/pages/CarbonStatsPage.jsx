@@ -86,15 +86,21 @@ export default function CarbonStatsPage() {
               <div className="lp-live__rows">
                 <div className="lp-live__row">
                   <span>Phát thải mốc đối chứng (Baseline)</span>
-                  <strong>1.284,1 tấn</strong>
+                  <strong>
+                    <CountingNumber value={1284.1} decimals={1} suffix=" tấn" />
+                  </strong>
                 </div>
                 <div className="lp-live__row">
                   <span>Phát thải thực tế CCADRO</span>
-                  <strong>965,6 tấn</strong>
+                  <strong>
+                    <CountingNumber value={965.6} decimals={1} suffix=" tấn" />
+                  </strong>
                 </div>
                 <div className="lp-live__row">
                   <span>Chứng nhận ISO 14083 đã cấp</span>
-                  <strong>648 chứng nhận</strong>
+                  <strong>
+                    <CountingNumber value={648} suffix=" chứng nhận" />
+                  </strong>
                 </div>
                 <div className="lp-live__row">
                   <span>Kỳ báo cáo kiểm kê</span>
