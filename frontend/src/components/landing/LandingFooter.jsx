@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Lock, Mail, MapPin, Phone, ShieldCheck } from 'lucide-react';
+import { Lock, Mail, MapPin, Phone, ShieldCheck, UserPlus } from 'lucide-react';
+import CcadroLogo from '../ui/CcadroLogo';
 import { NAV_LINKS } from './landingContent';
 
 export default function LandingFooter() {
@@ -12,13 +13,13 @@ export default function LandingFooter() {
         <div className="lp-footer__grid">
           {/* Col 1: brand */}
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-              <span className="logo-badge">C</span>
-              <span style={{ fontSize: '1.2rem', fontWeight: 800 }}>CCADRO Ecosystem</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 11, marginBottom: 14 }}>
+              <CcadroLogo size={38} />
+              <span style={{ fontSize: '1.18rem', fontWeight: 800 }}>CCADRO Ecosystem</span>
             </div>
             <p className="lp-footer__about">
               Tổng công ty Giải pháp Công nghệ Chuỗi Cung Ứng Xanh &amp; Giám Sát Vận Tải Đa Phương
-              Thức CCADRO.
+              Thức CCADRO. Phân tách độc lập giữa Cổng Khách Hàng B2B và Trung Tâm Giám Sát Nội Bộ.
             </p>
             <span className="lp-chip is-active" style={{ cursor: 'default', fontSize: '0.72rem' }}>
               <ShieldCheck size={13} /> GLEC v3 &amp; ISO 14083
@@ -58,26 +59,37 @@ export default function LandingFooter() {
             </ul>
           </div>
 
-          {/* Col 4: portal */}
+          {/* Col 4: Dual Portals */}
           <div>
-            <h4>Cổng Điều Hành Nội Bộ</h4>
+            <h4>Hệ Thống Khách Hàng &amp; Nội Bộ</h4>
             <p
               style={{
                 fontSize: '0.82rem',
                 color: 'var(--text-muted)',
                 lineHeight: 1.6,
-                marginBottom: 14
+                marginBottom: 12
               }}
             >
-              Dành riêng cho cán bộ quản lý, điều phối viên, kiểm định viên và khách hàng B2B.
+              Truy cập không gian dành riêng cho Khách hàng B2B hoặc Trung tâm Giám sát Nội bộ
+              CCADRO.
             </p>
-            <button
-              type="button"
-              className="lp-btn lp-btn--primary lp-btn--sm lp-btn--block"
-              onClick={() => navigate('/login')}
-            >
-              <Lock size={14} /> Đăng Nhập Cổng Nội Bộ
-            </button>
+            <div style={{ display: 'grid', gap: 8 }}>
+              <button
+                type="button"
+                className="lp-btn lp-btn--primary lp-btn--sm lp-btn--block"
+                onClick={() => navigate('/login')}
+              >
+                <Lock size={14} /> Đăng Nhập Hệ Thống
+              </button>
+              <button
+                type="button"
+                className="lp-btn lp-btn--ghost lp-btn--sm lp-btn--block"
+                onClick={() => navigate('/register')}
+                style={{ color: 'var(--text-main)' }}
+              >
+                <UserPlus size={14} /> Đăng Ký Tài Khoản Khách Hàng
+              </button>
+            </div>
           </div>
         </div>
 
@@ -86,7 +98,7 @@ export default function LandingFooter() {
           <div>
             <span>Chính sách bảo mật</span>
             <span>Điều khoản dịch vụ</span>
-            <span>Quy chuẩn ESG ISO 14064</span>
+            <span>Quy chuẩn ESG ISO 14083</span>
           </div>
         </div>
       </div>

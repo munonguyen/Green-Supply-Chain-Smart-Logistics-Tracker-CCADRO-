@@ -2,6 +2,7 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
+  Building2,
   Home,
   LayoutDashboard,
   Package,
@@ -17,6 +18,7 @@ import {
   UserCheck
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import CcadroLogo from '../ui/CcadroLogo';
 
 export default function Sidebar() {
   const navigate = useNavigate();
@@ -34,15 +36,14 @@ export default function Sidebar() {
       {/* Brand Header */}
       <div className="sidebar-header">
         <motion.div
-          whileHover={{ rotate: 10, scale: 1.05 }}
+          whileHover={{ rotate: 6, scale: 1.04 }}
           transition={{ type: 'spring', stiffness: 400 }}
-          className="logo-badge"
         >
-          C
+          <CcadroLogo size={38} />
         </motion.div>
         <div className="logo-text">
           <h1>CCADRO</h1>
-          <span>Green Supply Chain</span>
+          <span>Giám Sát Nội Bộ</span>
         </div>
       </div>
 
@@ -129,7 +130,7 @@ export default function Sidebar() {
           end
         >
           <LayoutDashboard size={17} />
-          <span>System Overview</span>
+          <span>Trung Tâm Giám Sát</span>
         </NavLink>
 
         <NavLink
@@ -138,7 +139,7 @@ export default function Sidebar() {
           end
         >
           <Package size={17} />
-          <span>Shipment Fleet</span>
+          <span>Quản Lý Vận Đơn</span>
         </NavLink>
 
         <NavLink
@@ -202,6 +203,14 @@ export default function Sidebar() {
         >
           <ShieldCheck size={17} />
           <span>An Toàn & 6-Role RBAC</span>
+        </NavLink>
+
+        <NavLink
+          to="/customer"
+          className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+        >
+          <Building2 size={17} />
+          <span>Cổng Khách Hàng B2B</span>
         </NavLink>
 
         <NavLink to="/login" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>

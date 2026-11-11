@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
-import { Lock, Menu, Moon, Sun, X } from 'lucide-react';
+import { Lock, Menu, Moon, Sun, UserPlus, X } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, getDefaultPortalPath } from '../../context/AuthContext';
+import CcadroLogo from '../ui/CcadroLogo';
 import { NAV_LINKS } from './landingContent';
 import { useScrolled } from './useLandingScroll';
 
@@ -11,12 +12,13 @@ export default function LandingNavbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toggleTheme, isDark } = useTheme();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const scrolled = useScrolled();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const isHome = location.pathname === '/';
   const solid = !isHome || scrolled || menuOpen;
+  const activePortalPath = getDefaultPortalPath(user);
 
   return (
     <>
@@ -31,7 +33,7 @@ export default function LandingNavbar() {
             }}
             aria-label="Về trang chủ"
           >
-            <span className="logo-badge">C</span>
+            <CcadroLogo size={40} />
             <span>
               <span className="lp-brand__name" style={{ display: 'block' }}>
                 CCADRO
@@ -62,14 +64,37 @@ export default function LandingNavbar() {
             >
               {isDark ? <Sun size={17} /> : <Moon size={17} />}
             </button>
+
+            <button
+              type="button"
+              className="lp-btn lp-btn--ghost lp-btn--sm"
+              onClick={() => navigate('/register')}
+              style={{
+                padding: '9px 15px',
+                fontSize: '0.82rem',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              <UserPlus size={14} />
+              <span>Đăng ký</span>
+            </button>
+
             <button
               type="button"
               className="lp-btn lp-btn--primary lp-btn--sm"
-              onClick={() => navigate(user ? '/portal' : '/login')}
+              onClick={() => navigate(token ? activePortalPath : '/login')}
+              style={{ whiteSpace: 'nowrap' }}
             >
-              <Lock size={15} />
-              <span className="lp-nav__cta-label">{user ? 'Cổng nội bộ' : 'Đăng nhập'}</span>
+              <Lock size={14} />
+              <span className="lp-nav__cta-label">
+                {token
+                  ? activePortalPath === '/customer'
+                    ? 'Cổng Khách hàng'
+                    : 'Giám sát Nội bộ'
+                  : 'Đăng nhập'}
+              </span>
             </button>
+
             <button
               type="button"
               className="lp-icon-btn lp-nav__burger"
@@ -103,6 +128,12 @@ export default function LandingNavbar() {
                 {link.label}
               </NavLink>
             ))}
+            <NavLink to="/register" onClick={() => setMenuOpen(false)}>
+              Đăng Ký Tài Khoản Khách Hàng
+            </NavLink>
+            <NavLink to="/login" onClick={() => setMenuOpen(false)}>
+              Đăng Nhập Hệ Thống
+            </NavLink>
           </motion.nav>
         )}
       </AnimatePresence>

@@ -8,6 +8,7 @@ import CorridorEfficiencyBarChart from '../components/charts/CorridorEfficiencyB
 import DeviationTrendSparkline from '../components/charts/DeviationTrendSparkline';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { loadStoredUserShipments } from './CustomerPortalPage';
 import {
   Server,
   CheckCircle2,
@@ -16,7 +17,8 @@ import {
   Package,
   Bell,
   Layers,
-  ChevronRight
+  ChevronRight,
+  Users
 } from 'lucide-react';
 
 const DEMO_SHIPMENTS_FALLBACK = [
@@ -140,14 +142,30 @@ const ENTERPRISE_MODULES = [
 
 export default function DashboardPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, registeredUsers = [] } = useAuth();
 
   const [health, setHealth] = useState(null);
-  const [shipments, setShipments] = useState(DEMO_SHIPMENTS_FALLBACK);
+  const [shipments, setShipments] = useState(() => {
+    const customerBooked = loadStoredUserShipments().map((s) => ({
+      id: s.id,
+      shipmentCode: s.shipmentCode,
+      customerId: s.customerId,
+      originName: s.originName,
+      destinationName: s.destinationName,
+      cargoWeightTons: s.cargoWeightTons,
+      distance: `${s.distanceKm} KM`,
+      status: s.status
+    }));
+    const existingCodes = new Set(customerBooked.map((c) => c.shipmentCode));
+    return [
+      ...customerBooked,
+      ...DEMO_SHIPMENTS_FALLBACK.filter((d) => !existingCodes.has(d.shipmentCode))
+    ];
+  });
   const [vehicles, setVehicles] = useState(DEMO_VEHICLES_FALLBACK);
-  const [notificationsCount, setNotificationsCount] = useState(0);
+  const [notificationsCount, setNotificationsCount] = useState(2);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('shipments'); // 'shipments' | 'vehicles'
+  const [activeTab, setActiveTab] = useState('shipments'); // 'shipments' | 'vehicles' | 'users'
 
   useEffect(() => {
     let isMounted = true;
@@ -259,7 +277,7 @@ export default function DashboardPage() {
               </span>
 
               <span className="badge badge-green" style={{ fontSize: '0.7rem' }}>
-                <CheckCircle2 size={12} /> PostGIS 3.4 Connected
+                <CheckCircle2 size={12} /> Giám Sát Hành Lang Vệ Tinh 24/7
               </span>
             </div>
 
@@ -271,16 +289,16 @@ export default function DashboardPage() {
                 marginBottom: '6px'
               }}
             >
-              Xin chào, {user?.fullName || 'Administrator'} • Trung Tâm Điều Hành Logistics Xanh
-              CCADRO
+              Xin chào, {user?.fullName || 'Administrator'} • Hệ Thống Giám Sát &amp; Điều Hành Nội
+              Bộ
             </h2>
 
             <p
               style={{ fontSize: '0.84rem', color: '#94a3b8', maxWidth: '850px', lineHeight: 1.5 }}
             >
-              Hệ thống giám sát vận tải thông minh đa phương thức kết hợp tối ưu lộ trình xanh
-              Pareto (UC05), theo dõi độ lệch GPS theo thời gian thực (UC09) và hạch toán dấu chân
-              carbon tiêu chuẩn quốc tế GLEC v3.
+              Trung tâm chỉ huy vận tải đa phương thức dành cho nhân sự nội bộ: tối ưu lộ trình xanh
+              đa mục tiêu Pareto (UC05), giám sát cảnh báo lệch hành lang 50m/200m theo thời gian
+              thực (UC09), kiểm soát tài khoản đối tác B2B và kiểm toán phát thải GLEC v3.
             </p>
           </div>
 
@@ -320,7 +338,7 @@ export default function DashboardPage() {
           className="card stat-card glass-card-interactive"
         >
           <div>
-            <div className="stat-label">Hạ Tầng Backend</div>
+            <div className="stat-label">Trạng Thái Trung Tâm NOC</div>
             <div
               className="stat-value"
               style={{
@@ -335,7 +353,7 @@ export default function DashboardPage() {
               <span>{loading ? 'Checking...' : health?.status || 'UP'}</span>
             </div>
             <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
-              Spring Boot 3.3.4 • Gateway :8888
+              9 Phân Hệ Nghiệp Vụ • SLA 99,94%
             </span>
           </div>
           <Server size={32} color="var(--accent-green)" />
@@ -349,12 +367,14 @@ export default function DashboardPage() {
         >
           <div>
             <div className="stat-label">
-              {user?.role === 'SHIPPER' ? 'Vận Đơn Thuộc Mã' : 'Tổng Vận Đơn'}
+              {user?.role === 'SHIPPER' ? 'Vận Đơn Thuộc Mã' : 'Tổng Vận Đơn Giám Sát'}
             </div>
             <div className="stat-value" style={{ color: '#fff' }}>
               <CountingNumber value={visibleShipments.length} />
             </div>
-            <span style={{ fontSize: '0.74rem', color: '#34d399' }}>Haversine (DistanceUtils)</span>
+            <span style={{ fontSize: '0.74rem', color: '#34d399' }}>
+              Định Tuyến Đa Mục Tiêu Pareto
+            </span>
           </div>
           <Package size={32} color="#34d399" />
         </motion.div>
@@ -372,7 +392,7 @@ export default function DashboardPage() {
               <span style={{ fontSize: '1.1rem' }}>Xe</span>
             </div>
             <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
-              Euro 5 & Van Điện EV
+              Euro 5 &amp; Đầu Kéo Điện EV
             </span>
           </div>
           <Truck size={32} color="#38bdf8" />
@@ -385,7 +405,7 @@ export default function DashboardPage() {
           className="card stat-card glass-card-interactive"
         >
           <div>
-            <div className="stat-label">Cảnh Báo Chờ ACK</div>
+            <div className="stat-label">Cảnh Báo Chờ Xử Lý</div>
             <div
               className="stat-value"
               style={{
@@ -399,7 +419,9 @@ export default function DashboardPage() {
               <CountingNumber value={notificationsCount} />
               <span style={{ fontSize: '0.95rem', fontWeight: 600 }}>Sự Cố</span>
             </div>
-            <span style={{ fontSize: '0.74rem', color: '#fca5a5' }}>Kafka + SSE Hub (:8087)</span>
+            <span style={{ fontSize: '0.74rem', color: '#fca5a5' }}>
+              Kênh Cảnh Báo Thời Gian Thực
+            </span>
           </div>
           <Bell size={32} color="#ef4444" />
         </motion.div>
@@ -420,7 +442,7 @@ export default function DashboardPage() {
         <DeviationTrendSparkline />
       </div>
 
-      {/* 4. REAL-TIME FLEET & SHIPMENTS DATA CONSOLE */}
+      {/* 4. REAL-TIME FLEET, SHIPMENTS & PARTNER REGISTRY CONSOLE */}
       <div className="card glass-card-interactive" style={{ marginBottom: '24px' }}>
         <div
           style={{
@@ -443,11 +465,10 @@ export default function DashboardPage() {
               }}
             >
               <Layers size={18} color="#10b981" />
-              <span>Bảng Điều Hành Nghiệp Vụ Trực Tuyến</span>
+              <span>Bảng Giám Sát Vận Đơn, Đội Xe &amp; Đối Tác Khách Hàng B2B</span>
             </h3>
             <p style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '2px' }}>
-              Dữ liệu vận đơn và hạm đội đồng bộ từ PostgreSQL 16 PostGIS và Spring Cloud Gateway
-              :8888
+              Đồng bộ thời gian thực giữa Hệ Thống Giám Sát Nội Bộ và Cổng Khách Hàng Doanh Nghiệp
             </p>
           </div>
 
@@ -458,7 +479,8 @@ export default function DashboardPage() {
               background: 'rgba(255, 255, 255, 0.05)',
               padding: '3px',
               borderRadius: '8px',
-              gap: '4px'
+              gap: '4px',
+              flexWrap: 'wrap'
             }}
           >
             <button
@@ -494,6 +516,27 @@ export default function DashboardPage() {
               }}
             >
               Phương Tiện ({vehicles.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('users')}
+              style={{
+                background: activeTab === 'users' ? 'var(--accent-green)' : 'transparent',
+                color: activeTab === 'users' ? '#090d16' : '#94a3b8',
+                fontWeight: 700,
+                fontSize: '0.78rem',
+                border: 'none',
+                padding: '6px 14px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px'
+              }}
+            >
+              <Users size={13} />
+              <span>Khách Hàng B2B ({registeredUsers.length})</span>
             </button>
           </div>
         </div>
@@ -636,6 +679,50 @@ export default function DashboardPage() {
                     </td>
                     <td>
                       <span style={{ fontSize: '0.75rem', color: '#34d399' }}>✓ Đã Kiểm Định</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Tab 3: Registered Customer & Partner Accounts */}
+        {activeTab === 'users' && (
+          <div className="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tài Khoản</th>
+                  <th>Tên Doanh Nghiệp / Đối Tác B2B</th>
+                  <th>Mã Chủ Hàng (BRULE-16)</th>
+                  <th>Người Đại Diện</th>
+                  <th>Email &amp; Liên Hệ</th>
+                  <th>Ngành Hàng</th>
+                  <th>Trạng Thái</th>
+                </tr>
+              </thead>
+              <tbody>
+                {registeredUsers.map((acc) => (
+                  <tr key={acc.username}>
+                    <td>
+                      <code style={{ color: '#38bdf8', fontWeight: 700 }}>@{acc.username}</code>
+                    </td>
+                    <td>
+                      <strong style={{ color: '#f8fafc' }}>{acc.companyName}</strong>
+                    </td>
+                    <td>
+                      <span className="badge badge-green" style={{ fontSize: '0.7rem' }}>
+                        {acc.customerId}
+                      </span>
+                    </td>
+                    <td style={{ color: '#cbd5e1' }}>{acc.fullName}</td>
+                    <td style={{ color: '#94a3b8', fontSize: '0.78rem' }}>
+                      {acc.email} • {acc.phone}
+                    </td>
+                    <td style={{ color: '#cbd5e1', fontSize: '0.78rem' }}>{acc.industry}</td>
+                    <td>
+                      <span className="badge badge-blue">{acc.status || 'ACTIVE'}</span>
                     </td>
                   </tr>
                 ))}

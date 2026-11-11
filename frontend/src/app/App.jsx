@@ -10,6 +10,8 @@ import SolutionsPage from '../pages/SolutionsPage';
 import CarbonStatsPage from '../pages/CarbonStatsPage';
 import NewsPage from '../pages/NewsPage';
 import LoginPage from '../pages/LoginPage';
+import RegisterPage from '../pages/RegisterPage';
+import CustomerPortalPage from '../pages/CustomerPortalPage';
 import DashboardPage from '../pages/DashboardPage';
 import ShipmentsPage from '../pages/ShipmentsPage';
 import NewShipmentPage from '../pages/NewShipmentPage';
@@ -45,10 +47,15 @@ export default function App() {
             <Route path="/thong-ke-carbon" element={<CarbonStatsPage />} />
             <Route path="/tin-tuc" element={<NewsPage />} />
 
-            {/* 2. Enterprise Authentication */}
+            {/* 2. Enterprise Authentication & Partner Registration */}
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
 
-            {/* 3. Internal Operations Console */}
+            {/* 3. Dedicated External User / B2B Customer Portal */}
+            <Route path="/customer" element={<CustomerPortalPage />} />
+            <Route path="/user-portal" element={<Navigate to="/customer" replace />} />
+
+            {/* 4. Internal Monitoring & Operations System */}
             <Route
               path="/portal"
               element={

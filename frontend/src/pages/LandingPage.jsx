@@ -1,6 +1,15 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, CheckCircle2, Leaf, Radio, ShieldCheck } from 'lucide-react';
+import {
+  ArrowRight,
+  Building2,
+  CheckCircle2,
+  Leaf,
+  Radar,
+  Radio,
+  ShieldCheck,
+  UserPlus
+} from 'lucide-react';
 import '../styles/landing.css';
 import LandingNavbar from '../components/landing/LandingNavbar';
 import LandingFooter from '../components/landing/LandingFooter';
@@ -64,7 +73,14 @@ export default function LandingPage() {
                   className="lp-btn lp-btn--primary"
                   onClick={() => navigate('/login')}
                 >
-                  Truy Cập Cổng Điều Hành <ArrowRight size={17} />
+                  Truy Cập Hệ Thống <ArrowRight size={17} />
+                </button>
+                <button
+                  type="button"
+                  className="lp-btn lp-btn--ghost"
+                  onClick={() => navigate('/register')}
+                >
+                  <UserPlus size={17} /> Đăng Ký Khách Hàng B2B
                 </button>
                 <Link to="/thong-ke-carbon" className="lp-btn lp-btn--ghost">
                   <Leaf size={17} /> Dữ Liệu CO2 Tiết Kiệm
@@ -265,7 +281,200 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── 6. DEDICATED PAGES DIRECTORY ── */}
+      {/* ── 6. DUAL-SYSTEM ARCHITECTURE: CUSTOMER PORTAL VS INTERNAL MONITORING ── */}
+      <section className="lp-section">
+        <div className="lp-container">
+          <Reveal>
+            <div className="lp-section-head lp-section-head--center">
+              <div>
+                <span className="lp-eyebrow">Kiến Trúc Phân Tách Hai Hệ Thống Độc Lập</span>
+                <h2 className="lp-h2">
+                  Không Gian Riêng Cho <em>Khách Hàng B2B</em> &amp; Trung Tâm{' '}
+                  <em>Giám Sát Nội Bộ</em>
+                </h2>
+                <p className="lp-lead" style={{ textAlign: 'center', margin: '0 auto' }}>
+                  CCADRO thiết kế 2 hệ thống chuyên biệt với cơ chế cô lập dữ liệu chủ hàng
+                  (BRULE-16) và phân quyền đa tầng RBAC chuẩn doanh nghiệp.
+                </p>
+              </div>
+            </div>
+          </Reveal>
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+              gap: 28
+            }}
+          >
+            {/* Card 1: Customer System */}
+            <Reveal delay={0.05}>
+              <div
+                className="lp-panel"
+                style={{
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  border: '1.5px solid rgba(16, 185, 129, 0.35)'
+                }}
+              >
+                <div>
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '5px 12px',
+                      borderRadius: 999,
+                      background: 'rgba(16, 185, 129, 0.14)',
+                      color: '#10b981',
+                      fontSize: '0.72rem',
+                      fontWeight: 800,
+                      marginBottom: 14
+                    }}
+                  >
+                    <Building2 size={14} /> HỆ THỐNG DÀNH CHO KHÁCH HÀNG &amp; CHỦ HÀNG (/customer)
+                  </div>
+                  <h3 style={{ fontSize: '1.38rem', fontWeight: 800, marginBottom: 10 }}>
+                    Cổng Khách Hàng Doanh Nghiệp B2B
+                  </h3>
+                  <p className="lp-panel__desc" style={{ marginBottom: 16 }}>
+                    Dành riêng cho các tập đoàn sản xuất, xuất nhập khẩu và chủ hàng thuê vận
+                    chuyển. Mỗi doanh nghiệp chỉ nhìn thấy vận đơn và sổ cái phát thải của chính
+                    mình.
+                  </p>
+                  <ul className="lp-sol__list" style={{ marginBottom: 22 }}>
+                    <li>
+                      <CheckCircle2 size={16} />
+                      <span>
+                        <strong>Đặt lịch vận chuyển xanh trực tuyến:</strong> Chọn cảng đi/đến, loại
+                        xe điện EV hoặc Euro 5 và nhận báo giá cắt giảm CO2e tức thì.
+                      </span>
+                    </li>
+                    <li>
+                      <CheckCircle2 size={16} />
+                      <span>
+                        <strong>Theo dõi hành trình GPS riêng biệt:</strong> Giám sát tốc độ, nhiệt
+                        độ chuỗi lạnh (-18°C) và thời gian dự kiến đến (ETA) từng phút.
+                      </span>
+                    </li>
+                    <li>
+                      <CheckCircle2 size={16} />
+                      <span>
+                        <strong>Sổ cái Carbon &amp; Chứng nhận ISO 14083:</strong> Tải chứng chỉ
+                        giảm phát thải số (SHA-256) và biên bản ePOD phục vụ kiểm toán Scope 3.
+                      </span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className="lp-btn lp-btn--primary lp-btn--sm"
+                    onClick={() => navigate('/customer')}
+                  >
+                    Vào Cổng Khách Hàng <ArrowRight size={15} />
+                  </button>
+                  <button
+                    type="button"
+                    className="lp-btn lp-btn--ghost lp-btn--sm"
+                    onClick={() => navigate('/register')}
+                    style={{ color: 'var(--text-main)' }}
+                  >
+                    <UserPlus size={15} /> Đăng Ký Tài Khoản Mới
+                  </button>
+                </div>
+              </div>
+            </Reveal>
+
+            {/* Card 2: Internal Monitoring System */}
+            <Reveal delay={0.12}>
+              <div
+                className="lp-panel"
+                style={{
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  border: '1.5px solid rgba(56, 189, 248, 0.35)'
+                }}
+              >
+                <div>
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '5px 12px',
+                      borderRadius: 999,
+                      background: 'rgba(56, 189, 248, 0.14)',
+                      color: '#0284c7',
+                      fontSize: '0.72rem',
+                      fontWeight: 800,
+                      marginBottom: 14
+                    }}
+                  >
+                    <Radar size={14} /> HỆ THỐNG GIÁM SÁT &amp; ĐIỀU HÀNH NỘI BỘ (/portal)
+                  </div>
+                  <h3 style={{ fontSize: '1.38rem', fontWeight: 800, marginBottom: 10 }}>
+                    Trung Tâm Chỉ Huy &amp; Giám Sát Đội Xe 24/7
+                  </h3>
+                  <p className="lp-panel__desc" style={{ marginBottom: 16 }}>
+                    Dành cho Điều phối viên (NOC), Quản trị viên hệ thống, Trưởng ban An toàn, Tài
+                    xế và Kiểm toán viên độc lập giám sát toàn mạng lưới hành lang phía Nam.
+                  </p>
+                  <ul className="lp-sol__list" style={{ marginBottom: 22 }}>
+                    <li>
+                      <CheckCircle2 size={16} />
+                      <span>
+                        <strong>Giám sát lệch hành lang 50m / 200m (UC09):</strong> Phát hiện tức
+                        thì xe đi chệch lộ trình và phát lệnh cảnh báo khẩn cấp toàn đội xe.
+                      </span>
+                    </li>
+                    <li>
+                      <CheckCircle2 size={16} />
+                      <span>
+                        <strong>Tối ưu tuyến Pareto &amp; Duyệt đổi tuyến (UC05/UC10):</strong> Đề
+                        xuất lộ trình thay thế khi lợi ích đạt từ 10% trở lên với cơ chế
+                        Human-in-the-Loop.
+                      </span>
+                    </li>
+                    <li>
+                      <CheckCircle2 size={16} />
+                      <span>
+                        <strong>Quản trị an toàn Pre-trip &amp; Tài khoản B2B:</strong> Kiểm định 6
+                        hạng mục kỹ thuật trước giờ xuất bến (UC01) và quản lý danh sách đối tác.
+                      </span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className="lp-btn lp-btn--primary lp-btn--sm"
+                    onClick={() => navigate('/portal')}
+                  >
+                    Vào Hệ Thống Giám Sát Nội Bộ <ArrowRight size={15} />
+                  </button>
+                  <button
+                    type="button"
+                    className="lp-btn lp-btn--ghost lp-btn--sm"
+                    onClick={() => navigate('/login')}
+                    style={{ color: 'var(--text-main)' }}
+                  >
+                    Chọn Vai Trò Nội Bộ (RBAC)
+                  </button>
+                </div>
+              </div>
+            </Reveal>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 7. DEDICATED PAGES DIRECTORY ── */}
       <section className="lp-section lp-section--alt">
         <div className="lp-container">
           <Reveal>

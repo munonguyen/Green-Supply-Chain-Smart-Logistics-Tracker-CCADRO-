@@ -32,4 +32,10 @@ describe('CCADRO Frontend App', () => {
     expect(screen.getAllByText('Thống Kê Phát Thải')[0]).toBeInTheDocument();
     expect(screen.getAllByText('Tin Tức & Báo Cáo')[0]).toBeInTheDocument();
   });
+
+  it('renders dual-portal customer & internal monitoring entry points', () => {
+    render(<App />);
+    expect(screen.getByText('Cổng Khách Hàng Doanh Nghiệp B2B')).toBeInTheDocument();
+    expect(screen.getByText('Trung Tâm Chỉ Huy & Giám Sát Đội Xe 24/7')).toBeInTheDocument();
+  });
 });
