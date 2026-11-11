@@ -1,11 +1,50 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { api } from '../services/api';
+
+/**
+ * Định nghĩa khuôn mẫu 6 Vai trò (Role Templates) và danh sách quyền chuẩn (Default Permissions).
+ * Lưu ý: Hệ thống KHÔNG tạo sẵn các tài khoản mặc định cho các role nội bộ (ngoại trừ tài khoản
+ * quản trị viên gốc `admin`). Mọi tài khoản nhân sự nội bộ khác đều do ADMIN trực tiếp khởi tạo
+ * và phân quyền trong phân hệ Quản trị IAM (/governance).
+ */
+export const ALL_SYSTEM_PERMISSIONS = [
+  { code: 'USER_MANAGE', label: 'Quản lý & cấp phát tài khoản', group: 'IAM & Quản trị' },
+  { code: 'ROLE_MANAGE', label: 'Phân quyền vai trò (RBAC)', group: 'IAM & Quản trị' },
+  { code: 'VEHICLE_READ', label: 'Xem danh sách phương tiện', group: 'Đội xe & An toàn' },
+  { code: 'VEHICLE_WRITE', label: 'Thêm / cập nhật phương tiện', group: 'Đội xe & An toàn' },
+  { code: 'MAINTENANCE_MANAGE', label: 'Quản lý bảo dưỡng phương tiện', group: 'Đội xe & An toàn' },
+  { code: 'INSPECTION_SUBMIT', label: 'Gửi biên bản kiểm tra Pre-trip', group: 'Đội xe & An toàn' },
+  { code: 'INSPECTION_REVIEW', label: 'Phê duyệt kiểm định an toàn', group: 'Đội xe & An toàn' },
+  { code: 'SHIPMENT_CREATE', label: 'Khởi tạo vận đơn mới', group: 'Vận đơn & Điều phối' },
+  { code: 'SHIPMENT_READ', label: 'Xem toàn bộ vận đơn hệ thống', group: 'Vận đơn & Điều phối' },
+  {
+    code: 'SHIPMENT_READ_OWN',
+    label: 'Xem vận đơn của riêng doanh nghiệp',
+    group: 'Vận đơn & Điều phối'
+  },
+  { code: 'SHIPMENT_WRITE', label: 'Cập nhật thông tin vận đơn', group: 'Vận đơn & Điều phối' },
+  { code: 'SHIPMENT_DISPATCH', label: 'Phát lệnh điều xe xuất bến', group: 'Vận đơn & Điều phối' },
+  { code: 'ROUTE_PLAN', label: 'Lập lộ trình đa mục tiêu Pareto', group: 'Định tuyến & GPS' },
+  { code: 'ROUTE_SELECT', label: 'Chọn phương án lộ trình', group: 'Định tuyến & GPS' },
+  { code: 'REROUTE_APPROVE', label: 'Phê duyệt tái định tuyến động', group: 'Định tuyến & GPS' },
+  { code: 'TRACKING_LIVE', label: 'Giám sát bản đồ GPS thời gian thực', group: 'Định tuyến & GPS' },
+  { code: 'TELEMETRY_SEND', label: 'Phát tín hiệu tọa độ GPS từ xe', group: 'Định tuyến & GPS' },
+  { code: 'ALERT_ACK', label: 'Tiếp nhận & xử lý cảnh báo lệch tuyến', group: 'Sự cố & Cảnh báo' },
+  { code: 'INCIDENT_REPORT', label: 'Báo cáo sự cố hiện trường', group: 'Sự cố & Cảnh báo' },
+  { code: 'EXCEPTION_RESOLVE', label: 'Thẩm định ngoại lệ vận hành', group: 'Sự cố & Cảnh báo' },
+  { code: 'DEMERIT_MANAGE', label: 'Quản trị điểm phạt tài xế', group: 'Sự cố & Cảnh báo' },
+  { code: 'POD_SUBMIT', label: 'Ký xác nhận bàn giao hàng (ePOD)', group: 'Carbon & Chứng từ' },
+  { code: 'POD_VIEW_OWN', label: 'Tải chứng từ ePOD doanh nghiệp', group: 'Carbon & Chứng từ' },
+  { code: 'CARBON_READ', label: 'Tra cứu sổ cái phát thải CO2e', group: 'Carbon & Chứng từ' },
+  { code: 'CARBON_CALCULATE', label: 'Quyết toán phát thải GLEC v3', group: 'Carbon & Chứng từ' },
+  { code: 'BENCHMARK_READ', label: 'Xem định mức carbon hành lang', group: 'Carbon & Chứng từ' },
+  { code: 'REPORT_EXPORT', label: 'Xuất chứng nhận ISO 14083', group: 'Carbon & Chứng từ' }
+];
 
 export const ENTERPRISE_ROLES = {
   ADMIN: {
     role: 'ADMIN',
     portalType: 'INTERNAL',
-    username: 'admin',
     fullName: 'Quản Trị Viên Toàn Hệ Thống',
     department: 'Ban Quản Trị Hạ Tầng & Bảo Mật IAM',
     zone: 'INTERNAL_CORE',
@@ -14,37 +53,12 @@ export const ENTERPRISE_ROLES = {
     bgDim: 'rgba(168, 85, 247, 0.16)',
     border: 'rgba(168, 85, 247, 0.45)',
     description:
-      'Toàn quyền cấu hình hệ thống, cấp phát tài khoản nội bộ & đối tác B2B, giám sát toàn bộ phân hệ vận hành.',
-    permissions: [
-      'USER_MANAGE',
-      'ROLE_MANAGE',
-      'VEHICLE_READ',
-      'VEHICLE_WRITE',
-      'MAINTENANCE_MANAGE',
-      'INSPECTION_SUBMIT',
-      'INSPECTION_REVIEW',
-      'SHIPMENT_CREATE',
-      'SHIPMENT_READ',
-      'SHIPMENT_WRITE',
-      'SHIPMENT_DISPATCH',
-      'ROUTE_PLAN',
-      'ROUTE_SELECT',
-      'REROUTE_APPROVE',
-      'TRACKING_LIVE',
-      'ALERT_ACK',
-      'CARBON_READ',
-      'CARBON_CALCULATE',
-      'BENCHMARK_READ',
-      'REPORT_EXPORT',
-      'INCIDENT_REPORT',
-      'EXCEPTION_RESOLVE',
-      'DEMERIT_MANAGE'
-    ]
+      'Toàn quyền cấu hình hệ thống, khởi tạo tài khoản cho các role nội bộ, phân quyền RBAC và giám sát toàn bộ phân hệ.',
+    permissions: ALL_SYSTEM_PERMISSIONS.map((p) => p.code)
   },
   DISPATCHER: {
     role: 'DISPATCHER',
     portalType: 'INTERNAL',
-    username: 'dispatcher',
     fullName: 'Điều Phối Viên Trung Tâm (NOC)',
     department: 'Trung Tâm Điều Hành Vận Tải Xanh',
     zone: 'INTERNAL_CORE',
@@ -70,7 +84,6 @@ export const ENTERPRISE_ROLES = {
   SAFETY_MANAGER: {
     role: 'SAFETY_MANAGER',
     portalType: 'INTERNAL',
-    username: 'safety',
     fullName: 'Trưởng Ban An Toàn Đội Xe',
     department: 'Phòng Thanh Tra Kỹ Thuật & An Toàn',
     zone: 'INTERNAL_CORE',
@@ -94,8 +107,7 @@ export const ENTERPRISE_ROLES = {
   DRIVER: {
     role: 'DRIVER',
     portalType: 'INTERNAL',
-    username: 'driver',
-    fullName: 'Nguyễn Văn An (Tài Xế Container FC)',
+    fullName: 'Tài Xế Vận Tải Hành Lang Xanh',
     department: 'Đội Vận Tải Đường Dài Nam Bộ',
     zone: 'INTERNAL_CORE',
     zoneLabel: 'Thiết Bị Đầu Cuối Nội Bộ (Driver Terminal)',
@@ -115,11 +127,10 @@ export const ENTERPRISE_ROLES = {
   ESG_AUDITOR: {
     role: 'ESG_AUDITOR',
     portalType: 'INTERNAL',
-    username: 'auditor',
     fullName: 'Kiểm Toán Viên Độc Lập GLEC v3',
     department: 'Tổ Chức Chứng Nhận Phát Thải Xanh',
-    zone: 'B2B_EXTRANET',
-    zoneLabel: 'Cổng Kiểm Toán Độc Lập (ESG Audit)',
+    zone: 'INTERNAL_CORE',
+    zoneLabel: 'Cổng Kiểm Toán Nội Bộ (ESG Audit)',
     color: '#eab308',
     bgDim: 'rgba(234, 179, 8, 0.16)',
     border: 'rgba(234, 179, 8, 0.45)',
@@ -130,77 +141,46 @@ export const ENTERPRISE_ROLES = {
   SHIPPER: {
     role: 'SHIPPER',
     portalType: 'CUSTOMER',
-    username: 'shipper',
-    fullName: 'Đại Diện Chủ Hàng (VINAMILK)',
-    companyName: 'Công ty Cổ phần Sữa Việt Nam (Vinamilk)',
-    email: 'logistics@vinamilk.com.vn',
-    phone: '028 5415 5555',
-    industry: 'Thực phẩm & Chuỗi cung ứng lạnh (FMCG)',
+    fullName: 'Khách Hàng / Chủ Hàng Doanh Nghiệp (User)',
     department: 'Khách Hàng Doanh Nghiệp B2B',
-    customerId: 'VINAMILK',
     zone: 'B2B_EXTRANET',
     zoneLabel: 'Hệ Thống Khách Hàng & Chủ Hàng (Customer Portal)',
     color: '#ec4899',
     bgDim: 'rgba(236, 72, 153, 0.16)',
     border: 'rgba(236, 72, 153, 0.45)',
     description:
-      'Đặt lịch vận chuyển xanh, theo dõi trực tuyến các đơn hàng của doanh nghiệp (Cô lập dữ liệu BRULE-16) & tải chứng nhận CO2e ISO 14083.',
+      'Tài khoản do Khách hàng tự đăng ký hoặc được cấp: đặt lịch vận chuyển xanh, theo dõi đơn hàng riêng (BRULE-16) & tải chứng nhận ISO 14083.',
     permissions: ['SHIPMENT_CREATE', 'SHIPMENT_READ_OWN', 'POD_VIEW_OWN', 'CARBON_READ']
   }
 };
 
-const SEEDED_REGISTERED_USERS = [
-  {
-    userId: '20000000-0000-0000-0000-000000000001',
-    username: 'shipper',
-    email: 'logistics@vinamilk.com.vn',
-    fullName: 'Nguyễn Thanh Tùng (Vinamilk)',
-    companyName: 'Công ty CP Sữa Việt Nam (Vinamilk)',
-    customerId: 'VINAMILK',
-    phone: '028 5415 5555',
-    industry: 'Thực phẩm & Chuỗi lạnh (FMCG)',
-    role: 'SHIPPER',
-    portalType: 'CUSTOMER',
-    zone: 'B2B_EXTRANET',
-    zoneLabel: 'Hệ Thống Khách Hàng & Chủ Hàng (Customer Portal)',
-    status: 'ACTIVE',
-    createdAt: '2026-09-15'
-  },
-  {
-    userId: '20000000-0000-0000-0000-000000000002',
-    username: 'samsung_scm',
-    email: 'scm.vn@samsung.com',
-    fullName: 'Park Jin Woo (Samsung VN)',
-    companyName: 'Samsung Electronics HCMC CE Complex',
-    customerId: 'SAMSUNG_VN',
-    phone: '028 3915 7310',
-    industry: 'Điện tử & Công nghệ cao',
-    role: 'SHIPPER',
-    portalType: 'CUSTOMER',
-    zone: 'B2B_EXTRANET',
-    zoneLabel: 'Hệ Thống Khách Hàng & Chủ Hàng (Customer Portal)',
-    status: 'ACTIVE',
-    createdAt: '2026-10-02'
-  },
-  {
-    userId: '20000000-0000-0000-0000-000000000003',
-    username: 'thtruemilk',
-    email: 'supplychain@thgroup.vn',
-    fullName: 'Lê Hoàng Yến (TH True Milk)',
-    companyName: 'Công ty CP Thực Phẩm Sữa TH',
-    customerId: 'TH_TRUE_MILK',
-    phone: '028 3620 8899',
-    industry: 'Nông nghiệp sạch & Chuỗi lạnh',
-    role: 'SHIPPER',
-    portalType: 'CUSTOMER',
-    zone: 'B2B_EXTRANET',
-    zoneLabel: 'Hệ Thống Khách Hàng & Chủ Hàng (Customer Portal)',
-    status: 'ACTIVE',
-    createdAt: '2026-10-19'
-  }
-];
+const ACCOUNTS_STORAGE_KEY = 'ccadro_accounts_v2';
 
-const REGISTERED_USERS_STORAGE_KEY = 'ccadro_registered_users';
+/**
+ * Chỉ duy nhất tài khoản Quản trị viên gốc (`admin`) tồn tại mặc định để khởi tạo hệ thống.
+ * Các tài khoản role nội bộ khác (DISPATCHER, SAFETY_MANAGER, DRIVER, ESG_AUDITOR) phải do ADMIN tạo.
+ * Các tài khoản Khách hàng (USER / SHIPPER) do người dùng tự đăng ký tại /register (hoặc do ADMIN tạo).
+ */
+const ROOT_ADMIN_ACCOUNT = {
+  userId: '10000000-0000-0000-0000-000000000001',
+  username: 'admin',
+  password: 'ccadro@123',
+  email: 'admin@ccadro.com',
+  fullName: 'Quản Trị Viên Hệ Thống (Root Admin)',
+  companyName: 'CCADRO Green Logistics Corporation',
+  department: 'Ban Quản Trị Hạ Tầng & Bảo Mật IAM',
+  customerId: 'CCADRO_CORE',
+  phone: '028 3888 9999',
+  industry: 'Điều hành Chuỗi cung ứng Xanh',
+  role: 'ADMIN',
+  portalType: 'INTERNAL',
+  zone: 'INTERNAL_CORE',
+  permissions: [...ENTERPRISE_ROLES.ADMIN.permissions],
+  status: 'ACTIVE',
+  isRootAdmin: true,
+  createdBy: 'SYSTEM_BOOTSTRAP',
+  createdAt: '2026-11-01'
+};
 
 export function getDefaultPortalPath(targetUser) {
   if (!targetUser) return '/login';
@@ -214,112 +194,70 @@ export function getDefaultPortalPath(targetUser) {
   return '/portal';
 }
 
-function loadRegisteredUsers() {
+function hydrateAccountWithRoleVisuals(acc) {
+  const roleKey = ENTERPRISE_ROLES[acc.role] ? acc.role : 'SHIPPER';
+  const tpl = ENTERPRISE_ROLES[roleKey];
+  const isCustomer = roleKey === 'SHIPPER' || acc.portalType === 'CUSTOMER';
+
+  return {
+    ...tpl,
+    ...acc,
+    role: roleKey,
+    portalType: isCustomer ? 'CUSTOMER' : 'INTERNAL',
+    zone: isCustomer ? 'B2B_EXTRANET' : 'INTERNAL_CORE',
+    zoneLabel: isCustomer
+      ? 'Hệ Thống Khách Hàng & Chủ Hàng (Customer Portal)'
+      : 'Hệ Thống Giám Sát Nội Bộ (Internal Core)',
+    color: tpl.color,
+    bgDim: tpl.bgDim,
+    border: tpl.border,
+    permissions:
+      Array.isArray(acc.permissions) && acc.permissions.length > 0
+        ? acc.permissions
+        : [...tpl.permissions]
+  };
+}
+
+function loadSystemAccounts() {
   try {
-    const raw = window.localStorage.getItem(REGISTERED_USERS_STORAGE_KEY);
+    const raw = window.localStorage.getItem(ACCOUNTS_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+        const hasRoot = parsed.some((a) => a.username === 'admin');
+        const list = hasRoot ? parsed : [ROOT_ADMIN_ACCOUNT, ...parsed];
+        return list.map(hydrateAccountWithRoleVisuals);
       }
     }
   } catch (_) {
-    // ignore
+    // ignore storage errors
   }
-  return SEEDED_REGISTERED_USERS;
+  return [hydrateAccountWithRoleVisuals(ROOT_ADMIN_ACCOUNT)];
 }
 
-function decodeJwtPayload(token) {
+function saveSystemAccounts(list) {
   try {
-    const base64Url = token.split('.')[1];
-    if (!base64Url) return null;
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split('')
-        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-        .join('')
-    );
-    return JSON.parse(jsonPayload);
+    window.localStorage.setItem(ACCOUNTS_STORAGE_KEY, JSON.stringify(list));
   } catch (_) {
-    return null;
+    // ignore storage errors
   }
-}
-
-function buildCustomerProfile(account) {
-  const base = ENTERPRISE_ROLES.SHIPPER;
-  const derivedCustomerId =
-    account.customerId ||
-    (account.companyName
-      ? account.companyName
-          .toUpperCase()
-          .replace(/[^A-Z0-9]+/g, '_')
-          .replace(/^_|_$/g, '')
-          .slice(0, 18)
-      : account.username.toUpperCase());
-
-  return {
-    ...base,
-    userId: account.userId || `cust-${Date.now()}`,
-    username: account.username,
-    fullName: account.fullName || account.username,
-    email: account.email || `${account.username}@partner.vn`,
-    phone: account.phone || '0909 888 999',
-    companyName: account.companyName || 'Doanh Nghiệp Đối Tác B2B',
-    industry: account.industry || 'Vận tải & Chuỗi cung ứng xanh',
-    customerId: derivedCustomerId || 'VINAMILK',
-    department: account.companyName || 'Khách Hàng Doanh Nghiệp B2B',
-    role: 'SHIPPER',
-    portalType: 'CUSTOMER',
-    zone: 'B2B_EXTRANET',
-    zoneLabel: 'Hệ Thống Khách Hàng & Chủ Hàng (Customer Portal)',
-    createdAt: account.createdAt || new Date().toISOString().slice(0, 10)
-  };
-}
-
-function buildUserProfileFromUsername(username, jwtPayload = null, customUsers = []) {
-  const normalized = (username || 'admin').toLowerCase().trim();
-
-  const matchedCustom = customUsers.find(
-    (u) =>
-      u.username?.toLowerCase() === normalized || (u.email && u.email.toLowerCase() === normalized)
-  );
-  if (matchedCustom && matchedCustom.username !== 'shipper') {
-    return buildCustomerProfile(matchedCustom);
-  }
-
-  const matchedEntry =
-    Object.values(ENTERPRISE_ROLES).find((r) => r.username === normalized) ||
-    Object.values(ENTERPRISE_ROLES).find((r) => r.role.toLowerCase() === normalized) ||
-    ENTERPRISE_ROLES.ADMIN;
-
-  let scopes = matchedEntry.permissions;
-  if (jwtPayload?.scope) {
-    scopes = jwtPayload.scope.split(' ').filter((s) => !s.startsWith('ROLE_'));
-  }
-
-  return {
-    ...matchedEntry,
-    userId: jwtPayload?.userId || '10000000-0000-0000-0000-000000000001',
-    jti: jwtPayload?.jti || null,
-    exp: jwtPayload?.exp || null,
-    permissions: scopes.length > 0 ? scopes : matchedEntry.permissions
-  };
 }
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [registeredUsers, setRegisteredUsers] = useState(() => loadRegisteredUsers());
+  const [accounts, setAccounts] = useState(() => loadSystemAccounts());
 
   const [user, setUser] = useState(() => {
     try {
       const saved = window.localStorage.getItem('ccadro_user');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        return hydrateAccountWithRoleVisuals(JSON.parse(saved));
+      }
     } catch (_) {
       // ignore
     }
-    return buildUserProfileFromUsername('admin', null, loadRegisteredUsers());
+    return hydrateAccountWithRoleVisuals(ROOT_ADMIN_ACCOUNT);
   });
 
   const [token, setToken] = useState(() => {
@@ -330,126 +268,77 @@ export function AuthProvider({ children }) {
     }
   });
 
-  const [authMode, setAuthMode] = useState('LIVE_PROVISIONED');
+  const [authMode, setAuthMode] = useState('IAM_MANAGED');
 
-  const currentUsername = user?.username;
-
-  useEffect(() => {
-    if (!token && currentUsername) {
-      api
-        .login(currentUsername, 'ccadro@123')
-        .then((res) => {
-          const jwt = res?.result?.token;
-          if (jwt) {
-            const payload = decodeJwtPayload(jwt);
-            const enriched = buildUserProfileFromUsername(
-              currentUsername,
-              payload,
-              registeredUsers
-            );
-            setToken(jwt);
-            setUser(enriched);
-            try {
-              window.localStorage.setItem('ccadro_token', jwt);
-              window.localStorage.setItem('ccadro_user', JSON.stringify(enriched));
-            } catch (_) {
-              // ignore storage errors
-            }
-          }
-        })
-        .catch(() => {
-          // Giữ phiên dự phòng khi chạy độc lập hoặc trong môi trường test
-        });
-    }
-  }, [token, currentUsername, registeredUsers]);
-
+  /**
+   * Đăng nhập cho cả User (Khách hàng tự đăng ký) và Nhân sự Nội bộ (do Admin khởi tạo).
+   */
   const login = async (usernameInput, password) => {
     const normalized = (usernameInput || '').toLowerCase().trim();
+    if (!normalized) {
+      throw new Error('Vui lòng nhập tên đăng nhập hoặc email.');
+    }
 
-    // 1. Kiểm tra trong danh sách tài khoản khách hàng đã đăng ký
-    const matchedRegistered = registeredUsers.find(
-      (u) =>
-        u.username?.toLowerCase() === normalized ||
-        (u.email && u.email.toLowerCase() === normalized)
+    const currentAccounts = loadSystemAccounts();
+    setAccounts(currentAccounts);
+
+    const matched = currentAccounts.find(
+      (a) =>
+        a.username?.toLowerCase() === normalized ||
+        (a.email && a.email.toLowerCase() === normalized)
     );
 
-    if (matchedRegistered) {
-      const expectedPassword = matchedRegistered.password || 'ccadro@123';
-      if (password === expectedPassword || password === 'ccadro@123') {
-        const profile =
-          matchedRegistered.username === 'shipper'
-            ? buildUserProfileFromUsername('shipper', null, registeredUsers)
-            : buildCustomerProfile(matchedRegistered);
-        const sessionToken = `customer-jwt-${matchedRegistered.username}`;
-        setToken(sessionToken);
-        setUser(profile);
-        setAuthMode('CUSTOMER_B2B_SESSION');
-        try {
-          window.localStorage.setItem('ccadro_token', sessionToken);
-          window.localStorage.setItem('ccadro_user', JSON.stringify(profile));
-        } catch (_) {
-          // ignore
-        }
-        return {
-          success: true,
-          user: profile,
-          token: sessionToken,
-          redirectTo: getDefaultPortalPath(profile)
-        };
-      }
-    }
-
-    // 2. Gọi API xác thực trực tiếp (Identity Service)
-    try {
-      const res = await api.login(normalized, password);
-      const jwt = res?.result?.token;
-      if (jwt) {
-        const payload = decodeJwtPayload(jwt);
-        const profile = buildUserProfileFromUsername(normalized, payload, registeredUsers);
-        setToken(jwt);
-        setUser(profile);
-        setAuthMode('LIVE_JWT_HS512');
-        try {
-          window.localStorage.setItem('ccadro_token', jwt);
-          window.localStorage.setItem('ccadro_user', JSON.stringify(profile));
-        } catch (_) {
-          // ignore storage errors
-        }
-        return {
-          success: true,
-          user: profile,
-          token: jwt,
-          redirectTo: getDefaultPortalPath(profile)
-        };
-      }
-      throw new Error('Không nhận được JWT token từ Identity Service');
-    } catch (err) {
-      // 3. Dự phòng cho tài khoản mẫu doanh nghiệp khi chạy độc lập
-      const knownAccount = Object.values(ENTERPRISE_ROLES).find((r) => r.username === normalized);
-      if (knownAccount && password === 'ccadro@123') {
-        const profile = buildUserProfileFromUsername(normalized, null, registeredUsers);
-        setUser(profile);
-        setToken('demo-fallback-jwt');
-        setAuthMode('FALLBACK_SESSION');
-        try {
-          window.localStorage.setItem('ccadro_token', 'demo-fallback-jwt');
-          window.localStorage.setItem('ccadro_user', JSON.stringify(profile));
-        } catch (_) {
-          // ignore storage errors
-        }
-        return {
-          success: true,
-          user: profile,
-          token: 'demo-fallback-jwt',
-          redirectTo: getDefaultPortalPath(profile)
-        };
-      }
+    if (!matched) {
       throw new Error(
-        'Thông tin đăng nhập không chính xác. Vui lòng kiểm tra lại tài khoản hoặc mật khẩu.'
+        `Tài khoản "${usernameInput}" chưa tồn tại trên hệ thống. Nếu bạn là Khách hàng, vui lòng bấm "Đăng ký tài khoản mới". Nếu bạn là Nhân sự nội bộ, tài khoản phải do ADMIN khởi tạo trong phân hệ Quản trị IAM.`
       );
     }
+
+    if (matched.status === 'LOCKED') {
+      throw new Error(
+        `Tài khoản "@${matched.username}" đã bị Quản trị viên (ADMIN) tạm khóa truy cập.`
+      );
+    }
+
+    const expectedPassword = matched.password || 'ccadro@123';
+    if (password !== expectedPassword) {
+      throw new Error('Mật khẩu không chính xác. Vui lòng kiểm tra lại.');
+    }
+
+    // Thử đồng bộ JWT từ Identity Service nếu backend đang chạy
+    let sessionToken = `iam-jwt-${matched.username}-${Date.now()}`;
+    try {
+      const res = await api.login(matched.username, password);
+      if (res?.result?.token) {
+        sessionToken = res.result.token;
+      }
+    } catch (_) {
+      // Sử dụng phiên IAM cục bộ khi chạy độc lập
+    }
+
+    const profile = hydrateAccountWithRoleVisuals(matched);
+    setToken(sessionToken);
+    setUser(profile);
+    setAuthMode(profile.portalType === 'CUSTOMER' ? 'CUSTOMER_PORTAL_AUTH' : 'INTERNAL_IAM_AUTH');
+
+    try {
+      window.localStorage.setItem('ccadro_token', sessionToken);
+      window.localStorage.setItem('ccadro_user', JSON.stringify(profile));
+    } catch (_) {
+      // ignore
+    }
+
+    return {
+      success: true,
+      user: profile,
+      token: sessionToken,
+      redirectTo: getDefaultPortalPath(profile)
+    };
   };
 
+  /**
+   * Dành cho User / Khách hàng tự đăng ký tài khoản mới tại /register
+   */
   const registerUser = async (formData) => {
     const cleanUsername = (formData.username || '').trim().toLowerCase();
     const cleanEmail = (formData.email || '').trim().toLowerCase();
@@ -466,22 +355,16 @@ export function AuthProvider({ children }) {
       throw new Error('Mật khẩu phải có ít nhất 6 ký tự.');
     }
 
-    const existsInternal = Object.values(ENTERPRISE_ROLES).some(
-      (r) => r.username === cleanUsername
-    );
-    const existsRegistered = registeredUsers.some(
-      (u) =>
-        u.username.toLowerCase() === cleanUsername ||
-        (cleanEmail && u.email?.toLowerCase() === cleanEmail)
+    const currentAccounts = loadSystemAccounts();
+    const duplicate = currentAccounts.find(
+      (a) =>
+        a.username.toLowerCase() === cleanUsername ||
+        (cleanEmail && a.email?.toLowerCase() === cleanEmail)
     );
 
-    if (existsInternal || existsRegistered) {
-      throw new Error('Tên đăng nhập hoặc email doanh nghiệp này đã được đăng ký trên hệ thống.');
+    if (duplicate) {
+      throw new Error('Tên đăng nhập hoặc email này đã tồn tại trên hệ thống.');
     }
-
-    const nameParts = fullName.split(/\s+/);
-    const firstName = nameParts.slice(-1).join(' ') || cleanUsername;
-    const lastName = nameParts.slice(0, -1).join(' ') || companyName;
 
     const customerCode =
       (formData.customerCode || '').trim().toUpperCase() ||
@@ -494,7 +377,10 @@ export function AuthProvider({ children }) {
         .slice(0, 16) ||
       cleanUsername.toUpperCase();
 
-    // Đồng bộ lên Identity Service nếu backend đang trực tuyến
+    const nameParts = fullName.split(/\s+/);
+    const firstName = nameParts.slice(-1).join(' ') || cleanUsername;
+    const lastName = nameParts.slice(0, -1).join(' ') || companyName;
+
     try {
       await api.createUser({
         username: cleanUsername,
@@ -505,63 +391,203 @@ export function AuthProvider({ children }) {
         roles: ['SHIPPER']
       });
     } catch (_) {
-      // Vẫn lưu cục bộ để đảm bảo trải nghiệm đăng ký & đăng nhập tức thì
+      // ignore backend offline error
     }
 
-    const newAccount = {
-      userId: `cust-${Date.now()}`,
+    const newCustomerAccount = hydrateAccountWithRoleVisuals({
+      userId: `usr-${Date.now()}`,
       username: cleanUsername,
       password,
       email: cleanEmail,
       fullName: fullName || cleanUsername,
-      companyName: companyName || 'Doanh Nghiệp Đối Tác B2B',
+      companyName: companyName || 'Doanh Nghiệp Khách Hàng',
+      department: companyName || 'Khách Hàng Doanh Nghiệp B2B',
       customerId: customerCode,
       phone: phone || '0909 888 999',
       industry,
       role: 'SHIPPER',
       portalType: 'CUSTOMER',
-      zone: 'B2B_EXTRANET',
-      zoneLabel: 'Hệ Thống Khách Hàng & Chủ Hàng (Customer Portal)',
+      permissions: [...ENTERPRISE_ROLES.SHIPPER.permissions],
       status: 'ACTIVE',
+      createdBy: 'SELF_REGISTERED',
       createdAt: new Date().toISOString().slice(0, 10)
-    };
+    });
 
-    const updatedList = [newAccount, ...registeredUsers];
-    setRegisteredUsers(updatedList);
-    try {
-      window.localStorage.setItem(REGISTERED_USERS_STORAGE_KEY, JSON.stringify(updatedList));
-    } catch (_) {
-      // ignore
-    }
+    const updated = [...currentAccounts, newCustomerAccount];
+    setAccounts(updated);
+    saveSystemAccounts(updated);
 
-    const profile = buildCustomerProfile(newAccount);
-    const sessionToken = `customer-jwt-${cleanUsername}`;
+    const sessionToken = `customer-jwt-${cleanUsername}-${Date.now()}`;
     setToken(sessionToken);
-    setUser(profile);
-    setAuthMode('CUSTOMER_B2B_REGISTERED');
+    setUser(newCustomerAccount);
+    setAuthMode('CUSTOMER_SELF_REGISTERED');
 
     try {
       window.localStorage.setItem('ccadro_token', sessionToken);
-      window.localStorage.setItem('ccadro_user', JSON.stringify(profile));
+      window.localStorage.setItem('ccadro_user', JSON.stringify(newCustomerAccount));
     } catch (_) {
       // ignore
     }
 
     return {
       success: true,
-      user: profile,
+      user: newCustomerAccount,
       token: sessionToken,
       redirectTo: '/customer'
     };
   };
 
-  const switchRoleQuick = async (roleKey) => {
-    const roleConfig = ENTERPRISE_ROLES[roleKey] || ENTERPRISE_ROLES.ADMIN;
-    return login(roleConfig.username, 'ccadro@123');
+  /**
+   * Dành riêng cho ADMIN: Tạo tài khoản cho các Role nội bộ (DISPATCHER, SAFETY_MANAGER, DRIVER, ESG_AUDITOR, ADMIN)
+   * hoặc tạo tài khoản đối tác B2B và gán quyền chi tiết.
+   */
+  const adminCreateAccount = async (payload) => {
+    const cleanUsername = (payload.username || '').trim().toLowerCase();
+    const cleanEmail = (payload.email || `${cleanUsername}@ccadro.com`).trim().toLowerCase();
+    const password = payload.password || '';
+    const fullName = (payload.fullName || '').trim();
+    const roleKey = ENTERPRISE_ROLES[payload.role] ? payload.role : 'DISPATCHER';
+    const roleTemplate = ENTERPRISE_ROLES[roleKey];
+
+    if (cleanUsername.length < 3) {
+      throw new Error('Username phải có từ 3 ký tự trở lên.');
+    }
+    if (password.length < 6) {
+      throw new Error('Mật khẩu phải có từ 6 ký tự trở lên.');
+    }
+
+    const currentAccounts = loadSystemAccounts();
+    const duplicate = currentAccounts.find(
+      (a) =>
+        a.username.toLowerCase() === cleanUsername ||
+        (cleanEmail && a.email?.toLowerCase() === cleanEmail)
+    );
+    if (duplicate) {
+      throw new Error(`Tài khoản "${cleanUsername}" hoặc email "${cleanEmail}" đã tồn tại.`);
+    }
+
+    const assignedPermissions =
+      Array.isArray(payload.permissions) && payload.permissions.length > 0
+        ? payload.permissions
+        : [...roleTemplate.permissions];
+
+    const isCustomer = roleKey === 'SHIPPER';
+    const department =
+      (payload.department || '').trim() || roleTemplate.department || 'Trung Tâm Điều Hành Nội Bộ';
+    const customerId = isCustomer
+      ? (payload.customerId || cleanUsername).toUpperCase()
+      : 'CCADRO_INTERNAL';
+
+    try {
+      const nameParts = fullName.split(/\s+/);
+      await api.createUser({
+        username: cleanUsername,
+        password,
+        email: cleanEmail,
+        firstName: nameParts.slice(-1).join(' ') || cleanUsername,
+        lastName: nameParts.slice(0, -1).join(' ') || department,
+        roles: [roleKey]
+      });
+    } catch (_) {
+      // Vẫn lưu vào sổ cái IAM cục bộ
+    }
+
+    const newAcc = hydrateAccountWithRoleVisuals({
+      userId: `iam-${Date.now()}`,
+      username: cleanUsername,
+      password,
+      email: cleanEmail,
+      fullName: fullName || cleanUsername,
+      companyName: isCustomer ? department : 'CCADRO Green Logistics Corporation',
+      department,
+      customerId,
+      phone: payload.phone || '028 3888 9999',
+      industry: isCustomer ? 'Đối tác Chủ hàng B2B' : 'Vận hành & Giám sát Nội bộ',
+      role: roleKey,
+      portalType: isCustomer ? 'CUSTOMER' : 'INTERNAL',
+      permissions: assignedPermissions,
+      status: 'ACTIVE',
+      createdBy: user?.username || 'admin',
+      createdAt: new Date().toISOString().slice(0, 10)
+    });
+
+    const updated = [...currentAccounts, newAcc];
+    setAccounts(updated);
+    saveSystemAccounts(updated);
+    return newAcc;
+  };
+
+  /**
+   * Dành cho ADMIN: Cập nhật Vai trò (Role), Danh sách Quyền (Permissions), Phòng ban hoặc Khóa/Mở khóa tài khoản.
+   */
+  const adminUpdateAccount = (usernameToUpdate, changes) => {
+    const normalized = (usernameToUpdate || '').toLowerCase();
+    const currentAccounts = loadSystemAccounts();
+
+    const updated = currentAccounts.map((acc) => {
+      if (acc.username.toLowerCase() !== normalized) return acc;
+
+      // Không cho phép khóa hoặc hạ quyền tài khoản Root Admin
+      if (acc.isRootAdmin || acc.username === 'admin') {
+        return hydrateAccountWithRoleVisuals({
+          ...acc,
+          fullName: changes.fullName ?? acc.fullName,
+          department: changes.department ?? acc.department
+        });
+      }
+
+      const nextRole = changes.role && ENTERPRISE_ROLES[changes.role] ? changes.role : acc.role;
+      const nextPermissions =
+        Array.isArray(changes.permissions) && changes.permissions.length > 0
+          ? changes.permissions
+          : changes.role && changes.role !== acc.role
+            ? [...ENTERPRISE_ROLES[nextRole].permissions]
+            : acc.permissions;
+
+      return hydrateAccountWithRoleVisuals({
+        ...acc,
+        ...changes,
+        role: nextRole,
+        permissions: nextPermissions
+      });
+    });
+
+    setAccounts(updated);
+    saveSystemAccounts(updated);
+
+    // Nếu tài khoản đang đăng nhập chính là tài khoản vừa cập nhật thì đồng bộ lại phiên
+    if (user?.username?.toLowerCase() === normalized) {
+      const refreshed = updated.find((a) => a.username.toLowerCase() === normalized);
+      if (refreshed) {
+        setUser(refreshed);
+        try {
+          window.localStorage.setItem('ccadro_user', JSON.stringify(refreshed));
+        } catch (_) {
+          // ignore
+        }
+      }
+    }
+
+    return updated;
+  };
+
+  /**
+   * Dành cho ADMIN: Xóa tài khoản khỏi hệ thống (ngoại trừ Root Admin).
+   */
+  const adminDeleteAccount = (usernameToDelete) => {
+    const normalized = (usernameToDelete || '').toLowerCase();
+    if (normalized === 'admin') {
+      throw new Error('Không thể xóa tài khoản Quản trị viên gốc (Root Admin).');
+    }
+    const currentAccounts = loadSystemAccounts();
+    const updated = currentAccounts.filter((a) => a.username.toLowerCase() !== normalized);
+    setAccounts(updated);
+    saveSystemAccounts(updated);
+    return updated;
   };
 
   const logout = async () => {
-    if (token && !token.startsWith('demo-') && !token.startsWith('customer-jwt-')) {
+    if (token && !token.startsWith('iam-jwt-') && !token.startsWith('customer-jwt-')) {
       try {
         await api.logout(token);
       } catch (_) {
@@ -573,7 +599,7 @@ export function AuthProvider({ children }) {
       window.localStorage.removeItem('ccadro_token');
       window.localStorage.removeItem('ccadro_user');
     } catch (_) {
-      // ignore storage errors
+      // ignore
     }
   };
 
@@ -583,20 +609,29 @@ export function AuthProvider({ children }) {
     return Array.isArray(user.permissions) && user.permissions.includes(perm);
   };
 
+  // Tương thích ngược với các màn hình hiển thị danh sách khách hàng
+  const registeredUsers = accounts.filter(
+    (a) => a.portalType === 'CUSTOMER' || a.role === 'SHIPPER'
+  );
+
   return (
     <AuthContext.Provider
       value={{
         user,
         token,
         authMode,
+        accounts,
+        registeredUsers,
         login,
         registerUser,
-        registeredUsers,
+        adminCreateAccount,
+        adminUpdateAccount,
+        adminDeleteAccount,
         logout,
-        switchRoleQuick,
         hasPermission,
         getDefaultPortalPath,
-        ENTERPRISE_ROLES
+        ENTERPRISE_ROLES,
+        ALL_SYSTEM_PERMISSIONS
       }}
     >
       {children}

@@ -202,7 +202,7 @@ export default function Sidebar() {
           className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
         >
           <ShieldCheck size={17} />
-          <span>An Toàn & 6-Role RBAC</span>
+          <span>Quản Trị Tài Khoản & IAM</span>
         </NavLink>
 
         <NavLink
@@ -232,7 +232,7 @@ export default function Sidebar() {
       >
         <button
           type="button"
-          onClick={() => navigate('/login')}
+          onClick={() => navigate('/governance')}
           style={{
             background: 'transparent',
             border: 'none',
@@ -245,7 +245,7 @@ export default function Sidebar() {
           }}
         >
           <UserCheck size={14} />
-          <span>Đổi vai trò</span>
+          <span>Quản lý IAM</span>
         </button>
 
         <button

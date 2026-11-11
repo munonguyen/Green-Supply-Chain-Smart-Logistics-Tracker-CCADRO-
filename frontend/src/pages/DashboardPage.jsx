@@ -18,6 +18,7 @@ import {
   Bell,
   Layers,
   ChevronRight,
+  ShieldCheck,
   Users
 } from 'lucide-react';
 
@@ -142,7 +143,7 @@ const ENTERPRISE_MODULES = [
 
 export default function DashboardPage() {
   const navigate = useNavigate();
-  const { user, registeredUsers = [] } = useAuth();
+  const { user, accounts = [] } = useAuth();
 
   const [health, setHealth] = useState(null);
   const [shipments, setShipments] = useState(() => {
@@ -536,7 +537,7 @@ export default function DashboardPage() {
               }}
             >
               <Users size={13} />
-              <span>Khách Hàng B2B ({registeredUsers.length})</span>
+              <span>Tài Khoản Hệ Thống ({accounts.length})</span>
             </button>
           </div>
         </div>
@@ -687,47 +688,111 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Tab 3: Registered Customer & Partner Accounts */}
+        {/* Tab 3: Unified System Accounts Directory */}
         {activeTab === 'users' && (
-          <div className="table-wrapper">
-            <table>
-              <thead>
-                <tr>
-                  <th>Tài Khoản</th>
-                  <th>Tên Doanh Nghiệp / Đối Tác B2B</th>
-                  <th>Mã Chủ Hàng (BRULE-16)</th>
-                  <th>Người Đại Diện</th>
-                  <th>Email &amp; Liên Hệ</th>
-                  <th>Ngành Hàng</th>
-                  <th>Trạng Thái</th>
-                </tr>
-              </thead>
-              <tbody>
-                {registeredUsers.map((acc) => (
-                  <tr key={acc.username}>
-                    <td>
-                      <code style={{ color: '#38bdf8', fontWeight: 700 }}>@{acc.username}</code>
-                    </td>
-                    <td>
-                      <strong style={{ color: '#f8fafc' }}>{acc.companyName}</strong>
-                    </td>
-                    <td>
-                      <span className="badge badge-green" style={{ fontSize: '0.7rem' }}>
-                        {acc.customerId}
-                      </span>
-                    </td>
-                    <td style={{ color: '#cbd5e1' }}>{acc.fullName}</td>
-                    <td style={{ color: '#94a3b8', fontSize: '0.78rem' }}>
-                      {acc.email} • {acc.phone}
-                    </td>
-                    <td style={{ color: '#cbd5e1', fontSize: '0.78rem' }}>{acc.industry}</td>
-                    <td>
-                      <span className="badge badge-blue">{acc.status || 'ACTIVE'}</span>
-                    </td>
+          <div>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '10px',
+                marginBottom: '12px',
+                padding: '10px 14px',
+                borderRadius: '10px',
+                background: 'rgba(15, 23, 42, 0.55)',
+                border: '1px solid rgba(56, 189, 248, 0.2)'
+              }}
+            >
+              <div style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>
+                Hệ thống khởi tạo chỉ với <strong>01 tài khoản Root Admin</strong>. Các tài khoản
+                nhân sự nội bộ (<code>DISPATCHER</code>, <code>SAFETY_MANAGER</code>,{' '}
+                <code>DRIVER</code>, <code>ESG_AUDITOR</code>) do Admin trực tiếp tạo và phân quyền;
+                khách hàng B2B có thể tự đăng ký tại <code>/register</code>.
+              </div>
+              <button
+                type="button"
+                onClick={() => navigate('/governance')}
+                style={{
+                  background: 'linear-gradient(135deg, #10b981, #059669)',
+                  border: 'none',
+                  color: '#fff',
+                  padding: '7px 14px',
+                  borderRadius: '8px',
+                  fontSize: '0.78rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <ShieldCheck size={14} />
+                <span>Quản Lý &amp; Tạo Tài Khoản Nội Bộ (IAM)</span>
+              </button>
+            </div>
+            <div className="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Tài Khoản</th>
+                    <th>Họ Tên Nhân Sự / Đại Diện</th>
+                    <th>Phòng Ban / Doanh Nghiệp</th>
+                    <th>Vai Trò (Role)</th>
+                    <th>Số Quyền Được Cấp</th>
+                    <th>Nguồn Khởi Tạo</th>
+                    <th>Trạng Thái</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {accounts.map((acc) => (
+                    <tr key={acc.username}>
+                      <td>
+                        <code style={{ color: '#38bdf8', fontWeight: 700 }}>@{acc.username}</code>
+                      </td>
+                      <td>
+                        <strong style={{ color: '#f8fafc' }}>{acc.fullName}</strong>
+                        <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{acc.email}</div>
+                      </td>
+                      <td style={{ color: '#cbd5e1' }}>{acc.companyName || acc.department}</td>
+                      <td>
+                        <span
+                          className={
+                            acc.role === 'SHIPPER' ? 'badge badge-amber' : 'badge badge-green'
+                          }
+                          style={{ fontSize: '0.7rem' }}
+                        >
+                          {acc.role}
+                        </span>
+                      </td>
+                      <td>
+                        <strong style={{ color: '#34d399' }}>
+                          {(acc.permissions || []).length}
+                        </strong>{' '}
+                        <span style={{ fontSize: '0.74rem', color: '#94a3b8' }}>quyền</span>
+                      </td>
+                      <td style={{ fontSize: '0.76rem', color: '#cbd5e1' }}>
+                        {acc.createdBy === 'SYSTEM_BOOTSTRAP'
+                          ? 'Hệ thống gốc (Root)'
+                          : acc.createdBy === 'SELF_REGISTERED'
+                            ? 'User tự đăng ký'
+                            : `Admin (${acc.createdBy})`}
+                      </td>
+                      <td>
+                        <span
+                          className={
+                            acc.status === 'LOCKED' ? 'badge badge-red' : 'badge badge-blue'
+                          }
+                        >
+                          {acc.status || 'ACTIVE'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>
