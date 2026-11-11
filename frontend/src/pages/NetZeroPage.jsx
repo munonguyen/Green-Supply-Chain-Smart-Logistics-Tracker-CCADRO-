@@ -6,7 +6,6 @@ import {
   Award,
   BatteryCharging,
   CheckCircle2,
-  Film,
   Globe2,
   Leaf,
   ShieldCheck,
@@ -53,7 +52,7 @@ export default function NetZeroPage() {
     <div className="lp-root">
       <LandingNavbar />
 
-      {/* ── 1. SUBPAGE VIDEO HERO ── */}
+      {/* ── 1. SUBPAGE AMBIENT VIDEO HERO ── */}
       <section className="lp-subhero">
         <div className="lp-subhero__media">
           <video
@@ -74,7 +73,7 @@ export default function NetZeroPage() {
               <h1 className="lp-h2" style={{ color: '#fff', marginTop: 14 }}>
                 Kiến Tạo Chuỗi Cung Ứng <em>Phát Thải Ròng Bằng Không</em>
               </h1>
-              <p className="lp-lead" style={{ color: 'rgba(255,255,255,0.8)' }}>
+              <p className="lp-lead" style={{ color: 'rgba(255,255,255,0.82)' }}>
                 CCADRO đặt mục tiêu cắt giảm 50% cường độ phát thải trên mỗi tấn-km trước năm 2030,
                 kết hợp giữa chuyển đổi phương tiện năng lượng sạch, tối ưu thuật toán lập tuyến đa
                 mục tiêu và minh bạch hóa dữ liệu kiểm kê khí nhà kính.
@@ -102,27 +101,31 @@ export default function NetZeroPage() {
           </div>
 
           <Reveal delay={0.2}>
-            <div className="lp-video-card" style={{ aspectRatio: '16 / 10' }}>
-              <video
-                src={VIDEOS.evFleetDepot}
-                poster={IMAGES.evTruck}
-                autoPlay
-                muted
-                loop
-                playsInline
-                controls
-              />
-              <div className="lp-video-card__overlay" style={{ pointerEvents: 'none' }}>
-                <span className="lp-video-badge">
-                  <Film size={13} /> EV SOLAR DEPOT • NET-ZERO INFRASTRUCTURE
-                </span>
-                <div>
-                  <strong style={{ fontSize: '1rem', display: 'block' }}>
-                    Trạm Sạc Đầu Kéo Điện Năng Lượng Mặt Trời CCADRO
-                  </strong>
-                  <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.75)' }}>
-                    Giảm 32% lượng phát thải WTW so với phương tiện diesel tiêu chuẩn
-                  </span>
+            <div className="lp-live">
+              <div className="lp-live__head">
+                <span>NET-ZERO 2030 • SCORECARD</span>
+                <span className="radar-dot" />
+              </div>
+              <div className="lp-live__value">
+                -50<span className="lp-live__unit">% gCO2e / tấn.km</span>
+              </div>
+              <p className="lp-live__sub">Mục tiêu giảm cường độ phát thải toàn mạng lưới</p>
+              <div className="lp-live__rows">
+                <div className="lp-live__row">
+                  <span>Tỷ lệ xe điện &amp; Euro 5 hiện tại</span>
+                  <strong>42% hạm đội</strong>
+                </div>
+                <div className="lp-live__row">
+                  <span>Mục tiêu điện hóa chặng đô thị 2028</span>
+                  <strong>60% hạm đội</strong>
+                </div>
+                <div className="lp-live__row">
+                  <span>Hạ tầng trạm sạc điện mặt trời</span>
+                  <strong>4 Depot trọng điểm</strong>
+                </div>
+                <div className="lp-live__row">
+                  <span>Khung kiểm kê phát thải</span>
+                  <strong>GLEC v3 &amp; ISO 14083</strong>
                 </div>
               </div>
             </div>

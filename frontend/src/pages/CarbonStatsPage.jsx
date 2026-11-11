@@ -1,11 +1,12 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, FileCheck2, Film, Scale } from 'lucide-react';
+import { ArrowRight, FileCheck2, Scale } from 'lucide-react';
 import '../styles/landing.css';
 import LandingNavbar from '../components/landing/LandingNavbar';
 import LandingFooter from '../components/landing/LandingFooter';
 import CarbonSavingsHub from '../components/landing/CarbonSavingsHub';
 import Reveal from '../components/ui/Reveal';
+import { CountingNumber } from '../components/ui/CountingNumber';
 import { CARBON_SUMMARY, IMAGES, VIDEOS } from '../components/landing/landingContent';
 
 const AUDIT_METRICS = [
@@ -33,10 +34,10 @@ export default function CarbonStatsPage() {
     <div className="lp-root">
       <LandingNavbar />
 
-      {/* ── 1. SUBPAGE VIDEO HERO ── */}
+      {/* ── 1. SUBPAGE AMBIENT VIDEO HERO ── */}
       <section className="lp-subhero">
         <div className="lp-subhero__media">
-          <video src={VIDEOS.portCorridor} poster={IMAGES.hero} autoPlay muted loop playsInline />
+          <video src={VIDEOS.carbonHarbor} poster={IMAGES.hero} autoPlay muted loop playsInline />
         </div>
         <div className="lp-subhero__overlay" />
 
@@ -48,7 +49,7 @@ export default function CarbonStatsPage() {
                 Thống Kê &amp; Chứng Nhận{' '}
                 <em>{CARBON_SUMMARY.savedKg.toLocaleString('vi-VN')} kg CO2e</em> Đã Tiết Kiệm
               </h1>
-              <p className="lp-lead" style={{ color: 'rgba(255,255,255,0.8)' }}>
+              <p className="lp-lead" style={{ color: 'rgba(255,255,255,0.82)' }}>
                 Dữ liệu phát thải được thu thập tự động từ thiết bị định vị GPS và cân tải trọng
                 điện tử trên từng chuyến hàng, chuẩn hóa theo khung GLEC v3 phục vụ kiểm toán ESG
                 độc lập.
@@ -72,27 +73,32 @@ export default function CarbonStatsPage() {
           </div>
 
           <Reveal delay={0.2}>
-            <div className="lp-video-card" style={{ aspectRatio: '16 / 10' }}>
-              <video
-                src={VIDEOS.portCorridor}
-                poster={IMAGES.hero}
-                autoPlay
-                muted
-                loop
-                playsInline
-                controls
-              />
-              <div className="lp-video-card__overlay" style={{ pointerEvents: 'none' }}>
-                <span className="lp-video-badge">
-                  <Film size={13} /> GLEC v3 LEDGER • ISO 14083 VERIFIED
-                </span>
-                <div>
-                  <strong style={{ fontSize: '1rem', display: 'block' }}>
-                    Giám Sát Cường Độ Phát Thải Hành Lang Cảng Biển
-                  </strong>
-                  <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.75)' }}>
-                    Tự động xuất chứng nhận giảm phát thải cho 648 lô hàng B2B
-                  </span>
+            <div className="lp-live">
+              <div className="lp-live__head">
+                <span>GLEC v3 LEDGER • ISO 14083</span>
+                <span className="radar-dot" />
+              </div>
+              <div className="lp-live__value">
+                -<CountingNumber value={24.8} decimals={1} locale="vi-VN" />
+                <span className="lp-live__unit">% CO2e</span>
+              </div>
+              <p className="lp-live__sub">Tỷ lệ cắt giảm so với mốc diesel tiêu chuẩn</p>
+              <div className="lp-live__rows">
+                <div className="lp-live__row">
+                  <span>Phát thải mốc đối chứng (Baseline)</span>
+                  <strong>1.284,1 tấn</strong>
+                </div>
+                <div className="lp-live__row">
+                  <span>Phát thải thực tế CCADRO</span>
+                  <strong>965,6 tấn</strong>
+                </div>
+                <div className="lp-live__row">
+                  <span>Chứng nhận ISO 14083 đã cấp</span>
+                  <strong>648 chứng nhận</strong>
+                </div>
+                <div className="lp-live__row">
+                  <span>Kỳ báo cáo kiểm kê</span>
+                  <strong>{CARBON_SUMMARY.periodLabel}</strong>
                 </div>
               </div>
             </div>

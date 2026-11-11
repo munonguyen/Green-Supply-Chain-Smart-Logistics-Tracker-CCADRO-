@@ -5,7 +5,6 @@ import {
   ArrowRight,
   CheckCircle2,
   Cpu,
-  Film,
   Layers,
   Lock,
   Radio,
@@ -47,7 +46,7 @@ export default function SolutionsPage() {
     <div className="lp-root">
       <LandingNavbar />
 
-      {/* ── 1. SUBPAGE VIDEO HERO ── */}
+      {/* ── 1. SUBPAGE AMBIENT VIDEO HERO ── */}
       <section className="lp-subhero">
         <div className="lp-subhero__media">
           <video
@@ -68,7 +67,7 @@ export default function SolutionsPage() {
               <h1 className="lp-h2" style={{ color: '#fff', marginTop: 14 }}>
                 Kiến Trúc Điều Hành <em>Logistics Xanh</em> Toàn Diện
               </h1>
-              <p className="lp-lead" style={{ color: 'rgba(255,255,255,0.8)' }}>
+              <p className="lp-lead" style={{ color: 'rgba(255,255,255,0.82)' }}>
                 Tích hợp liền mạch từ khâu lập kế hoạch tuyến đường đa tiêu chí, giám sát hành lang
                 địa lý PostGIS thời gian thực đến quyết toán phát thải chuẩn quốc tế cho 6 vai trò
                 vận hành.
@@ -96,27 +95,31 @@ export default function SolutionsPage() {
           </div>
 
           <Reveal delay={0.2}>
-            <div className="lp-video-card" style={{ aspectRatio: '16 / 10' }}>
-              <video
-                src={VIDEOS.smartRoutingOps}
-                poster={IMAGES.hero}
-                autoPlay
-                muted
-                loop
-                playsInline
-                controls
-              />
-              <div className="lp-video-card__overlay" style={{ pointerEvents: 'none' }}>
-                <span className="lp-video-badge">
-                  <Film size={13} /> PARETO ROUTING &amp; POSTGIS TELEMETRY
-                </span>
-                <div>
-                  <strong style={{ fontSize: '1rem', display: 'block' }}>
-                    Trình Mô Phỏng Lập Tuyến &amp; Giám Sát Hành Lang Thời Gian Thực
-                  </strong>
-                  <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.75)' }}>
-                    Kết hợp dữ liệu giao thông, thời tiết và hệ số phát thải phương tiện
-                  </span>
+            <div className="lp-live">
+              <div className="lp-live__head">
+                <span>ARCHITECTURE • ENGINE SPECS</span>
+                <span className="radar-dot" />
+              </div>
+              <div className="lp-live__value">
+                4<span className="lp-live__unit">Trọng số Pareto</span>
+              </div>
+              <p className="lp-live__sub">Tối ưu hóa đa mục tiêu &amp; Giám sát không gian</p>
+              <div className="lp-live__rows">
+                <div className="lp-live__row">
+                  <span>Trọng số mặc định (CO2 / ETA / Cost / Risk)</span>
+                  <strong>40 / 30 / 20 / 10</strong>
+                </div>
+                <div className="lp-live__row">
+                  <span>Hành lang đệm PostGIS</span>
+                  <strong>50m Vàng • 200m Đỏ</strong>
+                </div>
+                <div className="lp-live__row">
+                  <span>Tần suất cập nhật luồng SSE</span>
+                  <strong>1 Hz (&lt; 2 giây)</strong>
+                </div>
+                <div className="lp-live__row">
+                  <span>Phân quyền bảo mật nội bộ &amp; B2B</span>
+                  <strong>6 Vai trò RBAC</strong>
                 </div>
               </div>
             </div>

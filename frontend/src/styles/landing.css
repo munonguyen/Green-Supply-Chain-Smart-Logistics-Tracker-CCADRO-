@@ -288,6 +288,7 @@
   font-family: inherit;
   text-align: left;
   padding: 0;
+  flex-shrink: 0;
 }
 
 .lp-brand__name {
@@ -298,25 +299,27 @@
 }
 
 .lp-brand__tag {
-  font-size: 0.64rem;
+  font-size: 0.62rem;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  opacity: 0.7;
+  opacity: 0.75;
+  white-space: nowrap;
 }
 
 .lp-nav__links {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
 }
 
 .lp-nav__link {
-  padding: 8px 14px;
+  padding: 8px 13px;
   border-radius: 999px;
-  font-size: 0.87rem;
+  font-size: 0.85rem;
   font-weight: 600;
-  opacity: 0.82;
+  white-space: nowrap;
+  opacity: 0.85;
   transition:
     opacity 0.2s ease,
     background 0.2s ease,
@@ -362,11 +365,10 @@
 /* ---------- Hero ---------- */
 .lp-hero {
   position: relative;
-  min-height: 100vh;
-  min-height: 100svh;
+  min-height: 88vh;
   display: flex;
-  align-items: flex-end;
-  padding: 150px 0 170px;
+  align-items: center;
+  padding: 136px 0 156px;
   color: #fff;
   overflow: hidden;
   isolation: isolate;
@@ -383,62 +385,51 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 65% center;
-  animation: lp-kenburns 28s ease-in-out infinite alternate;
+  object-position: center center;
+  transform: none;
 }
 
-.lp-video-card {
+.lp-bg-video-section {
   position: relative;
-  border-radius: var(--lp-radius);
+  padding: 104px 0;
+  color: #fff;
   overflow: hidden;
-  border: 1px solid var(--border-highlight);
-  background: #021009;
-  box-shadow: 0 32px 64px -28px rgba(0, 0, 0, 0.65);
+  isolation: isolate;
+  border-top: 1px solid rgba(110, 231, 183, 0.16);
+  border-bottom: 1px solid rgba(110, 231, 183, 0.16);
 }
 
-.lp-video-card video {
-  width: 100%;
-  height: 100%;
-  display: block;
-  object-fit: cover;
-}
-
-.lp-video-card__overlay {
+.lp-bg-video-section__media {
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    0deg,
-    rgba(2, 12, 8, 0.92) 0%,
-    rgba(2, 12, 8, 0.25) 55%,
-    rgba(2, 12, 8, 0.4) 100%
-  );
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 24px;
-  color: #fff;
+  z-index: -2;
 }
 
-.lp-video-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  align-self: flex-start;
-  padding: 6px 14px;
-  border-radius: 999px;
-  background: rgba(2, 16, 9, 0.72);
-  border: 1px solid rgba(110, 231, 183, 0.35);
-  backdrop-filter: blur(8px);
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #a7f3d0;
+.lp-bg-video-section__media video,
+.lp-bg-video-section__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+}
+
+.lp-bg-video-section__overlay {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(2, 12, 8, 0.92) 0%,
+      rgba(2, 12, 8, 0.76) 52%,
+      rgba(2, 12, 8, 0.52) 100%
+    ),
+    linear-gradient(0deg, rgba(2, 12, 8, 0.88) 0%, rgba(2, 12, 8, 0.25) 60%);
 }
 
 .lp-subhero {
   position: relative;
-  padding: 150px 0 88px;
+  padding: 148px 0 92px;
   color: #fff;
   overflow: hidden;
   isolation: isolate;
@@ -456,6 +447,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center center;
 }
 
 .lp-subhero__overlay {
@@ -465,17 +457,17 @@
   background:
     linear-gradient(
       90deg,
-      rgba(2, 12, 8, 0.94) 0%,
-      rgba(2, 12, 8, 0.8) 55%,
-      rgba(2, 12, 8, 0.55) 100%
+      rgba(2, 12, 8, 0.92) 0%,
+      rgba(2, 12, 8, 0.74) 55%,
+      rgba(2, 12, 8, 0.45) 100%
     ),
-    linear-gradient(0deg, rgba(2, 12, 8, 0.96) 0%, rgba(2, 12, 8, 0.25) 60%);
+    linear-gradient(0deg, rgba(2, 12, 8, 0.92) 0%, rgba(2, 12, 8, 0.2) 60%);
 }
 
 .lp-subhero__grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
-  gap: 40px;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.7fr);
+  gap: 48px;
   align-items: center;
 }
 
@@ -2123,12 +2115,14 @@
   isolation: isolate;
 }
 
-.lp-cta img {
+.lp-cta img,
+.lp-cta video {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center center;
   z-index: -2;
 }
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, CheckCircle2, Film, Leaf, PlayCircle, ShieldCheck } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Leaf, Radio, ShieldCheck } from 'lucide-react';
 import '../styles/landing.css';
 import LandingNavbar from '../components/landing/LandingNavbar';
 import LandingFooter from '../components/landing/LandingFooter';
@@ -25,7 +25,7 @@ export default function LandingPage() {
       {/* ── Navbar ── */}
       <LandingNavbar />
 
-      {/* ── 1. CINEMATIC VIDEO HERO ── */}
+      {/* ── 1. CINEMATIC VIDEO HERO BACKGROUND ── */}
       <section id="tong-quan" className="lp-hero">
         <div className="lp-hero__media">
           <video src={VIDEOS.portCorridor} poster={IMAGES.hero} autoPlay muted loop playsInline />
@@ -179,83 +179,89 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── 5. CORPORATE COMMAND CENTER VIDEO SHOWCASE ── */}
-      <section className="lp-section">
-        <div className="lp-container">
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
-              gap: 36,
-              alignItems: 'center'
-            }}
-          >
-            <Reveal>
-              <div>
-                <span className="lp-eyebrow">Trung Tâm Điều Độ Vận Tải Số</span>
-                <h2 className="lp-h2">
-                  Trực Quan Hóa Toàn Bộ <em>Hành Lang Vận Tải</em> Trong Thời Gian Thực
-                </h2>
-                <p className="lp-lead" style={{ marginBottom: 22 }}>
-                  Từ cảng biển nước sâu Cái Mép – Thị Vải, cảng Cát Lái đến các khu công nghiệp
-                  VSIP, Sóng Thần và Nhơn Trạch, mọi phương tiện đều được giám sát tọa độ, tải trọng
-                  và hệ số phát thải Well-to-Wheel liên tục từng giây.
-                </p>
-                <div style={{ display: 'grid', gap: 12, marginBottom: 26 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <ShieldCheck size={18} color="var(--accent-green)" />
-                    <span>
-                      <strong>Kiểm soát hành lang kép:</strong> Cảnh báo sớm lệch tuyến 50m (Vàng)
-                      và 200m (Đỏ) bằng thuật toán không gian PostGIS.
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <PlayCircle size={18} color="var(--accent-green)" />
-                    <span>
-                      <strong>Điều phối Human-in-the-Loop:</strong> Đề xuất lộ trình tránh ùn tắc
-                      khi lợi ích đạt từ 10% trở lên, phê duyệt trực tiếp bởi Điều phối viên.
-                    </span>
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                  <Link to="/giai-phap" className="lp-btn lp-btn--primary lp-btn--sm">
-                    Xem Kiến Trúc Giải Pháp <ArrowRight size={15} />
-                  </Link>
-                  <Link to="/dinh-huong" className="lp-btn lp-btn--outline lp-btn--sm">
-                    Lộ Trình Net-Zero 2030
-                  </Link>
-                </div>
-              </div>
-            </Reveal>
+      {/* ── 5. AMBIENT VIDEO BACKGROUND SECTION: CONTROL TOWER ── */}
+      <section className="lp-bg-video-section">
+        <div className="lp-bg-video-section__media">
+          <video
+            src={VIDEOS.smartRoutingOps}
+            poster={IMAGES.hero}
+            autoPlay
+            muted
+            loop
+            playsInline
+          />
+        </div>
+        <div className="lp-bg-video-section__overlay" />
 
-            <Reveal delay={0.15}>
-              <div className="lp-video-card" style={{ aspectRatio: '16 / 10' }}>
-                <video
-                  src={VIDEOS.smartRoutingOps}
-                  poster={IMAGES.hero}
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  controls
-                />
-                <div className="lp-video-card__overlay" style={{ pointerEvents: 'none' }}>
-                  <span className="lp-video-badge">
-                    <Film size={13} /> LIVE SIMULATION • CCADRO CONTROL TOWER
+        <div className="lp-container lp-subhero__grid">
+          <Reveal>
+            <div>
+              <span className="lp-eyebrow">Trung Tâm Điều Độ Vận Tải Số 24/7</span>
+              <h2 className="lp-h2" style={{ color: '#fff' }}>
+                Trực Quan Hóa Toàn Bộ <em>Hành Lang Vận Tải</em> Trong Thời Gian Thực
+              </h2>
+              <p className="lp-lead" style={{ color: 'rgba(255,255,255,0.82)', marginBottom: 24 }}>
+                Từ cảng biển nước sâu Cái Mép – Thị Vải, cảng Cát Lái đến các khu công nghiệp VSIP,
+                Sóng Thần và Nhơn Trạch, mọi phương tiện đều được giám sát tọa độ, tải trọng và hệ
+                số phát thải Well-to-Wheel liên tục từng giây.
+              </p>
+              <div style={{ display: 'grid', gap: 14, marginBottom: 28 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <ShieldCheck size={18} color="#6ee7b7" />
+                  <span>
+                    <strong>Kiểm soát hành lang kép:</strong> Cảnh báo sớm lệch tuyến 50m (Vàng) và
+                    200m (Đỏ) bằng thuật toán không gian PostGIS.
                   </span>
-                  <div>
-                    <strong style={{ fontSize: '1.05rem', display: 'block' }}>
-                      Mô phỏng Điều độ Cảng biển &amp; Đội xe Điện Hóa
-                    </strong>
-                    <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.75)' }}>
-                      Luồng dữ liệu kết nối trực tiếp với hệ thống GPS Telemetry &amp; GLEC v3
-                      Engine
-                    </span>
-                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <Radio size={18} color="#6ee7b7" />
+                  <span>
+                    <strong>Điều phối Human-in-the-Loop:</strong> Đề xuất lộ trình tránh ùn tắc khi
+                    lợi ích đạt từ 10% trở lên, phê duyệt trực tiếp bởi Điều phối viên.
+                  </span>
                 </div>
               </div>
-            </Reveal>
-          </div>
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                <Link to="/giai-phap" className="lp-btn lp-btn--primary lp-btn--sm">
+                  Xem Kiến Trúc Giải Pháp <ArrowRight size={15} />
+                </Link>
+                <Link to="/dinh-huong" className="lp-btn lp-btn--ghost lp-btn--sm">
+                  Lộ Trình Net-Zero 2030
+                </Link>
+              </div>
+            </div>
+          </Reveal>
+
+          <Reveal delay={0.15}>
+            <div className="lp-live">
+              <div className="lp-live__head">
+                <span>CONTROL TOWER • TELEMETRY SLA</span>
+                <span className="radar-dot" />
+              </div>
+              <div className="lp-live__value">
+                99,94<span className="lp-live__unit">% Uptime</span>
+              </div>
+              <p className="lp-live__sub">Giám sát liên tục 4 hành lang cảng biển trọng điểm</p>
+              <div className="lp-live__rows">
+                <div className="lp-live__row">
+                  <span>Ngưỡng cảnh báo đệm vàng</span>
+                  <strong>50m (PostGIS)</strong>
+                </div>
+                <div className="lp-live__row">
+                  <span>Ngưỡng báo động lệch tuyến đỏ</span>
+                  <strong>200m (3 nhịp GPS)</strong>
+                </div>
+                <div className="lp-live__row">
+                  <span>Lợi ích tối thiểu để tái định tuyến</span>
+                  <strong>&ge; 10% CO2e / ETA</strong>
+                </div>
+                <div className="lp-live__row">
+                  <span>Chuẩn hạch toán phát thải</span>
+                  <strong>GLEC v3 • WTW</strong>
+                </div>
+              </div>
+            </div>
+          </Reveal>
         </div>
       </section>
 
@@ -271,7 +277,7 @@ export default function LandingPage() {
                 </h2>
                 <p className="lp-lead" style={{ textAlign: 'center', margin: '0 auto' }}>
                   Mỗi mục trên thanh điều hướng là một chuyên trang độc lập với dữ liệu, biểu đồ và
-                  video minh họa chuyên biệt cho doanh nghiệp.
+                  nội dung chuyên biệt cho doanh nghiệp.
                 </p>
               </div>
             </div>
@@ -309,7 +315,7 @@ export default function LandingPage() {
                       {item.id === 'thong-ke-carbon' &&
                         'Sổ cái CO2e tiết kiệm thực tế, biểu đồ xu hướng 12 tháng, định mức hành lang (UC13) và công cụ ước tính phát thải trực tuyến.'}
                       {item.id === 'tin-tuc' &&
-                        'Bản tin chiến lược ESG, phóng sự video hiện trường, báo cáo kiểm toán định kỳ và cổng đăng ký tư vấn doanh nghiệp.'}
+                        'Bản tin chiến lược ESG, báo cáo kiểm toán định kỳ, câu hỏi thường gặp và cổng đăng ký tư vấn doanh nghiệp.'}
                     </p>
                   </div>
                   <Link to={item.path} className="lp-link">
@@ -362,15 +368,18 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── 8. CTA BAND ── */}
+      {/* ── 8. CTA BAND WITH VIDEO BACKGROUND ── */}
       <section className="lp-section lp-section--tight">
         <div className="lp-container">
           <Reveal>
             <div className="lp-cta">
-              <img
-                src={IMAGES.evTruck}
-                alt="Electric truck charging at solar depot"
-                loading="lazy"
+              <video
+                src={VIDEOS.evFleetDepot}
+                poster={IMAGES.evTruck}
+                autoPlay
+                muted
+                loop
+                playsInline
               />
               <div>
                 <h2>Sẵn sàng cắt giảm phát thải cho đội xe của bạn?</h2>

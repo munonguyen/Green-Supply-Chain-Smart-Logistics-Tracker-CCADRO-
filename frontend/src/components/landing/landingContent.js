@@ -33,7 +33,8 @@ export const IMAGES = {
 export const VIDEOS = {
   portCorridor: '/videos/landing/port-corridor.mp4',
   evFleetDepot: '/videos/landing/ev-fleet-depot.mp4',
-  smartRoutingOps: '/videos/landing/smart-routing-ops.mp4'
+  smartRoutingOps: '/videos/landing/smart-routing-ops.mp4',
+  carbonHarbor: '/videos/landing/carbon-harbor.mp4'
 };
 
 export const NAV_LINKS = [

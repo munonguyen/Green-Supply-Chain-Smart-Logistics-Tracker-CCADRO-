@@ -1,32 +1,11 @@
 import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { ArrowRight, Calendar, CheckCircle2, Film, PlayCircle, Plus, Send } from 'lucide-react';
+import { ArrowRight, Calendar, CheckCircle2, Plus, Send } from 'lucide-react';
 import '../styles/landing.css';
 import LandingNavbar from '../components/landing/LandingNavbar';
 import LandingFooter from '../components/landing/LandingFooter';
 import Reveal from '../components/ui/Reveal';
 import { FAQS, IMAGES, NEWS, VIDEOS } from '../components/landing/landingContent';
-
-const VIDEO_REPORTS = [
-  {
-    id: 'vid-1',
-    badge: 'PHÓNG SỰ HIỆN TRƯỜNG',
-    title: 'Vận hành hành lang container xanh Cát Lái – VSIP 1',
-    duration: '07s loop • HD',
-    video: VIDEOS.portCorridor,
-    poster: IMAGES.hero,
-    desc: 'Ghi nhận thực tế quy trình điều phối phương tiện ra vào cảng và giám sát lệch tuyến thời gian thực tại trung tâm chỉ huy.'
-  },
-  {
-    id: 'vid-2',
-    badge: 'CHUYỂN ĐỔI NĂNG LƯỢNG',
-    title: 'Tổ hợp trạm sạc đầu kéo điện & điện mặt trời áp mái',
-    duration: '07s loop • HD',
-    video: VIDEOS.evFleetDepot,
-    poster: IMAGES.evTruck,
-    desc: 'Hệ thống nạp điện thông minh ngoài giờ cao điểm giúp giảm 32% lượng phát thải Well-to-Wheel cho đội xe đường dài.'
-  }
-];
 
 export default function NewsPage() {
   const [openFaq, setOpenFaq] = useState(0);
@@ -52,17 +31,10 @@ export default function NewsPage() {
     <div className="lp-root">
       <LandingNavbar />
 
-      {/* ── 1. SUBPAGE VIDEO HERO ── */}
+      {/* ── 1. SUBPAGE AMBIENT VIDEO HERO ── */}
       <section className="lp-subhero">
         <div className="lp-subhero__media">
-          <video
-            src={VIDEOS.evFleetDepot}
-            poster={IMAGES.evTruck}
-            autoPlay
-            muted
-            loop
-            playsInline
-          />
+          <video src={VIDEOS.portCorridor} poster={IMAGES.hero} autoPlay muted loop playsInline />
         </div>
         <div className="lp-subhero__overlay" />
 
@@ -71,37 +43,41 @@ export default function NewsPage() {
             <Reveal>
               <span className="lp-eyebrow">Trung Tâm Truyền Thông &amp; Ấn Phẩm ESG</span>
               <h1 className="lp-h2" style={{ color: '#fff', marginTop: 14 }}>
-                Tin Tức, Phóng Sự Video &amp; <em>Báo Cáo Phát Thải</em> Định Kỳ
+                Tin Tức, Nghiên Cứu Điển Hình &amp; <em>Báo Cáo Phát Thải</em> Định Kỳ
               </h1>
-              <p className="lp-lead" style={{ color: 'rgba(255,255,255,0.8)' }}>
-                Cập nhật các nghiên cứu điển hình về cắt giảm CO2e trên từng hành lang vận tải, tiêu
+              <p className="lp-lead" style={{ color: 'rgba(255,255,255,0.82)' }}>
+                Cập nhật các nghiên cứu thực tiễn về cắt giảm CO2e trên từng hành lang vận tải, tiêu
                 chuẩn quốc tế ISO 14083 mới nhất và hoạt động chuyển đổi xanh cùng đối tác B2B.
               </p>
             </Reveal>
           </div>
 
           <Reveal delay={0.15}>
-            <div className="lp-video-card" style={{ aspectRatio: '16 / 10' }}>
-              <video
-                src={VIDEOS.smartRoutingOps}
-                poster={IMAGES.hero}
-                autoPlay
-                muted
-                loop
-                playsInline
-                controls
-              />
-              <div className="lp-video-card__overlay" style={{ pointerEvents: 'none' }}>
-                <span className="lp-video-badge">
-                  <Film size={13} /> ESG MEDIA BRIEFING • Q4/2026
-                </span>
-                <div>
-                  <strong style={{ fontSize: '1rem', display: 'block' }}>
-                    Báo Cáo Toàn Cảnh Chuỗi Cung Ứng Xanh Quý IV/2026
-                  </strong>
-                  <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.75)' }}>
-                    Tổng hợp số liệu từ hơn 12.450 chuyến hàng đã hoàn tất kiểm kê
-                  </span>
+            <div className="lp-live">
+              <div className="lp-live__head">
+                <span>ESG REPORT • Q4/2026</span>
+                <span className="radar-dot" />
+              </div>
+              <div className="lp-live__value">
+                12.450<span className="lp-live__unit">chuyến</span>
+              </div>
+              <p className="lp-live__sub">Tổng số chuyến hàng đã hoàn tất kiểm kê khí nhà kính</p>
+              <div className="lp-live__rows">
+                <div className="lp-live__row">
+                  <span>Hành lang Cát Lái – VSIP 1</span>
+                  <strong>-23,7% CO2e</strong>
+                </div>
+                <div className="lp-live__row">
+                  <span>Hành lang Cái Mép – Sóng Thần</span>
+                  <strong>-21,4% CO2e</strong>
+                </div>
+                <div className="lp-live__row">
+                  <span>Hành lang Hiệp Phước – Tân Bình</span>
+                  <strong>-26,8% CO2e</strong>
+                </div>
+                <div className="lp-live__row">
+                  <span>Chuẩn công bố thông tin</span>
+                  <strong>GRI &amp; ISO 14083</strong>
                 </div>
               </div>
             </div>
@@ -174,76 +150,8 @@ export default function NewsPage() {
         </div>
       </section>
 
-      {/* ── 3. VIDEO GALLERY SECTION ── */}
+      {/* ── 3. FAQ + CONTACT ── */}
       <section className="lp-section lp-section--alt">
-        <div className="lp-container">
-          <Reveal>
-            <div className="lp-section-head lp-section-head--center">
-              <div>
-                <span className="lp-eyebrow">Thư Viện Video Thực Tế</span>
-                <h2 className="lp-h2">
-                  Tư Liệu Hình Ảnh &amp; <em>Video Vận Hành</em>
-                </h2>
-                <p className="lp-lead" style={{ textAlign: 'center', margin: '0 auto' }}>
-                  Trực quan hóa hoạt động khai thác cảng biển, đội xe điện và trung tâm điều hành
-                  thông minh của CCADRO.
-                </p>
-              </div>
-            </div>
-          </Reveal>
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-              gap: 24
-            }}
-          >
-            {VIDEO_REPORTS.map((item, idx) => (
-              <Reveal key={item.id} delay={idx * 0.1}>
-                <div className="lp-panel" style={{ padding: 18 }}>
-                  <div
-                    className="lp-video-card"
-                    style={{ aspectRatio: '16 / 9', marginBottom: 16 }}
-                  >
-                    <video
-                      src={item.video}
-                      poster={item.poster}
-                      autoPlay
-                      muted
-                      loop
-                      playsInline
-                      controls
-                    />
-                  </div>
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      marginBottom: 8
-                    }}
-                  >
-                    <span className="lp-chip is-active" style={{ cursor: 'default' }}>
-                      <PlayCircle size={13} /> {item.badge}
-                    </span>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                      {item.duration}
-                    </span>
-                  </div>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: 6 }}>
-                    {item.title}
-                  </h3>
-                  <p className="lp-panel__desc">{item.desc}</p>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── 4. FAQ + CONTACT ── */}
-      <section className="lp-section">
         <div className="lp-container">
           <div className="lp-faq-grid">
             {/* Left: FAQ accordion */}
