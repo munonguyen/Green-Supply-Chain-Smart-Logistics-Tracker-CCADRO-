@@ -30,12 +30,18 @@ export const IMAGES = {
   truckRoad: UNSPLASH('photo-1601584115197-04ecc0da31d7')
 };
 
+export const VIDEOS = {
+  portCorridor: '/videos/landing/port-corridor.mp4',
+  evFleetDepot: '/videos/landing/ev-fleet-depot.mp4',
+  smartRoutingOps: '/videos/landing/smart-routing-ops.mp4'
+};
+
 export const NAV_LINKS = [
-  { id: 'tong-quan', label: 'Trang Chủ' },
-  { id: 'dinh-huong', label: 'Định Hướng Net-Zero' },
-  { id: 'giai-phap', label: 'Hệ Sinh Thái Giải Pháp' },
-  { id: 'thong-ke-carbon', label: 'Thống Kê Phát Thải' },
-  { id: 'tin-tuc', label: 'Tin Tức & Báo Cáo' }
+  { id: 'tong-quan', path: '/', label: 'Trang Chủ' },
+  { id: 'dinh-huong', path: '/dinh-huong', label: 'Định Hướng Net-Zero' },
+  { id: 'giai-phap', path: '/giai-phap', label: 'Hệ Sinh Thái Giải Pháp' },
+  { id: 'thong-ke-carbon', path: '/thong-ke-carbon', label: 'Thống Kê Phát Thải' },
+  { id: 'tin-tuc', path: '/tin-tuc', label: 'Tin Tức & Báo Cáo' }
 ];
 
 export const PARTNERS = [

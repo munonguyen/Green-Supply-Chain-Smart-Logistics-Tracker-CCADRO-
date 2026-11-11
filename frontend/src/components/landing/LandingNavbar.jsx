@@ -1,21 +1,22 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import { Lock, Menu, Moon, Sun, X } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { NAV_LINKS } from './landingContent';
-import { useActiveSection, useScrolled } from './useLandingScroll';
+import { useScrolled } from './useLandingScroll';
 
 export default function LandingNavbar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toggleTheme, isDark } = useTheme();
   const { user } = useAuth();
   const scrolled = useScrolled();
-  const active = useActiveSection(NAV_LINKS.map((l) => l.id));
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const solid = scrolled || menuOpen;
+  const isHome = location.pathname === '/';
+  const solid = !isHome || scrolled || menuOpen;
 
   return (
     <>
@@ -24,8 +25,11 @@ export default function LandingNavbar() {
           <button
             type="button"
             className="lp-brand"
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            aria-label="Về đầu trang"
+            onClick={() => {
+              navigate('/');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            aria-label="Về trang chủ"
           >
             <span className="logo-badge">C</span>
             <span>
@@ -38,13 +42,14 @@ export default function LandingNavbar() {
 
           <nav className="lp-nav__links" aria-label="Điều hướng chính">
             {NAV_LINKS.map((link) => (
-              <a
+              <NavLink
                 key={link.id}
-                href={`#${link.id}`}
-                className={`lp-nav__link ${active === link.id ? 'is-active' : ''}`}
+                to={link.path}
+                end={link.path === '/'}
+                className={({ isActive }) => `lp-nav__link ${isActive ? 'is-active' : ''}`}
               >
                 {link.label}
-              </a>
+              </NavLink>
             ))}
           </nav>
 
@@ -89,9 +94,14 @@ export default function LandingNavbar() {
             aria-label="Menu di động"
           >
             {NAV_LINKS.map((link) => (
-              <a key={link.id} href={`#${link.id}`} onClick={() => setMenuOpen(false)}>
+              <NavLink
+                key={link.id}
+                to={link.path}
+                end={link.path === '/'}
+                onClick={() => setMenuOpen(false)}
+              >
                 {link.label}
-              </a>
+              </NavLink>
             ))}
           </motion.nav>
         )}

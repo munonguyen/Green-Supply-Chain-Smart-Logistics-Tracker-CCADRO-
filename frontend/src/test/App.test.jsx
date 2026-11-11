@@ -17,18 +17,19 @@ global.fetch = vi.fn(() =>
 );
 
 describe('CCADRO Frontend App', () => {
-  it('renders sidebar brand and topbar without crashing', () => {
+  it('renders brand and navigation menu links without crashing', () => {
     render(<App />);
     expect(screen.getByText('CCADRO')).toBeInTheDocument();
     expect(screen.getByText('Green Supply Chain')).toBeInTheDocument();
-    expect(screen.getByText('System Overview')).toBeInTheDocument();
-    expect(screen.getByText('Shipment Fleet')).toBeInTheDocument();
+    expect(screen.getAllByText('Trang Chủ')[0]).toBeInTheDocument();
+    expect(screen.getAllByText('Định Hướng Net-Zero')[0]).toBeInTheDocument();
   });
 
-  it('renders public landing page highlights and carbon statistics', () => {
+  it('renders public landing page highlights and dedicated menu links', () => {
     render(<App />);
     expect(screen.getAllByText('Định Hướng Net-Zero')[0]).toBeInTheDocument();
     expect(screen.getAllByText('Hệ Sinh Thái Giải Pháp')[0]).toBeInTheDocument();
     expect(screen.getAllByText('Thống Kê Phát Thải')[0]).toBeInTheDocument();
+    expect(screen.getAllByText('Tin Tức & Báo Cáo')[0]).toBeInTheDocument();
   });
 });

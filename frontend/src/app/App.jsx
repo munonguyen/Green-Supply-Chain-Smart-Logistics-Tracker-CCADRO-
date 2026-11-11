@@ -5,6 +5,10 @@ import { ThemeProvider } from '../context/ThemeContext';
 import Sidebar from '../components/layout/Sidebar';
 import Header from '../components/layout/Header';
 import LandingPage from '../pages/LandingPage';
+import NetZeroPage from '../pages/NetZeroPage';
+import SolutionsPage from '../pages/SolutionsPage';
+import CarbonStatsPage from '../pages/CarbonStatsPage';
+import NewsPage from '../pages/NewsPage';
 import LoginPage from '../pages/LoginPage';
 import DashboardPage from '../pages/DashboardPage';
 import ShipmentsPage from '../pages/ShipmentsPage';
@@ -34,8 +38,12 @@ export default function App() {
       <AuthProvider>
         <BrowserRouter>
           <Routes>
-            {/* 1. Public Corporate Landing Page */}
+            {/* 1. Public Corporate Pages (Separated by Menu) */}
             <Route path="/" element={<LandingPage />} />
+            <Route path="/dinh-huong" element={<NetZeroPage />} />
+            <Route path="/giai-phap" element={<SolutionsPage />} />
+            <Route path="/thong-ke-carbon" element={<CarbonStatsPage />} />
+            <Route path="/tin-tuc" element={<NewsPage />} />
 
             {/* 2. Enterprise Authentication */}
             <Route path="/login" element={<LoginPage />} />

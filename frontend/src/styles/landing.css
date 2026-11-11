@@ -378,12 +378,111 @@
   z-index: -2;
 }
 
-.lp-hero__media img {
+.lp-hero__media img,
+.lp-hero__media video {
   width: 100%;
   height: 100%;
   object-fit: cover;
   object-position: 65% center;
   animation: lp-kenburns 28s ease-in-out infinite alternate;
+}
+
+.lp-video-card {
+  position: relative;
+  border-radius: var(--lp-radius);
+  overflow: hidden;
+  border: 1px solid var(--border-highlight);
+  background: #021009;
+  box-shadow: 0 32px 64px -28px rgba(0, 0, 0, 0.65);
+}
+
+.lp-video-card video {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.lp-video-card__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    0deg,
+    rgba(2, 12, 8, 0.92) 0%,
+    rgba(2, 12, 8, 0.25) 55%,
+    rgba(2, 12, 8, 0.4) 100%
+  );
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 24px;
+  color: #fff;
+}
+
+.lp-video-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(2, 16, 9, 0.72);
+  border: 1px solid rgba(110, 231, 183, 0.35);
+  backdrop-filter: blur(8px);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #a7f3d0;
+}
+
+.lp-subhero {
+  position: relative;
+  padding: 150px 0 88px;
+  color: #fff;
+  overflow: hidden;
+  isolation: isolate;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.lp-subhero__media {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+}
+
+.lp-subhero__media video,
+.lp-subhero__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lp-subhero__overlay {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(2, 12, 8, 0.94) 0%,
+      rgba(2, 12, 8, 0.8) 55%,
+      rgba(2, 12, 8, 0.55) 100%
+    ),
+    linear-gradient(0deg, rgba(2, 12, 8, 0.96) 0%, rgba(2, 12, 8, 0.25) 60%);
+}
+
+.lp-subhero__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
+  gap: 40px;
+  align-items: center;
+}
+
+@media (max-width: 1024px) {
+  .lp-subhero__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .lp-hero__overlay {
