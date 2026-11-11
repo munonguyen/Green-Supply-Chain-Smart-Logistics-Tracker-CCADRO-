@@ -370,7 +370,7 @@ export default function DashboardPage() {
             <div className="stat-label">
               {user?.role === 'SHIPPER' ? 'Vận Đơn Thuộc Mã' : 'Tổng Vận Đơn Giám Sát'}
             </div>
-            <div className="stat-value" style={{ color: '#fff' }}>
+            <div className="stat-value" style={{ color: 'var(--text-main)' }}>
               <CountingNumber value={visibleShipments.length} />
             </div>
             <span style={{ fontSize: '0.74rem', color: '#34d399' }}>
@@ -562,17 +562,19 @@ export default function DashboardPage() {
                 {visibleShipments.map((s) => (
                   <tr key={s.id || s.shipmentCode}>
                     <td>
-                      <code style={{ color: '#38bdf8', fontWeight: 700 }}>
+                      <code style={{ color: 'var(--accent-blue)', fontWeight: 700 }}>
                         {s.shipmentCode || s.code}
                       </code>
                     </td>
                     <td>
-                      <span style={{ fontWeight: 600, color: '#f8fafc' }}>
+                      <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>
                         {s.customerId || s.customerName || 'VINAMILK'}
                       </span>
                     </td>
-                    <td style={{ color: '#cbd5e1' }}>{s.originName || 'Cảng Cát Lái, TP.HCM'}</td>
-                    <td style={{ color: '#cbd5e1' }}>
+                    <td style={{ color: 'var(--text-muted)' }}>
+                      {s.originName || 'Cảng Cát Lái, TP.HCM'}
+                    </td>
+                    <td style={{ color: 'var(--text-muted)' }}>
                       {s.destinationName || 'KCN VSIP 1, Bình Dương'}
                     </td>
                     <td>
@@ -652,11 +654,13 @@ export default function DashboardPage() {
                       </code>
                     </td>
                     <td>
-                      <strong style={{ color: '#fff', letterSpacing: '0.04em' }}>
+                      <strong style={{ color: 'var(--text-main)', letterSpacing: '0.02em' }}>
                         {v.licensePlate || v.plateNumber || '51C-888.99'}
                       </strong>
                     </td>
-                    <td style={{ color: '#cbd5e1' }}>{v.vehicleType || 'HEAVY_TRUCK_EURO5'}</td>
+                    <td style={{ color: 'var(--text-muted)' }}>
+                      {v.vehicleType || 'HEAVY_TRUCK_EURO5'}
+                    </td>
                     <td>
                       <strong>{v.maxPayloadTons || 25.0}</strong> tấn
                     </td>
@@ -701,11 +705,11 @@ export default function DashboardPage() {
                 marginBottom: '12px',
                 padding: '10px 14px',
                 borderRadius: '10px',
-                background: 'rgba(15, 23, 42, 0.55)',
-                border: '1px solid rgba(56, 189, 248, 0.2)'
+                background: 'var(--bg-card-hover)',
+                border: '1px solid var(--border-color)'
               }}
             >
-              <div style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>
+              <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
                 Hệ thống khởi tạo chỉ với <strong>01 tài khoản Root Admin</strong>. Các tài khoản
                 nhân sự nội bộ (<code>DISPATCHER</code>, <code>SAFETY_MANAGER</code>,{' '}
                 <code>DRIVER</code>, <code>ESG_AUDITOR</code>) do Admin trực tiếp tạo và phân quyền;
@@ -749,13 +753,19 @@ export default function DashboardPage() {
                   {accounts.map((acc) => (
                     <tr key={acc.username}>
                       <td>
-                        <code style={{ color: '#38bdf8', fontWeight: 700 }}>@{acc.username}</code>
+                        <code style={{ color: 'var(--accent-blue)', fontWeight: 700 }}>
+                          @{acc.username}
+                        </code>
                       </td>
                       <td>
-                        <strong style={{ color: '#f8fafc' }}>{acc.fullName}</strong>
-                        <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{acc.email}</div>
+                        <strong style={{ color: 'var(--text-main)' }}>{acc.fullName}</strong>
+                        <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                          {acc.email}
+                        </div>
                       </td>
-                      <td style={{ color: '#cbd5e1' }}>{acc.companyName || acc.department}</td>
+                      <td style={{ color: 'var(--text-muted)' }}>
+                        {acc.companyName || acc.department}
+                      </td>
                       <td>
                         <span
                           className={
@@ -767,12 +777,14 @@ export default function DashboardPage() {
                         </span>
                       </td>
                       <td>
-                        <strong style={{ color: '#34d399' }}>
+                        <strong style={{ color: 'var(--accent-green)' }}>
                           {(acc.permissions || []).length}
                         </strong>{' '}
-                        <span style={{ fontSize: '0.74rem', color: '#94a3b8' }}>quyền</span>
+                        <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                          quyền
+                        </span>
                       </td>
-                      <td style={{ fontSize: '0.76rem', color: '#cbd5e1' }}>
+                      <td style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>
                         {acc.createdBy === 'SYSTEM_BOOTSTRAP'
                           ? 'Hệ thống gốc (Root)'
                           : acc.createdBy === 'SELF_REGISTERED'

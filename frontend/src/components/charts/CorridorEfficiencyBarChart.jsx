@@ -81,7 +81,7 @@ export default function CorridorEfficiencyBarChart() {
               }}
             >
               <div>
-                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#f8fafc' }}>
+                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)' }}>
                   {corridor.name}
                 </span>
                 <span

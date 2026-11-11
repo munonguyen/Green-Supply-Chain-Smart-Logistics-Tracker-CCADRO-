@@ -84,7 +84,12 @@ export default function Sidebar() {
           </div>
 
           <div
-            style={{ fontSize: '0.8rem', fontWeight: 700, color: '#f8fafc', marginBottom: '2px' }}
+            style={{
+              fontSize: '0.82rem',
+              fontWeight: 700,
+              color: 'var(--text-main)',
+              marginBottom: '2px'
+            }}
           >
             {user.fullName}
           </div>

@@ -237,32 +237,31 @@ export default function LoginPage() {
 
           <h1
             style={{
-              fontSize: 'clamp(1.85rem, 3.2vw, 2.65rem)',
+              fontSize: 'clamp(1.85rem, 3.1vw, 2.55rem)',
               fontWeight: 800,
-              lineHeight: 1.15,
-              letterSpacing: '-0.025em',
+              lineHeight: 1.24,
+              letterSpacing: '-0.02em',
               marginBottom: 16,
               color: '#fff'
             }}
           >
-            Cổng Đăng Nhập{' '}
-            <span style={{ color: '#6ee7b7', fontStyle: 'italic' }}>Khách Hàng B2B</span> &amp;{' '}
+            Cổng Đăng Nhập <span style={{ color: '#6ee7b7' }}>Khách Hàng B2B</span> &amp;{' '}
             <span style={{ color: '#38bdf8' }}>Hệ Thống Giám Sát Nội Bộ</span>
           </h1>
 
           <p
             style={{
               fontSize: '0.95rem',
-              color: 'rgba(226, 232, 240, 0.84)',
-              lineHeight: 1.65,
+              color: 'rgba(241, 245, 249, 0.9)',
+              lineHeight: 1.7,
               marginBottom: 24
             }}
           >
             Hệ thống tuân thủ cơ chế bảo mật doanh nghiệp nghiêm ngặt: người dùng bên ngoài (Khách
             hàng / Chủ hàng) có thể tự đăng ký tài khoản mới, trong khi{' '}
             <strong>
-              toàn bộ tài khoản thuộc các vai trò nội bộ đều do ADMIN trực tiếp khởi tạo và phân
-              quyền
+              toàn bộ tài khoản thuộc các vai trò nội bộ đều do Quản trị viên (Admin) trực tiếp khởi
+              tạo và phân quyền
             </strong>
             .
           </p>
@@ -274,11 +273,11 @@ export default function LoginPage() {
                 padding: '16px 18px',
                 borderRadius: 16,
                 background:
-                  portalMode === 'CUSTOMER' ? 'rgba(16, 185, 129, 0.16)' : 'rgba(15, 23, 42, 0.65)',
+                  portalMode === 'CUSTOMER' ? 'rgba(16, 185, 129, 0.18)' : 'rgba(15, 23, 42, 0.78)',
                 border:
                   portalMode === 'CUSTOMER'
                     ? '1.5px solid #10b981'
-                    : '1px solid rgba(255,255,255,0.12)',
+                    : '1px solid rgba(255,255,255,0.14)',
                 cursor: 'pointer',
                 transition: 'all 0.2s'
               }}
@@ -286,12 +285,12 @@ export default function LoginPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
                 <Building2 size={19} color="#34d399" />
                 <strong style={{ fontSize: '0.96rem', color: '#fff' }}>
-                  1. Dành Cho User / Khách Hàng Doanh Nghiệp (/customer)
+                  1. Hệ Thống Dành Cho Khách Hàng &amp; Chủ Hàng B2B
                 </strong>
               </div>
-              <p style={{ fontSize: '0.82rem', color: '#cbd5e1', margin: 0, lineHeight: 1.55 }}>
-                Người dùng tự đăng ký tài khoản mới tại trang <strong>Đăng ký</strong> để đặt lịch
-                vận chuyển xanh, theo dõi GPS đơn hàng riêng và tải chứng nhận CO2e ISO 14083.
+              <p style={{ fontSize: '0.86rem', color: '#e2e8f0', margin: 0, lineHeight: 1.6 }}>
+                Khách hàng chủ động đăng ký tài khoản mới để đặt lịch vận chuyển xanh, theo dõi GPS
+                đơn hàng riêng biệt và tải chứng nhận giảm phát thải chuẩn ISO 14083.
               </p>
             </div>
 
@@ -301,11 +300,11 @@ export default function LoginPage() {
                 padding: '16px 18px',
                 borderRadius: 16,
                 background:
-                  portalMode === 'INTERNAL' ? 'rgba(56, 189, 248, 0.16)' : 'rgba(15, 23, 42, 0.65)',
+                  portalMode === 'INTERNAL' ? 'rgba(56, 189, 248, 0.18)' : 'rgba(15, 23, 42, 0.78)',
                 border:
                   portalMode === 'INTERNAL'
                     ? '1.5px solid #38bdf8'
-                    : '1px solid rgba(255,255,255,0.12)',
+                    : '1px solid rgba(255,255,255,0.14)',
                 cursor: 'pointer',
                 transition: 'all 0.2s'
               }}
@@ -313,13 +312,13 @@ export default function LoginPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
                 <Radar size={19} color="#38bdf8" />
                 <strong style={{ fontSize: '0.96rem', color: '#fff' }}>
-                  2. Dành Cho Nhân Sự Giám Sát Nội Bộ (/portal &amp; /governance)
+                  2. Hệ Thống Giám Sát &amp; Điều Hành Nội Bộ
                 </strong>
               </div>
-              <p style={{ fontSize: '0.82rem', color: '#cbd5e1', margin: 0, lineHeight: 1.55 }}>
-                Hệ thống <strong>không tạo sẵn tài khoản mặc định</strong> cho các role nội bộ
-                (Dispatcher, Safety Manager, Driver, ESG Auditor). Quản trị viên (<code>ADMIN</code>
-                ) là người tạo tài khoản, gán vai trò và phân quyền chi tiết cho từng nhân sự.
+              <p style={{ fontSize: '0.86rem', color: '#e2e8f0', margin: 0, lineHeight: 1.6 }}>
+                Hệ thống <strong>không tạo sẵn tài khoản mặc định</strong> cho các vai trò nội bộ
+                (Điều phối viên, Quản lý An toàn, Tài xế, Kiểm toán viên). Quản trị viên (Admin) là
+                người tạo tài khoản và phân quyền chi tiết cho từng nhân sự.
               </p>
             </div>
           </div>
@@ -424,9 +423,9 @@ export default function LoginPage() {
                 ? 'Đăng Nhập Tài Khoản Khách Hàng'
                 : 'Đăng Nhập Hệ Thống Giám Sát Nội Bộ'}
             </h2>
-            <p style={{ fontSize: '0.82rem', color: '#94a3b8', margin: 0 }}>
+            <p style={{ fontSize: '0.84rem', color: '#cbd5e1', margin: 0, lineHeight: 1.55 }}>
               {portalMode === 'CUSTOMER'
-                ? 'Nhập tài khoản khách hàng bạn đã đăng ký để truy cập Cổng Khách Hàng (/customer).'
+                ? 'Nhập thông tin tài khoản khách hàng bạn đã đăng ký để truy cập Cổng Khách Hàng.'
                 : 'Đăng nhập bằng tài khoản Quản trị viên (Admin) hoặc tài khoản nội bộ đã được Admin cấp phát.'}
             </p>
           </div>

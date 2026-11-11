@@ -174,10 +174,10 @@ export default function FleetStatusDonutChart() {
                     }}
                   ></span>
                   <div>
-                    <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#f8fafc' }}>
+                    <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)' }}>
                       {seg.name}
                     </div>
-                    <div style={{ fontSize: '0.7rem', color: '#64748b' }}>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
                       {seg.count} Phương tiện • {seg.percent}%
                     </div>
                   </div>

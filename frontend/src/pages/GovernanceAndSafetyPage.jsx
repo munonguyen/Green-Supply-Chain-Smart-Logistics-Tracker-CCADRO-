@@ -489,9 +489,9 @@ export default function GovernanceAndSafetyPage() {
                     width: '100%',
                     padding: '9px 12px 9px 36px',
                     borderRadius: 8,
-                    background: '#090d16',
-                    border: '1px solid #334155',
-                    color: '#fff',
+                    background: 'var(--bg-primary)',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-main)',
                     fontSize: '0.82rem'
                   }}
                 />
@@ -548,10 +548,10 @@ export default function GovernanceAndSafetyPage() {
                             </td>
 
                             <td>
-                              <strong style={{ color: '#f8fafc', fontSize: '0.84rem' }}>
+                              <strong style={{ color: 'var(--text-main)', fontSize: '0.84rem' }}>
                                 {acc.fullName}
                               </strong>
-                              <div style={{ fontSize: '0.74rem', color: '#cbd5e1' }}>
+                              <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
                                 {acc.department || acc.companyName}
                               </div>
                             </td>
@@ -578,7 +578,7 @@ export default function GovernanceAndSafetyPage() {
                                   style={{
                                     padding: '5px 8px',
                                     borderRadius: 6,
-                                    background: '#090d16',
+                                    background: 'var(--bg-primary)',
                                     border: `1px solid ${acc.color || '#38bdf8'}`,
                                     color: acc.color || '#38bdf8',
                                     fontWeight: 700,
@@ -829,7 +829,7 @@ export default function GovernanceAndSafetyPage() {
                         display: 'block',
                         fontSize: '0.76rem',
                         fontWeight: 700,
-                        color: '#cbd5e1',
+                        color: 'var(--text-muted)',
                         marginBottom: '4px'
                       }}
                     >
@@ -846,9 +846,9 @@ export default function GovernanceAndSafetyPage() {
                         width: '100%',
                         padding: '9px 10px',
                         borderRadius: '7px',
-                        background: '#090d16',
-                        border: '1px solid #334155',
-                        color: '#fff',
+                        background: 'var(--bg-primary)',
+                        border: '1px solid var(--border-color)',
+                        color: 'var(--text-main)',
                         fontSize: '0.84rem'
                       }}
                     />
@@ -860,7 +860,7 @@ export default function GovernanceAndSafetyPage() {
                         display: 'block',
                         fontSize: '0.76rem',
                         fontWeight: 700,
-                        color: '#cbd5e1',
+                        color: 'var(--text-muted)',
                         marginBottom: '4px'
                       }}
                     >
@@ -877,9 +877,9 @@ export default function GovernanceAndSafetyPage() {
                         width: '100%',
                         padding: '9px 10px',
                         borderRadius: '7px',
-                        background: '#090d16',
-                        border: '1px solid #334155',
-                        color: '#fff',
+                        background: 'var(--bg-primary)',
+                        border: '1px solid var(--border-color)',
+                        color: 'var(--text-main)',
                         fontSize: '0.84rem'
                       }}
                     />
@@ -893,7 +893,7 @@ export default function GovernanceAndSafetyPage() {
                         display: 'block',
                         fontSize: '0.76rem',
                         fontWeight: 700,
-                        color: '#cbd5e1',
+                        color: 'var(--text-muted)',
                         marginBottom: '4px'
                       }}
                     >
@@ -909,9 +909,9 @@ export default function GovernanceAndSafetyPage() {
                         width: '100%',
                         padding: '9px 10px',
                         borderRadius: '7px',
-                        background: '#090d16',
-                        border: '1px solid #334155',
-                        color: '#fff',
+                        background: 'var(--bg-primary)',
+                        border: '1px solid var(--border-color)',
+                        color: 'var(--text-main)',
                         fontSize: '0.84rem'
                       }}
                     />
@@ -923,7 +923,7 @@ export default function GovernanceAndSafetyPage() {
                         display: 'block',
                         fontSize: '0.76rem',
                         fontWeight: 700,
-                        color: '#cbd5e1',
+                        color: 'var(--text-muted)',
                         marginBottom: '4px'
                       }}
                     >
@@ -939,9 +939,9 @@ export default function GovernanceAndSafetyPage() {
                         width: '100%',
                         padding: '9px 10px',
                         borderRadius: '7px',
-                        background: '#090d16',
-                        border: '1px solid #334155',
-                        color: '#fff',
+                        background: 'var(--bg-primary)',
+                        border: '1px solid var(--border-color)',
+                        color: 'var(--text-main)',
                         fontSize: '0.84rem'
                       }}
                     />
@@ -955,7 +955,7 @@ export default function GovernanceAndSafetyPage() {
                         display: 'block',
                         fontSize: '0.76rem',
                         fontWeight: 700,
-                        color: '#cbd5e1',
+                        color: 'var(--text-muted)',
                         marginBottom: '4px'
                       }}
                     >
@@ -968,9 +968,9 @@ export default function GovernanceAndSafetyPage() {
                         width: '100%',
                         padding: '9px 10px',
                         borderRadius: '7px',
-                        background: '#090d16',
+                        background: 'var(--bg-primary)',
                         border: '1px solid #10b981',
-                        color: '#34d399',
+                        color: 'var(--accent-green)',
                         fontWeight: 700,
                         fontSize: '0.84rem'
                       }}
@@ -990,7 +990,7 @@ export default function GovernanceAndSafetyPage() {
                         display: 'block',
                         fontSize: '0.76rem',
                         fontWeight: 700,
-                        color: '#cbd5e1',
+                        color: 'var(--text-muted)',
                         marginBottom: '4px'
                       }}
                     >
@@ -1006,9 +1006,9 @@ export default function GovernanceAndSafetyPage() {
                         width: '100%',
                         padding: '9px 10px',
                         borderRadius: '7px',
-                        background: '#090d16',
-                        border: '1px solid #334155',
-                        color: '#fff',
+                        background: 'var(--bg-primary)',
+                        border: '1px solid var(--border-color)',
+                        color: 'var(--text-main)',
                         fontSize: '0.84rem'
                       }}
                     />
@@ -1025,11 +1025,13 @@ export default function GovernanceAndSafetyPage() {
                       marginBottom: 6
                     }}
                   >
-                    <label style={{ fontSize: '0.76rem', fontWeight: 700, color: '#cbd5e1' }}>
+                    <label
+                      style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--text-muted)' }}
+                    >
                       Phân quyền chi tiết cho tài khoản ({newUserForm.permissions.length}/
                       {ALL_SYSTEM_PERMISSIONS.length} quyền được cấp):
                     </label>
-                    <span style={{ fontSize: '0.72rem', color: '#34d399' }}>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--accent-green)' }}>
                       {ENTERPRISE_ROLES[newUserForm.role]?.description}
                     </span>
                   </div>
@@ -1043,8 +1045,8 @@ export default function GovernanceAndSafetyPage() {
                       overflowY: 'auto',
                       padding: 10,
                       borderRadius: 8,
-                      background: '#090d16',
-                      border: '1px solid #1e293b'
+                      background: 'var(--bg-primary)',
+                      border: '1px solid var(--border-color)'
                     }}
                   >
                     {ALL_SYSTEM_PERMISSIONS.map((perm) => {
@@ -1229,7 +1231,7 @@ export default function GovernanceAndSafetyPage() {
                   style={{
                     display: 'block',
                     fontSize: '0.78rem',
-                    color: '#cbd5e1',
+                    color: 'var(--text-muted)',
                     marginBottom: '4px'
                   }}
                 >
@@ -1244,9 +1246,9 @@ export default function GovernanceAndSafetyPage() {
                     width: '100%',
                     padding: '9px',
                     borderRadius: '6px',
-                    background: '#090d16',
-                    border: '1px solid #334155',
-                    color: '#fff'
+                    background: 'var(--bg-primary)',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-main)'
                   }}
                 >
                   <option value="TRAFFIC_BLOCKADE">Phong tỏa giao thông / Tai nạn liên hoàn</option>
@@ -1263,7 +1265,7 @@ export default function GovernanceAndSafetyPage() {
                   style={{
                     display: 'block',
                     fontSize: '0.78rem',
-                    color: '#cbd5e1',
+                    color: 'var(--text-muted)',
                     marginBottom: '4px'
                   }}
                 >
@@ -1279,9 +1281,9 @@ export default function GovernanceAndSafetyPage() {
                     width: '100%',
                     padding: '9px',
                     borderRadius: '6px',
-                    background: '#090d16',
-                    border: '1px solid #334155',
-                    color: '#fff'
+                    background: 'var(--bg-primary)',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-main)'
                   }}
                 />
               </div>

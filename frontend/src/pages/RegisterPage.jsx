@@ -235,30 +235,29 @@ export default function RegisterPage() {
 
           <h1
             style={{
-              fontSize: 'clamp(1.85rem, 3vw, 2.5rem)',
+              fontSize: 'clamp(1.85rem, 3vw, 2.45rem)',
               fontWeight: 800,
-              lineHeight: 1.16,
-              letterSpacing: '-0.025em',
+              lineHeight: 1.24,
+              letterSpacing: '-0.02em',
               marginBottom: 16,
               color: '#fff'
             }}
           >
-            Khởi Tạo Không Gian Quản Trị{' '}
-            <span style={{ color: '#6ee7b7', fontStyle: 'italic' }}>Vận Tải Xanh</span> Dành Riêng
-            Cho Doanh Nghiệp
+            Khởi Tạo Không Gian Quản Trị <span style={{ color: '#6ee7b7' }}>Vận Tải Xanh</span> Dành
+            Riêng Cho Doanh Nghiệp
           </h1>
 
           <p
             style={{
-              fontSize: '0.94rem',
-              color: 'rgba(226, 232, 240, 0.84)',
-              lineHeight: 1.65,
+              fontSize: '0.95rem',
+              color: 'rgba(241, 245, 249, 0.9)',
+              lineHeight: 1.7,
               marginBottom: 24
             }}
           >
             Sau khi đăng ký, doanh nghiệp của bạn được cấp quyền truy cập ngay vào{' '}
-            <strong>Hệ Thống Khách Hàng (/customer)</strong> — tách biệt hoàn toàn với hệ thống điều
-            độ nội bộ, bảo vệ tuyệt đối dữ liệu chuỗi cung ứng và lô hàng.
+            <strong>Cổng Khách Hàng B2B</strong> — tách biệt hoàn toàn với hệ thống điều độ nội bộ,
+            bảo vệ tuyệt đối dữ liệu chuỗi cung ứng và lô hàng.
           </p>
 
           <div style={{ display: 'grid', gap: 14, marginBottom: 24 }}>
