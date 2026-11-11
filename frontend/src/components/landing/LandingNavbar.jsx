@@ -67,11 +67,11 @@ export default function LandingNavbar() {
 
             <button
               type="button"
-              className="lp-btn lp-btn--ghost lp-btn--sm"
+              className="lp-btn lp-btn--nav-register lp-btn--sm"
               onClick={() => navigate('/register')}
               style={{
-                padding: '9px 15px',
-                fontSize: '0.82rem',
+                padding: '9px 16px',
+                fontSize: '0.84rem',
                 whiteSpace: 'nowrap'
               }}
             >

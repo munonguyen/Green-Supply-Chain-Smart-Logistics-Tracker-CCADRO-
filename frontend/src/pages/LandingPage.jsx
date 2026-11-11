@@ -321,21 +321,20 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── 6. DUAL-SYSTEM ARCHITECTURE: CUSTOMER PORTAL VS INTERNAL MONITORING ── */}
+      {/* ── 6. ENTERPRISE B2B VALUE & 24/7 FLEET OPERATIONS ── */}
       <section className="lp-section">
         <div className="lp-container">
           <Reveal>
             <div className="lp-section-head lp-section-head--center">
               <div>
-                <span className="lp-eyebrow">Kiến Trúc Phân Tách Hai Hệ Thống Độc Lập</span>
+                <span className="lp-eyebrow">Trải Nghiệm Dịch Vụ Vận Tải Xanh Toàn Diện</span>
                 <h2 className="lp-h2">
-                  Không Gian Riêng Cho <em>Khách Hàng B2B</em> &amp; Trung Tâm{' '}
-                  <em>Giám Sát Nội Bộ</em>
+                  Giải Pháp Dành Cho <em>Khách Hàng Doanh Nghiệp</em> &amp; Vận Hành{' '}
+                  <em>Đội Xe 24/7</em>
                 </h2>
                 <p className="lp-lead" style={{ textAlign: 'center', margin: '0 auto' }}>
-                  CCADRO vận hành 2 không gian làm việc tách biệt hoàn toàn nhằm bảo mật dữ liệu
-                  chuỗi cung ứng của từng doanh nghiệp và chuẩn hóa quy trình phân quyền quản trị
-                  nội bộ.
+                  Kết nối trực tiếp nhu cầu vận chuyển của doanh nghiệp với mạng lưới điều hành đội
+                  xe xanh tiêu chuẩn quốc tế trên toàn hành lang kinh tế phía Nam.
                 </p>
               </div>
             </div>
@@ -348,7 +347,7 @@ export default function LandingPage() {
               gap: 28
             }}
           >
-            {/* Card 1: Customer System */}
+            {/* Card 1: Customer B2B Portal */}
             <Reveal delay={0.05}>
               <div
                 className="lp-panel"
@@ -376,7 +375,7 @@ export default function LandingPage() {
                       marginBottom: 16
                     }}
                   >
-                    <Building2 size={15} /> HỆ THỐNG DÀNH CHO KHÁCH HÀNG &amp; CHỦ HÀNG
+                    <Building2 size={15} /> DỊCH VỤ KHÁCH HÀNG &amp; ĐỐI TÁC B2B
                   </div>
                   <h3
                     style={{
@@ -389,9 +388,8 @@ export default function LandingPage() {
                     Cổng Khách Hàng Doanh Nghiệp B2B
                   </h3>
                   <p className="lp-panel__desc" style={{ marginBottom: 18 }}>
-                    Dành riêng cho các tập đoàn sản xuất, xuất nhập khẩu và chủ hàng thuê vận
-                    chuyển. Khách hàng có thể chủ động tạo tài khoản mới và chỉ truy cập dữ liệu
-                    thuộc doanh nghiệp của mình.
+                    Đồng hành cùng các tập đoàn sản xuất, xuất nhập khẩu và chuỗi cung ứng lạnh
+                    trong lộ trình cắt giảm phát thải Scope 3.
                   </p>
                   <ul className="lp-sol__list" style={{ marginBottom: 24 }}>
                     <li>
@@ -422,22 +420,22 @@ export default function LandingPage() {
                   <button
                     type="button"
                     className="lp-btn lp-btn--primary lp-btn--sm"
-                    onClick={() => navigate('/customer')}
+                    onClick={() => navigate('/register')}
                   >
-                    Vào Cổng Khách Hàng <ArrowRight size={15} />
+                    <UserPlus size={15} /> Đăng Ký Tài Khoản <ArrowRight size={15} />
                   </button>
                   <button
                     type="button"
                     className="lp-btn lp-btn--outline lp-btn--sm"
-                    onClick={() => navigate('/register')}
+                    onClick={() => navigate('/login')}
                   >
-                    <UserPlus size={15} /> Đăng Ký Tài Khoản Mới
+                    Đăng Nhập Hệ Thống
                   </button>
                 </div>
               </div>
             </Reveal>
 
-            {/* Card 2: Internal Monitoring System */}
+            {/* Card 2: 24/7 Fleet & Route Optimization Assurance */}
             <Reveal delay={0.12}>
               <div
                 className="lp-panel"
@@ -465,7 +463,7 @@ export default function LandingPage() {
                       marginBottom: 16
                     }}
                   >
-                    <Radar size={15} /> HỆ THỐNG GIÁM SÁT &amp; ĐIỀU HÀNH NỘI BỘ
+                    <Radar size={15} /> CAM KẾT AN TOÀN &amp; ĐIỀU ĐỘ THỜI GIAN THỰC
                   </div>
                   <h3
                     style={{
@@ -478,52 +476,42 @@ export default function LandingPage() {
                     Trung Tâm Chỉ Huy &amp; Giám Sát Đội Xe 24/7
                   </h3>
                   <p className="lp-panel__desc" style={{ marginBottom: 18 }}>
-                    Dành cho Quản trị viên, Điều phối viên, Trưởng ban An toàn, Tài xế và Kiểm toán
-                    viên. Tài khoản nội bộ không tạo mặc định mà do Quản trị viên (Admin) trực tiếp
-                    cấp phát và phân quyền.
+                    Đảm bảo độ chính xác giao hàng đúng hẹn 98,6% nhờ công nghệ định tuyến đa tiêu
+                    chí và giám sát hành trình liên tục trên toàn tuyến.
                   </p>
                   <ul className="lp-sol__list" style={{ marginBottom: 24 }}>
                     <li>
                       <CheckCircle2 size={17} />
                       <span>
-                        <strong>Giám sát lệch hành lang 50m / 200m:</strong> Phát hiện tức thì xe đi
-                        chệch lộ trình và phát lệnh cảnh báo khẩn cấp toàn đội xe.
+                        <strong>Giám sát lộ trình độ chính xác cao:</strong> Phát hiện tức thì các
+                        bất thường trên hành trình và điều phối hỗ trợ kỹ thuật 24/7.
                       </span>
                     </li>
                     <li>
                       <CheckCircle2 size={17} />
                       <span>
-                        <strong>Tối ưu tuyến đa tiêu chí &amp; Duyệt đổi tuyến:</strong> Đề xuất lộ
-                        trình thay thế tối ưu phát thải, thời gian và chi phí khi có sự cố giao
-                        thông.
+                        <strong>Tối ưu tuyến đa tiêu chí xanh:</strong> Đề xuất lộ trình thay thế
+                        tối ưu phát thải, thời gian và chi phí khi có sự cố giao thông hoặc thời
+                        tiết.
                       </span>
                     </li>
                     <li>
                       <CheckCircle2 size={17} />
                       <span>
-                        <strong>Quản trị tài khoản &amp; Phân quyền nội bộ (IAM):</strong> Admin
-                        quản lý danh sách tài khoản, cấp quyền chi tiết và kiểm định an toàn trước
-                        xuất bến.
+                        <strong>Kiểm định an toàn kỹ thuật nghiêm ngặt:</strong> 100% phương tiện
+                        được kiểm tra tiêu chuẩn kỹ thuật và niêm phong trước giờ xuất bến.
                       </span>
                     </li>
                   </ul>
                 </div>
 
                 <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                  <button
-                    type="button"
-                    className="lp-btn lp-btn--primary lp-btn--sm"
-                    onClick={() => navigate('/portal')}
-                  >
-                    Vào Hệ Thống Giám Sát Nội Bộ <ArrowRight size={15} />
-                  </button>
-                  <button
-                    type="button"
-                    className="lp-btn lp-btn--outline lp-btn--sm"
-                    onClick={() => navigate('/governance')}
-                  >
-                    <ShieldCheck size={15} /> Quản Trị Tài Khoản &amp; Phân Quyền
-                  </button>
+                  <Link to="/giai-phap" className="lp-btn lp-btn--primary lp-btn--sm">
+                    Khám Phá Giải Pháp <ArrowRight size={15} />
+                  </Link>
+                  <Link to="/thong-ke-carbon" className="lp-btn lp-btn--outline lp-btn--sm">
+                    <ShieldCheck size={15} /> Xem Thống Kê Phát Thải
+                  </Link>
                 </div>
               </div>
             </Reveal>
