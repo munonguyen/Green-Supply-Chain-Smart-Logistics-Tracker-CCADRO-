@@ -23,11 +23,19 @@ import BenchmarkPage from '../pages/BenchmarkPage';
 import GovernanceAndSafetyPage from '../pages/GovernanceAndSafetyPage';
 
 function ConsoleLayout({ children }) {
+  const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
+
   return (
     <div className="app-container">
-      <Sidebar />
+      <Sidebar
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed((v) => !v)}
+      />
       <main className="main-content">
-        <Header />
+        <Header
+          sidebarCollapsed={sidebarCollapsed}
+          onToggleSidebar={() => setSidebarCollapsed((v) => !v)}
+        />
         {children}
       </main>
     </div>

@@ -8,18 +8,23 @@ import {
   BarChart3,
   Bell,
   Building2,
+  Check,
   CheckCircle2,
   Clock,
   Crosshair,
   Download,
   FileCheck2,
+  FileText,
   Gauge,
   LayoutDashboard,
   Leaf,
   LogOut,
+  MapPin,
   Moon,
   Navigation,
   Package,
+  PanelLeftClose,
+  PanelLeftOpen,
   Pause,
   PieChart,
   Play,
@@ -31,7 +36,8 @@ import {
   Thermometer,
   Trash2,
   Truck,
-  UserCheck
+  UserCheck,
+  Zap
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -45,6 +51,13 @@ import DestinationMarker from '../components/map/DestinationMarker';
 import VehicleMarker from '../components/map/VehicleMarker';
 import { MAP_NODES, POWERTRAINS } from '../components/landing/landingContent';
 import { getRealRoadRoute, interpolateRoadPosition } from '../services/roadRoutingService';
+import {
+  HUB_CORRIDOR_DIRECTORY,
+  STANDARD_FLEET_CATALOG,
+  PARETO_ROUTING_MODES,
+  calculateDetailedGlecQuote,
+  buildRouteCheckpoints
+} from '../services/logisticsReferenceData';
 import '../styles/landing.css';
 
 export const USER_SHIPMENTS_STORAGE_KEY = 'ccadro_user_shipments_realtime_v2';
@@ -71,7 +84,6 @@ const NODE_ADDRESSES = {
 
 /**
  * Load only real shipments created by users in the system.
- * Never pre-populate fake shipments for newly registered accounts.
  */
 export function loadStoredUserShipments() {
   try {
@@ -83,7 +95,7 @@ export function loadStoredUserShipments() {
       }
     }
   } catch (_) {
-    // ignore storage errors
+    // ignore
   }
   return [];
 }
@@ -134,9 +146,14 @@ function LogisticsHubMarkers({ map }) {
         iconSize: [28, 28],
         iconAnchor: [14, 14]
       });
+
       const m = L.marker(coords, { icon }).addTo(map);
-      m.bindPopup(
-        `<strong>${node.label} (${node.area})</strong><br/><span style="font-size:11px">${NODE_ADDRESSES[node.id] || ''}</span>`
+      m.bindTooltip(
+        `<div style="font-size:11.5px;font-weight:600;line-height:1.4;">
+          <strong>${node.label}</strong><br/>
+          <span>${NODE_ADDRESSES[node.id] || ''}</span>
+        </div>`,
+        { direction: 'top', offset: [0, -18] }
       );
       return m;
     });
@@ -157,13 +174,15 @@ const SIDEBAR_SECTIONS = [
         id: 'overview',
         label: 'Tổng Quan & Sơ Đồ Thống Kê',
         shortLabel: 'Tổng Quan',
-        icon: LayoutDashboard
+        icon: LayoutDashboard,
+        badge: null
       },
       {
         id: 'tracking',
         label: 'Bản Đồ 3D Giám Sát Real-Time',
         shortLabel: 'Bản Đồ 3D',
-        icon: Navigation
+        icon: Navigation,
+        badge: 'LIVE'
       }
     ]
   },
@@ -172,15 +191,36 @@ const SIDEBAR_SECTIONS = [
     items: [
       {
         id: 'booking',
-        label: 'Đặt Thuê Xe & Tạo Vận Đơn',
+        label: 'Đặt Thuê Xe & Tối Ưu Tuyến (UC05)',
         shortLabel: 'Đặt Thuê Xe',
-        icon: PlusCircle
+        icon: PlusCircle,
+        badge: null
       },
       {
         id: 'orders',
         label: 'Quản Lý Vận Đơn & Hợp Đồng',
         shortLabel: 'Quản Lý Đơn',
-        icon: Package
+        icon: Package,
+        badge: 'count'
+      }
+    ]
+  },
+  {
+    group: 'HẠ TẦNG & DANH MỤC LOGISTICS',
+    items: [
+      {
+        id: 'hubs',
+        label: 'Danh Mục Cảng & Trạm Sạc Xanh',
+        shortLabel: 'Hạ Tầng Cảng',
+        icon: MapPin,
+        badge: '7 HUB'
+      },
+      {
+        id: 'fleet',
+        label: 'Danh Mục Đội Xe & Chuẩn GLEC',
+        shortLabel: 'Đội Xe Chuẩn',
+        icon: Truck,
+        badge: null
       }
     ]
   },
@@ -189,15 +229,17 @@ const SIDEBAR_SECTIONS = [
     items: [
       {
         id: 'carbon',
-        label: 'Sổ Cái CO2e & Chứng Nhận ePOD',
+        label: 'Sổ Cái CO2e & Chứng Nhận ISO 14083',
         shortLabel: 'Sổ Cái CO2e',
-        icon: FileCheck2
+        icon: FileCheck2,
+        badge: null
       },
       {
         id: 'profile',
         label: 'Hồ Sơ Doanh Nghiệp & Cảnh Báo',
         shortLabel: 'Hồ Sơ B2B',
-        icon: Building2
+        icon: Building2,
+        badge: null
       }
     ]
   }
@@ -210,14 +252,16 @@ export default function CustomerPortalPage() {
   const mapInstanceRef = useRef(null);
 
   const [activeTab, setActiveTab] = useState('overview');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [allShipments, setAllShipments] = useState(() => loadStoredUserShipments());
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [selectedCode, setSelectedCode] = useState(null);
   const [selectedCertificate, setSelectedCertificate] = useState(null);
+  const [selectedContractModal, setSelectedContractModal] = useState(null);
   const [bookingSuccess, setBookingSuccess] = useState(null);
   const [isLiveSim, setIsLiveSim] = useState(true);
-  const [simSpeed, setSimSpeed] = useState(1); // 1 = Real-time 1x (Khớp thực tế), 2 = 2x, 5 = 5x, 10 = 10x, 0 = Tạm dừng
+  const [simSpeed, setSimSpeed] = useState(1); // 1 = Real-time 1x (Khớp thực tế ~52 km/h), 2 = 2x, 5 = 5x, 10 = 10x, 0 = Tạm dừng
   const [followVehicle, setFollowVehicle] = useState(false);
   const [showNotifPanel, setShowNotifPanel] = useState(false);
 
@@ -228,9 +272,10 @@ export default function CustomerPortalPage() {
     cargoType: 'Chuỗi lạnh tiêu chuẩn (-18°C)',
     cargoWeightTons: 16,
     powertrainId: 'ev',
+    paretoModeId: 'PARETO_BALANCED',
     pickupDate: new Date().toISOString().slice(0, 10),
     pickupTime: '08:30',
-    notes: 'Ưu tiên lộ trình xanh tránh ùn tắc cầu Phú Mỹ, yêu cầu duy trì nhiệt độ thùng lạnh.'
+    notes: 'Ưu tiên lộ trình xanh tránh ùn tắc cầu Phú Mỹ, duy trì nhiệt độ thùng đông lạnh -18°C.'
   });
 
   // Notification preferences state
@@ -280,12 +325,13 @@ export default function CustomerPortalPage() {
         s.shipmentCode.toLowerCase().includes(q) ||
         s.originName.toLowerCase().includes(q) ||
         s.destinationName.toLowerCase().includes(q) ||
-        s.statusLabel.toLowerCase().includes(q) ||
-        s.licensePlate.toLowerCase().includes(q)
+        s.licensePlate.toLowerCase().includes(q) ||
+        s.vehicleType.toLowerCase().includes(q)
       );
     });
-  }, [userOwnShipments, searchQuery, statusFilter]);
+  }, [userOwnShipments, statusFilter, searchQuery]);
 
+  // Active shipment currently selected for tracking inspection
   const activeShipment = useMemo(() => {
     if (userOwnShipments.length === 0) return null;
     return (
@@ -299,7 +345,7 @@ export default function CustomerPortalPage() {
     const hasInTransit = userOwnShipments.some((s) => s.status === 'IN_TRANSIT');
     if (!hasInTransit) return undefined;
 
-    const intervalMs = 2000; // 2 seconds per heartbeat
+    const intervalMs = 2000; // 2 seconds per GPS heartbeat
     const dtSeconds = intervalMs / 1000;
 
     const timer = setInterval(() => {
@@ -312,7 +358,7 @@ export default function CustomerPortalPage() {
           const distKm = Number(s.distanceKm) || 28.9;
           const currentSpeed = Number(s.speedKmh) || 52;
 
-          // Natural speed variation (e.g. 48 - 58 km/h depending on traffic conditions)
+          // Natural speed variation (e.g. 48 - 58 km/h depending on road conditions)
           const speedDelta = (Math.random() - 0.48) * 1.8;
           const nextSpeed = Math.round(Math.max(42, Math.min(64, currentSpeed + speedDelta)));
 
@@ -399,49 +445,53 @@ export default function CustomerPortalPage() {
     return interpolateRoadPosition(activeShipmentWaypoints, activeShipment.progress || 0);
   }, [activeShipment, activeShipmentWaypoints]);
 
+  // Highway Checkpoints for active shipment
+  const activeCheckpoints = useMemo(() => {
+    if (!activeShipment) return [];
+    return buildRouteCheckpoints(
+      activeShipment.originId,
+      activeShipment.destinationId,
+      activeShipment.originName,
+      activeShipment.destinationName,
+      activeShipment.distanceKm,
+      activeShipment.progress
+    );
+  }, [activeShipment]);
+
   useEffect(() => {
     if (followVehicle && mapInstanceRef.current && activeShipment) {
       mapInstanceRef.current.panTo(activeVehiclePosition, { animate: true, duration: 0.8 });
     }
   }, [followVehicle, activeVehiclePosition, activeShipment]);
 
-  // Live quote calculation for Booking tab with authentic road network
+  // Live scientific quote calculation for Booking tab (GLEC v3.0 & Pareto UC05)
   const bookingQuote = useMemo(() => {
     const originNode = MAP_NODES.find((n) => n.id === bookingForm.originId) || MAP_NODES[3];
     const destNode = MAP_NODES.find((n) => n.id === bookingForm.destinationId) || MAP_NODES[0];
     const powertrain = POWERTRAINS.find((p) => p.id === bookingForm.powertrainId) || POWERTRAINS[0];
+    const fleetConfig =
+      STANDARD_FLEET_CATALOG.find((f) => f.powertrainId === bookingForm.powertrainId) ||
+      STANDARD_FLEET_CATALOG[0];
 
     const originCoords = NODE_COORDINATES[originNode.id] || [10.7623, 106.7824];
     const destCoords = NODE_COORDINATES[destNode.id] || [10.9242, 106.7145];
-    const realRoute = getRealRoadRoute(originNode.id, destNode.id);
-    const previewWaypoints = realRoute.points;
-    const distanceKm = realRoute.distanceKm;
-    const durationMinutes = realRoute.durationMinutes;
-    const weight = Number(bookingForm.cargoWeightTons) || 12;
 
-    const baselineCo2Kg = Math.round(distanceKm * weight * 0.108 * 10) / 10;
-    const reductionRatio = 0.08 + powertrain.reduction;
-    const actualCo2Kg = Math.round(baselineCo2Kg * (1 - reductionRatio) * 10) / 10;
-    const savedCo2Kg = Math.round((baselineCo2Kg - actualCo2Kg) * 10) / 10;
-    const reductionPct = Math.round(reductionRatio * 1000) / 10;
-    const etaMinutes = durationMinutes || Math.max(20, Math.round((distanceKm / 52) * 60));
-    const estimatedCostVnd = Math.round((distanceKm * 28500 + weight * 95000) / 1000) * 1000;
+    const glecQuote = calculateDetailedGlecQuote({
+      originId: originNode.id,
+      destinationId: destNode.id,
+      cargoWeightTons: bookingForm.cargoWeightTons,
+      powertrainId: bookingForm.powertrainId,
+      paretoModeId: bookingForm.paretoModeId
+    });
 
     return {
       originNode,
       destNode,
       originCoords,
       destCoords,
-      previewWaypoints,
       powertrain,
-      distanceKm,
-      durationMinutes,
-      baselineCo2Kg,
-      actualCo2Kg,
-      savedCo2Kg,
-      reductionPct,
-      etaMinutes,
-      estimatedCostVnd
+      fleetConfig,
+      ...glecQuote
     };
   }, [bookingForm]);
 
@@ -521,7 +571,7 @@ export default function CustomerPortalPage() {
       licensePlate,
       status: 'IN_TRANSIT',
       statusLabel: 'Đang di chuyển trên hành lang xanh 3D',
-      currentLocation: `Xuất phát từ ${bookingQuote.originNode.label}`,
+      currentLocation: `Cổng xuất bến ${bookingQuote.originNode.label}`,
       speedKmh: 52,
       initialEtaMinutes: bookingQuote.etaMinutes,
       etaMinutes: bookingQuote.etaMinutes,
@@ -530,6 +580,10 @@ export default function CustomerPortalPage() {
       actualCo2Kg: bookingQuote.actualCo2Kg,
       co2SavedKg: bookingQuote.savedCo2Kg,
       co2ReductionPct: bookingQuote.reductionPct,
+      wttCo2Kg: bookingQuote.wttCo2Kg,
+      ttwCo2Kg: bookingQuote.ttwCo2Kg,
+      energyConsumed: bookingQuote.energyConsumed,
+      energyUnit: bookingQuote.energyUnit,
       estimatedCostVnd: bookingQuote.estimatedCostVnd,
       progress: 0.0,
       traveledKm: 0.0,
@@ -541,6 +595,7 @@ export default function CustomerPortalPage() {
       pickupDate: bookingForm.pickupDate,
       pickupTime: bookingForm.pickupTime,
       notes: bookingForm.notes,
+      paretoMode: bookingForm.paretoModeId,
       createdAt: new Date().toLocaleString('vi-VN')
     };
 
@@ -556,7 +611,7 @@ export default function CustomerPortalPage() {
         weightTons: Number(bookingForm.cargoWeightTons)
       });
     } catch (_) {
-      // Lưu đồng bộ vào bộ nhớ trình duyệt để hoạt động thời gian thực
+      // Local sync
     }
 
     const updated = [newOrder, ...allShipments];
@@ -565,7 +620,7 @@ export default function CustomerPortalPage() {
 
     setSelectedCode(newCode);
     setBookingSuccess(
-      `Đã đặt thuê xe & khởi tạo vận đơn ${newCode} thành công! Xe ${licensePlate} đã bắt đầu di chuyển trên bản đồ 3D (tiết kiệm ${bookingQuote.savedCo2Kg} kg CO2e).`
+      `Đã đặt thuê xe & khởi tạo vận đơn ${newCode} thành công! Xe ${licensePlate} đã sẵn sàng xuất bến tại ${bookingQuote.originNode.label} (tiết kiệm ${bookingQuote.savedCo2Kg} kg CO2e).`
     );
     setActiveTab('tracking');
   };
@@ -659,11 +714,11 @@ export default function CustomerPortalPage() {
       }}
     >
       {/* ══════════════════════════════════════════════════════════════════
-          1. DEDICATED CUSTOMER B2B SIDEBAR
+          1. COLLAPSIBLE CUSTOMER B2B SIDEBAR (THU GỌN / MỞ RỘNG LINH HOẠT)
       ══════════════════════════════════════════════════════════════════ */}
       <aside
         style={{
-          width: 276,
+          width: isSidebarCollapsed ? 78 : 280,
           flexShrink: 0,
           background: isDark ? '#061611' : '#ffffff',
           borderRight: isDark
@@ -674,70 +729,154 @@ export default function CustomerPortalPage() {
           position: 'sticky',
           top: 0,
           height: '100vh',
-          zIndex: 35
+          zIndex: 35,
+          transition: 'width 0.25s cubic-bezier(0.22, 1, 0.36, 1)'
         }}
       >
         {/* Sidebar Brand Header */}
         <div
           style={{
-            padding: '20px 18px 16px',
+            padding: isSidebarCollapsed ? '20px 10px 16px' : '20px 18px 16px',
             borderBottom: isDark
               ? '1px solid rgba(255,255,255,0.06)'
-              : '1px solid rgba(15,23,42,0.06)'
+              : '1px solid rgba(15,23,42,0.06)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 12
           }}
         >
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'inherit',
-              cursor: 'pointer',
-              padding: 0,
-              textAlign: 'left'
-            }}
-          >
-            <CcadroLogo size={38} showText title="CCADRO B2B" subtitle="HỆ THỐNG KHÁCH HÀNG" />
-          </button>
-
-          {/* Active Partner Workspace Card */}
           <div
             style={{
-              marginTop: 14,
-              padding: '10px 12px',
-              borderRadius: 12,
-              background: isDark ? 'rgba(16, 185, 129, 0.1)' : 'rgba(16, 185, 129, 0.08)',
-              border: '1px solid rgba(16, 185, 129, 0.28)'
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: isSidebarCollapsed ? 'center' : 'space-between'
             }}
           >
+            <button
+              type="button"
+              onClick={() => navigate('/')}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'inherit',
+                cursor: 'pointer',
+                padding: 0,
+                textAlign: 'left',
+                display: 'inline-flex',
+                alignItems: 'center'
+              }}
+              title="Về trang chủ CCADRO"
+            >
+              <CcadroLogo
+                size={36}
+                showText={!isSidebarCollapsed}
+                title="CCADRO B2B"
+                subtitle="HỆ THỐNG KHÁCH HÀNG"
+              />
+            </button>
+
+            {!isSidebarCollapsed && (
+              <button
+                type="button"
+                onClick={() => setIsSidebarCollapsed(true)}
+                title="Thu gọn thanh bên"
+                style={{
+                  background: 'rgba(148, 163, 184, 0.12)',
+                  border: '1px solid rgba(148, 163, 184, 0.2)',
+                  color: 'inherit',
+                  borderRadius: 8,
+                  width: 30,
+                  height: 30,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer'
+                }}
+              >
+                <PanelLeftClose size={15} />
+              </button>
+            )}
+          </div>
+
+          {/* Toggle Expand button when collapsed */}
+          {isSidebarCollapsed && (
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <button
+                type="button"
+                onClick={() => setIsSidebarCollapsed(false)}
+                title="Mở rộng thanh bên"
+                style={{
+                  background: 'rgba(16, 185, 129, 0.14)',
+                  border: '1px solid rgba(16, 185, 129, 0.35)',
+                  color: '#10b981',
+                  borderRadius: 8,
+                  width: 34,
+                  height: 34,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer'
+                }}
+              >
+                <PanelLeftOpen size={16} />
+              </button>
+            </div>
+          )}
+
+          {/* Active Partner Workspace Card */}
+          {!isSidebarCollapsed ? (
             <div
               style={{
+                padding: '10px 12px',
+                borderRadius: 12,
+                background: isDark ? 'rgba(16, 185, 129, 0.1)' : 'rgba(16, 185, 129, 0.08)',
+                border: '1px solid rgba(16, 185, 129, 0.28)'
+              }}
+            >
+              <div
+                style={{
+                  fontSize: '0.68rem',
+                  fontWeight: 800,
+                  color: '#10b981',
+                  letterSpacing: '0.05em',
+                  textTransform: 'uppercase'
+                }}
+              >
+                ● MÃ ĐỐI TÁC: {user?.customerId || 'B2B_PARTNER'}
+              </div>
+              <div
+                style={{
+                  fontSize: '0.84rem',
+                  fontWeight: 800,
+                  marginTop: 2,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
+                }}
+              >
+                {user?.companyName || user?.fullName || 'Doanh Nghiệp B2B'}
+              </div>
+              <div style={{ fontSize: '0.72rem', opacity: 0.72 }}>
+                Tài khoản: <code>@{user?.username || 'user'}</code>
+              </div>
+            </div>
+          ) : (
+            <div
+              style={{
+                textAlign: 'center',
+                padding: '6px 4px',
+                borderRadius: 8,
+                background: isDark ? 'rgba(16, 185, 129, 0.1)' : 'rgba(16, 185, 129, 0.08)',
+                border: '1px solid rgba(16, 185, 129, 0.28)',
                 fontSize: '0.68rem',
                 fontWeight: 800,
-                color: '#10b981',
-                letterSpacing: '0.05em',
-                textTransform: 'uppercase'
+                color: '#10b981'
               }}
+              title={`Mã đối tác: ${user?.customerId || 'B2B'} (${user?.companyName || user?.fullName})`}
             >
-              ● MÃ ĐỐI TÁC: {user?.customerId || 'B2B_PARTNER'}
+              B2B
             </div>
-            <div
-              style={{
-                fontSize: '0.84rem',
-                fontWeight: 800,
-                marginTop: 2,
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis'
-              }}
-            >
-              {user?.companyName || user?.fullName || 'Doanh Nghiệp B2B'}
-            </div>
-            <div style={{ fontSize: '0.72rem', opacity: 0.72 }}>
-              Tài khoản: <code>@{user?.username || 'user'}</code>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Sidebar Navigation Groups */}
@@ -745,26 +884,28 @@ export default function CustomerPortalPage() {
           style={{
             flex: 1,
             overflowY: 'auto',
-            padding: '14px 12px',
+            padding: isSidebarCollapsed ? '12px 8px' : '14px 12px',
             display: 'flex',
             flexDirection: 'column',
-            gap: 16
+            gap: 14
           }}
         >
           {SIDEBAR_SECTIONS.map((section) => (
             <div key={section.group}>
-              <div
-                style={{
-                  fontSize: '0.66rem',
-                  fontWeight: 800,
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  opacity: 0.55,
-                  padding: '0 10px 6px'
-                }}
-              >
-                {section.group}
-              </div>
+              {!isSidebarCollapsed && (
+                <div
+                  style={{
+                    fontSize: '0.65rem',
+                    fontWeight: 800,
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    opacity: 0.55,
+                    padding: '0 10px 6px'
+                  }}
+                >
+                  {section.group}
+                </div>
+              )}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {section.items.map((item) => {
                   const Icon = item.icon;
@@ -774,13 +915,14 @@ export default function CustomerPortalPage() {
                       key={item.id}
                       type="button"
                       onClick={() => setActiveTab(item.id)}
+                      title={isSidebarCollapsed ? item.label : undefined}
                       style={{
                         width: '100%',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'space-between',
+                        justifyContent: isSidebarCollapsed ? 'center' : 'space-between',
                         gap: 10,
-                        padding: '10px 12px',
+                        padding: isSidebarCollapsed ? '11px 0' : '10px 12px',
                         borderRadius: 11,
                         border: active
                           ? '1px solid rgba(16, 185, 129, 0.45)'
@@ -796,38 +938,70 @@ export default function CustomerPortalPage() {
                         transition: 'all 0.18s'
                       }}
                     >
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
-                        <Icon size={17} />
-                        <span>{item.label}</span>
+                      <span
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 10,
+                          minWidth: 0
+                        }}
+                      >
+                        <Icon size={18} style={{ flexShrink: 0 }} />
+                        {!isSidebarCollapsed && (
+                          <span
+                            style={{
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis'
+                            }}
+                          >
+                            {item.label}
+                          </span>
+                        )}
                       </span>
 
-                      {item.id === 'orders' && (
-                        <span
-                          style={{
-                            fontSize: '0.7rem',
-                            fontWeight: 800,
-                            padding: '1px 7px',
-                            borderRadius: 999,
-                            background: 'rgba(16, 185, 129, 0.18)',
-                            color: '#10b981'
-                          }}
-                        >
-                          {kpiStats.totalOrders}
-                        </span>
-                      )}
-                      {item.id === 'tracking' && kpiStats.inTransitCount > 0 && (
-                        <span
-                          style={{
-                            fontSize: '0.68rem',
-                            fontWeight: 800,
-                            padding: '1px 7px',
-                            borderRadius: 999,
-                            background: 'rgba(56, 189, 248, 0.2)',
-                            color: '#38bdf8'
-                          }}
-                        >
-                          {kpiStats.inTransitCount} LIVE
-                        </span>
+                      {!isSidebarCollapsed && (
+                        <>
+                          {item.id === 'orders' && (
+                            <span
+                              style={{
+                                fontSize: '0.7rem',
+                                fontWeight: 800,
+                                padding: '1px 7px',
+                                borderRadius: 999,
+                                background: 'rgba(16, 185, 129, 0.18)',
+                                color: '#10b981'
+                              }}
+                            >
+                              {kpiStats.totalOrders}
+                            </span>
+                          )}
+                          {item.id === 'tracking' && kpiStats.inTransitCount > 0 && (
+                            <span
+                              style={{
+                                fontSize: '0.68rem',
+                                fontWeight: 800,
+                                padding: '1px 7px',
+                                borderRadius: 999,
+                                background: 'rgba(56, 189, 248, 0.2)',
+                                color: '#38bdf8'
+                              }}
+                            >
+                              {kpiStats.inTransitCount} LIVE
+                            </span>
+                          )}
+                          {item.id === 'hubs' && (
+                            <span
+                              style={{
+                                fontSize: '0.68rem',
+                                fontWeight: 700,
+                                opacity: 0.65
+                              }}
+                            >
+                              7 HUB
+                            </span>
+                          )}
+                        </>
                       )}
                     </button>
                   );
@@ -840,7 +1014,7 @@ export default function CustomerPortalPage() {
         {/* Sidebar Bottom Real-time Summary & Logout */}
         <div
           style={{
-            padding: '14px 14px 18px',
+            padding: isSidebarCollapsed ? '12px 8px 16px' : '14px 14px 18px',
             borderTop: isDark
               ? '1px solid rgba(255,255,255,0.06)'
               : '1px solid rgba(15,23,42,0.06)',
@@ -849,34 +1023,44 @@ export default function CustomerPortalPage() {
             gap: 10
           }}
         >
-          <div
-            style={{
-              padding: '10px 12px',
-              borderRadius: 11,
-              background: subtleBg,
-              fontSize: '0.75rem'
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-              <span style={{ opacity: 0.75 }}>Trạng thái dữ liệu:</span>
-              <strong style={{ color: '#10b981' }}>● Real-time</strong>
+          {!isSidebarCollapsed ? (
+            <div
+              style={{
+                padding: '10px 12px',
+                borderRadius: 11,
+                background: subtleBg,
+                fontSize: '0.75rem'
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                <span style={{ opacity: 0.75 }}>Trạng thái dữ liệu:</span>
+                <strong style={{ color: '#10b981' }}>● Real-time</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ opacity: 0.75 }}>Đơn đã thuê của bạn:</span>
+                <strong>{kpiStats.totalOrders} đơn</strong>
+              </div>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ opacity: 0.75 }}>Đơn đã thuê của bạn:</span>
-              <strong>{kpiStats.totalOrders} đơn</strong>
+          ) : (
+            <div
+              style={{ textAlign: 'center', fontSize: '0.7rem', color: '#10b981', fontWeight: 800 }}
+              title="Dữ liệu kết nối trực tiếp Real-Time"
+            >
+              ● LIVE
             </div>
-          </div>
+          )}
 
           <button
             type="button"
             onClick={handleSignOut}
+            title={isSidebarCollapsed ? 'Đăng xuất tài khoản' : undefined}
             style={{
               width: '100%',
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: 8,
-              padding: '9px 14px',
+              padding: isSidebarCollapsed ? '9px 0' : '9px 14px',
               borderRadius: 10,
               border: '1px solid rgba(239, 68, 68, 0.35)',
               background: 'rgba(239, 68, 68, 0.1)',
@@ -886,13 +1070,14 @@ export default function CustomerPortalPage() {
               cursor: 'pointer'
             }}
           >
-            <LogOut size={15} /> Đăng Xuất Tài Khoản
+            <LogOut size={15} />
+            {!isSidebarCollapsed && <span>Đăng Xuất Tài Khoản</span>}
           </button>
         </div>
       </aside>
 
       {/* ══════════════════════════════════════════════════════════════════
-          2. MAIN WORKSPACE (TOP HEADER NAVIGATION + CONTENT)
+          2. MAIN WORKSPACE (TOP NAVIGATION BAR + COMPONENT VIEWS)
       ══════════════════════════════════════════════════════════════════ */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         {/* ── Top Header Navigation Bar ── */}
@@ -901,12 +1086,12 @@ export default function CustomerPortalPage() {
             position: 'sticky',
             top: 0,
             zIndex: 30,
-            background: isDark ? 'rgba(6, 22, 17, 0.92)' : 'rgba(255, 255, 255, 0.95)',
+            background: isDark ? 'rgba(6, 22, 17, 0.94)' : 'rgba(255, 255, 255, 0.96)',
             backdropFilter: 'blur(16px)',
             borderBottom: isDark
               ? '1px solid rgba(110, 231, 183, 0.14)'
               : '1px solid rgba(15, 23, 42, 0.08)',
-            padding: '12px 26px',
+            padding: '12px 24px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -914,27 +1099,49 @@ export default function CustomerPortalPage() {
             flexWrap: 'wrap'
           }}
         >
-          {/* Left: Current Module Breadcrumb */}
-          <div>
-            <div
+          {/* Left: Collapse Toggle + Breadcrumb */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <button
+              type="button"
+              onClick={() => setIsSidebarCollapsed((v) => !v)}
+              title={isSidebarCollapsed ? 'Mở rộng menu' : 'Thu gọn menu'}
               style={{
-                display: 'flex',
+                width: 36,
+                height: 36,
+                borderRadius: 9,
+                border: '1px solid rgba(148, 163, 184, 0.24)',
+                background: subtleBg,
+                color: 'inherit',
+                display: 'inline-flex',
                 alignItems: 'center',
-                gap: 8,
-                fontSize: '0.72rem',
-                fontWeight: 700,
-                color: '#10b981',
-                textTransform: 'uppercase',
-                letterSpacing: '0.06em'
+                justifyContent: 'center',
+                cursor: 'pointer'
               }}
             >
-              <span>CỔNG KHÁCH HÀNG B2B</span>
-              <span>/</span>
-              <span>{currentNavMeta.shortLabel}</span>
+              {isSidebarCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+            </button>
+
+            <div>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                  color: '#10b981',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em'
+                }}
+              >
+                <span>CỔNG KHÁCH HÀNG B2B</span>
+                <span>/</span>
+                <span>{currentNavMeta.shortLabel}</span>
+              </div>
+              <h1 style={{ fontSize: '1.18rem', fontWeight: 800, margin: '2px 0 0' }}>
+                {currentNavMeta.label}
+              </h1>
             </div>
-            <h1 style={{ fontSize: '1.15rem', fontWeight: 800, margin: '2px 0 0' }}>
-              {currentNavMeta.label}
-            </h1>
           </div>
 
           {/* Center: Quick Top Navigation Pills */}
@@ -943,7 +1150,7 @@ export default function CustomerPortalPage() {
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 6,
+              gap: 4,
               padding: 4,
               borderRadius: 999,
               background: isDark ? 'rgba(15, 23, 42, 0.65)' : '#f1f5f9',
@@ -965,14 +1172,14 @@ export default function CustomerPortalPage() {
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: 6,
-                    padding: '6px 13px',
+                    padding: '6px 12px',
                     borderRadius: 999,
                     border: 'none',
                     background: active
                       ? 'linear-gradient(135deg, #10b981, #059669)'
                       : 'transparent',
                     color: active ? '#042f2e' : 'inherit',
-                    fontSize: '0.78rem',
+                    fontSize: '0.76rem',
                     fontWeight: active ? 800 : 600,
                     cursor: 'pointer',
                     transition: 'all 0.18s'
@@ -1182,11 +1389,11 @@ export default function CustomerPortalPage() {
             </div>
           )}
 
-          {/* ── 4 REAL-TIME KPI CARDS (100% FROM USER'S ACTUAL SHIPMENTS) ── */}
+          {/* ── 4 REAL-TIME KPI CARDS (100% TỪ VẬN ĐƠN THỰC CỦA TÀI KHOẢN) ── */}
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(215px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
               gap: 16,
               marginBottom: 24
             }}
@@ -1199,7 +1406,7 @@ export default function CustomerPortalPage() {
                 unit: 'đơn hàng',
                 sub:
                   kpiStats.totalOrders === 0
-                    ? 'Tài khoản mới • Chưa đặt chuyến nào'
+                    ? 'Tài khoản mới • Chưa phát sinh đơn'
                     : `Tài khoản @${user?.username} khởi tạo`,
                 icon: Package,
                 color: '#10b981'
@@ -1224,7 +1431,7 @@ export default function CustomerPortalPage() {
                 sub:
                   kpiStats.totalSavedCo2 === 0
                     ? 'Sẽ cộng dồn ngay khi đặt chuyến'
-                    : 'Tính theo chuẩn GLEC v3 WTW',
+                    : 'Hạch toán theo chuẩn GLEC v3 WTW',
                 icon: Leaf,
                 color: '#34d399'
               },
@@ -1501,7 +1708,7 @@ export default function CustomerPortalPage() {
                                 marginTop: 2
                               }}
                             >
-                              <span>Thực tế: {s.actualCo2Kg} kg</span>
+                              <span>Thực tế WTW: {s.actualCo2Kg} kg</span>
                               <span>Mốc Diesel: {s.baselineCo2Kg} kg</span>
                             </div>
                           </div>
@@ -1594,7 +1801,7 @@ export default function CustomerPortalPage() {
                           fill="none"
                           stroke="#10b981"
                           strokeWidth="14"
-                          strokeDasharray={`${(kpiStats.evCount / kpiStats.totalOrders) * 289} 289`}
+                          strokeDasharray={`${(kpiStats.evCount / Math.max(1, kpiStats.totalOrders)) * 289} 289`}
                           transform="rotate(-90 60 60)"
                         />
                         <text
@@ -1722,7 +1929,7 @@ export default function CustomerPortalPage() {
                               {s.shipmentCode} • {s.licensePlate}
                             </strong>
                             <span style={{ color: '#10b981', fontWeight: 700 }}>
-                              {Math.round(s.progress)}% ({s.speedKmh} km/h)
+                              {Number(s.progress || 0).toFixed(1)}% ({s.speedKmh} km/h)
                             </span>
                           </div>
                           <div
@@ -1863,80 +2070,77 @@ export default function CustomerPortalPage() {
                 >
                   <div
                     style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      flexWrap: 'wrap',
-                      gap: 16,
-                      marginBottom: 18
+                      padding: '48px 24px',
+                      textAlign: 'center',
+                      borderRadius: 16,
+                      background: subtleBg,
+                      border: '1px dashed rgba(16, 185, 129, 0.35)',
+                      maxWidth: 620,
+                      margin: '0 auto'
                     }}
                   >
-                    <div>
-                      <span
-                        style={{
-                          fontSize: '0.72rem',
-                          fontWeight: 800,
-                          color: '#10b981',
-                          textTransform: 'uppercase'
-                        }}
-                      >
-                        TRẠM GIÁM SÁT VỆ TINH 3D GOOGLE MAPS • TÀI KHOẢN @{user?.username}
-                      </span>
-                      <h2 style={{ fontSize: '1.28rem', fontWeight: 800, margin: '4px 0' }}>
-                        Doanh Nghiệp Của Bạn Chưa Có Chuyến Hàng Nào Đang Lưu Thông
-                      </h2>
-                      <p style={{ fontSize: '0.84rem', opacity: 0.78, margin: 0 }}>
-                        Bản đồ 3D bên dưới hiển thị vị trí chi tiết 7 cảng biển và khu công nghiệp
-                        trọng điểm. Hãy tạo đơn thuê xe đầu tiên để theo dõi xe di chuyển thời gian
-                        thực.
-                      </p>
-                    </div>
-
+                    <Navigation
+                      size={44}
+                      color="#10b981"
+                      style={{ opacity: 0.65, marginBottom: 12 }}
+                    />
+                    <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: 6 }}>
+                      Hiện Chưa Có Vận Đơn Nào Được Khởi Tạo
+                    </h3>
+                    <p
+                      style={{
+                        fontSize: '0.85rem',
+                        opacity: 0.78,
+                        lineHeight: 1.5,
+                        marginBottom: 20
+                      }}
+                    >
+                      Tài khoản của bạn vừa đăng ký và chưa đặt chuyến xe nào. Hãy tạo vận đơn vận
+                      chuyển xanh đầu tiên để kích hoạt hệ thống phát tọa độ GPS 3D và giám sát vệ
+                      tinh thời gian thực.
+                    </p>
                     <button
                       type="button"
                       onClick={() => setActiveTab('booking')}
-                      className="lp-btn lp-btn--primary lp-btn--sm"
+                      className="lp-btn lp-btn--primary"
                     >
-                      <PlusCircle size={16} /> Đặt Thuê Xe &amp; Tạo Vận Đơn Ngay
+                      <PlusCircle size={16} /> Đặt Thuê Xe &amp; Tạo Vận Đơn Đầu Tiên
                     </button>
                   </div>
-
-                  <MapView
-                    center={[10.785, 106.765]}
-                    zoom={10}
-                    height="440px"
-                    defaultTile="google_hybrid"
-                    default3D={true}
-                    defaultPitch={38}
-                    overlayTitle="Bản đồ 3D Hành lang Logistics Phía Nam • 0 phương tiện đang thuê"
-                  >
-                    <LogisticsHubMarkers />
-                  </MapView>
                 </div>
               ) : (
                 <div
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: 'minmax(310px, 1fr) minmax(420px, 1.6fr)',
-                    gap: 22,
+                    gridTemplateColumns: 'minmax(280px, 340px) 1fr',
+                    gap: 20,
                     alignItems: 'start'
                   }}
                 >
-                  {/* Left: User's Real Shipments List */}
+                  {/* Left: Real-time active orders picker */}
                   <div
                     style={{
-                      padding: 20,
+                      padding: 18,
                       borderRadius: 20,
                       background: cardBg,
                       border: cardBorder
                     }}
                   >
-                    <h2 style={{ fontSize: '1.06rem', fontWeight: 800, margin: '0 0 4px' }}>
-                      Vận Đơn Thực Tế Của Bạn ({userOwnShipments.length})
-                    </h2>
-                    <p style={{ fontSize: '0.76rem', opacity: 0.72, margin: '0 0 12px' }}>
-                      Chọn vận đơn để khóa camera 3D theo xe trên bản đồ Google Maps
-                    </p>
+                    <div style={{ marginBottom: 14 }}>
+                      <div
+                        style={{
+                          fontSize: '0.74rem',
+                          fontWeight: 800,
+                          color: '#10b981',
+                          textTransform: 'uppercase'
+                        }}
+                      >
+                        Vận Đơn Thực Tế Của Bạn ({userOwnShipments.length})
+                      </div>
+                      <div style={{ fontSize: '0.78rem', opacity: 0.75 }}>
+                        Chọn vận đơn để khóa camera 3D theo xe trên bản đồ Google Maps
+                      </div>
+                    </div>
 
                     <div style={{ display: 'grid', gap: 10 }}>
                       {userOwnShipments.map((s) => {
@@ -1946,13 +2150,14 @@ export default function CustomerPortalPage() {
                             key={s.shipmentCode}
                             onClick={() => setSelectedCode(s.shipmentCode)}
                             style={{
-                              padding: '14px 16px',
+                              padding: 13,
                               borderRadius: 14,
-                              cursor: 'pointer',
                               background: isSelected ? 'rgba(16, 185, 129, 0.14)' : subtleBg,
                               border: isSelected
                                 ? '1.5px solid #10b981'
-                                : '1px solid rgba(148, 163, 184, 0.2)'
+                                : '1px solid rgba(148, 163, 184, 0.2)',
+                              cursor: 'pointer',
+                              transition: 'all 0.18s'
                             }}
                           >
                             <div
@@ -1963,7 +2168,13 @@ export default function CustomerPortalPage() {
                                 marginBottom: 6
                               }}
                             >
-                              <code style={{ fontWeight: 800, color: '#10b981' }}>
+                              <code
+                                style={{
+                                  fontSize: '0.82rem',
+                                  fontWeight: 800,
+                                  color: isSelected ? '#10b981' : 'inherit'
+                                }}
+                              >
                                 {s.shipmentCode}
                               </code>
                               <span
@@ -2281,7 +2492,8 @@ export default function CustomerPortalPage() {
                         style={{
                           display: 'grid',
                           gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-                          gap: 12
+                          gap: 12,
+                          marginBottom: 16
                         }}
                       >
                         <div
@@ -2369,6 +2581,102 @@ export default function CustomerPortalPage() {
                           </strong>
                         </div>
                       </div>
+
+                      {/* Corridor Highway Checkpoints Log */}
+                      <div
+                        style={{
+                          padding: 14,
+                          borderRadius: 14,
+                          background: subtleBg,
+                          border: '1px solid rgba(148,163,184,0.18)'
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: 10
+                          }}
+                        >
+                          <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#10b981' }}>
+                            ● NHẬT KÝ ĐIỂM CHỐT KIỂM SOÁT HÀNH LANG (CHECKPOINTS)
+                          </div>
+                          <div style={{ fontSize: '0.7rem', opacity: 0.75 }}>
+                            Ngưỡng an toàn buffer 50m (Vàng) / 200m (Đỏ)
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'grid', gap: 6 }}>
+                          {activeCheckpoints.map((cp) => (
+                            <div
+                              key={cp.step}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                padding: '8px 10px',
+                                borderRadius: 8,
+                                background:
+                                  cp.state === 'CURRENT'
+                                    ? 'rgba(16, 185, 129, 0.16)'
+                                    : 'rgba(255,255,255,0.03)',
+                                border:
+                                  cp.state === 'CURRENT'
+                                    ? '1px solid rgba(16, 185, 129, 0.4)'
+                                    : '1px solid transparent',
+                                fontSize: '0.76rem'
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <span
+                                  style={{
+                                    width: 18,
+                                    height: 18,
+                                    borderRadius: 999,
+                                    background:
+                                      cp.state === 'PASSED'
+                                        ? '#10b981'
+                                        : cp.state === 'CURRENT'
+                                          ? '#38bdf8'
+                                          : 'rgba(148,163,184,0.3)',
+                                    color: '#042f2e',
+                                    fontSize: '0.65rem',
+                                    fontWeight: 800,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                  }}
+                                >
+                                  {cp.step}
+                                </span>
+                                <div>
+                                  <strong>{cp.name}</strong>
+                                  <div style={{ fontSize: '0.68rem', opacity: 0.72 }}>
+                                    {cp.road} ({cp.kmAtPoint} km)
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div>
+                                {cp.state === 'PASSED' && (
+                                  <span style={{ color: '#10b981', fontWeight: 700 }}>
+                                    ✓ Đã qua ({cp.deviationMeters}m)
+                                  </span>
+                                )}
+                                {cp.state === 'CURRENT' && (
+                                  <span style={{ color: '#38bdf8', fontWeight: 800 }}>
+                                    ● Đang tiếp cận ({cp.deviationMeters}m)
+                                  </span>
+                                )}
+                                {cp.state === 'UPCOMING' && (
+                                  <span style={{ opacity: 0.55 }}>Chờ qua trạm</span>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -2377,7 +2685,7 @@ export default function CustomerPortalPage() {
           )}
 
           {/* ══════════════════════════════════════════════════════════════════
-              TAB 3: BOOK GREEN SHIPMENT (CREATE REAL-TIME ORDER)
+              TAB 3: BOOK GREEN SHIPMENT (TẠO VẬN ĐƠN & TỐI ƯU TUYẾN UC05)
           ══════════════════════════════════════════════════════════════════ */}
           {activeTab === 'booking' && (
             <div
@@ -2396,16 +2704,29 @@ export default function CustomerPortalPage() {
                   border: cardBorder
                 }}
               >
-                <h2 style={{ fontSize: '1.22rem', fontWeight: 800, marginBottom: 6 }}>
-                  Đặt Thuê Xe Vận Chuyển Xanh &amp; Khởi Tạo Vận Đơn Real-Time
-                </h2>
-                <p style={{ fontSize: '0.84rem', opacity: 0.78, marginBottom: 20 }}>
-                  Ngay sau khi xác nhận, hệ thống sẽ điều xe thực tế mang biển số riêng cho doanh
-                  nghiệp của bạn, kích hoạt định vị 3D Google Maps và cập nhật toàn bộ sơ đồ thống
-                  kê.
-                </p>
+                <div style={{ marginBottom: 18 }}>
+                  <div
+                    style={{
+                      fontSize: '0.72rem',
+                      fontWeight: 800,
+                      color: '#10b981',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em'
+                    }}
+                  >
+                    NGHIỆP VỤ UC05 • TỐI ƯU TUYẾN ĐA TIÊU CHÍ PARETO
+                  </div>
+                  <h2 style={{ fontSize: '1.24rem', fontWeight: 800, margin: '2px 0 6px' }}>
+                    Đặt Thuê Xe Vận Chuyển Xanh &amp; Khởi Tạo Vận Đơn Real-Time
+                  </h2>
+                  <p style={{ fontSize: '0.82rem', opacity: 0.78, margin: 0 }}>
+                    Hệ thống sẽ điều xe thực tế mang biển số riêng cho doanh nghiệp bạn, tự động
+                    kích hoạt luồng GPS 3D và hạch toán giảm phát thải GLEC v3.0.
+                  </p>
+                </div>
 
                 <form onSubmit={handleCreateShipment}>
+                  {/* Origin & Destination */}
                   <div
                     style={{
                       display: 'grid',
@@ -2441,7 +2762,7 @@ export default function CustomerPortalPage() {
                           fontSize: '0.85rem'
                         }}
                       >
-                        {MAP_NODES.map((n) => (
+                        {HUB_CORRIDOR_DIRECTORY.map((n) => (
                           <option key={n.id} value={n.id}>
                             {n.label} ({n.area})
                           </option>
@@ -2451,7 +2772,7 @@ export default function CustomerPortalPage() {
 
                     <button
                       type="button"
-                      title="Đổi chiều đi/đến"
+                      title="Đổi chiều hành trình"
                       onClick={() =>
                         setBookingForm((prev) => ({
                           ...prev,
@@ -2498,7 +2819,7 @@ export default function CustomerPortalPage() {
                           fontSize: '0.85rem'
                         }}
                       >
-                        {MAP_NODES.map((n) => (
+                        {HUB_CORRIDOR_DIRECTORY.map((n) => (
                           <option key={n.id} value={n.id}>
                             {n.label} ({n.area})
                           </option>
@@ -2507,6 +2828,66 @@ export default function CustomerPortalPage() {
                     </div>
                   </div>
 
+                  {/* Pareto Optimization Mode Selection */}
+                  <div style={{ marginBottom: 14 }}>
+                    <label
+                      style={{
+                        display: 'block',
+                        fontSize: '0.78rem',
+                        fontWeight: 700,
+                        marginBottom: 6
+                      }}
+                    >
+                      Chiến Lược Tối Ưu Tuyến Pareto (UC05 Multi-Criteria)
+                    </label>
+                    <div style={{ display: 'grid', gap: 6 }}>
+                      {PARETO_ROUTING_MODES.map((mode) => {
+                        const active = bookingForm.paretoModeId === mode.id;
+                        return (
+                          <div
+                            key={mode.id}
+                            onClick={() =>
+                              setBookingForm((prev) => ({ ...prev, paretoModeId: mode.id }))
+                            }
+                            style={{
+                              padding: '9px 12px',
+                              borderRadius: 10,
+                              background: active
+                                ? 'rgba(16, 185, 129, 0.12)'
+                                : isDark
+                                  ? 'rgba(15, 23, 42, 0.4)'
+                                  : '#f8fafc',
+                              border: active
+                                ? '1.5px solid #10b981'
+                                : '1px solid rgba(148, 163, 184, 0.2)',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center'
+                            }}
+                          >
+                            <div>
+                              <div
+                                style={{
+                                  fontWeight: 800,
+                                  fontSize: '0.82rem',
+                                  color: active ? '#10b981' : 'inherit'
+                                }}
+                              >
+                                {mode.label}
+                              </div>
+                              <div style={{ fontSize: '0.71rem', opacity: 0.72 }}>
+                                {mode.weightsLabel}
+                              </div>
+                            </div>
+                            {active && <Check size={16} color="#10b981" />}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Cargo & Weight */}
                   <div
                     style={{
                       display: 'grid',
@@ -2573,6 +2954,7 @@ export default function CustomerPortalPage() {
                     </div>
                   </div>
 
+                  {/* Vehicle Powertrain Selection */}
                   <div style={{ marginBottom: 14 }}>
                     <label
                       style={{
@@ -2618,6 +3000,7 @@ export default function CustomerPortalPage() {
                     </div>
                   </div>
 
+                  {/* Pickup date & time */}
                   <div
                     style={{
                       display: 'grid',
@@ -2695,7 +3078,7 @@ export default function CustomerPortalPage() {
                 </form>
               </div>
 
-              {/* Right: Live 3D Route Preview & Quote */}
+              {/* Right: Live 3D Route Preview & Detailed Quote */}
               <div
                 style={{
                   padding: 24,
@@ -2705,17 +3088,39 @@ export default function CustomerPortalPage() {
                   color: '#f8fafc'
                 }}
               >
-                <span
+                <div
                   style={{
-                    fontSize: '0.72rem',
-                    fontWeight: 800,
-                    color: '#6ee7b7',
-                    textTransform: 'uppercase'
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: 8
                   }}
                 >
-                  MÔ PHỎNG LỘ TRÌNH 3D &amp; BÁO GIÁ TỨC THÌ (UC05)
-                </span>
-                <h3 style={{ fontSize: '1.22rem', fontWeight: 800, margin: '6px 0 12px' }}>
+                  <span
+                    style={{
+                      fontSize: '0.72rem',
+                      fontWeight: 800,
+                      color: '#6ee7b7',
+                      textTransform: 'uppercase'
+                    }}
+                  >
+                    MÔ PHỎNG LỘ TRÌNH 3D &amp; BÁO GIÁ KHOA HỌC (GLEC v3)
+                  </span>
+                  <span
+                    style={{
+                      fontSize: '0.7rem',
+                      fontWeight: 800,
+                      color: '#38bdf8',
+                      background: 'rgba(56,189,248,0.15)',
+                      padding: '2px 8px',
+                      borderRadius: 999
+                    }}
+                  >
+                    702 GPS Points
+                  </span>
+                </div>
+
+                <h3 style={{ fontSize: '1.24rem', fontWeight: 800, margin: '2px 0 12px' }}>
                   {bookingQuote.originNode.label} → {bookingQuote.destNode.label}
                 </h3>
 
@@ -2727,7 +3132,7 @@ export default function CustomerPortalPage() {
                     defaultTile="google_hybrid"
                     default3D={true}
                     defaultPitch={36}
-                    overlayTitle={`Cự ly tuyến: ${bookingQuote.distanceKm} km`}
+                    overlayTitle={`Cự ly tuyến thực tế: ${bookingQuote.distanceKm} km (~${bookingQuote.etaMinutes} phút)`}
                   >
                     <RoutePolyline
                       positions={bookingQuote.previewWaypoints}
@@ -2756,14 +3161,14 @@ export default function CustomerPortalPage() {
                   }}
                 >
                   <div style={{ fontSize: '0.76rem', color: '#a7f3d0' }}>
-                    Lượng phát thải CO2e cắt giảm dự kiến
+                    Phát thải CO2e cắt giảm so với mốc Diesel:
                   </div>
                   <div
                     style={{
                       fontSize: '1.85rem',
                       fontWeight: 800,
                       color: '#6ee7b7',
-                      margin: '3px 0'
+                      margin: '2px 0'
                     }}
                   >
                     -{bookingQuote.savedCo2Kg} kg CO2e (-{bookingQuote.reductionPct}%)
@@ -2776,19 +3181,32 @@ export default function CustomerPortalPage() {
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gap: 8, fontSize: '0.82rem' }}>
+                {/* Transparent Financial & Carbon Breakdown */}
+                <div style={{ display: 'grid', gap: 6, fontSize: '0.78rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#94a3b8' }}>Địa chỉ lấy hàng:</span>
-                    <strong>{NODE_ADDRESSES[bookingForm.originId]?.split(',')[0]}</strong>
+                    <span style={{ color: '#94a3b8' }}>Sản lượng vận tải:</span>
+                    <strong>{bookingQuote.tonneKm} tấn·km</strong>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#94a3b8' }}>Địa chỉ giao hàng:</span>
-                    <strong>{NODE_ADDRESSES[bookingForm.destinationId]?.split(',')[0]}</strong>
+                    <span style={{ color: '#94a3b8' }}>Mốc Diesel chuẩn (108.0 g/tkm):</span>
+                    <span>{bookingQuote.baselineCo2Kg} kg CO2e</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#94a3b8' }}>Cự ly &amp; Thời gian dự kiến:</span>
+                    <span style={{ color: '#94a3b8' }}>
+                      Thực tế WTW ({bookingQuote.actualIntensityG} g/tkm):
+                    </span>
+                    <strong style={{ color: '#34d399' }}>{bookingQuote.actualCo2Kg} kg CO2e</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#94a3b8' }}>Năng lượng tiêu hao:</span>
                     <strong>
-                      {bookingQuote.distanceKm} km (~{bookingQuote.etaMinutes} phút)
+                      {bookingQuote.energyConsumed} {bookingQuote.energyUnit}
+                    </strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#94a3b8' }}>Ưu đãi giảm giá xe xanh:</span>
+                    <strong style={{ color: '#6ee7b7' }}>
+                      -{bookingQuote.greenDiscountVnd.toLocaleString('vi-VN')} ₫
                     </strong>
                   </div>
                 </div>
@@ -2947,7 +3365,7 @@ export default function CustomerPortalPage() {
                           </td>
                           <td style={{ padding: '12px 10px' }}>
                             <span style={{ color: '#10b981', fontWeight: 700 }}>
-                              {Math.round(s.progress)}%
+                              {Number(s.progress || 0).toFixed(1)}%
                             </span>
                           </td>
                           <td style={{ padding: '12px 10px' }}>
@@ -2971,6 +3389,27 @@ export default function CustomerPortalPage() {
                               >
                                 Định vị 3D
                               </button>
+
+                              <button
+                                type="button"
+                                onClick={() => setSelectedContractModal(s)}
+                                style={{
+                                  padding: '5px 10px',
+                                  borderRadius: 8,
+                                  border: '1px solid rgba(148,163,184,0.3)',
+                                  background: subtleBg,
+                                  color: 'inherit',
+                                  fontSize: '0.74rem',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 4
+                                }}
+                              >
+                                <FileText size={12} /> Hợp Đồng
+                              </button>
+
                               {s.status === 'IN_TRANSIT' && (
                                 <button
                                   type="button"
@@ -3016,7 +3455,269 @@ export default function CustomerPortalPage() {
           )}
 
           {/* ══════════════════════════════════════════════════════════════════
-              TAB 5: CARBON LEDGER & ISO 14083 CERTIFICATES
+              TAB 5: HUBS & ECO-INFRASTRUCTURE DIRECTORY (MỚI)
+          ══════════════════════════════════════════════════════════════════ */}
+          {activeTab === 'hubs' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              <div
+                style={{
+                  padding: 24,
+                  borderRadius: 20,
+                  background: cardBg,
+                  border: cardBorder
+                }}
+              >
+                <div style={{ marginBottom: 16 }}>
+                  <div
+                    style={{
+                      fontSize: '0.72rem',
+                      fontWeight: 800,
+                      color: '#10b981',
+                      textTransform: 'uppercase'
+                    }}
+                  >
+                    MẠNG LƯỚI 7 TRUNG TÂM LOGISTICS &amp; CẢNG BIỂN PHÍA NAM
+                  </div>
+                  <h2 style={{ fontSize: '1.22rem', fontWeight: 800, margin: '2px 0 4px' }}>
+                    Danh Mục Hạ Tầng Cảng Biển, Trạm Sạc DC &amp; Kho Chuỗi Lạnh
+                  </h2>
+                  <p style={{ fontSize: '0.82rem', opacity: 0.78, margin: 0 }}>
+                    Dữ liệu vị trí GPS chuẩn xác, hạ tầng sạc điện công suất cao và liên kết cao tốc
+                    kết nối các vùng kinh tế trọng điểm.
+                  </p>
+                </div>
+
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+                    gap: 16
+                  }}
+                >
+                  {HUB_CORRIDOR_DIRECTORY.map((hub) => (
+                    <div
+                      key={hub.id}
+                      style={{
+                        padding: 18,
+                        borderRadius: 16,
+                        background: subtleBg,
+                        border: '1px solid rgba(148, 163, 184, 0.2)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        gap: 12
+                      }}
+                    >
+                      <div>
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: 4
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontSize: '0.7rem',
+                              fontWeight: 800,
+                              color: '#38bdf8',
+                              background: 'rgba(56, 189, 248, 0.12)',
+                              padding: '2px 8px',
+                              borderRadius: 6
+                            }}
+                          >
+                            {hub.code}
+                          </span>
+                          <span style={{ fontSize: '0.74rem', opacity: 0.75 }}>
+                            Tải trọng tối đa: <strong>{hub.maxWeightTons}T</strong>
+                          </span>
+                        </div>
+
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: '4px 0 6px' }}>
+                          {hub.label}
+                        </h3>
+
+                        <div style={{ fontSize: '0.78rem', opacity: 0.85, marginBottom: 8 }}>
+                          <MapPin size={13} style={{ display: 'inline', verticalAlign: '-2px' }} />{' '}
+                          {hub.address}
+                        </div>
+
+                        <div style={{ display: 'grid', gap: 5, fontSize: '0.75rem' }}>
+                          <div>
+                            <span style={{ opacity: 0.7 }}>Trục giao thông:</span>{' '}
+                            <strong>{hub.primaryHighways}</strong>
+                          </div>
+                          <div>
+                            <span style={{ opacity: 0.7 }}>Hải quan:</span>{' '}
+                            <span>{hub.customsGate}</span>
+                          </div>
+                          <div style={{ color: '#10b981' }}>
+                            <Zap size={12} style={{ display: 'inline', verticalAlign: '-1px' }} />{' '}
+                            <strong>{hub.evChargers}</strong>
+                          </div>
+                          <div style={{ color: '#38bdf8' }}>
+                            <Thermometer
+                              size={12}
+                              style={{ display: 'inline', verticalAlign: '-1px' }}
+                            />{' '}
+                            {hub.coldChainSupport}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setBookingForm((prev) => ({ ...prev, originId: hub.id }));
+                            setActiveTab('booking');
+                          }}
+                          style={{
+                            flex: 1,
+                            padding: '7px 10px',
+                            borderRadius: 8,
+                            border: '1px solid #10b981',
+                            background: 'rgba(16, 185, 129, 0.12)',
+                            color: '#10b981',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Xuất phát từ đây
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setBookingForm((prev) => ({ ...prev, destinationId: hub.id }));
+                            setActiveTab('booking');
+                          }}
+                          style={{
+                            flex: 1,
+                            padding: '7px 10px',
+                            borderRadius: 8,
+                            border: '1px solid rgba(56, 189, 248, 0.4)',
+                            background: 'rgba(56, 189, 248, 0.12)',
+                            color: '#38bdf8',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Giao hàng đến đây
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════════════
+              TAB 6: FLEET CATALOG & GLEC STANDARDS (MỚI)
+          ══════════════════════════════════════════════════════════════════ */}
+          {activeTab === 'fleet' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              <div
+                style={{
+                  padding: 24,
+                  borderRadius: 20,
+                  background: cardBg,
+                  border: cardBorder
+                }}
+              >
+                <div style={{ marginBottom: 16 }}>
+                  <div
+                    style={{
+                      fontSize: '0.72rem',
+                      fontWeight: 800,
+                      color: '#10b981',
+                      textTransform: 'uppercase'
+                    }}
+                  >
+                    CẤU HÌNH ĐỘI XE &amp; ĐỊNH MỨC PHÁT THẢI TOÀN VÒNG ĐỜI
+                  </div>
+                  <h2 style={{ fontSize: '1.22rem', fontWeight: 800, margin: '2px 0 4px' }}>
+                    Danh Mục Đội Xe Xanh Theo Chuẩn GLEC Framework v3.0 &amp; ISO 14083
+                  </h2>
+                  <p style={{ fontSize: '0.82rem', opacity: 0.78, margin: 0 }}>
+                    Thông số kỹ thuật pin, mức tiêu hao nhiên liệu, suất phát thải WTW và tài xế
+                    chuyên nghiệp phụ trách điều vận.
+                  </p>
+                </div>
+
+                <div className="table-wrapper">
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid rgba(148,163,184,0.24)' }}>
+                        <th style={{ padding: '12px 10px' }}>Mã &amp; Mẫu Phương Tiện</th>
+                        <th style={{ padding: '12px 10px' }}>Phân Loại</th>
+                        <th style={{ padding: '12px 10px' }}>Tải Trọng</th>
+                        <th style={{ padding: '12px 10px' }}>Hạ Tầng Năng Lượng</th>
+                        <th style={{ padding: '12px 10px' }}>Suất WTW (g/tkm)</th>
+                        <th style={{ padding: '12px 10px' }}>Cắt Giảm CO2e</th>
+                        <th style={{ padding: '12px 10px' }}>Tài Xế Phụ Trách</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {STANDARD_FLEET_CATALOG.map((f) => (
+                        <tr
+                          key={f.modelCode}
+                          style={{ borderBottom: '1px solid rgba(148,163,184,0.12)' }}
+                        >
+                          <td style={{ padding: '12px 10px' }}>
+                            <strong style={{ color: '#10b981' }}>{f.modelCode}</strong>
+                            <div style={{ fontSize: '0.78rem', marginTop: 2 }}>{f.modelName}</div>
+                          </td>
+                          <td style={{ padding: '12px 10px' }}>
+                            <span
+                              style={{
+                                fontSize: '0.7rem',
+                                fontWeight: 700,
+                                padding: '2px 8px',
+                                borderRadius: 999,
+                                background:
+                                  f.powertrainId === 'ev'
+                                    ? 'rgba(16, 185, 129, 0.18)'
+                                    : 'rgba(56, 189, 248, 0.18)',
+                                color: f.powertrainId === 'ev' ? '#10b981' : '#38bdf8'
+                              }}
+                            >
+                              {f.vehicleTypeLabel}
+                            </span>
+                          </td>
+                          <td style={{ padding: '12px 10px' }}>{f.maxPayloadTons} tấn</td>
+                          <td style={{ padding: '12px 10px' }}>
+                            <div>{f.batteryOrTank}</div>
+                            <div style={{ fontSize: '0.7rem', opacity: 0.72 }}>
+                              Định mức: {f.consumptionSpec}
+                            </div>
+                          </td>
+                          <td style={{ padding: '12px 10px', fontWeight: 700 }}>
+                            {f.wtwIntensityG} gCO2e
+                          </td>
+                          <td style={{ padding: '12px 10px', color: '#10b981', fontWeight: 800 }}>
+                            -{f.reductionPct}%
+                          </td>
+                          <td style={{ padding: '12px 10px' }}>
+                            <strong>{f.driverName}</strong> ({f.samplePlate})
+                            <div style={{ fontSize: '0.7rem', opacity: 0.7 }}>
+                              {f.driverLicense}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════════════
+              TAB 7: CARBON LEDGER & ISO 14083 CERTIFICATES
           ══════════════════════════════════════════════════════════════════ */}
           {activeTab === 'carbon' && (
             <div
@@ -3219,7 +3920,7 @@ export default function CustomerPortalPage() {
           )}
 
           {/* ══════════════════════════════════════════════════════════════════
-              TAB 6: COMPANY PROFILE & NOTIFICATION SETTINGS
+              TAB 8: COMPANY PROFILE & NOTIFICATION SETTINGS
           ══════════════════════════════════════════════════════════════════ */}
           {activeTab === 'profile' && (
             <div
@@ -3360,6 +4061,188 @@ export default function CustomerPortalPage() {
           )}
         </main>
       </div>
+
+      {/* ── MODAL: HỢP ĐỒNG THUÊ VẬN TẢI XANH ĐIỆN TỬ (E-CONTRACT) ── */}
+      {selectedContractModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 100,
+            background: 'rgba(0,0,0,0.65)',
+            backdropFilter: 'blur(6px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 20
+          }}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: 680,
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              borderRadius: 20,
+              background: isDark ? '#061611' : '#ffffff',
+              border: '1.5px solid rgba(16, 185, 129, 0.45)',
+              boxShadow: '0 25px 60px rgba(0,0,0,0.5)',
+              padding: 24,
+              color: isDark ? '#f8fafc' : '#0f172a'
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                borderBottom: '1px solid rgba(148, 163, 184, 0.2)',
+                paddingBottom: 14,
+                marginBottom: 16
+              }}
+            >
+              <div>
+                <span
+                  style={{
+                    fontSize: '0.7rem',
+                    fontWeight: 800,
+                    color: '#10b981',
+                    textTransform: 'uppercase'
+                  }}
+                >
+                  HỢP ĐỒNG ĐIỆN TỬ THUÊ VẬN TẢI XANH SỐ
+                </span>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: '2px 0 0' }}>
+                  HĐ-{selectedContractModal.shipmentCode}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedContractModal(null)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'inherit',
+                  cursor: 'pointer',
+                  fontSize: '1.1rem',
+                  fontWeight: 800
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gap: 14, fontSize: '0.82rem' }}>
+              <div
+                style={{
+                  padding: 12,
+                  borderRadius: 12,
+                  background: subtleBg,
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: 10
+                }}
+              >
+                <div>
+                  <span style={{ opacity: 0.7 }}>Bên Thuê Vận Tải (Chủ Hàng):</span>
+                  <div>
+                    <strong>{selectedContractModal.customerName}</strong>
+                  </div>
+                  <div style={{ fontSize: '0.74rem', opacity: 0.75 }}>
+                    Mã B2B: {selectedContractModal.customerId}
+                  </div>
+                </div>
+                <div>
+                  <span style={{ opacity: 0.7 }}>Đơn Vị Cung Cấp Hạ Tầng Vận Tải:</span>
+                  <div>
+                    <strong>CCADRO GREEN LOGISTICS ALLIANCE</strong>
+                  </div>
+                  <div style={{ fontSize: '0.74rem', opacity: 0.75 }}>
+                    Mã vận hành: CCADRO-FLEET-NETZERO
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <strong>Điều khoản dịch vụ &amp; Cam kết tiêu chuẩn SLA:</strong>
+                <ul style={{ paddingLeft: 18, marginTop: 6, lineHeight: 1.6 }}>
+                  <li>
+                    Phương tiện cam kết: <strong>{selectedContractModal.vehicleType}</strong> (Biển
+                    số: {selectedContractModal.licensePlate}).
+                  </li>
+                  <li>
+                    Lộ trình chuẩn:{' '}
+                    <strong>
+                      {selectedContractModal.originName} → {selectedContractModal.destinationName}
+                    </strong>{' '}
+                    ({selectedContractModal.distanceKm} km).
+                  </li>
+                  <li>
+                    Duy trì kiểm soát nhiệt độ thùng hàng liên tục:{' '}
+                    <strong style={{ color: '#10b981' }}>
+                      {selectedContractModal.temperatureC}°C
+                    </strong>{' '}
+                    (Báo động nếu lệch &gt; 2°C).
+                  </li>
+                  <li>
+                    Cam kết phát thải Scope 3 theo ISO 14083: Cắt giảm tối thiểu{' '}
+                    <strong style={{ color: '#10b981' }}>
+                      {selectedContractModal.co2SavedKg} kg CO2e
+                    </strong>
+                    .
+                  </li>
+                  <li>Bàn giao và ký xác nhận điện tử (ePOD) ngay khi phương tiện cập bến.</li>
+                </ul>
+              </div>
+
+              <div
+                style={{
+                  padding: 12,
+                  borderRadius: 12,
+                  background: 'rgba(16, 185, 129, 0.12)',
+                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: '0.74rem', opacity: 0.8 }}>Tổng cước phí hợp đồng:</div>
+                  <strong style={{ fontSize: '1.15rem', color: '#10b981' }}>
+                    {(selectedContractModal.estimatedCostVnd || 1850000).toLocaleString('vi-VN')}{' '}
+                    VNĐ
+                  </strong>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '0.72rem', opacity: 0.75 }}>Trạng thái hợp đồng:</div>
+                  <strong style={{ color: '#38bdf8' }}>● ĐANG THỰC HIỆN</strong>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <button
+                type="button"
+                onClick={() => setSelectedContractModal(null)}
+                className="lp-btn lp-btn--ghost lp-btn--sm"
+              >
+                Đóng
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedContractModal(null);
+                  setSelectedCode(selectedContractModal.shipmentCode);
+                  setActiveTab('tracking');
+                }}
+                className="lp-btn lp-btn--primary lp-btn--sm"
+              >
+                <Navigation size={14} /> Theo Dõi Hành Trình 3D
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -12,7 +12,9 @@ import {
   Megaphone,
   User,
   Sun,
-  Moon
+  Moon,
+  PanelLeftClose,
+  PanelLeftOpen
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -50,7 +52,11 @@ const INITIAL_DEMO_NOTIFICATIONS = [
   }
 ];
 
-export default function Header({ title = 'CCADRO Operations Console' }) {
+export default function Header({
+  title = 'CCADRO Operations Console',
+  sidebarCollapsed = false,
+  onToggleSidebar
+}) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toggleTheme, isDark } = useTheme();
@@ -150,7 +156,30 @@ export default function Header({ title = 'CCADRO Operations Console' }) {
 
   return (
     <header className="topbar" style={{ position: 'relative' }}>
-      <div className="topbar-title">{title}</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        {onToggleSidebar && (
+          <button
+            type="button"
+            onClick={onToggleSidebar}
+            title={sidebarCollapsed ? 'Mở rộng thanh bên' : 'Thu gọn thanh bên'}
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: 8,
+              border: '1px solid var(--border-color)',
+              background: 'rgba(148, 163, 184, 0.08)',
+              color: 'var(--text-main)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer'
+            }}
+          >
+            {sidebarCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+          </button>
+        )}
+        <div className="topbar-title">{title}</div>
+      </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         {user && (
           <button

@@ -15,12 +15,14 @@ import {
   Lock,
   LogOut,
   Radio,
-  UserCheck
+  UserCheck,
+  PanelLeftClose,
+  PanelLeftOpen
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import CcadroLogo from '../ui/CcadroLogo';
 
-export default function Sidebar() {
+export default function Sidebar({ collapsed = false, onToggleCollapse }) {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const demoShipmentId = 'c0000000-0000-0000-0000-000000000001';
@@ -32,23 +34,75 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
       {/* Brand Header */}
-      <div className="sidebar-header">
-        <motion.div
-          whileHover={{ rotate: 6, scale: 1.04 }}
-          transition={{ type: 'spring', stiffness: 400 }}
-        >
-          <CcadroLogo size={38} />
-        </motion.div>
-        <div className="logo-text">
-          <h1>CCADRO</h1>
-          <span>Giám Sát Nội Bộ</span>
+      <div
+        className="sidebar-header"
+        style={{ justifyContent: collapsed ? 'center' : 'space-between' }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <motion.div
+            whileHover={{ rotate: 6, scale: 1.04 }}
+            transition={{ type: 'spring', stiffness: 400 }}
+          >
+            <CcadroLogo size={38} />
+          </motion.div>
+          {!collapsed && (
+            <div className="logo-text">
+              <h1>CCADRO</h1>
+              <span>Giám Sát Nội Bộ</span>
+            </div>
+          )}
         </div>
+        {onToggleCollapse && !collapsed && (
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            title="Thu gọn thanh bên"
+            style={{
+              background: 'rgba(148, 163, 184, 0.1)',
+              border: '1px solid var(--border-color)',
+              color: 'var(--text-muted)',
+              borderRadius: 8,
+              width: 30,
+              height: 30,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer'
+            }}
+          >
+            <PanelLeftClose size={15} />
+          </button>
+        )}
       </div>
 
+      {collapsed && onToggleCollapse && (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0 2px' }}>
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            title="Mở rộng thanh bên"
+            style={{
+              background: 'rgba(16, 185, 129, 0.12)',
+              border: '1px solid rgba(16, 185, 129, 0.35)',
+              color: '#10b981',
+              borderRadius: 8,
+              width: 34,
+              height: 34,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer'
+            }}
+          >
+            <PanelLeftOpen size={16} />
+          </button>
+        </div>
+      )}
+
       {/* Active Role & Security Zone Card */}
-      {user && (
+      {user && !collapsed && (
         <motion.div
           initial={{ opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
@@ -230,38 +284,41 @@ export default function Sidebar() {
           padding: '14px 12px',
           borderTop: '1px solid var(--border-color)',
           display: 'flex',
-          justifyContent: 'space-between',
+          justifyContent: collapsed ? 'center' : 'space-between',
           alignItems: 'center',
           gap: '8px'
         }}
       >
-        <button
-          type="button"
-          onClick={() => navigate('/governance')}
-          style={{
-            background: 'transparent',
-            border: 'none',
-            color: 'var(--text-muted)',
-            fontSize: '0.78rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px'
-          }}
-        >
-          <UserCheck size={14} />
-          <span>Quản lý IAM</span>
-        </button>
+        {!collapsed && (
+          <button
+            type="button"
+            onClick={() => navigate('/governance')}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--text-muted)',
+              fontSize: '0.78rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+          >
+            <UserCheck size={14} />
+            <span>Quản lý IAM</span>
+          </button>
+        )}
 
         <button
           type="button"
           onClick={handleLogoutClick}
+          title="Đăng xuất"
           style={{
             background: 'rgba(239, 68, 68, 0.1)',
             border: '1px solid rgba(239, 68, 68, 0.3)',
             color: '#f87171',
             borderRadius: '6px',
-            padding: '5px 10px',
+            padding: collapsed ? '8px' : '5px 10px',
             fontSize: '0.75rem',
             fontWeight: 600,
             cursor: 'pointer',
@@ -271,7 +328,7 @@ export default function Sidebar() {
           }}
         >
           <LogOut size={13} />
-          <span>Đăng xuất</span>
+          {!collapsed && <span>Đăng xuất</span>}
         </button>
       </div>
     </aside>

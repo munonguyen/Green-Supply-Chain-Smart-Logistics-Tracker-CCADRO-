@@ -1,0 +1,436 @@
+import { getRealRoadRoute } from './roadRoutingService';
+
+/**
+ * 1. DANH MỤC 7 TRUNG TÂM LOGISTICS, CẢNG BIỂN & KCN TRỌNG ĐIỂM PHÍA NAM
+ * Dữ liệu tọa độ GPS thực tế, trục giao thông kết nối và hạ tầng trạm sạc xanh.
+ */
+export const HUB_CORRIDOR_DIRECTORY = [
+  {
+    id: 'catlai',
+    code: 'HUB-SGN-01',
+    label: 'Cảng Cát Lái',
+    area: 'TP. Thủ Đức, TP. HCM',
+    address: '1295B Nguyễn Thị Định, Phường Cát Lái, TP. Thủ Đức, TP. HCM',
+    coords: [10.7623, 106.7824],
+    primaryHighways: 'Nguyễn Thị Định – Nút giao Mỹ Thủy – Võ Chí Công (Vành Đai 2)',
+    customsGate: 'Chi cục Hải quan Cửa khẩu Cảng Sài Gòn KV1',
+    evChargers: '12 trụ sạc nhanh DC 250kW (Solar Depot)',
+    maxWeightTons: 44,
+    coldChainSupport: '48 ổ cắm Reefer 400V'
+  },
+  {
+    id: 'vsip',
+    code: 'HUB-BDG-02',
+    label: 'KCN VSIP 1',
+    area: 'Thuận An, Bình Dương',
+    address: 'Số 8 Đại lộ Hữu Nghị, KCN Việt Nam – Singapore, Thuận An, Bình Dương',
+    coords: [10.9242, 106.7145],
+    primaryHighways: 'Quốc lộ 13 (Đại lộ Bình Dương) – Đại lộ Hữu Nghị',
+    customsGate: 'Chi cục Hải quan KCN VSIP Bình Dương',
+    evChargers: '8 trụ sạc nhanh DC 180kW',
+    maxWeightTons: 40,
+    coldChainSupport: 'Kho lạnh -22°C đạt chuẩn GSP'
+  },
+  {
+    id: 'songthan',
+    code: 'HUB-BDG-03',
+    label: 'ICD Sóng Thần',
+    area: 'Dĩ An, Bình Dương',
+    address: 'Khu phố Bình Đường 3, Phường An Bình, TP. Dĩ An, Bình Dương',
+    coords: [10.8925, 106.7428],
+    primaryHighways: 'Xa lộ Hà Nội – Quốc lộ 1A – Đại lộ Độc Lập',
+    customsGate: 'Chi cục Hải quan ICD Sóng Thần',
+    evChargers: '10 trụ sạc nhanh DC 250kW',
+    maxWeightTons: 44,
+    coldChainSupport: 'Trung tâm phân phối lạnh 15.000 Pallet'
+  },
+  {
+    id: 'tanbinh',
+    code: 'HUB-SGN-04',
+    label: 'KCN Tân Bình',
+    area: 'Tân Phú, TP. HCM',
+    address: 'Đường Tây Thạnh, KCN Tân Bình, Quận Tân Phú, TP. HCM',
+    coords: [10.8184, 106.6286],
+    primaryHighways: 'Trường Chinh – Quốc lộ 1A – Cộng Hòa',
+    customsGate: 'Trạm kiểm soát hàng nội địa & Hàng không Tân Sơn Nhất',
+    evChargers: '6 trụ sạc DC 150kW',
+    maxWeightTons: 32,
+    coldChainSupport: 'Kho mát FMCG & Dược phẩm (+2°C đến +8°C)'
+  },
+  {
+    id: 'nhontrach',
+    code: 'HUB-DNA-05',
+    label: 'KCN Nhơn Trạch',
+    area: 'Nhơn Trạch, Đồng Nai',
+    address: 'Đường Tôn Đức Thắng (ĐT 25B), KCN Nhơn Trạch 1-3, Đồng Nai',
+    coords: [10.7352, 106.8954],
+    primaryHighways: 'Cao tốc TP.HCM – Long Thành – Dầu Giây – Quốc lộ 51 – ĐT 25B',
+    customsGate: 'Chi cục Hải quan Nhơn Trạch – Đồng Nai',
+    evChargers: '8 trụ sạc DC 250kW',
+    maxWeightTons: 44,
+    coldChainSupport: 'Bãi container lạnh công nghiệp'
+  },
+  {
+    id: 'hiepphuoc',
+    code: 'HUB-SGN-06',
+    label: 'Cảng Hiệp Phước',
+    area: 'Nhà Bè, TP. HCM',
+    address: 'Khu B, Đường số 1, KCN Hiệp Phước, Huyện Nhà Bè, TP. HCM',
+    coords: [10.6354, 106.7522],
+    primaryHighways: 'Cầu Phú Mỹ – Nguyễn Văn Linh – Nguyễn Hữu Thọ – Nguyễn Văn Tạo',
+    customsGate: 'Chi cục Hải quan Cửa khẩu Cảng Hiệp Phước',
+    evChargers: '8 trụ sạc DC 180kW',
+    maxWeightTons: 44,
+    coldChainSupport: '32 ổ cắm Reefer ven sông Soài Rạp'
+  },
+  {
+    id: 'caimep',
+    code: 'HUB-VUT-07',
+    label: 'Cảng Cái Mép',
+    area: 'Phú Mỹ, Bà Rịa – Vũng Tàu',
+    address: 'Khu phố Tân Lộc, Phường Phước Hòa, Thị xã Phú Mỹ, Bà Rịa – Vũng Tàu',
+    coords: [10.5256, 107.0225],
+    primaryHighways: 'Cao tốc Long Thành – Quốc lộ 51 – Đường Liên Cảng Cái Mép – Thị Vải',
+    customsGate: 'Chi cục Hải quan Cửa khẩu Cảng Cái Mép',
+    evChargers: '14 trụ siêu sạc DC 350kW',
+    maxWeightTons: 44,
+    coldChainSupport: 'Cảng nước sâu quốc tế • 64 ổ cắm Reefer'
+  }
+];
+
+/**
+ * 2. DANH MỤC ĐỘI XE CHUẨN QUỐC TẾ & ĐỊNH MỨC PHÁT THẢI GLEC v3.0
+ */
+export const STANDARD_FLEET_CATALOG = [
+  {
+    modelCode: 'EV-TRACTOR-40T',
+    modelName: 'Hyundai Xcient / Volvo FH Electric 40T',
+    powertrainId: 'ev',
+    vehicleTypeLabel: 'Xe đầu kéo điện (EV)',
+    category: 'Đầu kéo Container điện hạng nặng (Heavy-Duty BEV)',
+    maxPayloadTons: 36,
+    batteryOrTank: 'Pin LFP 350 kWh • Sạc nhanh DC 250kW',
+    consumptionSpec: '122 kWh / 100 km',
+    wttIntensityG: 64.8,
+    ttwIntensityG: 0.0,
+    wtwIntensityG: 64.8,
+    baselineIntensityG: 108.0,
+    reductionPct: 40.0,
+    baseRatePerKmVnd: 26500,
+    samplePlate: '51C-888.99',
+    driverName: 'Nguyễn Văn Tài',
+    driverLicense: 'Hạng FC • 9 năm kinh nghiệm',
+    driverPhone: '0903 812 456',
+    certStandard: 'GLEC v3.0 Zero-Tailpipe BEV'
+  },
+  {
+    modelCode: 'EV-REEFER-18T',
+    modelName: 'VinFast / BYD ETM6 e-Reefer Chuỗi Lạnh',
+    powertrainId: 'ev',
+    vehicleTypeLabel: 'Xe đầu kéo điện (EV)',
+    category: 'Xe tải lạnh điện chuyên dụng (-22°C đến +2°C)',
+    maxPayloadTons: 18,
+    batteryOrTank: 'Pin LFP 255 kWh + Hệ thống lạnh e-PTO độc lập',
+    consumptionSpec: '98 kWh / 100 km',
+    wttIntensityG: 66.5,
+    ttwIntensityG: 0.0,
+    wtwIntensityG: 66.5,
+    baselineIntensityG: 108.0,
+    reductionPct: 38.4,
+    baseRatePerKmVnd: 25500,
+    samplePlate: '51C-704.33',
+    driverName: 'Lê Minh Khôi',
+    driverLicense: 'Hạng FC • 7 năm kinh nghiệm',
+    driverPhone: '0908 551 209',
+    certStandard: 'GLEC v3.0 Cold-Chain BEV'
+  },
+  {
+    modelCode: 'EURO5-SCR-32T',
+    modelName: 'Isuzu Giga / Hino 700 Series Euro 5 SCR',
+    powertrainId: 'euro5',
+    vehicleTypeLabel: 'Xe tải chuẩn Euro 5',
+    category: 'Đầu kéo Container chuẩn Euro 5 (Xúc tác chọn lọc SCR + AdBlue)',
+    maxPayloadTons: 34,
+    batteryOrTank: 'Bình Diesel 400L + Bình dung dịch AdBlue 45L',
+    consumptionSpec: '27.5 Lít Diesel / 100 km',
+    wttIntensityG: 14.2,
+    ttwIntensityG: 65.7,
+    wtwIntensityG: 79.9,
+    baselineIntensityG: 108.0,
+    reductionPct: 26.0,
+    baseRatePerKmVnd: 27500,
+    samplePlate: '51D-662.18',
+    driverName: 'Trần Hoàng Nam',
+    driverLicense: 'Hạng FC • 11 năm kinh nghiệm',
+    driverPhone: '0914 720 881',
+    certStandard: 'ISO 14083 Euro-V Low-NOx'
+  },
+  {
+    modelCode: 'EURO5-BOX-20T',
+    modelName: 'Hino 500 Series FG Euro 5 Thùng Kín',
+    powertrainId: 'euro5',
+    vehicleTypeLabel: 'Xe tải chuẩn Euro 5',
+    category: 'Xe tải nặng thùng bảo ôn chuẩn Euro 5',
+    maxPayloadTons: 20,
+    batteryOrTank: 'Bình Diesel 260L + Phun nhiên liệu điện tử Common Rail',
+    consumptionSpec: '22.4 Lít Diesel / 100 km',
+    wttIntensityG: 14.8,
+    ttwIntensityG: 66.8,
+    wtwIntensityG: 81.6,
+    baselineIntensityG: 108.0,
+    reductionPct: 24.4,
+    baseRatePerKmVnd: 25000,
+    samplePlate: '61C-419.52',
+    driverName: 'Phạm Quốc Tuấn',
+    driverLicense: 'Hạng C/FC • 8 năm kinh nghiệm',
+    driverPhone: '0989 341 612',
+    certStandard: 'ISO 14083 Euro-V Verified'
+  },
+  {
+    modelCode: 'DIESEL-BASE-28T',
+    modelName: 'Hyundai HD320 / Daewoo Maximus Diesel',
+    powertrainId: 'diesel',
+    vehicleTypeLabel: 'Xe diesel thông thường',
+    category: 'Đầu kéo Diesel truyền thống (Áp dụng tối ưu lộ trình xanh UC05)',
+    maxPayloadTons: 30,
+    batteryOrTank: 'Bình Diesel 380L (Mốc đối chứng Baseline)',
+    consumptionSpec: '33.8 Lít Diesel / 100 km',
+    wttIntensityG: 16.4,
+    ttwIntensityG: 83.0,
+    wtwIntensityG: 99.4,
+    baselineIntensityG: 108.0,
+    reductionPct: 8.0,
+    baseRatePerKmVnd: 28500,
+    samplePlate: '51D-402.11',
+    driverName: 'Võ Thành Đạt',
+    driverLicense: 'Hạng FC • 6 năm kinh nghiệm',
+    driverPhone: '0937 618 904',
+    certStandard: 'GLEC v3.0 Route-Optimized'
+  }
+];
+
+/**
+ * 3. PHƯƠNG ÁN TỐI ƯU HÓA LỘ TRÌNH ĐA TIÊU CHÍ PARETO (UC05)
+ */
+export const PARETO_ROUTING_MODES = [
+  {
+    id: 'ECO_GREEN',
+    label: 'Ưu tiên Xanh nhất (Min CO2e)',
+    weightsLabel: 'w_CO2 = 0.60 • w_Time = 0.20 • w_Cost = 0.20',
+    desc: 'Tối thiểu hóa phát thải khí nhà kính bằng cách chọn tốc độ ổn định 50-55 km/h và tránh điểm ùn tắc cầu Phú Mỹ / nút giao An Phú.',
+    extraCo2Bonus: 0.02,
+    etaMultiplier: 1.03,
+    costMultiplier: 0.98
+  },
+  {
+    id: 'PARETO_BALANCED',
+    label: 'Cân bằng Tối ưu Pareto (Khuyến nghị)',
+    weightsLabel: 'w_CO2 = 0.40 • w_Time = 0.35 • w_Cost = 0.25',
+    desc: 'Điểm cân bằng Pareto tối ưu đồng thời cả 3 mục tiêu: Giảm phát thải WTW, đảm bảo SLA giao nhận và tối ưu phí cầu đường BOT.',
+    extraCo2Bonus: 0.0,
+    etaMultiplier: 1.0,
+    costMultiplier: 1.0
+  },
+  {
+    id: 'FAST_EXPRESS',
+    label: 'Ưu tiên Nhanh nhất (Min ETA / SLA Gấp)',
+    weightsLabel: 'w_CO2 = 0.20 • w_Time = 0.60 • w_Cost = 0.20',
+    desc: 'Ưu tiên trục cao tốc và làn xanh giờ thấp điểm để rút ngắn tối đa thời gian vận chuyển cho lô hàng xuất tàu gấp.',
+    extraCo2Bonus: -0.015,
+    etaMultiplier: 0.9,
+    costMultiplier: 1.04
+  }
+];
+
+/**
+ * 4. TÍNH TOÁN KHOA HỌC PHÁT THẢI CARBON GLEC v3.0 & CƯỚC PHÍ CHI TIẾT
+ */
+export function calculateDetailedGlecQuote({
+  originId,
+  destinationId,
+  cargoWeightTons = 16,
+  powertrainId = 'ev',
+  paretoModeId = 'PARETO_BALANCED'
+}) {
+  const realRoute = getRealRoadRoute(originId, destinationId);
+  const distanceKm = Number(realRoute.distanceKm) || 28.9;
+  const weight = Math.max(1, Number(cargoWeightTons) || 16);
+  const tonneKm = Math.round(distanceKm * weight * 10) / 10;
+
+  const pareto = PARETO_ROUTING_MODES.find((m) => m.id === paretoModeId) || PARETO_ROUTING_MODES[1];
+
+  // Baseline Diesel Euro 3 according to GLEC Framework v3.0 (108.0 gCO2e / tonne-km WTW)
+  const baselineIntensityG = 108.0;
+  const baselineCo2Kg = Math.round(tonneKm * (baselineIntensityG / 1000) * 10) / 10;
+
+  // Base reduction by powertrain:
+  // EV: 32% powertrain + 8% green routing = 40%
+  // Euro 5: 18% powertrain + 8% green routing = 26%
+  // Diesel: 0% powertrain + 8% green routing = 8%
+  const baseReduction = powertrainId === 'ev' ? 0.4 : powertrainId === 'euro5' ? 0.26 : 0.08;
+  const totalReductionRatio = Math.max(0.05, Math.min(0.55, baseReduction + pareto.extraCo2Bonus));
+
+  const actualCo2Kg = Math.round(baselineCo2Kg * (1 - totalReductionRatio) * 10) / 10;
+  const savedCo2Kg = Math.round((baselineCo2Kg - actualCo2Kg) * 10) / 10;
+  const reductionPct = Math.round(totalReductionRatio * 1000) / 10;
+  const actualIntensityG = Math.round(((actualCo2Kg * 1000) / Math.max(1, tonneKm)) * 10) / 10;
+
+  // Split WTW into WTT (Well-to-Tank) and TTW (Tank-to-Wheel)
+  const ttwCo2Kg = powertrainId === 'ev' ? 0.0 : Math.round(actualCo2Kg * 0.82 * 10) / 10;
+  const wttCo2Kg = Math.round((actualCo2Kg - ttwCo2Kg) * 10) / 10;
+
+  // Energy / Fuel consumed
+  const energyConsumed =
+    powertrainId === 'ev'
+      ? Math.round(distanceKm * (0.95 + weight * 0.018) * 10) / 10
+      : Math.round(distanceKm * (0.21 + weight * 0.0045) * 10) / 10;
+  const energyUnit = powertrainId === 'ev' ? 'kWh điện sạch' : 'Lít Diesel';
+
+  // Duration & ETA
+  const rawDuration = Number(realRoute.durationMinutes) || Math.round((distanceKm / 52) * 60);
+  const etaMinutes = Math.max(15, Math.round(rawDuration * pareto.etaMultiplier));
+
+  // Transparent Cost Breakdown (VND)
+  const baseTransportCostVnd = Math.round((distanceKm * 26500) / 1000) * 1000;
+  const payloadSurchargeVnd = Math.round((weight * 85000) / 1000) * 1000;
+  const tollFeeVnd = distanceKm > 40 ? 165000 : distanceKm > 22 ? 85000 : 45000;
+  const greenDiscountVnd =
+    powertrainId === 'ev'
+      ? Math.round(((baseTransportCostVnd + payloadSurchargeVnd) * 0.06) / 1000) * 1000
+      : powertrainId === 'euro5'
+        ? Math.round(((baseTransportCostVnd + payloadSurchargeVnd) * 0.03) / 1000) * 1000
+        : 0;
+
+  const estimatedCostVnd =
+    Math.round(
+      ((baseTransportCostVnd + payloadSurchargeVnd + tollFeeVnd - greenDiscountVnd) *
+        pareto.costMultiplier) /
+        1000
+    ) * 1000;
+
+  return {
+    distanceKm,
+    tonneKm,
+    etaMinutes,
+    baselineIntensityG,
+    actualIntensityG,
+    baselineCo2Kg,
+    wttCo2Kg,
+    ttwCo2Kg,
+    actualCo2Kg,
+    savedCo2Kg,
+    reductionPct,
+    energyConsumed,
+    energyUnit,
+    baseTransportCostVnd,
+    payloadSurchargeVnd,
+    tollFeeVnd,
+    greenDiscountVnd,
+    estimatedCostVnd,
+    previewWaypoints: realRoute.points
+  };
+}
+
+/**
+ * 5. TẠO BẢNG NHẬT KÝ ĐIỂM CHỐT GIAO THÔNG THỰC TẾ TRÊN TUYẾN (HIGHWAY CHECKPOINTS)
+ */
+const CORRIDOR_HIGHWAY_SEGMENTS = {
+  catlai_vsip: [
+    {
+      pct: 0,
+      name: 'Cổng Cảng Cát Lái (Trạm cân & Hải quan KV1)',
+      road: 'Đường Nguyễn Thị Định, TP. Thủ Đức'
+    },
+    { pct: 16, name: 'Nút giao Mỹ Thủy & Cầu Kỳ Hà', road: 'Đường Võ Chí Công (Vành Đai 2 Đông)' },
+    { pct: 44, name: 'Nút giao Trạm 2 & Cầu Rạch Chiếc', road: 'Xa lộ Hà Nội – Quốc lộ 1A' },
+    {
+      pct: 74,
+      name: 'Trạm thu phí Vĩnh Phú – Cửa ngõ Bình Dương',
+      road: 'Quốc lộ 13 (Đại lộ Bình Dương)'
+    },
+    {
+      pct: 100,
+      name: 'Cổng KCN VSIP 1 – Trung tâm Phân phối',
+      road: 'Số 8 Đại lộ Hữu Nghị, Thuận An'
+    }
+  ],
+  catlai_songthan: [
+    { pct: 0, name: 'Cổng Cảng Cát Lái (Khu A/B)', road: 'Đường Nguyễn Thị Định, TP. Thủ Đức' },
+    { pct: 20, name: 'Nút giao Mỹ Thủy – Vành Đai 2', road: 'Đường Võ Chí Công, TP. Thủ Đức' },
+    { pct: 55, name: 'Ngã tư Thủ Đức – Khu Công Nghệ Cao', road: 'Xa lộ Hà Nội' },
+    { pct: 82, name: 'Cầu vượt Sóng Thần – Quốc lộ 1A', road: 'Đại lộ Độc Lập, Dĩ An' },
+    { pct: 100, name: 'Cổng ICD Sóng Thần – Kho ngoại quan', road: 'Phường An Bình, TP. Dĩ An' }
+  ],
+  catlai_caimep: [
+    { pct: 0, name: 'Cổng Cảng Cát Lái', road: 'Đường Nguyễn Thị Định, TP. Thủ Đức' },
+    {
+      pct: 18,
+      name: 'Nút giao An Phú – ĐCT Long Thành',
+      road: 'Cao tốc TP.HCM – Long Thành – Dầu Giây'
+    },
+    { pct: 48, name: 'Nút giao Quốc lộ 51 – Long Thành', road: 'Quốc lộ 51, Đồng Nai' },
+    { pct: 78, name: 'KCN Phú Mỹ 1 – Thị xã Phú Mỹ', road: 'Đường Liên Cảng Cái Mép – Thị Vải' },
+    { pct: 100, name: 'Cảng Quốc tế Cái Mép (CMIT/TCTT)', road: 'Phường Phước Hòa, Phú Mỹ, BR-VT' }
+  ]
+};
+
+export function buildRouteCheckpoints(
+  originId,
+  destId,
+  originLabel,
+  destLabel,
+  distanceKm,
+  progressPct
+) {
+  const key = `${originId}_${destId}`;
+  const dist = Number(distanceKm) || 28.9;
+  const prog = Math.max(0, Math.min(100, Number(progressPct) || 0));
+
+  const template = CORRIDOR_HIGHWAY_SEGMENTS[key] || [
+    {
+      pct: 0,
+      name: `Cổng xuất bến ${originLabel?.split(',')[0] || 'Điểm đi'}`,
+      road: 'Trạm kiểm soát xuất phát & Cân tải trọng'
+    },
+    {
+      pct: 22,
+      name: 'Nhập làn Trục Vành Đai / Quốc lộ chính',
+      road: 'Hành lang vận tải xanh ưu tiên container'
+    },
+    {
+      pct: 52,
+      name: 'Nút giao Liên vùng & Trạm giám sát tải trọng',
+      road: 'Tuyến cao tốc / Quốc lộ liên tỉnh'
+    },
+    {
+      pct: 80,
+      name: 'Cửa ngõ Khu công nghiệp / Cảng đích',
+      road: 'Đường trục chính Khu công nghiệp'
+    },
+    {
+      pct: 100,
+      name: `Cổng nhận hàng ${destLabel?.split(',')[0] || 'Điểm đến'}`,
+      road: 'Bãi bốc dỡ & Điểm ký nhận điện tử ePOD'
+    }
+  ];
+
+  return template.map((cp, idx) => {
+    const kmAtPoint = Number(((cp.pct / 100) * dist).toFixed(1));
+    const nextPct = template[idx + 1]?.pct ?? 101;
+    let state = 'UPCOMING';
+    if (prog >= cp.pct && prog < nextPct && prog < 100) {
+      state = 'CURRENT';
+    } else if (prog >= cp.pct) {
+      state = 'PASSED';
+    }
+    return {
+      step: idx + 1,
+      pct: cp.pct,
+      kmAtPoint,
+      name: cp.name,
+      road: cp.road,
+      state,
+      deviationMeters: state === 'UPCOMING' ? null : Number((3.4 + (idx % 3) * 1.2).toFixed(1))
+    };
+  });
+}
