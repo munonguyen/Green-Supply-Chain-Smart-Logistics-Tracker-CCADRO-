@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import MapView from '../components/map/MapView';
 import RoutePolyline from '../components/map/RoutePolyline';
@@ -9,6 +9,7 @@ import DeviationMarker from '../components/map/DeviationMarker';
 import {
   Activity,
   AlertTriangle,
+  ArrowLeftRight,
   CheckCircle2,
   Compass,
   Leaf,
@@ -20,8 +21,7 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { getRealRoadRoute, interpolateRoadPosition } from '../services/roadRoutingService';
-
-const PLANNED_ROUTE = getRealRoadRoute('catlai', 'vsip').points;
+import { HUB_CORRIDOR_DIRECTORY } from '../services/logisticsReferenceData';
 
 const REROUTE_PATH = [
   [10.8525, 106.743],
@@ -44,6 +44,24 @@ export default function TripTrackingPage() {
   const [step, setStep] = useState(0);
   const [focusCoords, setFocusCoords] = useState(null);
 
+  // User-decided Origin and Destination
+  const [selectedOrigin, setSelectedOrigin] = useState('catlai');
+  const [selectedDest, setSelectedDest] = useState('vsip');
+
+  const originNode = useMemo(() => {
+    return HUB_CORRIDOR_DIRECTORY.find((h) => h.id === selectedOrigin) || HUB_CORRIDOR_DIRECTORY[0];
+  }, [selectedOrigin]);
+
+  const destNode = useMemo(() => {
+    return HUB_CORRIDOR_DIRECTORY.find((h) => h.id === selectedDest) || HUB_CORRIDOR_DIRECTORY[1];
+  }, [selectedDest]);
+
+  const activeRoadRoute = useMemo(() => {
+    return getRealRoadRoute(selectedOrigin, selectedDest);
+  }, [selectedOrigin, selectedDest]);
+
+  const activeRoute = simulationMode === 'rerouted' ? REROUTE_PATH : activeRoadRoute.points;
+
   const focusLat = parseFloat(searchParams.get('focusLat'));
   const focusLon = parseFloat(searchParams.get('focusLon'));
   const incidentBannerTitle = searchParams.get('incident');
@@ -64,7 +82,6 @@ export default function TripTrackingPage() {
     return () => clearInterval(timer);
   }, [isPlaying]);
 
-  const activeRoute = simulationMode === 'rerouted' ? REROUTE_PATH : PLANNED_ROUTE;
   const progress01 = 0.35 + (step % 55) * 0.01;
   const movingNormalPos = interpolateRoute(activeRoute, progress01);
   const deviationPosition = hasEmergencyFocus ? [focusLat, focusLon] : [10.8525, 106.743];
@@ -105,8 +122,8 @@ export default function TripTrackingPage() {
             Theo Dõi GPS Thời Gian Thực &amp; Cảnh Báo Lệch Tuyến
           </h2>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '2px' }}>
-            Chuyến xe <strong>V001 (51C-888.99)</strong> • Hành lang Cảng Cát Lái → KCN VSIP 1 Bình
-            Dương • Ngưỡng cảnh báo: 50m (Vàng) / 200m (Đỏ)
+            Chuyến xe <strong>V001 (51C-888.99)</strong> • Hành lang {originNode.label} →{' '}
+            {destNode.label} • Ngưỡng cảnh báo: 50m (Vàng) / 200m (Đỏ)
           </p>
         </div>
 
@@ -141,6 +158,104 @@ export default function TripTrackingPage() {
             <Leaf size={15} color="var(--accent-green)" />
             <span>Kiểm Toán Phát Thải Chuyến Đi</span>
           </Link>
+        </div>
+      </div>
+
+      {/* Interactive Origin & Destination Selector Bar */}
+      <div
+        className="card"
+        style={{
+          padding: '14px 18px',
+          marginBottom: '20px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '12px',
+          border: '1px solid rgba(16, 185, 129, 0.35)',
+          background: 'rgba(16, 185, 129, 0.05)'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          <span
+            style={{
+              fontSize: '0.78rem',
+              fontWeight: 800,
+              color: 'var(--accent-green)',
+              textTransform: 'uppercase'
+            }}
+          >
+            🚩 Tuyến giám sát do người dùng chọn:
+          </span>
+          <select
+            value={selectedOrigin}
+            onChange={(e) => setSelectedOrigin(e.target.value)}
+            style={{
+              padding: '6px 10px',
+              borderRadius: '8px',
+              border: '1px solid rgba(148, 163, 184, 0.3)',
+              background: 'var(--bg-secondary)',
+              color: 'inherit',
+              fontSize: '0.84rem',
+              fontWeight: 600
+            }}
+          >
+            {HUB_CORRIDOR_DIRECTORY.map((h) => (
+              <option key={h.id} value={h.id}>
+                {h.label} ({h.area})
+              </option>
+            ))}
+          </select>
+
+          <button
+            type="button"
+            onClick={() => {
+              const temp = selectedOrigin;
+              setSelectedOrigin(selectedDest);
+              setSelectedDest(temp);
+            }}
+            title="Đảo chiều tuyến đường"
+            style={{
+              height: 32,
+              padding: '0 8px',
+              borderRadius: 6,
+              border: '1px solid rgba(16,185,129,0.35)',
+              background: 'rgba(16,185,129,0.12)',
+              color: '#10b981',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            <ArrowLeftRight size={14} />
+          </button>
+
+          <select
+            value={selectedDest}
+            onChange={(e) => setSelectedDest(e.target.value)}
+            style={{
+              padding: '6px 10px',
+              borderRadius: '8px',
+              border: '1px solid rgba(148, 163, 184, 0.3)',
+              background: 'var(--bg-secondary)',
+              color: 'inherit',
+              fontSize: '0.84rem',
+              fontWeight: 600
+            }}
+          >
+            {HUB_CORRIDOR_DIRECTORY.map((h) => (
+              <option key={h.id} value={h.id}>
+                {h.label} ({h.area})
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+          Cự ly chuẩn:{' '}
+          <strong style={{ color: 'var(--accent-green)' }}>{activeRoadRoute.distanceKm} km</strong>{' '}
+          • Thời gian dự kiến: <strong>{activeRoadRoute.durationMinutes} phút</strong>
         </div>
       </div>
 
@@ -272,10 +387,18 @@ export default function TripTrackingPage() {
                   : `Đang bám tuyến chuẩn • Tốc độ ${liveSpeed} km/h`
             }
           >
-            <OriginMarker position={[10.762622, 106.795677]} title="Cảng Cát Lái, TP.HCM" />
-            <DestinationMarker position={[10.931215, 106.697426]} title="KCN VSIP 1, Bình Dương" />
+            <OriginMarker
+              position={activeRoute[0] || [10.7626, 106.7956]}
+              title={originNode.label}
+              label={originNode.label}
+            />
+            <DestinationMarker
+              position={activeRoute[activeRoute.length - 1] || [10.9312, 106.6974]}
+              title={destNode.label}
+              label={destNode.label}
+            />
             <RoutePolyline
-              positions={PLANNED_ROUTE}
+              positions={activeRoute}
               color={simulationMode === 'rerouted' ? '#64748b' : '#10b981'}
               weight={simulationMode === 'rerouted' ? 4 : 6}
               dashArray={simulationMode === 'rerouted' ? '8, 8' : null}

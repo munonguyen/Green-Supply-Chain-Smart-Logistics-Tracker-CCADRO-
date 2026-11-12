@@ -95,6 +95,72 @@ export const HUB_CORRIDOR_DIRECTORY = [
     evChargers: '14 trụ siêu sạc DC 350kW',
     maxWeightTons: 44,
     coldChainSupport: 'Cảng nước sâu quốc tế • 64 ổ cắm Reefer'
+  },
+  {
+    id: 'vsip2',
+    code: 'HUB-BDG-08',
+    label: 'KCN VSIP 2',
+    area: 'TP. Mới, Bình Dương',
+    address: 'Đường Dân Chủ, KCN VSIP 2, Phường Hòa Phú, TP. Thủ Dầu Một, Bình Dương',
+    coords: [11.0542, 106.6987],
+    primaryHighways: 'Đại lộ Bình Dương (QL13) – Tuyến ĐT 741 – Đường Dân Chủ',
+    customsGate: 'Chi cục Hải quan KCN VSIP 2 Bình Dương',
+    evChargers: '8 trụ sạc nhanh DC 180kW',
+    maxWeightTons: 40,
+    coldChainSupport: 'Hệ thống kho lạnh GSP dược phẩm & điện tử'
+  },
+  {
+    id: 'amata',
+    code: 'HUB-DNA-09',
+    label: 'KCN Amata Biên Hòa',
+    area: 'Biên Hòa, Đồng Nai',
+    address: 'Quốc lộ 1A, Phường Long Bình, TP. Biên Hòa, Đồng Nai',
+    coords: [10.9412, 106.8821],
+    primaryHighways: 'Quốc lộ 1A – Xa lộ Hà Nội – Đường Amata',
+    customsGate: 'Chi cục Hải quan KCN Biên Hòa – Đồng Nai',
+    evChargers: '6 trụ sạc nhanh DC 180kW',
+    maxWeightTons: 42,
+    coldChainSupport: 'Kho bãi trung chuyển công nghiệp'
+  },
+  {
+    id: 'longhau',
+    code: 'HUB-LAN-10',
+    label: 'KCN Long Hậu',
+    area: 'Cần Giuộc, Long An',
+    address: 'Ấp 3, Xã Long Hậu, Huyện Cần Giuộc, Long An',
+    coords: [10.6285, 106.7124],
+    primaryHighways:
+      'Đường Nguyễn Văn Tạo – Đường số 1 KCN Long Hậu – Cao tốc Bến Lức – Long Thành',
+    customsGate: 'Chi cục Hải quan Long An Cửa khẩu KV Long Hậu',
+    evChargers: '6 trụ sạc nhanh DC 180kW',
+    maxWeightTons: 38,
+    coldChainSupport: 'Trung tâm logistics thực phẩm sạch'
+  },
+  {
+    id: 'phuoclong',
+    code: 'HUB-SGN-11',
+    label: 'Cảng ICD Phước Long',
+    area: 'TP. Thủ Đức, TP. HCM',
+    address: 'Km 9 Xa lộ Hà Nội, Phường Phước Long A, TP. Thủ Đức, TP. HCM',
+    coords: [10.8245, 106.7689],
+    primaryHighways: 'Xa lộ Hà Nội – Đường Đỗ Xuân Hợp – Cầu Rạch Chiếc',
+    customsGate: 'Chi cục Hải quan ICD Phước Long 1-3',
+    evChargers: '8 trụ sạc nhanh DC 200kW',
+    maxWeightTons: 44,
+    coldChainSupport: 'Bãi cắm điện container lạnh 40ft'
+  },
+  {
+    id: 'tantao',
+    code: 'HUB-SGN-12',
+    label: 'KCN Tân Tạo',
+    area: 'Bình Tân, TP. HCM',
+    address: 'Quốc lộ 1A, Phường Tân Tạo A, Quận Bình Tân, TP. HCM',
+    coords: [10.7512, 106.5824],
+    primaryHighways: 'Quốc lộ 1A – Đường số 2 KCN Tân Tạo – Võ Văn Kiệt',
+    customsGate: 'Trạm giám sát hàng container Tây Nam TP.HCM',
+    evChargers: '6 trụ sạc DC 180kW',
+    maxWeightTons: 40,
+    coldChainSupport: 'Kho bảo quản thủy hải sản & nông sản'
   }
 ];
 
@@ -371,6 +437,38 @@ const CORRIDOR_HIGHWAY_SEGMENTS = {
     { pct: 48, name: 'Nút giao Quốc lộ 51 – Long Thành', road: 'Quốc lộ 51, Đồng Nai' },
     { pct: 78, name: 'KCN Phú Mỹ 1 – Thị xã Phú Mỹ', road: 'Đường Liên Cảng Cái Mép – Thị Vải' },
     { pct: 100, name: 'Cảng Quốc tế Cái Mép (CMIT/TCTT)', road: 'Phường Phước Hòa, Phú Mỹ, BR-VT' }
+  ],
+  catlai_tanbinh: [
+    { pct: 0, name: 'Cổng Cảng Cát Lái', road: 'Đường Nguyễn Thị Định, TP. Thủ Đức' },
+    { pct: 24, name: 'Cầu Phú Mỹ – Trục Vành Đai 2', road: 'Đường Võ Chí Công, Quận 7' },
+    { pct: 58, name: 'Nút giao Bình Thuận – Quốc lộ 1A', road: 'Đại lộ Nguyễn Văn Linh' },
+    { pct: 82, name: 'Ngã tư An Sương – Cửa ngõ Tây Bắc', road: 'Đường Trường Chinh – QL1A' },
+    { pct: 100, name: 'Cổng KCN Tân Bình (Khu A/B)', road: 'Đường Tây Thạnh, Quận Tân Phú' }
+  ],
+  catlai_nhontrach: [
+    { pct: 0, name: 'Cổng Cảng Cát Lái', road: 'Đường Nguyễn Thị Định, TP. Thủ Đức' },
+    { pct: 22, name: 'Nút giao Vành Đai 2 – Cao tốc Long Thành', road: 'ĐCT TP.HCM – Long Thành' },
+    { pct: 56, name: 'Nút giao đường 319B kết nối Nhơn Trạch', road: 'Đường 319B, Đồng Nai' },
+    {
+      pct: 82,
+      name: 'Trạm kiểm soát tải trọng KCN Nhơn Trạch',
+      road: 'Đường Tôn Đức Thắng (ĐT 25B)'
+    },
+    { pct: 100, name: 'Tổng kho KCN Nhơn Trạch 1-6', road: 'ĐT 25B, Nhơn Trạch, Đồng Nai' }
+  ],
+  catlai_hiepphuoc: [
+    { pct: 0, name: 'Cổng Cảng Cát Lái', road: 'Đường Nguyễn Thị Định, TP. Thủ Đức' },
+    { pct: 25, name: 'Cầu Phú Mỹ – Vượt sông Sài Gòn', road: 'Trục Vành Đai 2 Nam' },
+    { pct: 55, name: 'Nút giao Nguyễn Văn Linh & Nguyễn Hữu Thọ', road: 'Trục Bắc Nam TP.HCM' },
+    { pct: 80, name: 'KCN Long Hậu – Cửa ngõ Hiệp Phước', road: 'Đường Nguyễn Văn Tạo, Nhà Bè' },
+    { pct: 100, name: 'Cảng Tân Cảng Hiệp Phước', road: 'Khu B, KCN Hiệp Phước, Nhà Bè' }
+  ],
+  vsip_caimep: [
+    { pct: 0, name: 'Cổng KCN VSIP 1', road: 'Số 8 Đại lộ Hữu Nghị, Thuận An' },
+    { pct: 18, name: 'Nút giao Bình Phước & Quốc lộ 1A', road: 'Quốc lộ 13' },
+    { pct: 45, name: 'Nút giao Trạm 2 – Vành Đai 2', road: 'Xa lộ Hà Nội' },
+    { pct: 72, name: 'Trạm thu phí Long Phước & Nút giao QL51', road: 'ĐCT Long Thành – Dầu Giây' },
+    { pct: 100, name: 'Cảng Quốc tế Cái Mép', road: 'Đường Liên Cảng Cái Mép – Thị Vải' }
   ]
 };
 
@@ -383,36 +481,51 @@ export function buildRouteCheckpoints(
   progressPct
 ) {
   const key = `${originId}_${destId}`;
+  const revKey = `${destId}_${originId}`;
   const dist = Number(distanceKm) || 28.9;
   const prog = Math.max(0, Math.min(100, Number(progressPct) || 0));
 
-  const template = CORRIDOR_HIGHWAY_SEGMENTS[key] || [
-    {
-      pct: 0,
-      name: `Cổng xuất bến ${originLabel?.split(',')[0] || 'Điểm đi'}`,
-      road: 'Trạm kiểm soát xuất phát & Cân tải trọng'
-    },
-    {
-      pct: 22,
-      name: 'Nhập làn Trục Vành Đai / Quốc lộ chính',
-      road: 'Hành lang vận tải xanh ưu tiên container'
-    },
-    {
-      pct: 52,
-      name: 'Nút giao Liên vùng & Trạm giám sát tải trọng',
-      road: 'Tuyến cao tốc / Quốc lộ liên tỉnh'
-    },
-    {
-      pct: 80,
-      name: 'Cửa ngõ Khu công nghiệp / Cảng đích',
-      road: 'Đường trục chính Khu công nghiệp'
-    },
-    {
-      pct: 100,
-      name: `Cổng nhận hàng ${destLabel?.split(',')[0] || 'Điểm đến'}`,
-      road: 'Bãi bốc dỡ & Điểm ký nhận điện tử ePOD'
-    }
-  ];
+  let template = CORRIDOR_HIGHWAY_SEGMENTS[key];
+  if (!template && CORRIDOR_HIGHWAY_SEGMENTS[revKey]) {
+    template = CORRIDOR_HIGHWAY_SEGMENTS[revKey]
+      .map((s) => ({
+        ...s,
+        pct: 100 - s.pct
+      }))
+      .reverse();
+  }
+
+  if (!template) {
+    const oName = originLabel ? originLabel.split(',')[0] : 'Điểm xuất phát';
+    const dName = destLabel ? destLabel.split(',')[0] : 'Điểm giao hàng';
+    template = [
+      {
+        pct: 0,
+        name: `Cổng xuất bến ${oName} (Trạm cân & Kiểm soát)`,
+        road: 'Trục giao thông nội bộ & Cửa ngõ xuất phát'
+      },
+      {
+        pct: 22,
+        name: 'Nhập làn Trục Vành Đai / Quốc lộ chính',
+        road: 'Hành lang vận tải logistics ưu tiên container'
+      },
+      {
+        pct: 52,
+        name: 'Nút giao Liên vùng & Trạm giám sát giao thông',
+        road: 'Tuyến cao tốc / Quốc lộ liên tỉnh kết nối'
+      },
+      {
+        pct: 80,
+        name: `Cửa ngõ tiếp cận ${dName}`,
+        road: 'Trục đường chính KCN / Cảng biển đích'
+      },
+      {
+        pct: 100,
+        name: `Cổng nhận hàng ${dName} (Bãi dỡ hàng)`,
+        road: 'Điểm ký nhận điện tử ePOD & Bàn giao container'
+      }
+    ];
+  }
 
   return template.map((cp, idx) => {
     const kmAtPoint = Number(((cp.pct / 100) * dist).toFixed(1));

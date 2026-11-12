@@ -69,7 +69,12 @@ const NODE_COORDINATES = {
   catlai: [10.7623, 106.7824],
   nhontrach: [10.7352, 106.8954],
   hiepphuoc: [10.6354, 106.7522],
-  caimep: [10.5256, 107.0225]
+  caimep: [10.5256, 107.0225],
+  vsip2: [11.0542, 106.6987],
+  amata: [10.9412, 106.8821],
+  longhau: [10.6285, 106.7124],
+  phuoclong: [10.8245, 106.7689],
+  tantao: [10.7512, 106.5824]
 };
 
 const NODE_ADDRESSES = {
@@ -79,7 +84,12 @@ const NODE_ADDRESSES = {
   catlai: '1295B Nguyễn Thị Định, P. Cát Lái, TP. Thủ Đức, TP. HCM',
   nhontrach: 'Đường Tôn Đức Thắng (25B), KCN Nhơn Trạch, Đồng Nai',
   hiepphuoc: 'Khu B, Đường số 1, KCN Hiệp Phước, Nhà Bè, TP. HCM',
-  caimep: 'Khu phố Tân Lộc, P. Phước Hòa, Phú Mỹ, Bà Rịa – Vũng Tàu'
+  caimep: 'Khu phố Tân Lộc, P. Phước Hòa, Phú Mỹ, Bà Rịa – Vũng Tàu',
+  vsip2: 'Đường Dân Chủ, KCN VSIP 2, Phường Hòa Phú, TP. Thủ Dầu Một, Bình Dương',
+  amata: 'Quốc lộ 1A, Phường Long Bình, TP. Biên Hòa, Đồng Nai',
+  longhau: 'Ấp 3, Xã Long Hậu, Huyện Cần Giuộc, Long An',
+  phuoclong: 'Km 9 Xa lộ Hà Nội, P. Phước Long A, TP. Thủ Đức, TP. HCM',
+  tantao: 'Quốc lộ 1A, P. Tân Tạo A, Quận Bình Tân, TP. HCM'
 };
 
 /**
@@ -331,6 +341,13 @@ export default function CustomerPortalPage() {
     });
   }, [userOwnShipments, statusFilter, searchQuery]);
 
+  // User-decided live route tracking state (allows user to freely decide Origin & Destination anytime)
+  const [liveOriginId, setLiveOriginId] = useState('catlai');
+  const [liveDestId, setLiveDestId] = useState('vsip');
+  const [trackingSource, setTrackingSource] = useState('interactive'); // 'interactive' (Tuyến tự chọn) | 'shipment' (Vận đơn đã đặt)
+  const [interactiveProgress, setInteractiveProgress] = useState(0.0);
+  const [interactiveSpeedKmh, setInteractiveSpeedKmh] = useState(52);
+
   // Active shipment currently selected for tracking inspection
   const activeShipment = useMemo(() => {
     if (userOwnShipments.length === 0) return null;
@@ -339,68 +356,197 @@ export default function CustomerPortalPage() {
     );
   }, [userOwnShipments, selectedCode]);
 
+  // Determine current active nodes for tracking (user-decided or active shipment)
+  const trackingOriginNode = useMemo(() => {
+    const id =
+      trackingSource === 'shipment' && activeShipment ? activeShipment.originId : liveOriginId;
+    return HUB_CORRIDOR_DIRECTORY.find((h) => h.id === id) || HUB_CORRIDOR_DIRECTORY[0];
+  }, [trackingSource, activeShipment, liveOriginId]);
+
+  const trackingDestNode = useMemo(() => {
+    const id =
+      trackingSource === 'shipment' && activeShipment ? activeShipment.destinationId : liveDestId;
+    return HUB_CORRIDOR_DIRECTORY.find((h) => h.id === id) || HUB_CORRIDOR_DIRECTORY[1];
+  }, [trackingSource, activeShipment, liveDestId]);
+
+  const trackingOriginLabel = useMemo(() => {
+    if (trackingSource === 'shipment' && activeShipment) return activeShipment.originName;
+    return `${trackingOriginNode.label}, ${trackingOriginNode.area}`;
+  }, [trackingSource, activeShipment, trackingOriginNode]);
+
+  const trackingDestLabel = useMemo(() => {
+    if (trackingSource === 'shipment' && activeShipment) return activeShipment.destinationName;
+    return `${trackingDestNode.label}, ${trackingDestNode.area}`;
+  }, [trackingSource, activeShipment, trackingDestNode]);
+
+  // Turn-by-turn road route strictly calculated from the user-decided Origin and Destination
+  const currentLiveRoute = useMemo(() => {
+    const oId =
+      trackingSource === 'shipment' && activeShipment ? activeShipment.originId : liveOriginId;
+    const dId =
+      trackingSource === 'shipment' && activeShipment ? activeShipment.destinationId : liveDestId;
+    return getRealRoadRoute(oId, dId);
+  }, [trackingSource, activeShipment, liveOriginId, liveDestId]);
+
+  const trackingWaypoints = useMemo(() => {
+    if (trackingSource === 'shipment' && activeShipment?.waypoints?.length > 5) {
+      return activeShipment.waypoints;
+    }
+    return currentLiveRoute.points || [];
+  }, [trackingSource, activeShipment, currentLiveRoute]);
+
+  const trackingProgress = useMemo(() => {
+    if (trackingSource === 'shipment' && activeShipment) {
+      return Number(activeShipment.progress) || 0;
+    }
+    return interactiveProgress;
+  }, [trackingSource, activeShipment, interactiveProgress]);
+
+  const trackingSpeedKmh = useMemo(() => {
+    if (trackingSource === 'shipment' && activeShipment) {
+      return Number(activeShipment.speedKmh) || 52;
+    }
+    return interactiveSpeedKmh;
+  }, [trackingSource, activeShipment, interactiveSpeedKmh]);
+
+  const trackingDistanceKm = useMemo(() => {
+    if (trackingSource === 'shipment' && activeShipment) {
+      return Number(activeShipment.distanceKm) || currentLiveRoute.distanceKm;
+    }
+    return currentLiveRoute.distanceKm;
+  }, [trackingSource, activeShipment, currentLiveRoute]);
+
+  const trackingTraveledKm = useMemo(() => {
+    return Number(((trackingProgress / 100) * trackingDistanceKm).toFixed(1));
+  }, [trackingProgress, trackingDistanceKm]);
+
+  const trackingRemainingKm = useMemo(() => {
+    return Number(Math.max(0, trackingDistanceKm - trackingTraveledKm).toFixed(1));
+  }, [trackingDistanceKm, trackingTraveledKm]);
+
+  const trackingEtaMinutes = useMemo(() => {
+    if (trackingRemainingKm <= 0) return 0;
+    return Math.max(1, Math.round((trackingRemainingKm / Math.max(20, trackingSpeedKmh)) * 60));
+  }, [trackingRemainingKm, trackingSpeedKmh]);
+
+  // Vehicle position on map
+  const trackingVehiclePosition = useMemo(() => {
+    if (!trackingWaypoints || trackingWaypoints.length === 0) return [10.7623, 106.7824];
+    return interpolateRoadPosition(trackingWaypoints, trackingProgress);
+  }, [trackingWaypoints, trackingProgress]);
+
+  // Highway Checkpoints along user-decided route
+  const trackingCheckpoints = useMemo(() => {
+    return buildRouteCheckpoints(
+      trackingOriginNode.id,
+      trackingDestNode.id,
+      trackingOriginLabel,
+      trackingDestLabel,
+      trackingDistanceKm,
+      trackingProgress
+    );
+  }, [
+    trackingOriginNode,
+    trackingDestNode,
+    trackingOriginLabel,
+    trackingDestLabel,
+    trackingDistanceKm,
+    trackingProgress
+  ]);
+
   // Real-time GPS telemetry tick based on authentic vehicle speed & physics
   useEffect(() => {
-    if (!isLiveSim || simSpeed === 0 || userOwnShipments.length === 0) return undefined;
-    const hasInTransit = userOwnShipments.some((s) => s.status === 'IN_TRANSIT');
-    if (!hasInTransit) return undefined;
+    if (!isLiveSim || simSpeed === 0) return undefined;
 
     const intervalMs = 2000; // 2 seconds per GPS heartbeat
     const dtSeconds = intervalMs / 1000;
 
     const timer = setInterval(() => {
-      setAllShipments((prev) => {
-        let changed = false;
-        const updated = prev.map((s) => {
-          if (s.status !== 'IN_TRANSIT') return s;
-          changed = true;
-
-          const distKm = Number(s.distanceKm) || 28.9;
-          const currentSpeed = Number(s.speedKmh) || 52;
-
-          // Natural speed variation (e.g. 48 - 58 km/h depending on road conditions)
-          const speedDelta = (Math.random() - 0.48) * 1.8;
-          const nextSpeed = Math.round(Math.max(42, Math.min(64, currentSpeed + speedDelta)));
-
-          // Physical distance traveled in dtSeconds at nextSpeed (m/s * s * multiplier):
-          const metersMoved = ((nextSpeed * 1000) / 3600) * dtSeconds * simSpeed;
-          const totalMeters = distKm * 1000;
-          const pctMoved = (metersMoved / totalMeters) * 100;
-
-          const currentProg = Number(s.progress) || 0;
-          const nextProg = Math.min(99.9, Number((currentProg + pctMoved).toFixed(2)));
-
-          // Realistic remaining km and ETA in minutes
-          const traveledKm = Number(((nextProg / 100) * distKm).toFixed(1));
-          const remainingKm = Number(Math.max(0, distKm - traveledKm).toFixed(1));
-          const nextEta =
-            remainingKm <= 0 ? 0 : Math.max(1, Math.round((remainingKm / nextSpeed) * 60));
-
-          return {
-            ...s,
-            progress: nextProg,
-            speedKmh: nextSpeed,
-            traveledKm,
-            remainingKm,
-            etaMinutes: nextEta,
-            currentLocation:
-              nextProg < 5
-                ? `Cổng xuất bến ${s.originName?.split(',')[0] || ''}`
-                : nextProg > 92
-                  ? `Tiếp cận điểm giao ${s.destinationName?.split(',')[0] || ''}`
-                  : `Đang lưu thông trên hành lang ${distKm} km (50-60 km/h)`
-          };
-        });
-
-        if (changed) {
-          saveStoredUserShipments(updated);
-        }
-        return updated;
+      // 1. Tick for interactive user-defined route
+      setInteractiveSpeedKmh((prevSpd) => {
+        const delta = (Math.random() - 0.48) * 1.8;
+        return Math.round(Math.max(44, Math.min(62, prevSpd + delta)));
       });
+
+      setInteractiveProgress((prevProg) => {
+        const distKm = Number(currentLiveRoute.distanceKm) || 28.9;
+        const spd = interactiveSpeedKmh;
+        const metersMoved = ((spd * 1000) / 3600) * dtSeconds * simSpeed;
+        const totalMeters = distKm * 1000;
+        const pctMoved = (metersMoved / totalMeters) * 100;
+        return Math.min(99.9, Number((prevProg + pctMoved).toFixed(2)));
+      });
+
+      // 2. Tick for user own shipments in transit
+      if (userOwnShipments.length > 0 && userOwnShipments.some((s) => s.status === 'IN_TRANSIT')) {
+        setAllShipments((prev) => {
+          let changed = false;
+          const updated = prev.map((s) => {
+            if (s.status !== 'IN_TRANSIT') return s;
+            changed = true;
+
+            const distKm = Number(s.distanceKm) || 28.9;
+            const currentSpeed = Number(s.speedKmh) || 52;
+            const speedDelta = (Math.random() - 0.48) * 1.8;
+            const nextSpeed = Math.round(Math.max(42, Math.min(64, currentSpeed + speedDelta)));
+
+            const metersMoved = ((nextSpeed * 1000) / 3600) * dtSeconds * simSpeed;
+            const totalMeters = distKm * 1000;
+            const pctMoved = (metersMoved / totalMeters) * 100;
+
+            const currentProg = Number(s.progress) || 0;
+            const nextProg = Math.min(99.9, Number((currentProg + pctMoved).toFixed(2)));
+
+            const traveledKm = Number(((nextProg / 100) * distKm).toFixed(1));
+            const remainingKm = Number(Math.max(0, distKm - traveledKm).toFixed(1));
+            const nextEta =
+              remainingKm <= 0 ? 0 : Math.max(1, Math.round((remainingKm / nextSpeed) * 60));
+
+            return {
+              ...s,
+              progress: nextProg,
+              speedKmh: nextSpeed,
+              traveledKm,
+              remainingKm,
+              etaMinutes: nextEta,
+              currentLocation:
+                nextProg < 5
+                  ? `Cổng xuất bến ${s.originName?.split(',')[0] || ''}`
+                  : nextProg > 92
+                    ? `Tiếp cận điểm giao ${s.destinationName?.split(',')[0] || ''}`
+                    : `Đang lưu thông trên hành lang ${distKm} km (50-60 km/h)`
+            };
+          });
+
+          if (changed) {
+            saveStoredUserShipments(updated);
+          }
+          return updated;
+        });
+      }
     }, intervalMs);
 
     return () => clearInterval(timer);
-  }, [isLiveSim, simSpeed, userOwnShipments]);
+  }, [isLiveSim, simSpeed, currentLiveRoute.distanceKm, interactiveSpeedKmh, userOwnShipments]);
+
+  // Handle switching / deciding route interactively
+  const handleSelectRoute = (oId, dId) => {
+    setLiveOriginId(oId);
+    setLiveDestId(dId);
+    setInteractiveProgress(0.0);
+    setTrackingSource('interactive');
+    if (mapInstanceRef.current) {
+      const newRoute = getRealRoadRoute(oId, dId);
+      if (newRoute.points && newRoute.points.length > 0) {
+        const bounds = L.latLngBounds(newRoute.points);
+        mapInstanceRef.current.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
+      }
+    }
+  };
+
+  const handleSwapRoute = () => {
+    handleSelectRoute(liveDestId, liveOriginId);
+  };
 
   // Reset progress to 0% to allow testing departure from origin depot
   const handleResetTripProgress = (shipmentCode) => {
@@ -424,50 +570,37 @@ export default function CustomerPortalPage() {
     });
   };
 
-  const activeShipmentWaypoints = useMemo(() => {
-    if (!activeShipment) return [];
-    // Priority: retrieve authentic high-resolution road route
-    const realRoute = getRealRoadRoute(
-      activeShipment.originId || activeShipment.originName || activeShipment.originCoords,
-      activeShipment.destinationId || activeShipment.destinationName || activeShipment.destCoords
-    );
-    if (realRoute && realRoute.points && realRoute.points.length > 5) {
-      return realRoute.points;
+  const handleResetCurrentProgress = () => {
+    if (trackingSource === 'shipment' && activeShipment) {
+      handleResetTripProgress(activeShipment.shipmentCode);
+    } else {
+      setInteractiveProgress(0.0);
     }
-    if (activeShipment.waypoints?.length > 10) {
-      return activeShipment.waypoints;
-    }
-    return realRoute?.points || [];
-  }, [activeShipment]);
+  };
 
-  const activeVehiclePosition = useMemo(() => {
-    if (!activeShipment || activeShipmentWaypoints.length === 0) return [10.7623, 106.7824];
-    return interpolateRoadPosition(activeShipmentWaypoints, activeShipment.progress || 0);
-  }, [activeShipment, activeShipmentWaypoints]);
-
-  // Highway Checkpoints for active shipment
-  const activeCheckpoints = useMemo(() => {
-    if (!activeShipment) return [];
-    return buildRouteCheckpoints(
-      activeShipment.originId,
-      activeShipment.destinationId,
-      activeShipment.originName,
-      activeShipment.destinationName,
-      activeShipment.distanceKm,
-      activeShipment.progress
-    );
-  }, [activeShipment]);
+  const handleBookCurrentRoute = () => {
+    setBookingForm((prev) => ({
+      ...prev,
+      originId: trackingOriginNode.id,
+      destinationId: trackingDestNode.id
+    }));
+    setActiveTab('booking');
+  };
 
   useEffect(() => {
-    if (followVehicle && mapInstanceRef.current && activeShipment) {
-      mapInstanceRef.current.panTo(activeVehiclePosition, { animate: true, duration: 0.8 });
+    if (followVehicle && mapInstanceRef.current && trackingVehiclePosition) {
+      mapInstanceRef.current.panTo(trackingVehiclePosition, { animate: true, duration: 0.8 });
     }
-  }, [followVehicle, activeVehiclePosition, activeShipment]);
+  }, [followVehicle, trackingVehiclePosition]);
 
   // Live scientific quote calculation for Booking tab (GLEC v3.0 & Pareto UC05)
   const bookingQuote = useMemo(() => {
-    const originNode = MAP_NODES.find((n) => n.id === bookingForm.originId) || MAP_NODES[3];
-    const destNode = MAP_NODES.find((n) => n.id === bookingForm.destinationId) || MAP_NODES[0];
+    const originNode =
+      HUB_CORRIDOR_DIRECTORY.find((n) => n.id === bookingForm.originId) ||
+      HUB_CORRIDOR_DIRECTORY[0];
+    const destNode =
+      HUB_CORRIDOR_DIRECTORY.find((n) => n.id === bookingForm.destinationId) ||
+      HUB_CORRIDOR_DIRECTORY[1];
     const powertrain = POWERTRAINS.find((p) => p.id === bookingForm.powertrainId) || POWERTRAINS[0];
     const fleetConfig =
       STANDARD_FLEET_CATALOG.find((f) => f.powertrainId === bookingForm.powertrainId) ||
@@ -2011,7 +2144,7 @@ export default function CustomerPortalPage() {
                 </div>
 
                 <MapView
-                  center={activeShipment ? activeVehiclePosition : [10.785, 106.765]}
+                  center={trackingVehiclePosition || [10.785, 106.765]}
                   zoom={activeShipment ? 11 : 10}
                   height="360px"
                   defaultTile="google_hybrid"
@@ -2024,28 +2157,33 @@ export default function CustomerPortalPage() {
                   }
                 >
                   <LogisticsHubMarkers />
-                  {activeShipment && (
+                  {trackingWaypoints.length > 0 && (
                     <>
                       <RoutePolyline
-                        positions={activeShipmentWaypoints}
+                        positions={trackingWaypoints}
                         color="#10b981"
                         weight={5}
                         showCorridorBuffer={true}
                       />
-                      <OriginMarker
-                        position={activeShipmentWaypoints[0]}
-                        label={activeShipment.originName}
-                      />
+                      <OriginMarker position={trackingWaypoints[0]} label={trackingOriginLabel} />
                       <DestinationMarker
-                        position={activeShipmentWaypoints[activeShipmentWaypoints.length - 1]}
-                        label={activeShipment.destinationName}
+                        position={trackingWaypoints[trackingWaypoints.length - 1]}
+                        label={trackingDestLabel}
                       />
                       <VehicleMarker
-                        position={activeVehiclePosition}
-                        vehicleCode={activeShipment.licensePlate}
-                        speedKmh={activeShipment.speedKmh}
+                        position={trackingVehiclePosition}
+                        vehicleCode={
+                          trackingSource === 'shipment' && activeShipment
+                            ? activeShipment.licensePlate
+                            : '51C-ECO.99'
+                        }
+                        speedKmh={trackingSpeedKmh}
                         status="ON_ROUTE"
-                        label={activeShipment.vehicleType}
+                        label={
+                          trackingSource === 'shipment' && activeShipment
+                            ? activeShipment.vehicleType
+                            : 'Xe đầu kéo điện (EV)'
+                        }
                       />
                     </>
                   )}
@@ -2055,69 +2193,284 @@ export default function CustomerPortalPage() {
           )}
 
           {/* ══════════════════════════════════════════════════════════════════
-              TAB 2: 3D REAL-TIME GOOGLE MAP TRACKING (ONLY USER'S OWN ORDERS)
+              TAB 2: 3D REAL-TIME GOOGLE MAP TRACKING (USER-DECIDED ROUTE OR ORDERS)
           ══════════════════════════════════════════════════════════════════ */}
           {activeTab === 'tracking' && (
-            <div>
-              {userOwnShipments.length === 0 ? (
+            <div style={{ display: 'grid', gap: 20 }}>
+              {/* TOP: Interactive Origin & Destination Controller */}
+              <div
+                style={{
+                  padding: '20px 24px',
+                  borderRadius: 20,
+                  background: cardBg,
+                  border: '1px solid rgba(16, 185, 129, 0.35)',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.12)'
+                }}
+              >
                 <div
                   style={{
-                    padding: 28,
-                    borderRadius: 20,
-                    background: cardBg,
-                    border: cardBorder
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: 12,
+                    marginBottom: 16
                   }}
                 >
-                  <div
-                    style={{
-                      padding: '48px 24px',
-                      textAlign: 'center',
-                      borderRadius: 16,
-                      background: subtleBg,
-                      border: '1px dashed rgba(16, 185, 129, 0.35)',
-                      maxWidth: 620,
-                      margin: '0 auto'
-                    }}
-                  >
-                    <Navigation
-                      size={44}
-                      color="#10b981"
-                      style={{ opacity: 0.65, marginBottom: 12 }}
-                    />
-                    <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: 6 }}>
-                      Hiện Chưa Có Vận Đơn Nào Được Khởi Tạo
-                    </h3>
-                    <p
+                  <div>
+                    <div
                       style={{
-                        fontSize: '0.85rem',
-                        opacity: 0.78,
-                        lineHeight: 1.5,
-                        marginBottom: 20
+                        fontSize: '0.72rem',
+                        fontWeight: 800,
+                        color: '#10b981',
+                        letterSpacing: '0.06em',
+                        textTransform: 'uppercase'
                       }}
                     >
-                      Tài khoản của bạn vừa đăng ký và chưa đặt chuyến xe nào. Hãy tạo vận đơn vận
-                      chuyển xanh đầu tiên để kích hoạt hệ thống phát tọa độ GPS 3D và giám sát vệ
-                      tinh thời gian thực.
+                      BỘ ĐIỀU KHIỂN ĐỊNH VỊ REAL-TIME DO NGƯỜI DÙNG QUYẾT ĐỊNH
+                    </div>
+                    <h2 style={{ fontSize: '1.24rem', fontWeight: 800, margin: '3px 0' }}>
+                      Tùy Chọn Điểm Bắt Đầu &amp; Điểm Tới Trên Bản Đồ Vệ Tinh 3D
+                    </h2>
+                    <p style={{ fontSize: '0.8rem', opacity: 0.8, margin: 0 }}>
+                      Khảo sát lộ trình tim đường cao tốc thực tế, các trạm kiểm soát liên tỉnh, tốc
+                      độ xe chạy và hạch toán giảm phát thải GLEC v3.0 tức thì.
                     </p>
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab('booking')}
-                      className="lp-btn lp-btn--primary"
-                    >
-                      <PlusCircle size={16} /> Đặt Thuê Xe &amp; Tạo Vận Đơn Đầu Tiên
-                    </button>
                   </div>
+
+                  {/* Mode switcher if user has booked shipments */}
+                  {userOwnShipments.length > 0 && (
+                    <div
+                      style={{
+                        display: 'inline-flex',
+                        background: subtleBg,
+                        padding: 3,
+                        borderRadius: 10,
+                        border: '1px solid rgba(148,163,184,0.2)'
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setTrackingSource('interactive')}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: 7,
+                          border: 'none',
+                          fontSize: '0.76rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          background: trackingSource === 'interactive' ? '#10b981' : 'transparent',
+                          color: trackingSource === 'interactive' ? '#042f2e' : 'inherit'
+                        }}
+                      >
+                        ● Tuyến Tự Chọn ({HUB_CORRIDOR_DIRECTORY.length} Hubs)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTrackingSource('shipment')}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: 7,
+                          border: 'none',
+                          fontSize: '0.76rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          background: trackingSource === 'shipment' ? '#10b981' : 'transparent',
+                          color: trackingSource === 'shipment' ? '#042f2e' : 'inherit'
+                        }}
+                      >
+                        📦 Vận Đơn Của Bạn ({userOwnShipments.length})
+                      </button>
+                    </div>
+                  )}
                 </div>
-              ) : (
+
+                {/* Origin & Destination Dropdown Selectors */}
                 <div
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: 'minmax(280px, 340px) 1fr',
-                    gap: 20,
-                    alignItems: 'start'
+                    gridTemplateColumns:
+                      'repeat(auto-fit, minmax(240px, 1fr)) auto repeat(auto-fit, minmax(240px, 1fr)) auto',
+                    gap: 12,
+                    alignItems: 'end'
                   }}
                 >
-                  {/* Left: Real-time active orders picker */}
+                  {/* Origin */}
+                  <div>
+                    <label
+                      style={{
+                        display: 'block',
+                        fontSize: '0.76rem',
+                        fontWeight: 700,
+                        marginBottom: 6,
+                        color: '#10b981'
+                      }}
+                    >
+                      🚩 Điểm Bắt Đầu (Origin) *
+                    </label>
+                    <select
+                      value={liveOriginId}
+                      onChange={(e) => handleSelectRoute(e.target.value, liveDestId)}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        borderRadius: 10,
+                        background: isDark ? '#0f172a' : '#f8fafc',
+                        border: '1px solid rgba(16, 185, 129, 0.4)',
+                        color: 'inherit',
+                        fontSize: '0.85rem',
+                        fontWeight: 600
+                      }}
+                    >
+                      {HUB_CORRIDOR_DIRECTORY.map((h) => (
+                        <option key={h.id} value={h.id}>
+                          {h.label} — {h.area}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Swap Button */}
+                  <button
+                    type="button"
+                    onClick={handleSwapRoute}
+                    title="Đảo chiều hành trình (Swap Origin & Destination)"
+                    style={{
+                      height: 42,
+                      padding: '0 14px',
+                      borderRadius: 10,
+                      border: '1px solid rgba(16,185,129,0.35)',
+                      background: 'rgba(16,185,129,0.12)',
+                      color: '#10b981',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <ArrowLeftRight size={16} />
+                  </button>
+
+                  {/* Destination */}
+                  <div>
+                    <label
+                      style={{
+                        display: 'block',
+                        fontSize: '0.76rem',
+                        fontWeight: 700,
+                        marginBottom: 6,
+                        color: '#38bdf8'
+                      }}
+                    >
+                      🏁 Điểm Tới (Destination) *
+                    </label>
+                    <select
+                      value={liveDestId}
+                      onChange={(e) => handleSelectRoute(liveOriginId, e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        borderRadius: 10,
+                        background: isDark ? '#0f172a' : '#f8fafc',
+                        border: '1px solid rgba(56, 189, 248, 0.4)',
+                        color: 'inherit',
+                        fontSize: '0.85rem',
+                        fontWeight: 600
+                      }}
+                    >
+                      {HUB_CORRIDOR_DIRECTORY.map((h) => (
+                        <option key={h.id} value={h.id}>
+                          {h.label} — {h.area}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Quick Book Button */}
+                  <button
+                    type="button"
+                    onClick={handleBookCurrentRoute}
+                    className="lp-btn lp-btn--primary"
+                    style={{
+                      height: 42,
+                      padding: '0 18px',
+                      whiteSpace: 'nowrap',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6
+                    }}
+                    title="Chuyển sang form đặt xe với điểm bắt đầu và điểm tới vừa chọn"
+                  >
+                    <PlusCircle size={16} /> Đặt Thuê Tuyến Này
+                  </button>
+                </div>
+
+                {/* Quick Corridor Selection Chips */}
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: 6,
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    marginTop: 14,
+                    paddingTop: 12,
+                    borderTop: '1px solid rgba(148,163,184,0.15)'
+                  }}
+                >
+                  <span style={{ fontSize: '0.72rem', opacity: 0.75, fontWeight: 700 }}>
+                    Hành lang gợi ý:
+                  </span>
+                  {[
+                    { o: 'catlai', d: 'vsip', label: 'Cát Lái → VSIP 1 (28.9 km)' },
+                    { o: 'catlai', d: 'songthan', label: 'Cát Lái → Sóng Thần (18.6 km)' },
+                    { o: 'catlai', d: 'caimep', label: 'Cát Lái → Cái Mép (67.4 km)' },
+                    { o: 'tanbinh', d: 'vsip', label: 'Tân Bình → VSIP 1 (24.2 km)' },
+                    { o: 'hiepphuoc', d: 'nhontrach', label: 'Hiệp Phước → Nhơn Trạch (39.8 km)' },
+                    { o: 'caimep', d: 'vsip2', label: 'Cái Mép → VSIP 2 (82.1 km)' },
+                    { o: 'amata', d: 'catlai', label: 'Amata → Cát Lái (34.5 km)' },
+                    { o: 'longhau', d: 'vsip', label: 'Long Hậu → VSIP 1 (38.2 km)' }
+                  ].map((corr) => {
+                    const isActive = liveOriginId === corr.o && liveDestId === corr.d;
+                    return (
+                      <button
+                        key={`${corr.o}-${corr.d}`}
+                        type="button"
+                        onClick={() => handleSelectRoute(corr.o, corr.d)}
+                        style={{
+                          fontSize: '0.72rem',
+                          fontWeight: isActive ? 800 : 600,
+                          padding: '4px 9px',
+                          borderRadius: 8,
+                          border: isActive
+                            ? '1.5px solid #10b981'
+                            : '1px solid rgba(148,163,184,0.25)',
+                          background: isActive ? 'rgba(16,185,129,0.18)' : subtleBg,
+                          color: isActive ? '#10b981' : 'inherit',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s'
+                        }}
+                      >
+                        {corr.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* MAIN CONTENT: Shipment Selector (if any) + 3D Map & Telemetry Inspector */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns:
+                    trackingSource === 'shipment' && userOwnShipments.length > 0
+                      ? 'minmax(280px, 340px) 1fr'
+                      : '1fr',
+                  gap: 20,
+                  alignItems: 'start'
+                }}
+              >
+                {/* Left Column: Shipment List (only when tracking user shipments) */}
+                {trackingSource === 'shipment' && userOwnShipments.length > 0 && (
                   <div
                     style={{
                       padding: 18,
@@ -2148,7 +2501,13 @@ export default function CustomerPortalPage() {
                         return (
                           <div
                             key={s.shipmentCode}
-                            onClick={() => setSelectedCode(s.shipmentCode)}
+                            onClick={() => {
+                              setSelectedCode(s.shipmentCode);
+                              if (s.originId && s.destinationId) {
+                                setLiveOriginId(s.originId);
+                                setLiveDestId(s.destinationId);
+                              }
+                            }}
                             style={{
                               padding: 13,
                               borderRadius: 14,
@@ -2163,6 +2522,7 @@ export default function CustomerPortalPage() {
                             <div
                               style={{
                                 display: 'flex',
+                                justifySelf: 'space-between',
                                 justifyContent: 'space-between',
                                 alignItems: 'center',
                                 marginBottom: 6
@@ -2237,450 +2597,452 @@ export default function CustomerPortalPage() {
                       })}
                     </div>
                   </div>
+                )}
 
-                  {/* Right: Live 3D Map & Telemetry Inspector */}
-                  {activeShipment && (
-                    <div
-                      style={{
-                        padding: 22,
-                        borderRadius: 20,
-                        background: cardBg,
-                        border: '1px solid rgba(16, 185, 129, 0.32)'
-                      }}
-                    >
-                      <div
+                {/* Right Column: 3D Map, Telemetry Gauges & Checkpoints */}
+                <div
+                  style={{
+                    padding: 22,
+                    borderRadius: 20,
+                    background: cardBg,
+                    border: '1px solid rgba(16, 185, 129, 0.32)'
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                      marginBottom: 14,
+                      flexWrap: 'wrap',
+                      gap: 10
+                    }}
+                  >
+                    <div>
+                      <span
                         style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'flex-start',
-                          marginBottom: 14,
-                          flexWrap: 'wrap',
-                          gap: 10
+                          fontSize: '0.72rem',
+                          fontWeight: 800,
+                          color: '#10b981',
+                          textTransform: 'uppercase'
                         }}
                       >
-                        <div>
-                          <span
-                            style={{
-                              fontSize: '0.72rem',
-                              fontWeight: 800,
-                              color: '#10b981',
-                              textTransform: 'uppercase'
-                            }}
-                          >
-                            BẢN ĐỒ VỆ TINH 3D GOOGLE HYBRID • {activeShipment.shipmentCode}
-                          </span>
-                          <h3 style={{ fontSize: '1.18rem', fontWeight: 800, margin: '3px 0' }}>
-                            {activeShipment.originName} → {activeShipment.destinationName}
-                          </h3>
-                          <div style={{ fontSize: '0.8rem', opacity: 0.85, marginTop: 4 }}>
-                            Tọa độ xe thực tế:{' '}
-                            <code style={{ color: '#10b981', fontWeight: 700 }}>
-                              {activeVehiclePosition[0].toFixed(4)}°N,{' '}
-                              {activeVehiclePosition[1].toFixed(4)}°E
-                            </code>
-                            <span style={{ margin: '0 8px', opacity: 0.5 }}>•</span>
-                            <span>
-                              Đã đi:{' '}
-                              <strong style={{ color: '#38bdf8' }}>
-                                {(
-                                  ((Number(activeShipment.progress) || 0) / 100) *
-                                  (Number(activeShipment.distanceKm) || 28.9)
-                                ).toFixed(1)}{' '}
-                                km
-                              </strong>{' '}
-                              / {Number(activeShipment.distanceKm) || 28.9} km (
-                              {Number(activeShipment.progress || 0).toFixed(1)}%)
-                            </span>
-                            <span style={{ margin: '0 8px', opacity: 0.5 }}>•</span>
-                            <span style={{ color: '#10b981', fontWeight: 600 }}>
-                              {activeShipment.corridorState || 'Bám sát tim đường lộ trình'}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div
-                          style={{
-                            display: 'flex',
-                            gap: 8,
-                            flexWrap: 'wrap',
-                            alignItems: 'center'
-                          }}
-                        >
-                          {/* Simulation Speed Multipliers */}
-                          <div
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              background: 'rgba(15,23,42,0.6)',
-                              borderRadius: 9,
-                              padding: '2px 4px',
-                              border: '1px solid rgba(148,163,184,0.25)',
-                              gap: 2
-                            }}
-                          >
-                            <span
-                              style={{
-                                fontSize: '0.68rem',
-                                opacity: 0.72,
-                                padding: '0 4px',
-                                fontWeight: 700
-                              }}
-                            >
-                              Tốc độ:
-                            </span>
-                            {[
-                              { val: 1, label: '1x Thực tế' },
-                              { val: 2, label: '2x' },
-                              { val: 5, label: '5x' },
-                              { val: 10, label: '10x' }
-                            ].map((spd) => {
-                              const active = simSpeed === spd.val && isLiveSim;
-                              return (
-                                <button
-                                  key={spd.val}
-                                  type="button"
-                                  onClick={() => {
-                                    setSimSpeed(spd.val);
-                                    setIsLiveSim(true);
-                                  }}
-                                  style={{
-                                    padding: '3px 7px',
-                                    borderRadius: 6,
-                                    fontSize: '0.72rem',
-                                    fontWeight: active ? 800 : 600,
-                                    border: 'none',
-                                    background: active ? '#10b981' : 'transparent',
-                                    color: active ? '#042f2e' : 'inherit',
-                                    cursor: 'pointer'
-                                  }}
-                                  title={`Chạy mô phỏng ở tốc độ ${spd.label}`}
-                                >
-                                  {spd.label}
-                                </button>
-                              );
-                            })}
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() => setFollowVehicle((v) => !v)}
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: 5,
-                              padding: '7px 11px',
-                              borderRadius: 9,
-                              border: followVehicle
-                                ? '1px solid #38bdf8'
-                                : '1px solid rgba(148,163,184,0.3)',
-                              background: followVehicle ? 'rgba(56,189,248,0.16)' : 'transparent',
-                              color: followVehicle ? '#38bdf8' : 'inherit',
-                              fontSize: '0.75rem',
-                              fontWeight: 700,
-                              cursor: 'pointer'
-                            }}
-                          >
-                            <Crosshair size={13} />
-                            {followVehicle ? 'Đang Khóa Camera' : 'Khóa Camera Xe'}
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => setIsLiveSim((v) => !v)}
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: 5,
-                              padding: '7px 11px',
-                              borderRadius: 9,
-                              border: '1px solid rgba(16,185,129,0.35)',
-                              background: 'rgba(16,185,129,0.12)',
-                              color: '#10b981',
-                              fontSize: '0.75rem',
-                              fontWeight: 700,
-                              cursor: 'pointer'
-                            }}
-                          >
-                            {isLiveSim ? <Pause size={13} /> : <Play size={13} />}
-                            {isLiveSim ? 'Tạm dừng GPS' : 'Tiếp tục GPS'}
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleResetTripProgress(activeShipment.shipmentCode)}
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: 5,
-                              padding: '7px 11px',
-                              borderRadius: 9,
-                              border: '1px solid rgba(148,163,184,0.3)',
-                              background: 'rgba(148,163,184,0.1)',
-                              color: 'inherit',
-                              fontSize: '0.75rem',
-                              fontWeight: 700,
-                              cursor: 'pointer'
-                            }}
-                            title="Đặt lại vị trí xe về điểm xuất phát (0%)"
-                          >
-                            <RotateCcw size={13} /> Đặt lại 0%
-                          </button>
-
-                          {activeShipment.status === 'IN_TRANSIT' && (
-                            <button
-                              type="button"
-                              onClick={() => handleCompleteOrderEpod(activeShipment.shipmentCode)}
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 5,
-                                padding: '7px 12px',
-                                borderRadius: 9,
-                                border: '1px solid #10b981',
-                                background: 'linear-gradient(135deg, #10b981, #059669)',
-                                color: '#042f2e',
-                                fontSize: '0.75rem',
-                                fontWeight: 800,
-                                cursor: 'pointer'
-                              }}
-                            >
-                              <CheckCircle2 size={13} /> Ký Nhận Hàng (ePOD)
-                            </button>
-                          )}
-                        </div>
-                      </div>
-
-                      <div style={{ marginBottom: 16 }}>
-                        <MapView
-                          center={activeVehiclePosition}
-                          zoom={11}
-                          height="380px"
-                          defaultTile="google_hybrid"
-                          default3D={true}
-                          defaultPitch={38}
-                          overlayTitle={`${activeShipment.shipmentCode} • ${activeShipment.licensePlate} (${activeShipment.corridorState})`}
-                          onMapReady={(m) => {
-                            mapInstanceRef.current = m;
-                          }}
-                        >
-                          <RoutePolyline
-                            positions={activeShipmentWaypoints}
-                            color="#10b981"
-                            weight={5}
-                            showCorridorBuffer={true}
-                          />
-                          <OriginMarker
-                            position={activeShipmentWaypoints[0]}
-                            label={activeShipment.originName}
-                          />
-                          <DestinationMarker
-                            position={activeShipmentWaypoints[activeShipmentWaypoints.length - 1]}
-                            label={activeShipment.destinationName}
-                          />
-                          <VehicleMarker
-                            position={activeVehiclePosition}
-                            vehicleCode={activeShipment.licensePlate}
-                            speedKmh={activeShipment.speedKmh}
-                            status="ON_ROUTE"
-                            label={activeShipment.vehicleType}
-                          />
-                        </MapView>
-                      </div>
-
-                      {/* 5 Telemetry Gauges */}
-                      <div
-                        style={{
-                          display: 'grid',
-                          gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-                          gap: 12,
-                          marginBottom: 16
-                        }}
-                      >
-                        <div
-                          style={{
-                            padding: 12,
-                            borderRadius: 12,
-                            background: subtleBg,
-                            border: '1px solid rgba(148,163,184,0.16)'
-                          }}
-                        >
-                          <div style={{ fontSize: '0.72rem', opacity: 0.75 }}>
-                            <Gauge size={13} color="#38bdf8" /> Vận tốc GPS
-                          </div>
-                          <strong style={{ fontSize: '1.15rem' }}>
-                            {activeShipment.speedKmh} km/h
-                          </strong>
-                        </div>
-                        <div
-                          style={{
-                            padding: 12,
-                            borderRadius: 12,
-                            background: subtleBg,
-                            border: '1px solid rgba(148,163,184,0.16)'
-                          }}
-                        >
-                          <div style={{ fontSize: '0.72rem', opacity: 0.75 }}>
-                            <Activity size={13} color="#10b981" /> Tiến độ &amp; Đã đi
-                          </div>
-                          <strong style={{ fontSize: '1.05rem', color: '#10b981' }}>
-                            {Number(activeShipment.progress || 0).toFixed(1)}%
-                          </strong>
-                          <div style={{ fontSize: '0.68rem', opacity: 0.75, marginTop: 2 }}>
-                            {(
-                              ((Number(activeShipment.progress) || 0) / 100) *
-                              (Number(activeShipment.distanceKm) || 28.9)
-                            ).toFixed(1)}{' '}
-                            / {Number(activeShipment.distanceKm) || 28.9} km
-                          </div>
-                        </div>
-                        <div
-                          style={{
-                            padding: 12,
-                            borderRadius: 12,
-                            background: subtleBg,
-                            border: '1px solid rgba(148,163,184,0.16)'
-                          }}
-                        >
-                          <div style={{ fontSize: '0.72rem', opacity: 0.75 }}>
-                            <Clock size={13} color="#f59e0b" /> Dự kiến đến (ETA)
-                          </div>
-                          <strong style={{ fontSize: '1.15rem' }}>
-                            {activeShipment.etaMinutes > 0
-                              ? `${activeShipment.etaMinutes} phút`
-                              : 'Đã đến đích'}
-                          </strong>
-                        </div>
-                        <div
-                          style={{
-                            padding: 12,
-                            borderRadius: 12,
-                            background: subtleBg,
-                            border: '1px solid rgba(148,163,184,0.16)'
-                          }}
-                        >
-                          <div style={{ fontSize: '0.72rem', opacity: 0.75 }}>
-                            <Thermometer size={13} color="#34d399" /> Nhiệt độ thùng
-                          </div>
-                          <strong style={{ fontSize: '1.15rem' }}>
-                            {activeShipment.temperatureC}°C
-                          </strong>
-                        </div>
-                        <div
-                          style={{
-                            padding: 12,
-                            borderRadius: 12,
-                            background: subtleBg,
-                            border: '1px solid rgba(16,185,129,0.3)'
-                          }}
-                        >
-                          <div style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 700 }}>
-                            <Leaf size={13} /> CO2e Tiết kiệm
-                          </div>
-                          <strong style={{ fontSize: '1.15rem', color: '#10b981' }}>
-                            -{activeShipment.co2SavedKg} kg
-                          </strong>
-                        </div>
-                      </div>
-
-                      {/* Corridor Highway Checkpoints Log */}
-                      <div
-                        style={{
-                          padding: 14,
-                          borderRadius: 14,
-                          background: subtleBg,
-                          border: '1px solid rgba(148,163,184,0.18)'
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            marginBottom: 10
-                          }}
-                        >
-                          <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#10b981' }}>
-                            ● NHẬT KÝ ĐIỂM CHỐT KIỂM SOÁT HÀNH LANG (CHECKPOINTS)
-                          </div>
-                          <div style={{ fontSize: '0.7rem', opacity: 0.75 }}>
-                            Ngưỡng an toàn buffer 50m (Vàng) / 200m (Đỏ)
-                          </div>
-                        </div>
-
-                        <div style={{ display: 'grid', gap: 6 }}>
-                          {activeCheckpoints.map((cp) => (
-                            <div
-                              key={cp.step}
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                padding: '8px 10px',
-                                borderRadius: 8,
-                                background:
-                                  cp.state === 'CURRENT'
-                                    ? 'rgba(16, 185, 129, 0.16)'
-                                    : 'rgba(255,255,255,0.03)',
-                                border:
-                                  cp.state === 'CURRENT'
-                                    ? '1px solid rgba(16, 185, 129, 0.4)'
-                                    : '1px solid transparent',
-                                fontSize: '0.76rem'
-                              }}
-                            >
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <span
-                                  style={{
-                                    width: 18,
-                                    height: 18,
-                                    borderRadius: 999,
-                                    background:
-                                      cp.state === 'PASSED'
-                                        ? '#10b981'
-                                        : cp.state === 'CURRENT'
-                                          ? '#38bdf8'
-                                          : 'rgba(148,163,184,0.3)',
-                                    color: '#042f2e',
-                                    fontSize: '0.65rem',
-                                    fontWeight: 800,
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center'
-                                  }}
-                                >
-                                  {cp.step}
-                                </span>
-                                <div>
-                                  <strong>{cp.name}</strong>
-                                  <div style={{ fontSize: '0.68rem', opacity: 0.72 }}>
-                                    {cp.road} ({cp.kmAtPoint} km)
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div>
-                                {cp.state === 'PASSED' && (
-                                  <span style={{ color: '#10b981', fontWeight: 700 }}>
-                                    ✓ Đã qua ({cp.deviationMeters}m)
-                                  </span>
-                                )}
-                                {cp.state === 'CURRENT' && (
-                                  <span style={{ color: '#38bdf8', fontWeight: 800 }}>
-                                    ● Đang tiếp cận ({cp.deviationMeters}m)
-                                  </span>
-                                )}
-                                {cp.state === 'UPCOMING' && (
-                                  <span style={{ opacity: 0.55 }}>Chờ qua trạm</span>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
+                        BẢN ĐỒ VỆ TINH 3D GOOGLE HYBRID •{' '}
+                        {trackingSource === 'shipment' && activeShipment
+                          ? activeShipment.shipmentCode
+                          : 'GIÁM SÁT TUYẾN THEO YÊU CẦU'}
+                      </span>
+                      <h3 style={{ fontSize: '1.18rem', fontWeight: 800, margin: '3px 0' }}>
+                        {trackingOriginLabel} → {trackingDestLabel}
+                      </h3>
+                      <div style={{ fontSize: '0.8rem', opacity: 0.85, marginTop: 4 }}>
+                        Tọa độ xe thực tế:{' '}
+                        <code style={{ color: '#10b981', fontWeight: 700 }}>
+                          {trackingVehiclePosition[0].toFixed(4)}°N,{' '}
+                          {trackingVehiclePosition[1].toFixed(4)}°E
+                        </code>
+                        <span style={{ margin: '0 8px', opacity: 0.5 }}>•</span>
+                        <span>
+                          Đã đi:{' '}
+                          <strong style={{ color: '#38bdf8' }}>{trackingTraveledKm} km</strong> /{' '}
+                          {trackingDistanceKm} km ({trackingProgress.toFixed(1)}%)
+                        </span>
+                        <span style={{ margin: '0 8px', opacity: 0.5 }}>•</span>
+                        <span style={{ color: '#10b981', fontWeight: 600 }}>
+                          Bám sát tim đường cao tốc (Độ lệch buffer &lt; 50m)
+                        </span>
                       </div>
                     </div>
-                  )}
+
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: 8,
+                        flexWrap: 'wrap',
+                        alignItems: 'center'
+                      }}
+                    >
+                      {/* Simulation Speed Multipliers */}
+                      <div
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          background: 'rgba(15,23,42,0.6)',
+                          borderRadius: 9,
+                          padding: '2px 4px',
+                          border: '1px solid rgba(148,163,184,0.25)',
+                          gap: 2
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: '0.68rem',
+                            opacity: 0.72,
+                            padding: '0 4px',
+                            fontWeight: 700
+                          }}
+                        >
+                          Tốc độ:
+                        </span>
+                        {[
+                          { val: 1, label: '1x Thực tế' },
+                          { val: 2, label: '2x' },
+                          { val: 5, label: '5x' },
+                          { val: 10, label: '10x' }
+                        ].map((spd) => {
+                          const active = simSpeed === spd.val && isLiveSim;
+                          return (
+                            <button
+                              key={spd.val}
+                              type="button"
+                              onClick={() => {
+                                setSimSpeed(spd.val);
+                                setIsLiveSim(true);
+                              }}
+                              style={{
+                                padding: '3px 7px',
+                                borderRadius: 6,
+                                fontSize: '0.72rem',
+                                fontWeight: active ? 800 : 600,
+                                border: 'none',
+                                background: active ? '#10b981' : 'transparent',
+                                color: active ? '#042f2e' : 'inherit',
+                                cursor: 'pointer'
+                              }}
+                              title={`Chạy mô phỏng ở tốc độ ${spd.label}`}
+                            >
+                              {spd.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setFollowVehicle((v) => !v)}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 5,
+                          padding: '7px 11px',
+                          borderRadius: 9,
+                          border: followVehicle
+                            ? '1px solid #38bdf8'
+                            : '1px solid rgba(148,163,184,0.3)',
+                          background: followVehicle ? 'rgba(56,189,248,0.16)' : 'transparent',
+                          color: followVehicle ? '#38bdf8' : 'inherit',
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <Crosshair size={13} />
+                        {followVehicle ? 'Đang Khóa Camera' : 'Khóa Camera Xe'}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setIsLiveSim((v) => !v)}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 5,
+                          padding: '7px 11px',
+                          borderRadius: 9,
+                          border: '1px solid rgba(16,185,129,0.35)',
+                          background: 'rgba(16,185,129,0.12)',
+                          color: '#10b981',
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {isLiveSim ? <Pause size={13} /> : <Play size={13} />}
+                        {isLiveSim ? 'Tạm dừng GPS' : 'Tiếp tục GPS'}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleResetCurrentProgress}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 5,
+                          padding: '7px 11px',
+                          borderRadius: 9,
+                          border: '1px solid rgba(148,163,184,0.3)',
+                          background: 'rgba(148,163,184,0.1)',
+                          color: 'inherit',
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          cursor: 'pointer'
+                        }}
+                        title="Đặt lại vị trí xe về điểm xuất phát (0%)"
+                      >
+                        <RotateCcw size={13} /> Đặt lại 0%
+                      </button>
+
+                      {trackingSource === 'shipment' &&
+                        activeShipment &&
+                        activeShipment.status === 'IN_TRANSIT' && (
+                          <button
+                            type="button"
+                            onClick={() => handleCompleteOrderEpod(activeShipment.shipmentCode)}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 5,
+                              padding: '7px 12px',
+                              borderRadius: 9,
+                              border: '1px solid #10b981',
+                              background: 'linear-gradient(135deg, #10b981, #059669)',
+                              color: '#042f2e',
+                              fontSize: '0.75rem',
+                              fontWeight: 800,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            <CheckCircle2 size={13} /> Ký Nhận Hàng (ePOD)
+                          </button>
+                        )}
+                    </div>
+                  </div>
+
+                  {/* Leaflet 3D Map View */}
+                  <div style={{ marginBottom: 16 }}>
+                    <MapView
+                      center={trackingVehiclePosition}
+                      zoom={11}
+                      height="400px"
+                      defaultTile="google_hybrid"
+                      default3D={true}
+                      defaultPitch={38}
+                      overlayTitle={`${trackingOriginNode.label} → ${trackingDestNode.label} (${trackingDistanceKm} km)`}
+                      onMapReady={(m) => {
+                        mapInstanceRef.current = m;
+                      }}
+                    >
+                      <RoutePolyline
+                        positions={trackingWaypoints}
+                        color="#10b981"
+                        weight={5}
+                        showCorridorBuffer={true}
+                      />
+                      <OriginMarker position={trackingWaypoints[0]} label={trackingOriginLabel} />
+                      <DestinationMarker
+                        position={trackingWaypoints[trackingWaypoints.length - 1]}
+                        label={trackingDestLabel}
+                      />
+                      <VehicleMarker
+                        position={trackingVehiclePosition}
+                        vehicleCode={
+                          trackingSource === 'shipment' && activeShipment
+                            ? activeShipment.licensePlate
+                            : '51C-ECO.99'
+                        }
+                        speedKmh={trackingSpeedKmh}
+                        status="ON_ROUTE"
+                        label={
+                          trackingSource === 'shipment' && activeShipment
+                            ? activeShipment.vehicleType
+                            : 'Xe đầu kéo điện (EV) • Hàng chuỗi lạnh'
+                        }
+                      />
+                    </MapView>
+                  </div>
+
+                  {/* 5 Telemetry Gauges */}
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                      gap: 12,
+                      marginBottom: 16
+                    }}
+                  >
+                    <div
+                      style={{
+                        padding: 12,
+                        borderRadius: 12,
+                        background: subtleBg,
+                        border: '1px solid rgba(148,163,184,0.16)'
+                      }}
+                    >
+                      <div style={{ fontSize: '0.72rem', opacity: 0.75 }}>
+                        <Gauge size={13} color="#38bdf8" /> Vận tốc GPS
+                      </div>
+                      <strong style={{ fontSize: '1.15rem' }}>{trackingSpeedKmh} km/h</strong>
+                    </div>
+
+                    <div
+                      style={{
+                        padding: 12,
+                        borderRadius: 12,
+                        background: subtleBg,
+                        border: '1px solid rgba(148,163,184,0.16)'
+                      }}
+                    >
+                      <div style={{ fontSize: '0.72rem', opacity: 0.75 }}>
+                        <Activity size={13} color="#10b981" /> Tiến độ &amp; Đã đi
+                      </div>
+                      <strong style={{ fontSize: '1.05rem', color: '#10b981' }}>
+                        {trackingProgress.toFixed(1)}%
+                      </strong>
+                      <div style={{ fontSize: '0.68rem', opacity: 0.75, marginTop: 2 }}>
+                        {trackingTraveledKm} / {trackingDistanceKm} km
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        padding: 12,
+                        borderRadius: 12,
+                        background: subtleBg,
+                        border: '1px solid rgba(148,163,184,0.16)'
+                      }}
+                    >
+                      <div style={{ fontSize: '0.72rem', opacity: 0.75 }}>
+                        <Clock size={13} color="#f59e0b" /> Dự kiến đến (ETA)
+                      </div>
+                      <strong style={{ fontSize: '1.15rem' }}>
+                        {trackingEtaMinutes > 0 ? `${trackingEtaMinutes} phút` : 'Đã đến đích'}
+                      </strong>
+                    </div>
+
+                    <div
+                      style={{
+                        padding: 12,
+                        borderRadius: 12,
+                        background: subtleBg,
+                        border: '1px solid rgba(148,163,184,0.16)'
+                      }}
+                    >
+                      <div style={{ fontSize: '0.72rem', opacity: 0.75 }}>
+                        <Thermometer size={13} color="#34d399" /> Nhiệt độ thùng
+                      </div>
+                      <strong style={{ fontSize: '1.15rem' }}>
+                        {trackingSource === 'shipment' && activeShipment
+                          ? `${activeShipment.temperatureC}°C`
+                          : '-18.2°C'}
+                      </strong>
+                    </div>
+
+                    <div
+                      style={{
+                        padding: 12,
+                        borderRadius: 12,
+                        background: subtleBg,
+                        border: '1px solid rgba(16,185,129,0.3)'
+                      }}
+                    >
+                      <div style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 700 }}>
+                        <Leaf size={13} /> CO2e Tiết kiệm
+                      </div>
+                      <strong style={{ fontSize: '1.15rem', color: '#10b981' }}>
+                        {trackingSource === 'shipment' && activeShipment
+                          ? `-${activeShipment.co2SavedKg} kg`
+                          : `-${Math.round(trackingDistanceKm * 16 * 0.043)} kg`}
+                      </strong>
+                    </div>
+                  </div>
+
+                  {/* Corridor Highway Checkpoints Log */}
+                  <div
+                    style={{
+                      padding: 14,
+                      borderRadius: 14,
+                      background: subtleBg,
+                      border: '1px solid rgba(148,163,184,0.18)'
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: 10
+                      }}
+                    >
+                      <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#10b981' }}>
+                        ● NHẬT KÝ ĐIỂM CHỐT KIỂM SOÁT HÀNH LANG (CHECKPOINTS)
+                      </div>
+                      <div style={{ fontSize: '0.7rem', opacity: 0.75 }}>
+                        Ngưỡng an toàn buffer 50m (Vàng) / 200m (Đỏ)
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gap: 6 }}>
+                      {trackingCheckpoints.map((cp) => (
+                        <div
+                          key={cp.step}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '8px 10px',
+                            borderRadius: 8,
+                            background:
+                              cp.state === 'CURRENT'
+                                ? 'rgba(16, 185, 129, 0.16)'
+                                : 'rgba(255,255,255,0.03)',
+                            border:
+                              cp.state === 'CURRENT'
+                                ? '1px solid rgba(16, 185, 129, 0.4)'
+                                : '1px solid transparent',
+                            fontSize: '0.76rem'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span
+                              style={{
+                                width: 18,
+                                height: 18,
+                                borderRadius: 999,
+                                background:
+                                  cp.state === 'PASSED'
+                                    ? '#10b981'
+                                    : cp.state === 'CURRENT'
+                                      ? '#38bdf8'
+                                      : 'rgba(148,163,184,0.3)',
+                                color: '#042f2e',
+                                fontSize: '0.65rem',
+                                fontWeight: 800,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}
+                            >
+                              {cp.step}
+                            </span>
+                            <div>
+                              <strong>{cp.name}</strong>
+                              <div style={{ fontSize: '0.68rem', opacity: 0.72 }}>
+                                {cp.road} ({cp.kmAtPoint} km)
+                              </div>
+                            </div>
+                          </div>
+
+                          <div>
+                            {cp.state === 'PASSED' && (
+                              <span style={{ color: '#10b981', fontWeight: 700 }}>
+                                ✓ Đã qua ({cp.deviationMeters}m)
+                              </span>
+                            )}
+                            {cp.state === 'CURRENT' && (
+                              <span style={{ color: '#38bdf8', fontWeight: 800 }}>
+                                ● Đang tiếp cận ({cp.deviationMeters}m)
+                              </span>
+                            )}
+                            {cp.state === 'UPCOMING' && (
+                              <span style={{ opacity: 0.55 }}>Chờ qua trạm</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              )}
+              </div>
             </div>
           )}
 
@@ -2826,6 +3188,63 @@ export default function CustomerPortalPage() {
                         ))}
                       </select>
                     </div>
+                  </div>
+
+                  {/* Quick Preset Corridor Chips in Booking */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: 6,
+                      flexWrap: 'wrap',
+                      marginBottom: 14,
+                      alignItems: 'center'
+                    }}
+                  >
+                    <span style={{ fontSize: '0.7rem', opacity: 0.75, fontWeight: 700 }}>
+                      Chọn tuyến nhanh:
+                    </span>
+                    {[
+                      { o: 'catlai', d: 'vsip', label: 'Cát Lái → VSIP 1 (28.9 km)' },
+                      { o: 'catlai', d: 'songthan', label: 'Cát Lái → Sóng Thần (18.6 km)' },
+                      { o: 'catlai', d: 'caimep', label: 'Cát Lái → Cái Mép (67.4 km)' },
+                      { o: 'tanbinh', d: 'vsip', label: 'Tân Bình → VSIP 1 (24.2 km)' },
+                      {
+                        o: 'hiepphuoc',
+                        d: 'nhontrach',
+                        label: 'Hiệp Phước → Nhơn Trạch (39.8 km)'
+                      },
+                      { o: 'caimep', d: 'vsip2', label: 'Cái Mép → VSIP 2 (82.1 km)' }
+                    ].map((corr) => {
+                      const isActive =
+                        bookingForm.originId === corr.o && bookingForm.destinationId === corr.d;
+                      return (
+                        <button
+                          key={`bk-${corr.o}-${corr.d}`}
+                          type="button"
+                          onClick={() =>
+                            setBookingForm((prev) => ({
+                              ...prev,
+                              originId: corr.o,
+                              destinationId: corr.d
+                            }))
+                          }
+                          style={{
+                            fontSize: '0.72rem',
+                            fontWeight: isActive ? 800 : 600,
+                            padding: '3px 8px',
+                            borderRadius: 7,
+                            border: isActive
+                              ? '1.5px solid #10b981'
+                              : '1px solid rgba(148,163,184,0.25)',
+                            background: isActive ? 'rgba(16,185,129,0.18)' : subtleBg,
+                            color: isActive ? '#10b981' : 'inherit',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {corr.label}
+                        </button>
+                      );
+                    })}
                   </div>
 
                   {/* Pareto Optimization Mode Selection */}

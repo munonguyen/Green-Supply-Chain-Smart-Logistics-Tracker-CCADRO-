@@ -52,6 +52,41 @@ export const HUB_NODES = {
     area: 'Phú Mỹ, Bà Rịa – Vũng Tàu',
     address: 'Khu phố Tân Lộc, Phường Phước Hòa, Thị xã Phú Mỹ, Bà Rịa – Vũng Tàu',
     coords: [10.5256, 107.0225]
+  },
+  vsip2: {
+    id: 'vsip2',
+    label: 'KCN VSIP 2',
+    area: 'TP. Mới, Bình Dương',
+    address: 'Đường Dân Chủ, KCN VSIP 2, TP. Thủ Dầu Một, Bình Dương',
+    coords: [11.0542, 106.6987]
+  },
+  amata: {
+    id: 'amata',
+    label: 'KCN Amata Biên Hòa',
+    area: 'Biên Hòa, Đồng Nai',
+    address: 'Quốc lộ 1A, Phường Long Bình, TP. Biên Hòa, Đồng Nai',
+    coords: [10.9412, 106.8821]
+  },
+  longhau: {
+    id: 'longhau',
+    label: 'KCN Long Hậu',
+    area: 'Cần Giuộc, Long An',
+    address: 'Ấp 3, Xã Long Hậu, Huyện Cần Giuộc, Long An',
+    coords: [10.6285, 106.7124]
+  },
+  phuoclong: {
+    id: 'phuoclong',
+    label: 'Cảng ICD Phước Long',
+    area: 'TP. Thủ Đức, TP. HCM',
+    address: 'Km 9 Xa lộ Hà Nội, Phường Phước Long A, TP. Thủ Đức, TP. HCM',
+    coords: [10.8245, 106.7689]
+  },
+  tantao: {
+    id: 'tantao',
+    label: 'KCN Tân Tạo',
+    area: 'Bình Tân, TP. HCM',
+    address: 'Quốc lộ 1A, Phường Tân Tạo A, Quận Bình Tân, TP. HCM',
+    coords: [10.7512, 106.5824]
   }
 };
 
@@ -109,6 +144,11 @@ export function normalizeHubKey(input, fallback = 'catlai') {
     .trim();
 
   if (HUB_NODES[stripped]) return stripped;
+  if (stripped.includes('vsip 2') || stripped.includes('vsip2')) return 'vsip2';
+  if (stripped.includes('amata')) return 'amata';
+  if (stripped.includes('long hau') || stripped.includes('longhau')) return 'longhau';
+  if (stripped.includes('phuoc long') || stripped.includes('phuoclong')) return 'phuoclong';
+  if (stripped.includes('tan tao') || stripped.includes('tantao')) return 'tantao';
   if (stripped.includes('cat lai') || stripped.includes('catlai')) return 'catlai';
   if (stripped.includes('vsip')) return 'vsip';
   if (stripped.includes('song than') || stripped.includes('songthan')) return 'songthan';
@@ -126,6 +166,23 @@ export function normalizeHubKey(input, fallback = 'catlai') {
 export function getRealRoadRoute(originId, destId) {
   const oKey = normalizeHubKey(originId, 'catlai');
   const dKey = normalizeHubKey(destId, 'vsip');
+
+  // Handle same origin and destination (depot local turnaround)
+  if (oKey === dKey) {
+    const pt = HUB_NODES[oKey]?.coords || [10.7623, 106.7824];
+    return {
+      distanceKm: 2.8,
+      durationMinutes: 7,
+      points: [
+        pt,
+        [pt[0] + 0.0025, pt[1] + 0.002],
+        [pt[0] + 0.004, pt[1] + 0.0005],
+        [pt[0] + 0.002, pt[1] - 0.002],
+        pt
+      ]
+    };
+  }
+
   const pairKey = `${oKey}_${dKey}`;
 
   if (realRoadData[pairKey] && realRoadData[pairKey].points?.length > 0) {
@@ -140,6 +197,52 @@ export function getRealRoadRoute(originId, destId) {
       distanceKm: rev.distanceKm,
       durationMinutes: rev.durationMinutes,
       points: [...rev.points].reverse()
+    };
+  }
+
+  // Primary hub fallback for satellite zones
+  const primaryFallback = {
+    vsip2: 'vsip',
+    amata: 'songthan',
+    longhau: 'hiepphuoc',
+    phuoclong: 'catlai',
+    tantao: 'tanbinh'
+  };
+
+  const baseO = primaryFallback[oKey] || oKey;
+  const baseD = primaryFallback[dKey] || dKey;
+  const basePair = `${baseO}_${baseD}`;
+  const baseRev = `${baseD}_${baseO}`;
+
+  if (realRoadData[basePair] && realRoadData[basePair].points?.length > 0) {
+    const base = realRoadData[basePair];
+    const startPt = HUB_NODES[oKey]?.coords || base.points[0];
+    const endPt = HUB_NODES[dKey]?.coords || base.points[base.points.length - 1];
+    return {
+      distanceKm:
+        Math.round(
+          (base.distanceKm + (oKey !== baseO ? 8.2 : 0) + (dKey !== baseD ? 8.2 : 0)) * 10
+        ) / 10,
+      durationMinutes: Math.round(
+        base.durationMinutes + (oKey !== baseO ? 12 : 0) + (dKey !== baseD ? 12 : 0)
+      ),
+      points: [startPt, ...base.points, endPt]
+    };
+  }
+
+  if (realRoadData[baseRev] && realRoadData[baseRev].points?.length > 0) {
+    const base = realRoadData[baseRev];
+    const startPt = HUB_NODES[oKey]?.coords || base.points[base.points.length - 1];
+    const endPt = HUB_NODES[dKey]?.coords || base.points[0];
+    return {
+      distanceKm:
+        Math.round(
+          (base.distanceKm + (oKey !== baseO ? 8.2 : 0) + (dKey !== baseD ? 8.2 : 0)) * 10
+        ) / 10,
+      durationMinutes: Math.round(
+        base.durationMinutes + (oKey !== baseO ? 12 : 0) + (dKey !== baseD ? 12 : 0)
+      ),
+      points: [startPt, ...[...base.points].reverse(), endPt]
     };
   }
 
