@@ -7,6 +7,7 @@ import {
   ArrowRight,
   BarChart3,
   Bell,
+  Box,
   Building2,
   Check,
   CheckCircle2,
@@ -22,12 +23,14 @@ import {
   Lock,
   LogOut,
   MapPin,
+  MessageSquare,
   Moon,
   Navigation,
   Package,
   PanelLeftClose,
   PanelLeftOpen,
   Pause,
+  PhoneCall,
   PieChart,
   Play,
   PlusCircle,
@@ -39,6 +42,7 @@ import {
   Thermometer,
   Trash2,
   Truck,
+  User,
   UserCheck,
   Zap
 } from 'lucide-react';
@@ -99,21 +103,346 @@ const NODE_ADDRESSES = {
 };
 
 /**
- * Load only real shipments created by users in the system.
+ * 5 Danh mục Container thực tế mẫu của doanh nghiệp (3 Đang đi, 2 Đã tới)
+ * Tích hợp toàn diện thông tin Container ISO 6346, Hộp đen IoT, Khóa E-Seal và Người lái
+ */
+export const DEFAULT_SEED_SHIPMENTS = [
+  {
+    id: 'seed-ship-001',
+    shipmentCode: 'SHP-2026-8192',
+    customerId: 'DOANH_NGHIEP_B2B',
+    customerName: 'Tập Đoàn Thủy Hải Sản Minh Phú • Đối Tác B2B',
+    createdByUsername: 'customer',
+    originId: 'catlai',
+    destinationId: 'songthan',
+    originName: 'Cảng Cát Lái, TP. Thủ Đức',
+    destinationName: 'ICD Sóng Thần, Dĩ An, Bình Dương',
+    originCoords: [10.7626, 106.7956],
+    destCoords: [10.9082, 106.7452],
+    distanceKm: 18.6,
+    status: 'IN_TRANSIT',
+    statusLabel: 'Đang di chuyển trên Xa lộ Hà Nội',
+    currentLocation: 'Đoạn ngã 4 Thủ Đức • Tốc độ 52 km/h',
+    speedKmh: 52,
+    progress: 54.0,
+    traveledKm: 10.0,
+    remainingKm: 8.6,
+    initialEtaMinutes: 28,
+    etaMinutes: 12,
+    cargoType: 'Chuỗi lạnh thủy hải sản xuất khẩu (-18°C)',
+    cargoWeightTons: 18.5,
+    containerCode: 'TCKU-781920-4',
+    containerTypeId: '40_REEFER',
+    containerTypeLabel: 'Container Lạnh 40ft High Cube (Smart Reefer)',
+    isoType: '45R1',
+    containerOwner: 'Tân Cảng Sài Gòn (SNP Logistics)',
+    tareWeightKg: 4480,
+    maxPayloadKg: 29520,
+    cubicCapacityM3: 67.9,
+    eSealNumber: 'VN-CUST-819204',
+    eSealStatus: 'LOCKED_SECURE',
+    eSealIntegrityPct: 100,
+    shockG: 0.24,
+    supplyAirTempC: -18.4,
+    returnAirTempC: -17.9,
+    humidityPct: 88,
+    solarPowerWatts: 42,
+    iotUnitModel: 'Carrier DataCOLD 600 / Nexxiot Globehopper Edge 3',
+    cellularNetwork: '4G LTE-M / 18 GNSS Sats (Roaming)',
+    powertrainId: 'ev',
+    vehicleType: 'Xe đầu kéo điện (EV) • Heavy-Duty BEV',
+    licensePlate: '51C-888.99',
+    driverName: 'Nguyễn Văn Tài',
+    driverPhone: '0903 812 456',
+    driverLicense: 'GPLX Hạng FC • 9 năm kinh nghiệm',
+    driverSafetyScore: 4.95,
+    co2SavedKg: 12.8,
+    co2ReductionPct: 40.0,
+    estimatedCostVnd: 1850000,
+    createdAt: '12/11/2026, 08:30:00'
+  },
+  {
+    id: 'seed-ship-002',
+    shipmentCode: 'SHP-2026-4920',
+    customerId: 'DOANH_NGHIEP_B2B',
+    customerName: 'Công Ty Điện Tử Samsung Vina • Đối Tác B2B',
+    createdByUsername: 'customer',
+    originId: 'catlai',
+    destinationId: 'caimep',
+    originName: 'Cảng Cát Lái, TP. Thủ Đức',
+    destinationName: 'Cụm Cảng Cái Mép – Thị Vải, BR-VT',
+    originCoords: [10.7626, 106.7956],
+    destCoords: [10.5182, 107.0215],
+    distanceKm: 67.4,
+    status: 'IN_TRANSIT',
+    statusLabel: 'Đang di chuyển trên Cao tốc Long Thành - Dầu Giây',
+    currentLocation: 'Đoạn nút giao Vành đai 3 • Tốc độ 60 km/h',
+    speedKmh: 60,
+    progress: 68.0,
+    traveledKm: 45.8,
+    remainingKm: 21.6,
+    initialEtaMinutes: 85,
+    etaMinutes: 26,
+    cargoType: 'Linh kiện điện tử & bán dẫn giá trị cao',
+    cargoWeightTons: 14.0,
+    containerCode: 'MSKU-492018-7',
+    containerTypeId: '40_DRY_HC',
+    containerTypeLabel: 'Container Khô 40ft High Cube IoT (Dry Box)',
+    isoType: '45G1',
+    containerOwner: 'Maersk Line A/S',
+    tareWeightKg: 3900,
+    maxPayloadKg: 28600,
+    cubicCapacityM3: 76.4,
+    eSealNumber: 'VN-CUST-901423',
+    eSealStatus: 'LOCKED_SECURE',
+    eSealIntegrityPct: 100,
+    shockG: 0.21,
+    supplyAirTempC: 26.2,
+    returnAirTempC: 26.8,
+    humidityPct: 52,
+    solarPowerWatts: 45,
+    iotUnitModel: 'Orbcomm CT 3500 Solar Asset Tracker',
+    cellularNetwork: '4G LTE-M / GPS Galileo Multi-Constellation',
+    powertrainId: 'ev',
+    vehicleType: 'Xe đầu kéo điện (EV) • 40T BEV',
+    licensePlate: '51C-704.33',
+    driverName: 'Lê Minh Khôi',
+    driverPhone: '0908 551 209',
+    driverLicense: 'GPLX Hạng FC • 7 năm kinh nghiệm',
+    driverSafetyScore: 4.90,
+    co2SavedKg: 46.5,
+    co2ReductionPct: 38.4,
+    estimatedCostVnd: 3450000,
+    createdAt: '12/11/2026, 09:10:00'
+  },
+  {
+    id: 'seed-ship-003',
+    shipmentCode: 'SHP-2026-8219',
+    customerId: 'DOANH_NGHIEP_B2B',
+    customerName: 'Unilever Việt Nam • Đối Tác Logistics B2B',
+    createdByUsername: 'customer',
+    originId: 'tanbinh',
+    destinationId: 'vsip',
+    originName: 'KCN Tân Bình, Q. Tân Phú',
+    destinationName: 'KCN VSIP 1, Thuận An, Bình Dương',
+    originCoords: [10.8124, 106.6278],
+    destCoords: [10.9312, 106.6974],
+    distanceKm: 24.2,
+    status: 'IN_TRANSIT',
+    statusLabel: 'Đang di chuyển trên Quốc lộ 13',
+    currentLocation: 'Đoạn ngã 4 Bình Phước • Tốc độ 46 km/h',
+    speedKmh: 46,
+    progress: 30.0,
+    traveledKm: 7.3,
+    remainingKm: 16.9,
+    initialEtaMinutes: 36,
+    etaMinutes: 24,
+    cargoType: 'Hàng tiêu dùng nhanh & bao bì đóng gói',
+    cargoWeightTons: 20.0,
+    containerCode: 'CMAU-821903-2',
+    containerTypeId: '40_DRY_HC',
+    containerTypeLabel: 'Container Khô 40ft High Cube IoT (Dry Box)',
+    isoType: '45G1',
+    containerOwner: 'CMA CGM Group',
+    tareWeightKg: 3900,
+    maxPayloadKg: 28600,
+    cubicCapacityM3: 76.4,
+    eSealNumber: 'VN-CUST-774102',
+    eSealStatus: 'LOCKED_SECURE',
+    eSealIntegrityPct: 100,
+    shockG: 0.28,
+    supplyAirTempC: 28.0,
+    returnAirTempC: 28.5,
+    humidityPct: 60,
+    solarPowerWatts: 38,
+    iotUnitModel: 'Orbcomm CT 3500 Solar Asset Tracker',
+    cellularNetwork: '4G LTE-M / Roaming VNPT-Viettel',
+    powertrainId: 'euro5',
+    vehicleType: 'Xe tải chuẩn Euro 5 SCR',
+    licensePlate: '51D-662.18',
+    driverName: 'Trần Hoàng Nam',
+    driverPhone: '0914 720 881',
+    driverLicense: 'GPLX Hạng FC • 11 năm kinh nghiệm',
+    driverSafetyScore: 4.98,
+    co2SavedKg: 13.6,
+    co2ReductionPct: 26.0,
+    estimatedCostVnd: 2100000,
+    createdAt: '12/11/2026, 10:00:00'
+  },
+  {
+    id: 'seed-ship-004',
+    shipmentCode: 'SHP-2026-6192',
+    customerId: 'DOANH_NGHIEP_B2B',
+    customerName: 'Vinamilk Mega Market • Chuỗi Cung Ứng Lạnh',
+    createdByUsername: 'customer',
+    originId: 'hiepphuoc',
+    destinationId: 'nhontrach',
+    originName: 'Cảng Container Hiệp Phước, Nhà Bè',
+    destinationName: 'KCN Nhơn Trạch, Đồng Nai',
+    originCoords: [10.6385, 106.7482],
+    destCoords: [10.7241, 106.9182],
+    distanceKm: 39.8,
+    status: 'COMPLETED',
+    statusLabel: 'Đã cập bến • Hoàn tất bàn giao ePOD',
+    currentLocation: 'Kho ngoại quan KCN Nhơn Trạch • Hạ bãi thành công',
+    speedKmh: 0,
+    progress: 100.0,
+    traveledKm: 39.8,
+    remainingKm: 0.0,
+    initialEtaMinutes: 55,
+    etaMinutes: 0,
+    completedAt: '09:15 Sáng nay',
+    epodRecipient: 'Nguyễn Văn Thanh (Trưởng kho Nhơn Trạch)',
+    epodSignature: 'Đã ký số Token SHA-256',
+    cargoType: 'Thịt bò & bơ sữa nhập khẩu (-18°C)',
+    cargoWeightTons: 22.0,
+    containerCode: 'CCLU-619284-5',
+    containerTypeId: '40_REEFER',
+    containerTypeLabel: 'Container Lạnh 40ft High Cube (Smart Reefer)',
+    isoType: '45R1',
+    containerOwner: 'CCADRO Green Alliance',
+    tareWeightKg: 4480,
+    maxPayloadKg: 29520,
+    cubicCapacityM3: 67.9,
+    eSealNumber: 'VN-CUST-619284',
+    eSealStatus: 'UNLOCKED_AUTHORIZED',
+    eSealIntegrityPct: 100,
+    shockG: 0.18,
+    supplyAirTempC: -18.2,
+    returnAirTempC: -17.8,
+    humidityPct: 86,
+    solarPowerWatts: 44,
+    iotUnitModel: 'Carrier DataCOLD 600 / Nexxiot Edge',
+    cellularNetwork: '4G LTE-M / Vệ tinh LEO',
+    powertrainId: 'euro5',
+    vehicleType: 'Xe tải chuẩn Euro 5',
+    licensePlate: '61C-419.52',
+    driverName: 'Phạm Quốc Tuấn',
+    driverPhone: '0989 341 612',
+    driverLicense: 'GPLX Hạng C/FC • 8 năm kinh nghiệm',
+    driverSafetyScore: 4.92,
+    co2SavedKg: 21.4,
+    co2ReductionPct: 24.4,
+    estimatedCostVnd: 2450000,
+    createdAt: '12/11/2026, 06:15:00'
+  },
+  {
+    id: 'seed-ship-005',
+    shipmentCode: 'SHP-2026-3301',
+    customerId: 'DOANH_NGHIEP_B2B',
+    customerName: 'Yazaki EDS Vietnam • KCN VSIP 2',
+    createdByUsername: 'customer',
+    originId: 'caimep',
+    destinationId: 'vsip2',
+    originName: 'Cụm Cảng Cái Mép – Thị Vải',
+    destinationName: 'KCN VSIP 2 & TP. Mới Bình Dương',
+    originCoords: [10.5182, 107.0215],
+    destCoords: [11.0512, 106.6985],
+    distanceKm: 82.1,
+    status: 'COMPLETED',
+    statusLabel: 'Đã cập bến • Hoàn tất bàn giao ePOD',
+    currentLocation: 'Bãi giao nhận Nhà máy Yazaki VSIP 2',
+    speedKmh: 0,
+    progress: 100.0,
+    traveledKm: 82.1,
+    remainingKm: 0.0,
+    initialEtaMinutes: 115,
+    etaMinutes: 0,
+    completedAt: '07:45 Sáng nay',
+    epodRecipient: 'Trần Thị Thu Thảo (Điều phối kho)',
+    epodSignature: 'Đã ký số Token SHA-256',
+    cargoType: 'Hạt nhựa công nghiệp nguyên sinh (Bao 25kg)',
+    cargoWeightTons: 25.0,
+    containerCode: 'TGHU-330198-1',
+    containerTypeId: '20_STANDARD',
+    containerTypeLabel: 'Container 20ft Tiêu Chuẩn IoT (Smart Standard 20ft)',
+    isoType: '22G1',
+    containerOwner: 'Textainer Group / Hapag-Lloyd',
+    tareWeightKg: 2200,
+    maxPayloadKg: 28280,
+    cubicCapacityM3: 33.2,
+    eSealNumber: 'VN-CUST-330198',
+    eSealStatus: 'UNLOCKED_AUTHORIZED',
+    eSealIntegrityPct: 100,
+    shockG: 0.22,
+    supplyAirTempC: 29.0,
+    returnAirTempC: 29.5,
+    humidityPct: 50,
+    solarPowerWatts: 36,
+    iotUnitModel: 'Sensitech TempTale GEO / CalAmp TTU-2830',
+    cellularNetwork: '4G LTE-M / Roaming Viettel-Vinaphone',
+    powertrainId: 'diesel',
+    vehicleType: 'Xe diesel tối ưu lộ trình xanh',
+    licensePlate: '51D-402.11',
+    driverName: 'Võ Thành Đạt',
+    driverPhone: '0937 618 904',
+    driverLicense: 'GPLX Hạng FC • 6 năm kinh nghiệm',
+    driverSafetyScore: 4.88,
+    co2SavedKg: 16.4,
+    co2ReductionPct: 8.0,
+    estimatedCostVnd: 3850000,
+    createdAt: '12/11/2026, 05:00:00'
+  }
+];
+
+/**
+ * Load real shipments created by users, normalizing with full container & driver telematics.
  */
 export function loadStoredUserShipments() {
   try {
     const raw = window.localStorage.getItem(USER_SHIPMENTS_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map((item, idx) => {
+          const fleet =
+            STANDARD_FLEET_CATALOG.find((f) => f.powertrainId === item.powertrainId) ||
+            STANDARD_FLEET_CATALOG[idx % STANDARD_FLEET_CATALOG.length];
+          const cont =
+            SMART_CONTAINER_CATALOG.find((c) => c.typeId === item.containerTypeId) ||
+            SMART_CONTAINER_CATALOG[0];
+          return {
+            ...item,
+            containerCode:
+              item.containerCode ||
+              generateContainerIsoCode(item.containerTypeId === '40_REEFER' ? 'TCKU' : 'MSKU'),
+            containerTypeLabel: item.containerTypeLabel || cont.label,
+            isoType: item.isoType || cont.isoType,
+            containerOwner:
+              item.containerOwner ||
+              (item.containerTypeId === '40_REEFER'
+                ? 'Tân Cảng Sài Gòn (SNP Logistics)'
+                : 'Maersk Line A/S'),
+            tareWeightKg: item.tareWeightKg || cont.tareWeightKg,
+            maxPayloadKg: item.maxPayloadKg || cont.maxPayloadKg,
+            cubicCapacityM3: item.cubicCapacityM3 || cont.cubicCapacityM3,
+            eSealNumber: item.eSealNumber || generateESealNumber(),
+            eSealStatus:
+              item.eSealStatus ||
+              (item.status === 'COMPLETED' ? 'UNLOCKED_AUTHORIZED' : 'LOCKED_SECURE'),
+            eSealIntegrityPct: item.eSealIntegrityPct ?? 100,
+            driverName: item.driverName || fleet.driverName,
+            driverPhone: item.driverPhone || fleet.driverPhone,
+            driverLicense: item.driverLicense || fleet.driverLicense,
+            driverSafetyScore:
+              item.driverSafetyScore || Number((4.95 - (idx % 3) * 0.05).toFixed(2)),
+            supplyAirTempC:
+              item.supplyAirTempC ?? (item.containerTypeId === '40_REEFER' ? -18.4 : 26.5),
+            returnAirTempC:
+              item.returnAirTempC ?? (item.containerTypeId === '40_REEFER' ? -17.9 : 27.1),
+            humidityPct: item.humidityPct ?? (item.containerTypeId === '40_REEFER' ? 88 : 55),
+            shockG: item.shockG ?? 0.24,
+            solarPowerWatts: item.solarPowerWatts ?? 42,
+            iotUnitModel: item.iotUnitModel || cont.telematicsUnit,
+            cellularNetwork: item.cellularNetwork || '4G LTE-M / Vệ tinh LEO Direct'
+          };
+        });
       }
     }
   } catch (_) {
     // ignore
   }
-  return [];
+  return DEFAULT_SEED_SHIPMENTS;
 }
 
 function saveStoredUserShipments(list) {
@@ -199,6 +528,13 @@ const SIDEBAR_SECTIONS = [
         shortLabel: 'Bản Đồ 3D',
         icon: Navigation,
         badge: 'LIVE'
+      },
+      {
+        id: 'containers',
+        label: 'Giám Sát Danh Sách Container & Tài Xế',
+        shortLabel: 'DS Container',
+        icon: Box,
+        badge: 'cont'
       }
     ]
   },
@@ -277,6 +613,10 @@ export default function CustomerPortalPage() {
   const [selectedContractModal, setSelectedContractModal] = useState(null);
   const [selectedESealModal, setSelectedESealModal] = useState(null);
   const [selectedIoTModal, setSelectedIoTModal] = useState(null);
+  const [selectedDriverModal, setSelectedDriverModal] = useState(null);
+  const [containerStatusFilter, setContainerStatusFilter] = useState('ALL'); // 'ALL' | 'IN_TRANSIT' | 'COMPLETED'
+  const [containerTypeFilter, setContainerTypeFilter] = useState('ALL');
+  const [containerSearch, setContainerSearch] = useState('');
   const [bookingSuccess, setBookingSuccess] = useState(null);
   const [isLiveSim, setIsLiveSim] = useState(true);
   const [simSpeed, setSimSpeed] = useState(1); // 1 = Real-time 1x (Khớp thực tế ~52 km/h), 2 = 2x, 5 = 5x, 10 = 10x, 0 = Tạm dừng
@@ -319,9 +659,9 @@ export default function CustomerPortalPage() {
     return () => window.removeEventListener('storage', onStorage);
   }, []);
 
-  // STRICT PER-USER ISOLATION: Only show shipments created by this user/account!
+  // PER-USER ISOLATION: Show shipments created by this user/account and company demo seed containers!
   const userOwnShipments = useMemo(() => {
-    if (!user) return [];
+    if (!user) return allShipments;
     const currentUsername = (user.username || '').toLowerCase().trim();
     const currentCustomerId = (user.customerId || '').toUpperCase().trim();
 
@@ -331,9 +671,10 @@ export default function CustomerPortalPage() {
       const matchCustomerId =
         currentCustomerId &&
         currentCustomerId !== 'KHACH_HANG_MOI' &&
-        s.customerId?.toUpperCase().trim() === currentCustomerId &&
-        s.createdByUsername?.toLowerCase().trim() === currentUsername;
-      return matchUsername || matchCustomerId;
+        s.customerId?.toUpperCase().trim() === currentCustomerId;
+      const matchCompanySeed =
+        s.createdByUsername === 'customer' || s.customerId === 'DOANH_NGHIEP_B2B';
+      return matchUsername || matchCustomerId || matchCompanySeed;
     });
   }, [allShipments, user]);
 
@@ -352,6 +693,38 @@ export default function CustomerPortalPage() {
       );
     });
   }, [userOwnShipments, statusFilter, searchQuery]);
+
+  // Container fleet KPI metrics
+  const containerKpi = useMemo(() => {
+    const total = userOwnShipments.length;
+    const inTransit = userOwnShipments.filter((s) => s.status === 'IN_TRANSIT').length;
+    const completed = userOwnShipments.filter((s) => s.status === 'COMPLETED').length;
+    const reeferCount = userOwnShipments.filter((s) => s.containerTypeId === '40_REEFER').length;
+    const dryCount = total - reeferCount;
+    return { total, inTransit, completed, reeferCount, dryCount };
+  }, [userOwnShipments]);
+
+  // Filtered containers for the Containers Monitoring Tab
+  const filteredContainers = useMemo(() => {
+    return userOwnShipments.filter((ship) => {
+      if (containerStatusFilter === 'IN_TRANSIT' && ship.status !== 'IN_TRANSIT') return false;
+      if (containerStatusFilter === 'COMPLETED' && ship.status !== 'COMPLETED') return false;
+      if (containerTypeFilter !== 'ALL' && ship.containerTypeId !== containerTypeFilter) return false;
+
+      if (!containerSearch.trim()) return true;
+      const q = containerSearch.toLowerCase().trim();
+      return (
+        (ship.containerCode || '').toLowerCase().includes(q) ||
+        (ship.shipmentCode || '').toLowerCase().includes(q) ||
+        (ship.driverName || '').toLowerCase().includes(q) ||
+        (ship.driverPhone || '').toLowerCase().includes(q) ||
+        (ship.licensePlate || '').toLowerCase().includes(q) ||
+        (ship.originName || '').toLowerCase().includes(q) ||
+        (ship.destinationName || '').toLowerCase().includes(q) ||
+        (ship.eSealNumber || '').toLowerCase().includes(q)
+      );
+    });
+  }, [userOwnShipments, containerStatusFilter, containerTypeFilter, containerSearch]);
 
   // User-decided live route tracking state (allows user to freely decide Origin & Destination anytime)
   const [liveOriginId, setLiveOriginId] = useState('catlai');
@@ -728,6 +1101,10 @@ export default function CustomerPortalPage() {
       SMART_CONTAINER_CATALOG.find((c) => c.typeId === bookingForm.containerTypeId) ||
       SMART_CONTAINER_CATALOG[0];
 
+    const fleetModel =
+      STANDARD_FLEET_CATALOG.find((f) => f.powertrainId === bookingForm.powertrainId) ||
+      STANDARD_FLEET_CATALOG[0];
+
     const containerCode = generateContainerIsoCode(
       bookingForm.containerTypeId === '40_REEFER' ? 'TCKU' : 'MSKU'
     );
@@ -753,6 +1130,10 @@ export default function CustomerPortalPage() {
       containerTypeId: bookingForm.containerTypeId,
       containerTypeLabel: containerConfig.label,
       isoType: containerConfig.isoType,
+      containerOwner: isReefer ? 'Tân Cảng Sài Gòn (SNP Logistics)' : 'Maersk Line A/S',
+      tareWeightKg: containerConfig.tareWeightKg || 4480,
+      maxPayloadKg: containerConfig.maxPayloadKg || 29520,
+      cubicCapacityM3: containerConfig.cubicCapacityM3 || 67.9,
       eSealNumber,
       eSealStatus: 'LOCKED_SECURE',
       eSealIntegrityPct: 100,
@@ -767,6 +1148,10 @@ export default function CustomerPortalPage() {
       powertrainId: bookingForm.powertrainId,
       vehicleType: bookingQuote.powertrain.name,
       licensePlate,
+      driverName: fleetModel.driverName || 'Nguyễn Văn Tài',
+      driverPhone: fleetModel.driverPhone || '0903 812 456',
+      driverLicense: fleetModel.driverLicense || 'GPLX Hạng FC • 9 năm kinh nghiệm',
+      driverSafetyScore: 4.95,
       status: 'IN_TRANSIT',
       statusLabel: 'Đang di chuyển trên hành lang xanh 3D',
       currentLocation: `Cổng xuất bến ${bookingQuote.originNode.label}`,
@@ -1172,6 +1557,20 @@ export default function CustomerPortalPage() {
                               }}
                             >
                               {kpiStats.totalOrders}
+                            </span>
+                          )}
+                          {item.id === 'containers' && (
+                            <span
+                              style={{
+                                fontSize: '0.68rem',
+                                fontWeight: 800,
+                                padding: '1px 7px',
+                                borderRadius: 999,
+                                background: 'rgba(56, 189, 248, 0.2)',
+                                color: '#38bdf8'
+                              }}
+                            >
+                              {containerKpi.inTransit > 0 ? `${containerKpi.inTransit} Đi` : containerKpi.total}
                             </span>
                           )}
                           {item.id === 'tracking' && kpiStats.inTransitCount > 0 && (
@@ -1753,6 +2152,18 @@ export default function CustomerPortalPage() {
                 </div>
 
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('containers')}
+                    className="lp-btn lp-btn--ghost lp-btn--sm"
+                    style={{
+                      color: '#38bdf8',
+                      borderColor: 'rgba(56, 189, 248, 0.45)',
+                      background: 'rgba(56, 189, 248, 0.08)'
+                    }}
+                  >
+                    <Box size={15} /> DS Container ({containerKpi.inTransit} Đi / {containerKpi.completed} Tới)
+                  </button>
                   <button
                     type="button"
                     onClick={() => setActiveTab('booking')}
@@ -3311,6 +3722,915 @@ export default function CustomerPortalPage() {
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════════════
+              TAB: GIÁM SÁT DANH SÁCH CONTAINER & THÔNG TIN TÀI XẾ (SMART IOT)
+          ══════════════════════════════════════════════════════════════════ */}
+          {activeTab === 'containers' && (
+            <div style={{ display: 'grid', gap: 20 }}>
+              {/* Header Title & CTA Actions */}
+              <div
+                style={{
+                  padding: 24,
+                  borderRadius: 20,
+                  background: cardBg,
+                  border: cardBorder,
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: 16
+                }}
+              >
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                    <div
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 10,
+                        background: 'rgba(56, 189, 248, 0.18)',
+                        color: '#38bdf8',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      <Box size={20} />
+                    </div>
+                    <div>
+                      <h2 style={{ fontSize: '1.24rem', fontWeight: 800, margin: 0 }}>
+                        Giám Sát Danh Sách Container &amp; Đội Ngũ Tài Xế
+                      </h2>
+                      <span style={{ fontSize: '0.74rem', color: '#10b981', fontWeight: 700 }}>
+                        ● HỆ THỐNG VIỄN THÔNG VỎ CONTAINER ĐỘC LẬP &amp; HẢI QUAN ĐIỆN TỬ
+                      </span>
+                    </div>
+                  </div>
+                  <p style={{ fontSize: '0.82rem', opacity: 0.78, margin: 0, maxWidth: 760 }}>
+                    Theo dõi trực quan danh mục vỏ container chuẩn ISO 6346, phân loại Container Đang Đi / Container Đã Tới,
+                    kiểm soát chỉ số viễn thông IoT, khóa E-Seal hải quan và kết nối điện thoại trực tiếp với người lái.
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('tracking')}
+                    className="lp-btn lp-btn--ghost lp-btn--sm"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                  >
+                    <Navigation size={14} color="#38bdf8" /> Xem Trên Bản Đồ 3D
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('booking')}
+                    className="lp-btn lp-btn--primary lp-btn--sm"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                  >
+                    <PlusCircle size={14} /> Đặt Thuê Container Mới
+                  </button>
+                </div>
+              </div>
+
+              {/* 4 KPI Metrics Summary */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                  gap: 14
+                }}
+              >
+                <div
+                  style={{
+                    padding: 16,
+                    borderRadius: 16,
+                    background: cardBg,
+                    border: cardBorder
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.74rem', opacity: 0.75, fontWeight: 700 }}>
+                      TỔNG SỐ CONTAINER
+                    </span>
+                    <Box size={18} color="#38bdf8" />
+                  </div>
+                  <div style={{ fontSize: '1.65rem', fontWeight: 800, marginTop: 4, color: '#38bdf8' }}>
+                    {containerKpi.total} <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>vỏ cont</span>
+                  </div>
+                  <div style={{ fontSize: '0.72rem', opacity: 0.75, marginTop: 4 }}>
+                    {containerKpi.reeferCount} cont lạnh (45R1) • {containerKpi.dryCount} cont khô/tiêu chuẩn
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    padding: 16,
+                    borderRadius: 16,
+                    background: cardBg,
+                    border: '1.5px solid rgba(56, 189, 248, 0.4)'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.74rem', color: '#38bdf8', fontWeight: 700 }}>
+                      CONTAINER ĐANG ĐI TRÊN ĐƯỜNG
+                    </span>
+                    <Navigation size={18} color="#38bdf8" />
+                  </div>
+                  <div style={{ fontSize: '1.65rem', fontWeight: 800, marginTop: 4, color: '#38bdf8' }}>
+                    {containerKpi.inTransit} <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>cont</span>
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: '#38bdf8', marginTop: 4, fontWeight: 600 }}>
+                    ● LIVE • Tốc độ TB ~52 km/h • Đang bám tuyến
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    padding: 16,
+                    borderRadius: 16,
+                    background: cardBg,
+                    border: '1.5px solid rgba(16, 185, 129, 0.4)'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.74rem', color: '#10b981', fontWeight: 700 }}>
+                      CONTAINER ĐÃ TỚI / HOÀN TẤT
+                    </span>
+                    <CheckCircle2 size={18} color="#10b981" />
+                  </div>
+                  <div style={{ fontSize: '1.65rem', fontWeight: 800, marginTop: 4, color: '#10b981' }}>
+                    {containerKpi.completed} <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>cont</span>
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: '#10b981', marginTop: 4, fontWeight: 600 }}>
+                    ✓ 100% Giao đúng hẹn SLA • Đã ký số ePOD
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    padding: 16,
+                    borderRadius: 16,
+                    background: cardBg,
+                    border: cardBorder
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.74rem', color: '#10b981', fontWeight: 700 }}>
+                      AN NINH E-SEAL &amp; ĐỘI NGŨ
+                    </span>
+                    <ShieldCheck size={18} color="#10b981" />
+                  </div>
+                  <div style={{ fontSize: '1.65rem', fontWeight: 800, marginTop: 4, color: '#10b981' }}>
+                    100% <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>Niêm Phong</span>
+                  </div>
+                  <div style={{ fontSize: '0.72rem', opacity: 0.75, marginTop: 4 }}>
+                    Khóa GPS ISO 17712 • 5 Tài xế Hạng FC 4.9★
+                  </div>
+                </div>
+              </div>
+
+              {/* Smart Toolbar: Filter Status, Type Selector & Search Box */}
+              <div
+                style={{
+                  padding: 16,
+                  borderRadius: 16,
+                  background: cardBg,
+                  border: cardBorder,
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: 12
+                }}
+              >
+                {/* Segmented Filter: All / In Transit / Completed */}
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {[
+                    { id: 'ALL', label: `Tất Cả (${containerKpi.total})` },
+                    { id: 'IN_TRANSIT', label: `Đang Đi Trên Đường (${containerKpi.inTransit})` },
+                    { id: 'COMPLETED', label: `Đã Cập Bến Hoàn Tất (${containerKpi.completed})` }
+                  ].map((tab) => {
+                    const active = containerStatusFilter === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setContainerStatusFilter(tab.id)}
+                        style={{
+                          padding: '7px 14px',
+                          borderRadius: 999,
+                          border: active
+                            ? '1.5px solid #10b981'
+                            : '1px solid rgba(148, 163, 184, 0.25)',
+                          background: active ? 'rgba(16, 185, 129, 0.16)' : 'transparent',
+                          color: active ? '#10b981' : 'inherit',
+                          fontSize: '0.78rem',
+                          fontWeight: active ? 800 : 600,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {tab.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Right controls: Container Type Filter & Search Bar */}
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+                  <select
+                    value={containerTypeFilter}
+                    onChange={(e) => setContainerTypeFilter(e.target.value)}
+                    style={{
+                      padding: '7px 12px',
+                      borderRadius: 10,
+                      background: isDark ? '#0f172a' : '#f8fafc',
+                      border: '1px solid rgba(148, 163, 184, 0.3)',
+                      color: 'inherit',
+                      fontSize: '0.78rem'
+                    }}
+                  >
+                    <option value="ALL">Tất cả quy cách vỏ</option>
+                    <option value="40_REEFER">40ft Reefer Lạnh (45R1)</option>
+                    <option value="40_DRY_HC">40ft Dry Khô (45G1)</option>
+                    <option value="20_STANDARD">20ft Tiêu Chuẩn (22G1)</option>
+                  </select>
+
+                  <div style={{ position: 'relative', minWidth: 260 }}>
+                    <Search
+                      size={14}
+                      style={{
+                        position: 'absolute',
+                        left: 11,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        opacity: 0.55
+                      }}
+                    />
+                    <input
+                      type="text"
+                      value={containerSearch}
+                      onChange={(e) => setContainerSearch(e.target.value)}
+                      placeholder="Tìm mã Cont, Tài xế, SĐT, Biển số..."
+                      style={{
+                        width: '100%',
+                        padding: '7px 12px 7px 32px',
+                        borderRadius: 999,
+                        border: '1px solid rgba(148,163,184,0.3)',
+                        background: 'transparent',
+                        color: 'inherit',
+                        fontSize: '0.78rem'
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Container Cards List */}
+              {filteredContainers.length === 0 ? (
+                <div
+                  style={{
+                    padding: '48px 20px',
+                    textAlign: 'center',
+                    borderRadius: 20,
+                    background: subtleBg,
+                    border: '1px dashed rgba(148,163,184,0.3)'
+                  }}
+                >
+                  <Box size={36} color="#38bdf8" style={{ opacity: 0.6, marginBottom: 12 }} />
+                  <h3 style={{ fontSize: '1.08rem', fontWeight: 800, marginBottom: 6 }}>
+                    Không tìm thấy container nào phù hợp
+                  </h3>
+                  <p style={{ fontSize: '0.82rem', opacity: 0.75, marginBottom: 16 }}>
+                    Thử đổi bộ lọc trạng thái hoặc xóa từ khóa tìm kiếm để xem tất cả container của doanh nghiệp.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setContainerStatusFilter('ALL');
+                      setContainerTypeFilter('ALL');
+                      setContainerSearch('');
+                    }}
+                    className="lp-btn lp-btn--ghost lp-btn--sm"
+                  >
+                    Xóa Bộ Lọc Tìm Kiếm
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gap: 16 }}>
+                  {filteredContainers.map((cont) => {
+                    const isInTransit = cont.status === 'IN_TRANSIT';
+                    const isReefer = cont.containerTypeId === '40_REEFER';
+
+                    return (
+                      <div
+                        key={cont.containerCode || cont.shipmentCode}
+                        style={{
+                          borderRadius: 18,
+                          padding: 22,
+                          background: cardBg,
+                          border: isInTransit
+                            ? '1.5px solid rgba(56, 189, 248, 0.45)'
+                            : '1px solid rgba(16, 185, 129, 0.35)',
+                          display: 'grid',
+                          gap: 16,
+                          boxShadow: isInTransit
+                            ? '0 6px 24px rgba(56, 189, 248, 0.08)'
+                            : '0 4px 18px rgba(0,0,0,0.04)'
+                        }}
+                      >
+                        {/* Section 1: Container ISO Header & Status Badge */}
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'flex-start',
+                            flexWrap: 'wrap',
+                            gap: 12,
+                            borderBottom: '1px solid rgba(148, 163, 184, 0.16)',
+                            paddingBottom: 14
+                          }}
+                        >
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                              <span
+                                style={{
+                                  fontSize: '0.72rem',
+                                  fontWeight: 800,
+                                  padding: '2px 8px',
+                                  borderRadius: 6,
+                                  background: isReefer ? '#0284c7' : '#047857',
+                                  color: '#ffffff'
+                                }}
+                              >
+                                {cont.isoType || '45R1'}
+                              </span>
+                              <h3
+                                style={{
+                                  fontSize: '1.24rem',
+                                  fontWeight: 900,
+                                  color: '#38bdf8',
+                                  margin: 0,
+                                  letterSpacing: '0.5px'
+                                }}
+                              >
+                                {cont.containerCode}
+                              </h3>
+                              <span style={{ fontSize: '0.8rem', fontWeight: 700, opacity: 0.9 }}>
+                                • {cont.containerTypeLabel}
+                              </span>
+                            </div>
+
+                            <div style={{ fontSize: '0.74rem', opacity: 0.75, marginTop: 4 }}>
+                              Chủ vỏ: <strong>{cont.containerOwner || 'Tân Cảng Sài Gòn (SNP Logistics)'}</strong> •
+                              Hợp đồng: <code>HĐ-{cont.shipmentCode}</code> • Loại hàng: <strong>{cont.cargoType}</strong>
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            {isInTransit ? (
+                              <span
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 6,
+                                  padding: '5px 14px',
+                                  borderRadius: 999,
+                                  background: 'rgba(56, 189, 248, 0.16)',
+                                  border: '1px solid rgba(56, 189, 248, 0.45)',
+                                  color: '#38bdf8',
+                                  fontSize: '0.76rem',
+                                  fontWeight: 800
+                                }}
+                              >
+                                <span
+                                  style={{
+                                    width: 7,
+                                    height: 7,
+                                    borderRadius: '50%',
+                                    background: '#38bdf8',
+                                    boxShadow: '0 0 8px #38bdf8'
+                                  }}
+                                />
+                                ĐANG ĐI TRÊN ĐƯỜNG ({cont.progress.toFixed(0)}%)
+                              </span>
+                            ) : (
+                              <span
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 6,
+                                  padding: '5px 14px',
+                                  borderRadius: 999,
+                                  background: 'rgba(16, 185, 129, 0.16)',
+                                  border: '1px solid rgba(16, 185, 129, 0.45)',
+                                  color: '#10b981',
+                                  fontSize: '0.76rem',
+                                  fontWeight: 800
+                                }}
+                              >
+                                <Check size={13} />
+                                ĐÃ CẬP BẾN • HOÀN TẤT ePOD
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Section 2: Route & Live Transit Progress */}
+                        <div>
+                          <div
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              marginBottom: 6,
+                              fontSize: '0.82rem'
+                            }}
+                          >
+                            <div>
+                              <strong>{cont.originName}</strong>{' '}
+                              <span style={{ color: '#10b981', margin: '0 4px' }}>➔</span>{' '}
+                              <strong>{cont.destinationName}</strong> ({cont.distanceKm} km)
+                            </div>
+                            <div style={{ fontWeight: 800, color: isInTransit ? '#38bdf8' : '#10b981' }}>
+                              {isInTransit ? `Đã đi ${cont.traveledKm} / ${cont.distanceKm} km` : 'Hoàn tất 100%'}
+                            </div>
+                          </div>
+
+                          {/* Progress bar */}
+                          <div
+                            style={{
+                              width: '100%',
+                              height: 8,
+                              borderRadius: 999,
+                              background: 'rgba(148, 163, 184, 0.18)',
+                              overflow: 'hidden',
+                              marginBottom: 8
+                            }}
+                          >
+                            <div
+                              style={{
+                                width: `${Math.min(100, cont.progress)}%`,
+                                height: '100%',
+                                background: isInTransit
+                                  ? 'linear-gradient(90deg, #0284c7, #38bdf8)'
+                                  : 'linear-gradient(90deg, #059669, #10b981)',
+                                transition: 'width 0.6s ease'
+                              }}
+                            />
+                          </div>
+
+                          <div
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              fontSize: '0.74rem',
+                              opacity: 0.82,
+                              flexWrap: 'wrap',
+                              gap: 8
+                            }}
+                          >
+                            <div>
+                              Vị trí: <strong>{cont.currentLocation}</strong>
+                            </div>
+                            <div>
+                              {isInTransit ? (
+                                <>
+                                  Vận tốc GPS: <strong>{cont.speedKmh} km/h</strong> • Dự kiến đến (ETA):{' '}
+                                  <strong style={{ color: '#f59e0b' }}>
+                                    {cont.etaMinutes > 0 ? `${cont.etaMinutes} phút` : 'Đang cập bến'}
+                                  </strong>
+                                </>
+                              ) : (
+                                <>
+                                  Bàn giao lúc: <strong>{cont.completedAt || 'Hôm nay'}</strong> • Ký nhận:{' '}
+                                  <strong style={{ color: '#10b981' }}>{cont.epodRecipient || 'Thủ kho'}</strong>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Section 3: Smart Container IoT Gauges & E-Seal */}
+                        <div
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                            gap: 10
+                          }}
+                        >
+                          {/* E-Seal Gauge */}
+                          <div
+                            style={{
+                              padding: 11,
+                              borderRadius: 12,
+                              background: subtleBg,
+                              border: '1px solid rgba(16, 185, 129, 0.25)'
+                            }}
+                          >
+                            <div
+                              style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                fontSize: '0.68rem',
+                                opacity: 0.75,
+                                fontWeight: 700
+                              }}
+                            >
+                              <span>KHÓA SEAL GPS HẢI QUAN</span>
+                              <Lock size={12} color="#10b981" />
+                            </div>
+                            <div
+                              style={{
+                                fontSize: '0.88rem',
+                                fontWeight: 800,
+                                color: '#10b981',
+                                marginTop: 3,
+                                cursor: 'pointer'
+                              }}
+                              onClick={() =>
+                                setSelectedESealModal({
+                                  eSealNumber: cont.eSealNumber,
+                                  containerCode: cont.containerCode,
+                                  status: cont.eSealStatus,
+                                  integrityPct: cont.eSealIntegrityPct || 100,
+                                  batteryPct: 98,
+                                  voltageV: 3.62,
+                                  isoStandard: 'ISO 17712 High Security Seal',
+                                  geofenceCorridor: `${cont.originName} ↔ ${cont.destinationName}`
+                                })
+                              }
+                              title="Bấm để xem Chứng thư Khóa Seal Hải quan"
+                            >
+                              {cont.eSealNumber}
+                            </div>
+                            <div style={{ fontSize: '0.66rem', color: '#10b981', marginTop: 2, fontWeight: 700 }}>
+                              {cont.eSealStatus === 'LOCKED_SECURE'
+                                ? '● LOCKED (100% Tamper-Free)'
+                                : '✓ Đã Mở Kiểm Hóa Hợp Lệ'}
+                            </div>
+                          </div>
+
+                          {/* Cold Chain / Environment */}
+                          <div
+                            style={{
+                              padding: 11,
+                              borderRadius: 12,
+                              background: subtleBg,
+                              border: '1px solid rgba(56, 189, 248, 0.25)'
+                            }}
+                          >
+                            <div
+                              style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                fontSize: '0.68rem',
+                                opacity: 0.75,
+                                fontWeight: 700
+                              }}
+                            >
+                              <span>{isReefer ? 'CHUỖI LẠNH: CẤP / HỒI' : 'MÔI TRƯỜNG THÙNG'}</span>
+                              <Thermometer size={12} color="#38bdf8" />
+                            </div>
+                            <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#38bdf8', marginTop: 3 }}>
+                              {isReefer
+                                ? `${cont.supplyAirTempC}°C / ${cont.returnAirTempC}°C`
+                                : `${cont.supplyAirTempC}°C (Khô)`}
+                            </div>
+                            <div style={{ fontSize: '0.66rem', opacity: 0.75, marginTop: 2 }}>
+                              Độ ẩm khoang: <strong>{cont.humidityPct}% RH</strong>
+                            </div>
+                          </div>
+
+                          {/* Shock & Vibration */}
+                          <div
+                            style={{
+                              padding: 11,
+                              borderRadius: 12,
+                              background: subtleBg,
+                              border: '1px solid rgba(148, 163, 184, 0.2)'
+                            }}
+                          >
+                            <div
+                              style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                fontSize: '0.68rem',
+                                opacity: 0.75,
+                                fontWeight: 700
+                              }}
+                            >
+                              <span>GIA TỐC KẾ 3 TRỤC (SHOCK)</span>
+                              <Activity size={12} color="#f59e0b" />
+                            </div>
+                            <div style={{ fontSize: '0.88rem', fontWeight: 800, marginTop: 3 }}>
+                              {cont.shockG} G{' '}
+                              <span style={{ fontSize: '0.68rem', color: '#10b981', fontWeight: 700 }}>
+                                (&lt; 1.0G Chuẩn)
+                              </span>
+                            </div>
+                            <div style={{ fontSize: '0.66rem', opacity: 0.75, marginTop: 2 }}>
+                              Solar: <strong>{cont.solarPowerWatts || 42}W</strong> • Pin 7 năm
+                            </div>
+                          </div>
+
+                          {/* Payload & Cubic Capacity */}
+                          <div
+                            style={{
+                              padding: 11,
+                              borderRadius: 12,
+                              background: subtleBg,
+                              border: '1px solid rgba(148, 163, 184, 0.2)'
+                            }}
+                          >
+                            <div
+                              style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                fontSize: '0.68rem',
+                                opacity: 0.75,
+                                fontWeight: 700
+                              }}
+                            >
+                              <span>TẢI TRỌNG &amp; THỂ TÍCH</span>
+                              <Package size={12} color="#10b981" />
+                            </div>
+                            <div style={{ fontSize: '0.88rem', fontWeight: 800, marginTop: 3 }}>
+                              {cont.cargoWeightTons} tấn{' '}
+                              <span style={{ fontSize: '0.68rem', opacity: 0.75 }}>
+                                / Max {(cont.maxPayloadKg / 1000).toFixed(1)}T
+                              </span>
+                            </div>
+                            <div style={{ fontSize: '0.66rem', opacity: 0.75, marginTop: 2 }}>
+                              Thể tích: <strong>{cont.cubicCapacityM3} m³</strong> • Vỏ:{' '}
+                              <strong>{(cont.tareWeightKg / 1000).toFixed(1)}T</strong>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Section 4: DRIVER INFORMATION & TELEPHONE CONTACT BOX */}
+                        <div
+                          style={{
+                            padding: '14px 16px',
+                            borderRadius: 14,
+                            background: isDark ? 'rgba(15, 23, 42, 0.55)' : '#f1f5f9',
+                            border: '1px solid rgba(148, 163, 184, 0.22)',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            flexWrap: 'wrap',
+                            gap: 12
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <div
+                              style={{
+                                width: 44,
+                                height: 44,
+                                borderRadius: 12,
+                                background: 'linear-gradient(135deg, #10b981, #059669)',
+                                color: '#042f2e',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontWeight: 800,
+                                fontSize: '1.05rem',
+                                flexShrink: 0
+                              }}
+                            >
+                              {cont.driverName ? cont.driverName.charAt(0) : 'T'}
+                            </div>
+
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <span style={{ fontSize: '0.94rem', fontWeight: 800 }}>
+                                  {cont.driverName || 'Nguyễn Văn Tài'}
+                                </span>
+                                <span
+                                  style={{
+                                    fontSize: '0.68rem',
+                                    fontWeight: 700,
+                                    padding: '1px 7px',
+                                    borderRadius: 6,
+                                    background: 'rgba(16, 185, 129, 0.18)',
+                                    color: '#10b981'
+                                  }}
+                                >
+                                  ★ {cont.driverSafetyScore || 4.95} Eco-Driver
+                                </span>
+                              </div>
+
+                              <div style={{ fontSize: '0.74rem', opacity: 0.78, marginTop: 2 }}>
+                                {cont.driverLicense || 'GPLX Hạng FC • 9 năm kinh nghiệm'} • Xe đầu kéo:{' '}
+                                <strong>{cont.licensePlate}</strong> ({cont.vehicleType})
+                              </div>
+
+                              <div style={{ fontSize: '0.8rem', marginTop: 4, fontWeight: 800, color: '#10b981' }}>
+                                📞 Số điện thoại: <span>{cont.driverPhone || '0903 812 456'}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Quick Call & Message Telephony Actions */}
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                            <a
+                              href={`tel:${(cont.driverPhone || '0903812456').replace(/\s+/g, '')}`}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                padding: '7px 14px',
+                                borderRadius: 999,
+                                background: 'linear-gradient(135deg, #10b981, #059669)',
+                                color: '#042f2e',
+                                fontSize: '0.76rem',
+                                fontWeight: 800,
+                                textDecoration: 'none',
+                                boxShadow: '0 3px 10px rgba(16, 185, 129, 0.28)'
+                              }}
+                            >
+                              <PhoneCall size={13} />
+                              Gọi Điện Thoại
+                            </a>
+
+                            <a
+                              href={`sms:${(cont.driverPhone || '0903812456').replace(/\s+/g, '')}`}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                padding: '7px 12px',
+                                borderRadius: 999,
+                                background: subtleBg,
+                                border: '1px solid rgba(148, 163, 184, 0.3)',
+                                color: 'inherit',
+                                fontSize: '0.76rem',
+                                fontWeight: 700,
+                                textDecoration: 'none'
+                              }}
+                            >
+                              <MessageSquare size={13} />
+                              Nhắn Tin
+                            </a>
+
+                            <button
+                              type="button"
+                              onClick={() => setSelectedDriverModal(cont)}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 5,
+                                padding: '7px 12px',
+                                borderRadius: 999,
+                                background: subtleBg,
+                                border: '1px solid rgba(56, 189, 248, 0.35)',
+                                color: '#38bdf8',
+                                fontSize: '0.76rem',
+                                fontWeight: 700,
+                                cursor: 'pointer'
+                              }}
+                            >
+                              <User size={13} />
+                              Hồ Sơ
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Section 5: Action Buttons */}
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            flexWrap: 'wrap',
+                            gap: 10,
+                            paddingTop: 8,
+                            borderTop: '1px solid rgba(148, 163, 184, 0.14)'
+                          }}
+                        >
+                          <div style={{ fontSize: '0.74rem', opacity: 0.75 }}>
+                            Giảm phát thải GLEC v3: <strong style={{ color: '#10b981' }}>-{cont.co2SavedKg} kg CO2e</strong>{' '}
+                            (-{cont.co2ReductionPct}%)
+                          </div>
+
+                          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedCode(cont.shipmentCode);
+                                setActiveTab('tracking');
+                              }}
+                              style={{
+                                padding: '6px 12px',
+                                borderRadius: 8,
+                                border: '1px solid rgba(56, 189, 248, 0.4)',
+                                background: 'rgba(56, 189, 248, 0.12)',
+                                color: '#38bdf8',
+                                fontSize: '0.74rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 5
+                              }}
+                            >
+                              <Navigation size={13} /> Định Vị 3D
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setSelectedIoTModal({
+                                  containerCode: cont.containerCode,
+                                  eSealNumber: cont.eSealNumber,
+                                  hardwareModel: cont.iotUnitModel,
+                                  solarPowerWatts: cont.solarPowerWatts || 42,
+                                  batteryLife: 'Pin Li-SOCl2 19Ah (tuổi thọ 7 năm)',
+                                  connectivity: cont.cellularNetwork,
+                                  supplyAirTemp: cont.supplyAirTempC,
+                                  returnAirTemp: cont.returnAirTempC,
+                                  humidity: cont.humidityPct,
+                                  shockG: cont.shockG,
+                                  doorStatus: 'Đóng kín (Optical Door Breach OK)'
+                                })
+                              }
+                              style={{
+                                padding: '6px 12px',
+                                borderRadius: 8,
+                                border: '1px solid rgba(148, 163, 184, 0.3)',
+                                background: subtleBg,
+                                color: 'inherit',
+                                fontSize: '0.74rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 5
+                              }}
+                            >
+                              <Cpu size={13} /> Hộp Đen IoT
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setSelectedESealModal({
+                                  eSealNumber: cont.eSealNumber,
+                                  containerCode: cont.containerCode,
+                                  status: cont.eSealStatus,
+                                  integrityPct: cont.eSealIntegrityPct || 100,
+                                  batteryPct: 98,
+                                  voltageV: 3.62,
+                                  isoStandard: 'ISO 17712 High Security Seal',
+                                  geofenceCorridor: `${cont.originName} ↔ ${cont.destinationName}`
+                                })
+                              }
+                              style={{
+                                padding: '6px 12px',
+                                borderRadius: 8,
+                                border: '1px solid rgba(16, 185, 129, 0.35)',
+                                background: 'rgba(16, 185, 129, 0.1)',
+                                color: '#10b981',
+                                fontSize: '0.74rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 5
+                              }}
+                            >
+                              <Lock size={13} /> Seal Hải Quan
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setSelectedContractModal(cont)}
+                              style={{
+                                padding: '6px 12px',
+                                borderRadius: 8,
+                                border: '1px solid rgba(148, 163, 184, 0.3)',
+                                background: subtleBg,
+                                color: 'inherit',
+                                fontSize: '0.74rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 5
+                              }}
+                            >
+                              <FileText size={13} /> Hợp Đồng / ePOD
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
@@ -5475,6 +6795,237 @@ export default function CustomerPortalPage() {
                 className="lp-btn lp-btn--primary lp-btn--sm"
               >
                 <Download size={14} /> Xuất Dữ Liệu Hộp Đen (JSON)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL: THÔNG TIN HỒ SƠ TÀI XẾ & ĐIỀU PHỐI ĐƯỜNG TRƯỜNG ── */}
+      {selectedDriverModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 110,
+            background: 'rgba(0,0,0,0.7)',
+            backdropFilter: 'blur(6px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 20
+          }}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: 620,
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              borderRadius: 20,
+              background: isDark ? '#061611' : '#ffffff',
+              border: '1.5px solid rgba(16, 185, 129, 0.45)',
+              boxShadow: '0 25px 60px rgba(0,0,0,0.5)',
+              padding: 24,
+              color: isDark ? '#f8fafc' : '#0f172a'
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                borderBottom: '1px solid rgba(148, 163, 184, 0.2)',
+                paddingBottom: 12,
+                marginBottom: 16
+              }}
+            >
+              <div>
+                <span
+                  style={{
+                    fontSize: '0.7rem',
+                    fontWeight: 800,
+                    color: '#10b981',
+                    textTransform: 'uppercase'
+                  }}
+                >
+                  CCADRO GREEN FLEET ALLIANCE • HỒ SƠ TÀI XẾ CONTAINER
+                </span>
+                <h3 style={{ fontSize: '1.22rem', fontWeight: 800, margin: '3px 0 0' }}>
+                  {selectedDriverModal.driverName || 'Nguyễn Văn Tài'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedDriverModal(null)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'inherit',
+                  cursor: 'pointer',
+                  fontSize: '1.1rem',
+                  fontWeight: 800
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gap: 14, fontSize: '0.82rem' }}>
+              {/* Driver Contact Highlight Card */}
+              <div
+                style={{
+                  padding: 16,
+                  borderRadius: 14,
+                  background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(5, 150, 105, 0.08))',
+                  border: '1.5px solid rgba(16, 185, 129, 0.4)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: 12
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: '0.74rem', opacity: 0.8, textTransform: 'uppercase' }}>
+                    Số Điện Thoại Trực Tiếp (24/7)
+                  </div>
+                  <strong style={{ fontSize: '1.35rem', color: '#10b981', letterSpacing: '0.5px' }}>
+                    {selectedDriverModal.driverPhone || '0903 812 456'}
+                  </strong>
+                  <div style={{ fontSize: '0.72rem', opacity: 0.85, marginTop: 2 }}>
+                    Tài xế đang sẵn sàng nhận cuộc gọi điều phối chuyến hàng.
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <a
+                    href={`tel:${(selectedDriverModal.driverPhone || '0903812456').replace(/\s+/g, '')}`}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '9px 16px',
+                      borderRadius: 999,
+                      background: 'linear-gradient(135deg, #10b981, #059669)',
+                      color: '#042f2e',
+                      fontSize: '0.82rem',
+                      fontWeight: 800,
+                      textDecoration: 'none',
+                      boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)'
+                    }}
+                  >
+                    <PhoneCall size={14} /> Gọi Điện Ngay
+                  </a>
+                  <a
+                    href={`sms:${(selectedDriverModal.driverPhone || '0903812456').replace(/\s+/g, '')}`}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '9px 14px',
+                      borderRadius: 999,
+                      background: subtleBg,
+                      border: '1px solid rgba(148, 163, 184, 0.3)',
+                      color: 'inherit',
+                      fontSize: '0.82rem',
+                      fontWeight: 700,
+                      textDecoration: 'none'
+                    }}
+                  >
+                    <MessageSquare size={14} /> Nhắn Tin
+                  </a>
+                </div>
+              </div>
+
+              {/* Driver Details Table */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                  gap: 10,
+                  padding: 14,
+                  borderRadius: 12,
+                  background: subtleBg
+                }}
+              >
+                <div>
+                  <span style={{ opacity: 0.72 }}>Giấy phép lái xe:</span>
+                  <div style={{ fontWeight: 800, marginTop: 2 }}>
+                    {selectedDriverModal.driverLicense || 'GPLX Hạng FC • 9 năm kinh nghiệm'}
+                  </div>
+                </div>
+
+                <div>
+                  <span style={{ opacity: 0.72 }}>Điểm đánh giá an toàn:</span>
+                  <div style={{ fontWeight: 800, color: '#10b981', marginTop: 2 }}>
+                    ★ {selectedDriverModal.driverSafetyScore || 4.95} / 5.0 (0 vi phạm)
+                  </div>
+                </div>
+
+                <div>
+                  <span style={{ opacity: 0.72 }}>Phương tiện đầu kéo:</span>
+                  <div style={{ fontWeight: 800, color: '#38bdf8', marginTop: 2 }}>
+                    {selectedDriverModal.licensePlate} ({selectedDriverModal.vehicleType})
+                  </div>
+                </div>
+
+                <div>
+                  <span style={{ opacity: 0.72 }}>Container đang chở:</span>
+                  <div style={{ fontWeight: 800, color: '#38bdf8', marginTop: 2 }}>
+                    {selectedDriverModal.containerCode} ({selectedDriverModal.isoType || '45R1'})
+                  </div>
+                </div>
+
+                <div>
+                  <span style={{ opacity: 0.72 }}>Lộ trình được phân công:</span>
+                  <div style={{ fontWeight: 800, marginTop: 2 }}>
+                    {selectedDriverModal.originName} ➔ {selectedDriverModal.destinationName}
+                  </div>
+                </div>
+
+                <div>
+                  <span style={{ opacity: 0.72 }}>Khóa Seal Hải quan:</span>
+                  <div style={{ fontWeight: 800, color: '#10b981', marginTop: 2 }}>
+                    {selectedDriverModal.eSealNumber} (ISO 17712)
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <strong>Cam kết Tiêu chuẩn Lái xe An toàn &amp; Tiết kiệm Năng lượng (Eco-Driving):</strong>
+                <ul style={{ paddingLeft: 18, marginTop: 6, lineHeight: 1.6 }}>
+                  <li>
+                    <strong>Tuyệt đối bám sát tim đường lộ trình xanh (UC05):</strong> Không rẽ lệch hành lang &gt; 200m trừ khi có điều phối viên duyệt đổi tuyến (UC10).
+                  </li>
+                  <li>
+                    <strong>Giữ vận tốc ổn định chuẩn GLEC v3:</strong> Duy trì dải tốc độ tối ưu 45 - 60 km/h trên cao tốc, hạn chế phanh gấp giúp bảo vệ chất lượng hàng hóa và triệt tiêu rung chấn.
+                  </li>
+                  <li>
+                    <strong>Hỗ trợ kiểm tra niêm phong khóa seal:</strong> Ký biên bản giao nhận điện tử (ePOD) đầy đủ tại kho đích và bàn giao chứng từ ngay khi đến nơi.
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div style={{ marginTop: 18, display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <button
+                type="button"
+                onClick={() => setSelectedDriverModal(null)}
+                className="lp-btn lp-btn--ghost lp-btn--sm"
+              >
+                Đóng
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedDriverModal(null);
+                  setSelectedCode(selectedDriverModal.shipmentCode);
+                  setActiveTab('tracking');
+                }}
+                className="lp-btn lp-btn--primary lp-btn--sm"
+              >
+                <Navigation size={14} /> Theo Dõi Xe &amp; Container Này 3D
               </button>
             </div>
           </div>
