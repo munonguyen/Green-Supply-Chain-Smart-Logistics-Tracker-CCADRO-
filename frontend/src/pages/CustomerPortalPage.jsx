@@ -106,7 +106,7 @@ const NODE_ADDRESSES = {
  * 5 Danh mục Container thực tế mẫu của doanh nghiệp (3 Đang đi, 2 Đã tới)
  * Tích hợp toàn diện thông tin Container ISO 6346, Hộp đen IoT, Khóa E-Seal và Người lái
  */
-export const DEFAULT_SEED_SHIPMENTS = [
+const DEFAULT_SEED_SHIPMENTS = [
   {
     id: 'seed-ship-001',
     shipmentCode: 'SHP-2026-8192',
