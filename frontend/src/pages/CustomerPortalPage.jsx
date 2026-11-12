@@ -24,6 +24,7 @@ import {
   PieChart,
   Play,
   PlusCircle,
+  RotateCcw,
   Search,
   ShieldCheck,
   Sun,
@@ -43,6 +44,7 @@ import OriginMarker from '../components/map/OriginMarker';
 import DestinationMarker from '../components/map/DestinationMarker';
 import VehicleMarker from '../components/map/VehicleMarker';
 import { MAP_NODES, POWERTRAINS } from '../components/landing/landingContent';
+import { getRealRoadRoute, interpolateRoadPosition } from '../services/roadRoutingService';
 import '../styles/landing.css';
 
 export const USER_SHIPMENTS_STORAGE_KEY = 'ccadro_user_shipments_realtime_v2';
@@ -66,33 +68,6 @@ const NODE_ADDRESSES = {
   hiepphuoc: 'Khu B, Đường số 1, KCN Hiệp Phước, Nhà Bè, TP. HCM',
   caimep: 'Khu phố Tân Lộc, P. Phước Hòa, Phú Mỹ, Bà Rịa – Vũng Tàu'
 };
-
-function buildCorridorWaypoints(originLatLng, destLatLng) {
-  const [lat1, lon1] = originLatLng;
-  const [lat2, lon2] = destLatLng;
-  const dLat = lat2 - lat1;
-  const dLon = lon2 - lon1;
-  return [
-    [lat1, lon1],
-    [lat1 + dLat * 0.22 + 0.008, lon1 + dLon * 0.18 + 0.005],
-    [lat1 + dLat * 0.48 + 0.012, lon1 + dLon * 0.45 - 0.004],
-    [lat1 + dLat * 0.76 + 0.005, lon1 + dLon * 0.78 + 0.004],
-    [lat2, lon2]
-  ];
-}
-
-function interpolateOnPath(waypoints, progressPct) {
-  if (!waypoints || waypoints.length === 0) return [10.7623, 106.7824];
-  if (waypoints.length === 1) return waypoints[0];
-  const clamped = Math.max(0, Math.min(100, progressPct)) / 100;
-  const totalSegs = waypoints.length - 1;
-  const exact = clamped * totalSegs;
-  const idx = Math.min(Math.floor(exact), totalSegs - 1);
-  const ratio = exact - idx;
-  const [lat1, lon1] = waypoints[idx];
-  const [lat2, lon2] = waypoints[idx + 1];
-  return [lat1 + (lat2 - lat1) * ratio, lon1 + (lon2 - lon1) * ratio];
-}
 
 /**
  * Load only real shipments created by users in the system.
@@ -242,6 +217,7 @@ export default function CustomerPortalPage() {
   const [selectedCertificate, setSelectedCertificate] = useState(null);
   const [bookingSuccess, setBookingSuccess] = useState(null);
   const [isLiveSim, setIsLiveSim] = useState(true);
+  const [simSpeed, setSimSpeed] = useState(1); // 1 = Real-time 1x (Khớp thực tế), 2 = 2x, 5 = 5x, 10 = 10x, 0 = Tạm dừng
   const [followVehicle, setFollowVehicle] = useState(false);
   const [showNotifPanel, setShowNotifPanel] = useState(false);
 
@@ -317,49 +293,110 @@ export default function CustomerPortalPage() {
     );
   }, [userOwnShipments, selectedCode]);
 
-  // Real-time GPS telemetry tick ONLY for the user's actual IN_TRANSIT shipments
+  // Real-time GPS telemetry tick based on authentic vehicle speed & physics
   useEffect(() => {
-    if (!isLiveSim || userOwnShipments.length === 0) return undefined;
+    if (!isLiveSim || simSpeed === 0 || userOwnShipments.length === 0) return undefined;
     const hasInTransit = userOwnShipments.some((s) => s.status === 'IN_TRANSIT');
     if (!hasInTransit) return undefined;
 
+    const intervalMs = 2000; // 2 seconds per heartbeat
+    const dtSeconds = intervalMs / 1000;
+
     const timer = setInterval(() => {
       setAllShipments((prev) => {
+        let changed = false;
         const updated = prev.map((s) => {
           if (s.status !== 'IN_TRANSIT') return s;
-          const nextProg = Math.min(99, Number((s.progress + 1.4).toFixed(1)));
-          const speedDelta = (Math.random() - 0.48) * 2.4;
-          const nextSpeed = Math.round(Math.max(42, Math.min(68, s.speedKmh + speedDelta)));
-          const remainingRatio = Math.max(0.05, (100 - nextProg) / 100);
-          const nextEta = Math.max(2, Math.round(s.initialEtaMinutes * remainingRatio));
+          changed = true;
+
+          const distKm = Number(s.distanceKm) || 28.9;
+          const currentSpeed = Number(s.speedKmh) || 52;
+
+          // Natural speed variation (e.g. 48 - 58 km/h depending on traffic conditions)
+          const speedDelta = (Math.random() - 0.48) * 1.8;
+          const nextSpeed = Math.round(Math.max(42, Math.min(64, currentSpeed + speedDelta)));
+
+          // Physical distance traveled in dtSeconds at nextSpeed (m/s * s * multiplier):
+          const metersMoved = ((nextSpeed * 1000) / 3600) * dtSeconds * simSpeed;
+          const totalMeters = distKm * 1000;
+          const pctMoved = (metersMoved / totalMeters) * 100;
+
+          const currentProg = Number(s.progress) || 0;
+          const nextProg = Math.min(99.9, Number((currentProg + pctMoved).toFixed(2)));
+
+          // Realistic remaining km and ETA in minutes
+          const traveledKm = Number(((nextProg / 100) * distKm).toFixed(1));
+          const remainingKm = Number(Math.max(0, distKm - traveledKm).toFixed(1));
+          const nextEta =
+            remainingKm <= 0 ? 0 : Math.max(1, Math.round((remainingKm / nextSpeed) * 60));
 
           return {
             ...s,
             progress: nextProg,
             speedKmh: nextSpeed,
-            etaMinutes: nextEta
+            traveledKm,
+            remainingKm,
+            etaMinutes: nextEta,
+            currentLocation:
+              nextProg < 5
+                ? `Cổng xuất bến ${s.originName?.split(',')[0] || ''}`
+                : nextProg > 92
+                  ? `Tiếp cận điểm giao ${s.destinationName?.split(',')[0] || ''}`
+                  : `Đang lưu thông trên hành lang ${distKm} km (50-60 km/h)`
           };
         });
-        saveStoredUserShipments(updated);
+
+        if (changed) {
+          saveStoredUserShipments(updated);
+        }
         return updated;
       });
-    }, 1800);
+    }, intervalMs);
 
     return () => clearInterval(timer);
-  }, [isLiveSim, userOwnShipments]);
+  }, [isLiveSim, simSpeed, userOwnShipments]);
+
+  // Reset progress to 0% to allow testing departure from origin depot
+  const handleResetTripProgress = (shipmentCode) => {
+    setAllShipments((prev) => {
+      const updated = prev.map((s) => {
+        if (s.shipmentCode !== shipmentCode) return s;
+        const dist = Number(s.distanceKm) || 28.9;
+        return {
+          ...s,
+          progress: 0.0,
+          traveledKm: 0.0,
+          remainingKm: dist,
+          status: 'IN_TRANSIT',
+          etaMinutes: s.initialEtaMinutes || Math.round((dist / 52) * 60),
+          statusLabel: 'Đang di chuyển trên hành lang xanh 3D',
+          currentLocation: `Cổng xuất bến ${s.originName?.split(',')[0] || ''}`
+        };
+      });
+      saveStoredUserShipments(updated);
+      return updated;
+    });
+  };
 
   const activeShipmentWaypoints = useMemo(() => {
     if (!activeShipment) return [];
-    if (activeShipment.waypoints?.length >= 2) return activeShipment.waypoints;
-    return buildCorridorWaypoints(
-      activeShipment.originCoords || [10.7623, 106.7824],
-      activeShipment.destCoords || [10.9242, 106.7145]
+    // Priority: retrieve authentic high-resolution road route
+    const realRoute = getRealRoadRoute(
+      activeShipment.originId || activeShipment.originName || activeShipment.originCoords,
+      activeShipment.destinationId || activeShipment.destinationName || activeShipment.destCoords
     );
+    if (realRoute && realRoute.points && realRoute.points.length > 5) {
+      return realRoute.points;
+    }
+    if (activeShipment.waypoints?.length > 10) {
+      return activeShipment.waypoints;
+    }
+    return realRoute?.points || [];
   }, [activeShipment]);
 
   const activeVehiclePosition = useMemo(() => {
-    if (!activeShipment || activeShipmentWaypoints.length === 0) return [10.823, 106.755];
-    return interpolateOnPath(activeShipmentWaypoints, activeShipment.progress || 15);
+    if (!activeShipment || activeShipmentWaypoints.length === 0) return [10.7623, 106.7824];
+    return interpolateRoadPosition(activeShipmentWaypoints, activeShipment.progress || 0);
   }, [activeShipment, activeShipmentWaypoints]);
 
   useEffect(() => {
@@ -368,7 +405,7 @@ export default function CustomerPortalPage() {
     }
   }, [followVehicle, activeVehiclePosition, activeShipment]);
 
-  // Live quote calculation for Booking tab
+  // Live quote calculation for Booking tab with authentic road network
   const bookingQuote = useMemo(() => {
     const originNode = MAP_NODES.find((n) => n.id === bookingForm.originId) || MAP_NODES[3];
     const destNode = MAP_NODES.find((n) => n.id === bookingForm.destinationId) || MAP_NODES[0];
@@ -376,12 +413,10 @@ export default function CustomerPortalPage() {
 
     const originCoords = NODE_COORDINATES[originNode.id] || [10.7623, 106.7824];
     const destCoords = NODE_COORDINATES[destNode.id] || [10.9242, 106.7145];
-    const previewWaypoints = buildCorridorWaypoints(originCoords, destCoords);
-
-    const dx = destNode.x - originNode.x;
-    const dy = destNode.y - originNode.y;
-    const rawDist = Math.hypot(dx, dy) * 0.22;
-    const distanceKm = Math.max(14.5, Math.round(rawDist * 10) / 10);
+    const realRoute = getRealRoadRoute(originNode.id, destNode.id);
+    const previewWaypoints = realRoute.points;
+    const distanceKm = realRoute.distanceKm;
+    const durationMinutes = realRoute.durationMinutes;
     const weight = Number(bookingForm.cargoWeightTons) || 12;
 
     const baselineCo2Kg = Math.round(distanceKm * weight * 0.108 * 10) / 10;
@@ -389,7 +424,7 @@ export default function CustomerPortalPage() {
     const actualCo2Kg = Math.round(baselineCo2Kg * (1 - reductionRatio) * 10) / 10;
     const savedCo2Kg = Math.round((baselineCo2Kg - actualCo2Kg) * 10) / 10;
     const reductionPct = Math.round(reductionRatio * 1000) / 10;
-    const etaMinutes = Math.max(20, Math.round((distanceKm / 52) * 60));
+    const etaMinutes = durationMinutes || Math.max(20, Math.round((distanceKm / 52) * 60));
     const estimatedCostVnd = Math.round((distanceKm * 28500 + weight * 95000) / 1000) * 1000;
 
     return {
@@ -400,6 +435,7 @@ export default function CustomerPortalPage() {
       previewWaypoints,
       powertrain,
       distanceKm,
+      durationMinutes,
       baselineCo2Kg,
       actualCo2Kg,
       savedCo2Kg,
@@ -495,8 +531,10 @@ export default function CustomerPortalPage() {
       co2SavedKg: bookingQuote.savedCo2Kg,
       co2ReductionPct: bookingQuote.reductionPct,
       estimatedCostVnd: bookingQuote.estimatedCostVnd,
-      progress: 14,
-      corridorState: 'ON_CORRIDOR (Sai số 6.2m < 50m AN TOÀN)',
+      progress: 0.0,
+      traveledKm: 0.0,
+      remainingKm: bookingQuote.distanceKm,
+      corridorState: 'ON_CORRIDOR (Bám sát tim đường lộ trình thực tế)',
       certificateHash: `0x${Math.random().toString(16).slice(2, 18)}${Math.random()
         .toString(16)
         .slice(2, 18)}`,
@@ -1978,7 +2016,10 @@ export default function CustomerPortalPage() {
                               <span>
                                 {s.vehicleType} • <strong>{s.licensePlate}</strong>
                               </span>
-                              <span>Tiến độ: {Math.round(s.progress)}%</span>
+                              <span>
+                                {s.speedKmh ? `${s.speedKmh} km/h • ` : ''}Tiến độ:{' '}
+                                {Number(s.progress || 0).toFixed(1)}%
+                              </span>
                             </div>
                           </div>
                         );
@@ -2020,16 +2061,95 @@ export default function CustomerPortalPage() {
                           <h3 style={{ fontSize: '1.18rem', fontWeight: 800, margin: '3px 0' }}>
                             {activeShipment.originName} → {activeShipment.destinationName}
                           </h3>
-                          <div style={{ fontSize: '0.8rem', opacity: 0.82 }}>
+                          <div style={{ fontSize: '0.8rem', opacity: 0.85, marginTop: 4 }}>
                             Tọa độ xe thực tế:{' '}
                             <code style={{ color: '#10b981', fontWeight: 700 }}>
                               {activeVehiclePosition[0].toFixed(4)}°N,{' '}
                               {activeVehiclePosition[1].toFixed(4)}°E
                             </code>
+                            <span style={{ margin: '0 8px', opacity: 0.5 }}>•</span>
+                            <span>
+                              Đã đi:{' '}
+                              <strong style={{ color: '#38bdf8' }}>
+                                {(
+                                  ((Number(activeShipment.progress) || 0) / 100) *
+                                  (Number(activeShipment.distanceKm) || 28.9)
+                                ).toFixed(1)}{' '}
+                                km
+                              </strong>{' '}
+                              / {Number(activeShipment.distanceKm) || 28.9} km (
+                              {Number(activeShipment.progress || 0).toFixed(1)}%)
+                            </span>
+                            <span style={{ margin: '0 8px', opacity: 0.5 }}>•</span>
+                            <span style={{ color: '#10b981', fontWeight: 600 }}>
+                              {activeShipment.corridorState || 'Bám sát tim đường lộ trình'}
+                            </span>
                           </div>
                         </div>
 
-                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        <div
+                          style={{
+                            display: 'flex',
+                            gap: 8,
+                            flexWrap: 'wrap',
+                            alignItems: 'center'
+                          }}
+                        >
+                          {/* Simulation Speed Multipliers */}
+                          <div
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              background: 'rgba(15,23,42,0.6)',
+                              borderRadius: 9,
+                              padding: '2px 4px',
+                              border: '1px solid rgba(148,163,184,0.25)',
+                              gap: 2
+                            }}
+                          >
+                            <span
+                              style={{
+                                fontSize: '0.68rem',
+                                opacity: 0.72,
+                                padding: '0 4px',
+                                fontWeight: 700
+                              }}
+                            >
+                              Tốc độ:
+                            </span>
+                            {[
+                              { val: 1, label: '1x Thực tế' },
+                              { val: 2, label: '2x' },
+                              { val: 5, label: '5x' },
+                              { val: 10, label: '10x' }
+                            ].map((spd) => {
+                              const active = simSpeed === spd.val && isLiveSim;
+                              return (
+                                <button
+                                  key={spd.val}
+                                  type="button"
+                                  onClick={() => {
+                                    setSimSpeed(spd.val);
+                                    setIsLiveSim(true);
+                                  }}
+                                  style={{
+                                    padding: '3px 7px',
+                                    borderRadius: 6,
+                                    fontSize: '0.72rem',
+                                    fontWeight: active ? 800 : 600,
+                                    border: 'none',
+                                    background: active ? '#10b981' : 'transparent',
+                                    color: active ? '#042f2e' : 'inherit',
+                                    cursor: 'pointer'
+                                  }}
+                                  title={`Chạy mô phỏng ở tốc độ ${spd.label}`}
+                                >
+                                  {spd.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+
                           <button
                             type="button"
                             onClick={() => setFollowVehicle((v) => !v)}
@@ -2072,6 +2192,27 @@ export default function CustomerPortalPage() {
                           >
                             {isLiveSim ? <Pause size={13} /> : <Play size={13} />}
                             {isLiveSim ? 'Tạm dừng GPS' : 'Tiếp tục GPS'}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleResetTripProgress(activeShipment.shipmentCode)}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 5,
+                              padding: '7px 11px',
+                              borderRadius: 9,
+                              border: '1px solid rgba(148,163,184,0.3)',
+                              background: 'rgba(148,163,184,0.1)',
+                              color: 'inherit',
+                              fontSize: '0.75rem',
+                              fontWeight: 700,
+                              cursor: 'pointer'
+                            }}
+                            title="Đặt lại vị trí xe về điểm xuất phát (0%)"
+                          >
+                            <RotateCcw size={13} /> Đặt lại 0%
                           </button>
 
                           {activeShipment.status === 'IN_TRANSIT' && (
@@ -2135,7 +2276,7 @@ export default function CustomerPortalPage() {
                         </MapView>
                       </div>
 
-                      {/* 4 Telemetry Gauges */}
+                      {/* 5 Telemetry Gauges */}
                       <div
                         style={{
                           display: 'grid',
@@ -2157,6 +2298,28 @@ export default function CustomerPortalPage() {
                           <strong style={{ fontSize: '1.15rem' }}>
                             {activeShipment.speedKmh} km/h
                           </strong>
+                        </div>
+                        <div
+                          style={{
+                            padding: 12,
+                            borderRadius: 12,
+                            background: subtleBg,
+                            border: '1px solid rgba(148,163,184,0.16)'
+                          }}
+                        >
+                          <div style={{ fontSize: '0.72rem', opacity: 0.75 }}>
+                            <Activity size={13} color="#10b981" /> Tiến độ &amp; Đã đi
+                          </div>
+                          <strong style={{ fontSize: '1.05rem', color: '#10b981' }}>
+                            {Number(activeShipment.progress || 0).toFixed(1)}%
+                          </strong>
+                          <div style={{ fontSize: '0.68rem', opacity: 0.75, marginTop: 2 }}>
+                            {(
+                              ((Number(activeShipment.progress) || 0) / 100) *
+                              (Number(activeShipment.distanceKm) || 28.9)
+                            ).toFixed(1)}{' '}
+                            / {Number(activeShipment.distanceKm) || 28.9} km
+                          </div>
                         </div>
                         <div
                           style={{

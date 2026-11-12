@@ -5,6 +5,11 @@ import VehicleMarker from './VehicleMarker';
 import OriginMarker from './OriginMarker';
 import DestinationMarker from './DestinationMarker';
 import { Activity, Compass, Pause, Play, Radio, Thermometer, Truck } from 'lucide-react';
+import { getRealRoadRoute, interpolateRoadPosition } from '../../services/roadRoutingService';
+
+const catlaiVsip = getRealRoadRoute('catlai', 'vsip');
+const songthanCaimep = getRealRoadRoute('songthan', 'caimep');
+const songthanHiepphuoc = getRealRoadRoute('songthan', 'hiepphuoc');
 
 const FLEET_CORRIDORS = [
   {
@@ -20,15 +25,8 @@ const FLEET_CORRIDORS = [
     tempC: -18.2,
     co2SavedKg: 14.8,
     color: '#10b981',
-    waypoints: [
-      [10.7626, 106.7957],
-      [10.7852, 106.7745],
-      [10.8124, 106.7612],
-      [10.8485, 106.7521],
-      [10.8842, 106.7341],
-      [10.9125, 106.7124],
-      [10.9312, 106.6974]
-    ]
+    totalKm: catlaiVsip.distanceKm,
+    waypoints: catlaiVsip.points
   },
   {
     vehicleCode: 'V002',
@@ -37,20 +35,14 @@ const FLEET_CORRIDORS = [
     customerId: 'SAMSUNG_VN',
     driverName: 'Trần Hoàng Nam',
     vehicleType: 'Đầu kéo Euro 5 • Container 40ft',
-    originName: 'Khu Công Nghệ Cao Q.9',
+    originName: 'ICD Sóng Thần, Bình Dương',
     destinationName: 'Cảng Cái Mép - Thị Vải',
     baseSpeedKmh: 64,
     tempC: 21.5,
     co2SavedKg: 26.4,
     color: '#0ea5e9',
-    waypoints: [
-      [10.8411, 106.8099],
-      [10.7985, 106.8421],
-      [10.7412, 106.9125],
-      [10.6645, 106.9812],
-      [10.5912, 107.0185],
-      [10.5214, 107.0312]
-    ]
+    totalKm: songthanCaimep.distanceKm,
+    waypoints: songthanCaimep.points
   },
   {
     vehicleCode: 'V003',
@@ -59,35 +51,20 @@ const FLEET_CORRIDORS = [
     customerId: 'TH_TRUE_MILK',
     driverName: 'Lê Minh Khôi',
     vehicleType: 'Xe tải lạnh EV • Đông lạnh sâu',
-    originName: 'KCN Sóng Thần, Bình Dương',
-    destinationName: 'KCN Hiệp Phước, Nhà Bè',
+    originName: 'ICD Sóng Thần, Bình Dương',
+    destinationName: 'Cảng Hiệp Phước, Nhà Bè',
     baseSpeedKmh: 51,
     tempC: -19.0,
     co2SavedKg: 18.2,
     color: '#a855f7',
-    waypoints: [
-      [10.8925, 106.7452],
-      [10.8412, 106.7315],
-      [10.7745, 106.7285],
-      [10.7124, 106.7395],
-      [10.6412, 106.7521]
-    ]
+    totalKm: songthanHiepphuoc.distanceKm,
+    waypoints: songthanHiepphuoc.points
   }
 ];
 
 function interpolateRoutePosition(waypoints, progress01) {
-  if (!waypoints || waypoints.length === 0) return [10.8231, 106.74];
-  if (waypoints.length === 1) return waypoints[0];
-  const clamped = Math.max(0, Math.min(0.9999, progress01));
-  const totalSegments = waypoints.length - 1;
-  const scaled = clamped * totalSegments;
-  const segIdx = Math.floor(scaled);
-  const segFrac = scaled - segIdx;
-  const start = waypoints[segIdx];
-  const end = waypoints[Math.min(segIdx + 1, totalSegments)];
-  const lat = start[0] + (end[0] - start[0]) * segFrac;
-  const lng = start[1] + (end[1] - start[1]) * segFrac;
-  return [lat, lng];
+  if (!waypoints || waypoints.length === 0) return [10.7623, 106.7824];
+  return interpolateRoadPosition(waypoints, Math.max(0, Math.min(1, progress01)) * 100);
 }
 
 export default function RealTimeFleetMap3D({

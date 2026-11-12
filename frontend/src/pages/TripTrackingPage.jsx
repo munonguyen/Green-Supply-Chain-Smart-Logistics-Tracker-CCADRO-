@@ -19,16 +19,9 @@ import {
   RefreshCw,
   ShieldCheck
 } from 'lucide-react';
+import { getRealRoadRoute, interpolateRoadPosition } from '../services/roadRoutingService';
 
-const PLANNED_ROUTE = [
-  [10.762622, 106.795677],
-  [10.7915, 106.7765],
-  [10.82, 106.76],
-  [10.85, 106.74],
-  [10.88, 106.72],
-  [10.9085, 106.708],
-  [10.931215, 106.697426]
-];
+const PLANNED_ROUTE = getRealRoadRoute('catlai', 'vsip').points;
 
 const REROUTE_PATH = [
   [10.8525, 106.743],
@@ -39,15 +32,8 @@ const REROUTE_PATH = [
 ];
 
 function interpolateRoute(coords, t) {
-  if (!coords || coords.length === 0) return [10.85, 106.74];
-  const clamped = Math.max(0, Math.min(0.999, t));
-  const segs = coords.length - 1;
-  const scaled = clamped * segs;
-  const idx = Math.floor(scaled);
-  const frac = scaled - idx;
-  const a = coords[idx];
-  const b = coords[Math.min(idx + 1, segs)];
-  return [a[0] + (b[0] - a[0]) * frac, a[1] + (b[1] - a[1]) * frac];
+  if (!coords || coords.length === 0) return [10.7623, 106.7824];
+  return interpolateRoadPosition(coords, Math.max(0, Math.min(1, t)) * 100);
 }
 
 export default function TripTrackingPage() {

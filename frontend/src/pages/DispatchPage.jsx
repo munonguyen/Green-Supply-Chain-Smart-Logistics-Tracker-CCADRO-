@@ -6,16 +6,9 @@ import RoutePolyline from '../components/map/RoutePolyline';
 import OriginMarker from '../components/map/OriginMarker';
 import DestinationMarker from '../components/map/DestinationMarker';
 import VehicleMarker from '../components/map/VehicleMarker';
+import { getRealRoadRoute } from '../services/roadRoutingService';
 
-const DISPATCH_CORRIDOR = [
-  [10.762, 106.782],
-  [10.784, 106.791],
-  [10.812, 106.784],
-  [10.848, 106.768],
-  [10.882, 106.748],
-  [10.905, 106.731],
-  [10.924, 106.714]
-];
+const DISPATCH_CORRIDOR = getRealRoadRoute('catlai', 'vsip').points;
 
 export default function DispatchPage() {
   const { shipmentId } = useParams();

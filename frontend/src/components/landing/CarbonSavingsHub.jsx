@@ -26,6 +26,7 @@ import { CountingNumber } from '../ui/CountingNumber';
 import MapView from '../map/MapView';
 import RoutePolyline from '../map/RoutePolyline';
 import VehicleMarker from '../map/VehicleMarker';
+import { getRealRoadRoute, interpolateRoadPosition } from '../../services/roadRoutingService';
 
 /* ── Detailed real-world GPS coordinates & addresses for Southern Vietnam hubs ── */
 const HUB_DETAILS = {
@@ -89,37 +90,6 @@ const HUB_DETAILS = {
 
 function nodeById(id) {
   return HUB_DETAILS[id] || MAP_NODES.find((n) => n.id === id) || HUB_DETAILS.catlai;
-}
-
-function buildDetailedWaypoints(originId, destId) {
-  const start = (HUB_DETAILS[originId] || HUB_DETAILS.catlai).coords;
-  const end = (HUB_DETAILS[destId] || HUB_DETAILS.vsip).coords;
-  const [lat1, lon1] = start;
-  const [lat2, lon2] = end;
-  const dLat = lat2 - lat1;
-  const dLon = lon2 - lon1;
-
-  return [
-    [lat1, lon1],
-    [lat1 + dLat * 0.2 + 0.007, lon1 + dLon * 0.16 + 0.005],
-    [lat1 + dLat * 0.42 + 0.011, lon1 + dLon * 0.39 - 0.004],
-    [lat1 + dLat * 0.65 + 0.008, lon1 + dLon * 0.63 + 0.006],
-    [lat1 + dLat * 0.84 + 0.003, lon1 + dLon * 0.85 - 0.002],
-    [lat2, lon2]
-  ];
-}
-
-function interpolateLatLng(waypoints, progressPct) {
-  if (!waypoints || waypoints.length === 0) return [10.7623, 106.7824];
-  if (waypoints.length === 1) return waypoints[0];
-  const clamped = Math.max(0, Math.min(100, progressPct)) / 100;
-  const totalSegs = waypoints.length - 1;
-  const exact = clamped * totalSegs;
-  const idx = Math.min(Math.floor(exact), totalSegs - 1);
-  const ratio = exact - idx;
-  const [lat1, lon1] = waypoints[idx];
-  const [lat2, lon2] = waypoints[idx + 1];
-  return [lat1 + (lat2 - lat1) * ratio, lon1 + (lon2 - lon1) * ratio];
 }
 
 /* ── Interactive Leaflet markers for all 7 hubs on the real Google Map ── */
@@ -213,21 +183,27 @@ function HubNetworkMarkers({ map, origin, dest, onSelect }) {
   return null;
 }
 
-/* ── Detailed Interactive 3D Location Corridor Map ── */
+/* ── Detailed Interactive 3D Location Corridor Map with Authentic Road Geometry ── */
 function CorridorMap({ origin, dest, onSelect, onSetOrigin, onSetDest, onSwap, powertrain }) {
-  const [progress, setProgress] = useState(42);
+  const [progress, setProgress] = useState(28);
+
+  const realRoute = useMemo(() => getRealRoadRoute(origin, dest), [origin, dest]);
+  const waypoints = realRoute.points;
 
   useEffect(() => {
+    // Realistic progression along highway (~54 km/h pace)
     const timer = setInterval(() => {
-      setProgress((prev) => (prev >= 95 ? 12 : prev + 1.8));
-    }, 1200);
+      setProgress((prev) => (prev >= 98.5 ? 1.5 : Number((prev + 0.12).toFixed(2))));
+    }, 1500);
     return () => clearInterval(timer);
   }, []);
 
   const originHub = nodeById(origin);
   const destHub = nodeById(dest);
-  const waypoints = useMemo(() => buildDetailedWaypoints(origin, dest), [origin, dest]);
-  const vehiclePos = useMemo(() => interpolateLatLng(waypoints, progress), [waypoints, progress]);
+  const vehiclePos = useMemo(
+    () => interpolateRoadPosition(waypoints, progress),
+    [waypoints, progress]
+  );
 
   const mapCenter = useMemo(() => {
     const [lat1, lon1] = originHub.coords;
@@ -681,10 +657,8 @@ export default function CarbonSavingsHub() {
     const a = MAP_NODES.find((n) => n.id === origin);
     const b = MAP_NODES.find((n) => n.id === dest);
     if (!a || !b) return null;
-    const dx = a.x - b.x;
-    const dy = a.y - b.y;
-    const mapDist = Math.sqrt(dx * dx + dy * dy);
-    const km = Math.max(14.5, Math.round(mapDist * ESTIMATOR.kmPerMapUnit * 10) / 10);
+    const realRoute = getRealRoadRoute(origin, dest);
+    const km = realRoute.distanceKm;
     const tkm = km * payload;
     const baseline = tkm * ESTIMATOR.dieselBaselineKgPerTkm;
     const pt = POWERTRAINS.find((p) => p.id === powertrain);
