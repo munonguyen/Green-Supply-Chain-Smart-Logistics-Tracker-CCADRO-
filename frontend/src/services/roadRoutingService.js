@@ -91,25 +91,31 @@ export function findNearestHubId(lat, lon) {
 
 /**
  * Normalize any input (id string, Vietnamese name, or [lat, lon]) to standard hub ID.
+ * Robust against any NFD/NFC unicode diacritics or uppercase formatting.
  */
 export function normalizeHubKey(input, fallback = 'catlai') {
   if (!input) return fallback;
   if (Array.isArray(input) && input.length >= 2) {
     return findNearestHubId(input[0], input[1]);
   }
-  const str = String(input).toLowerCase().trim();
-  if (HUB_NODES[str]) return str;
-  if (str.includes('cát lái') || str.includes('cat lai') || str.includes('catlai')) return 'catlai';
-  if (str.includes('vsip')) return 'vsip';
-  if (str.includes('sóng thần') || str.includes('song than') || str.includes('songthan'))
-    return 'songthan';
-  if (str.includes('tân bình') || str.includes('tan binh') || str.includes('tanbinh'))
-    return 'tanbinh';
-  if (str.includes('nhơn trạch') || str.includes('nhon trach') || str.includes('nhontrach'))
-    return 'nhontrach';
-  if (str.includes('hiệp phước') || str.includes('hiep phuoc') || str.includes('hiepphuoc'))
-    return 'hiepphuoc';
-  if (str.includes('cái mép') || str.includes('cai mep') || str.includes('caimep')) return 'caimep';
+  const raw = String(input).toLowerCase().trim();
+  if (HUB_NODES[raw]) return raw;
+
+  const stripped = raw
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .trim();
+
+  if (HUB_NODES[stripped]) return stripped;
+  if (stripped.includes('cat lai') || stripped.includes('catlai')) return 'catlai';
+  if (stripped.includes('vsip')) return 'vsip';
+  if (stripped.includes('song than') || stripped.includes('songthan')) return 'songthan';
+  if (stripped.includes('tan binh') || stripped.includes('tanbinh')) return 'tanbinh';
+  if (stripped.includes('nhon trach') || stripped.includes('nhontrach')) return 'nhontrach';
+  if (stripped.includes('hiep phuoc') || stripped.includes('hiepphuoc')) return 'hiepphuoc';
+  if (stripped.includes('cai mep') || stripped.includes('caimep')) return 'caimep';
   return fallback;
 }
 
