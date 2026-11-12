@@ -165,6 +165,82 @@ export const HUB_CORRIDOR_DIRECTORY = [
 ];
 
 /**
+ * 1.1. DANH MỤC TRANG BỊ IOT CONTAINER & KHÓA SEAL ĐIỆN TỬ (SMART CONTAINER HARDWARE)
+ */
+export const SMART_CONTAINER_CATALOG = [
+  {
+    typeId: '40_REEFER',
+    label: 'Container Lạnh Thông Minh 40ft High Cube (Smart Reefer)',
+    isoType: '45R1',
+    description:
+      'Thùng lạnh cách nhiệt Polyurethane cao cấp, tích hợp cổng viễn thông máy lạnh Carrier/Thermo King và khóa E-Seal hải quan.',
+    telematicsUnit: 'Carrier DataCOLD 600 / Nexxiot Globehopper Edge 3',
+    sensors: [
+      'Cảm biến nhiệt độ gió cấp (Supply Air Temp: -18.4°C)',
+      'Cảm biến nhiệt độ gió hồi (Return Air Temp: -17.9°C)',
+      'Cảm biến độ ẩm chuỗi lạnh (Humidity %RH: 88%)',
+      'Gia tốc kế 3 trục đo chấn động va đập (3-Axis Shock G-Force)',
+      'Cảm biến tế bào quang học phát hiện mở cửa (Optical Door Breach)'
+    ],
+    eSealModel: 'Khóa Seal Chốt Điện Tử GPS Hải Quan ISO 17712 (Chống phá khóa & Geofence)',
+    powerSpec: 'Pin Li-SOCl2 19Ah (tuổi thọ 7 năm) + Tấm sạc Solar Harvester 45W nóc thùng',
+    connectivity: '4G LTE-M / NB-IoT đa mạng toàn cầu + Vệ tinh LEO Direct + BLE 5.2 Mesh',
+    tareWeightKg: 4480,
+    maxPayloadKg: 29520,
+    cubicCapacityM3: 67.9
+  },
+  {
+    typeId: '40_DRY_HC',
+    label: 'Container Khô 40ft High Cube IoT (Smart General Dry Box)',
+    isoType: '45G1',
+    description:
+      'Vỏ thép Corten chống rỉ sét, gắn hộp đen năng lượng mặt trời Orbcomm CT 3500 và cảm biến thể tích hàng hóa siêu âm.',
+    telematicsUnit: 'Orbcomm CT 3500 Solar Asset Tracker',
+    sensors: [
+      'Cảm biến thể tích hàng hóa siêu âm (Ultrasonic Cargo Load Sensor)',
+      'Gia tốc kế 3 trục đo dằn xóc và lật xe (3-Axis Accelerometer)',
+      'Công tắc từ cánh cửa (Magnetic Door Contact Sensor)'
+    ],
+    eSealModel: 'Khóa Seal Cáp Thép RFID / Cellular E-Seal',
+    powerSpec: 'Tấm năng lượng mặt trời vĩnh cửu + Pin dự phòng 10 năm',
+    connectivity: '4G LTE-M / NB-IoT + Ăng-ten GNSS đa hệ thống (GPS/Galileo/BeiDou)',
+    tareWeightKg: 3900,
+    maxPayloadKg: 28600,
+    cubicCapacityM3: 76.4
+  },
+  {
+    typeId: '20_STANDARD',
+    label: 'Container 20ft Tiêu Chuẩn IoT (Smart Standard 20ft)',
+    isoType: '22G1',
+    description:
+      'Kích thước tiêu chuẩn 20ft phù hợp hàng tải trọng nặng, gắn chip định vị viễn thông Sensitech TempTale GEO.',
+    telematicsUnit: 'Sensitech TempTale GEO / CalAmp TTU-2830',
+    sensors: [
+      'Ăng-ten định vị GPS/GLONASS độ nhạy cao',
+      'Cảm biến chuyển động và nhiệt độ môi trường',
+      'Khóa E-Seal điện tử kiểm soát hải quan'
+    ],
+    eSealModel: 'Chốt Khóa Điện Tử RFID/GPS E-Seal Hải Quan',
+    powerSpec: 'Pin Lithium Thionyl Chloride 12Ah',
+    connectivity: '4G LTE-M + Roaming Viettel/Vinaphone/Mobifone',
+    tareWeightKg: 2200,
+    maxPayloadKg: 28280,
+    cubicCapacityM3: 33.2
+  }
+];
+
+export function generateContainerIsoCode(prefix = 'TCKU') {
+  const serial = Math.floor(100000 + Math.random() * 899999);
+  const checkDigit = Math.floor(Math.random() * 10);
+  return `${prefix}-${serial}-${checkDigit}`;
+}
+
+export function generateESealNumber() {
+  const code = Math.floor(100000 + Math.random() * 899999);
+  return `VN-CUST-${code}`;
+}
+
+/**
  * 2. DANH MỤC ĐỘI XE CHUẨN QUỐC TẾ & ĐỊNH MỨC PHÁT THẢI GLEC v3.0
  */
 export const STANDARD_FLEET_CATALOG = [

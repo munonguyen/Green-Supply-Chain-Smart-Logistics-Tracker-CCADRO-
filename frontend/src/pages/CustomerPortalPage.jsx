@@ -11,6 +11,7 @@ import {
   Check,
   CheckCircle2,
   Clock,
+  Cpu,
   Crosshair,
   Download,
   FileCheck2,
@@ -18,6 +19,7 @@ import {
   Gauge,
   LayoutDashboard,
   Leaf,
+  Lock,
   LogOut,
   MapPin,
   Moon,
@@ -29,6 +31,7 @@ import {
   PieChart,
   Play,
   PlusCircle,
+  Radio,
   RotateCcw,
   Search,
   ShieldCheck,
@@ -54,9 +57,12 @@ import { getRealRoadRoute, interpolateRoadPosition } from '../services/roadRouti
 import {
   HUB_CORRIDOR_DIRECTORY,
   STANDARD_FLEET_CATALOG,
+  SMART_CONTAINER_CATALOG,
   PARETO_ROUTING_MODES,
   calculateDetailedGlecQuote,
-  buildRouteCheckpoints
+  buildRouteCheckpoints,
+  generateContainerIsoCode,
+  generateESealNumber
 } from '../services/logisticsReferenceData';
 import '../styles/landing.css';
 
@@ -269,23 +275,29 @@ export default function CustomerPortalPage() {
   const [selectedCode, setSelectedCode] = useState(null);
   const [selectedCertificate, setSelectedCertificate] = useState(null);
   const [selectedContractModal, setSelectedContractModal] = useState(null);
+  const [selectedESealModal, setSelectedESealModal] = useState(null);
+  const [selectedIoTModal, setSelectedIoTModal] = useState(null);
   const [bookingSuccess, setBookingSuccess] = useState(null);
   const [isLiveSim, setIsLiveSim] = useState(true);
   const [simSpeed, setSimSpeed] = useState(1); // 1 = Real-time 1x (Khớp thực tế ~52 km/h), 2 = 2x, 5 = 5x, 10 = 10x, 0 = Tạm dừng
   const [followVehicle, setFollowVehicle] = useState(false);
   const [showNotifPanel, setShowNotifPanel] = useState(false);
 
-  // Booking form state
+  // Booking form state with Smart Container IoT hardware options
   const [bookingForm, setBookingForm] = useState({
     originId: 'catlai',
     destinationId: 'vsip',
+    containerTypeId: '40_REEFER',
     cargoType: 'Chuỗi lạnh tiêu chuẩn (-18°C)',
     cargoWeightTons: 16,
     powertrainId: 'ev',
     paretoModeId: 'PARETO_BALANCED',
+    requireESeal: true,
+    requireShockSensor: true,
+    requireReeferTelematics: true,
     pickupDate: new Date().toISOString().slice(0, 10),
     pickupTime: '08:30',
-    notes: 'Ưu tiên lộ trình xanh tránh ùn tắc cầu Phú Mỹ, duy trì nhiệt độ thùng đông lạnh -18°C.'
+    notes: 'Ưu tiên lộ trình xanh tránh ùn tắc cầu Phú Mỹ, duy trì nhiệt độ thùng đông lạnh -18°C, giám sát Khóa Seal Hải quan GPS.'
   });
 
   // Notification preferences state
@@ -358,14 +370,12 @@ export default function CustomerPortalPage() {
 
   // Determine current active nodes for tracking (user-decided or active shipment)
   const trackingOriginNode = useMemo(() => {
-    const id =
-      trackingSource === 'shipment' && activeShipment ? activeShipment.originId : liveOriginId;
+    const id = trackingSource === 'shipment' && activeShipment ? activeShipment.originId : liveOriginId;
     return HUB_CORRIDOR_DIRECTORY.find((h) => h.id === id) || HUB_CORRIDOR_DIRECTORY[0];
   }, [trackingSource, activeShipment, liveOriginId]);
 
   const trackingDestNode = useMemo(() => {
-    const id =
-      trackingSource === 'shipment' && activeShipment ? activeShipment.destinationId : liveDestId;
+    const id = trackingSource === 'shipment' && activeShipment ? activeShipment.destinationId : liveDestId;
     return HUB_CORRIDOR_DIRECTORY.find((h) => h.id === id) || HUB_CORRIDOR_DIRECTORY[1];
   }, [trackingSource, activeShipment, liveDestId]);
 
@@ -381,10 +391,8 @@ export default function CustomerPortalPage() {
 
   // Turn-by-turn road route strictly calculated from the user-decided Origin and Destination
   const currentLiveRoute = useMemo(() => {
-    const oId =
-      trackingSource === 'shipment' && activeShipment ? activeShipment.originId : liveOriginId;
-    const dId =
-      trackingSource === 'shipment' && activeShipment ? activeShipment.destinationId : liveDestId;
+    const oId = trackingSource === 'shipment' && activeShipment ? activeShipment.originId : liveOriginId;
+    const dId = trackingSource === 'shipment' && activeShipment ? activeShipment.destinationId : liveDestId;
     return getRealRoadRoute(oId, dId);
   }, [trackingSource, activeShipment, liveOriginId, liveDestId]);
 
@@ -445,14 +453,48 @@ export default function CustomerPortalPage() {
       trackingDistanceKm,
       trackingProgress
     );
-  }, [
-    trackingOriginNode,
-    trackingDestNode,
-    trackingOriginLabel,
-    trackingDestLabel,
-    trackingDistanceKm,
-    trackingProgress
-  ]);
+  }, [trackingOriginNode, trackingDestNode, trackingOriginLabel, trackingDestLabel, trackingDistanceKm, trackingProgress]);
+
+  // Smart Container IoT Telematics & E-Seal computed state
+  const currentContainerCode = useMemo(() => {
+    if (trackingSource === 'shipment' && activeShipment?.containerCode) {
+      return activeShipment.containerCode;
+    }
+    return 'TCKU-781920-4';
+  }, [trackingSource, activeShipment]);
+
+  const currentESealNumber = useMemo(() => {
+    if (trackingSource === 'shipment' && activeShipment?.eSealNumber) {
+      return activeShipment.eSealNumber;
+    }
+    return 'VN-CUST-819204';
+  }, [trackingSource, activeShipment]);
+
+  const currentShockG = useMemo(() => {
+    const base = trackingSpeedKmh > 55 ? 0.32 : 0.22;
+    return Number((base + Math.sin(trackingProgress) * 0.05).toFixed(2));
+  }, [trackingSpeedKmh, trackingProgress]);
+
+  const currentSupplyAirTempC = useMemo(() => {
+    if (trackingSource === 'shipment' && activeShipment?.supplyAirTempC != null) {
+      return activeShipment.supplyAirTempC;
+    }
+    return -18.4;
+  }, [trackingSource, activeShipment]);
+
+  const currentReturnAirTempC = useMemo(() => {
+    if (trackingSource === 'shipment' && activeShipment?.returnAirTempC != null) {
+      return activeShipment.returnAirTempC;
+    }
+    return -17.9;
+  }, [trackingSource, activeShipment]);
+
+  const currentHumidityPct = useMemo(() => {
+    if (trackingSource === 'shipment' && activeShipment?.humidityPct != null) {
+      return activeShipment.humidityPct;
+    }
+    return 88;
+  }, [trackingSource, activeShipment]);
 
   // Real-time GPS telemetry tick based on authentic vehicle speed & physics
   useEffect(() => {
@@ -596,8 +638,7 @@ export default function CustomerPortalPage() {
   // Live scientific quote calculation for Booking tab (GLEC v3.0 & Pareto UC05)
   const bookingQuote = useMemo(() => {
     const originNode =
-      HUB_CORRIDOR_DIRECTORY.find((n) => n.id === bookingForm.originId) ||
-      HUB_CORRIDOR_DIRECTORY[0];
+      HUB_CORRIDOR_DIRECTORY.find((n) => n.id === bookingForm.originId) || HUB_CORRIDOR_DIRECTORY[0];
     const destNode =
       HUB_CORRIDOR_DIRECTORY.find((n) => n.id === bookingForm.destinationId) ||
       HUB_CORRIDOR_DIRECTORY[1];
@@ -683,6 +724,16 @@ export default function CustomerPortalPage() {
     const licensePlate =
       bookingForm.powertrainId === 'ev' ? `51C-${randomPlateSuffix}` : `51D-${randomPlateSuffix}`;
 
+    const containerConfig =
+      SMART_CONTAINER_CATALOG.find((c) => c.typeId === bookingForm.containerTypeId) ||
+      SMART_CONTAINER_CATALOG[0];
+
+    const containerCode = generateContainerIsoCode(
+      bookingForm.containerTypeId === '40_REEFER' ? 'TCKU' : 'MSKU'
+    );
+    const eSealNumber = generateESealNumber();
+    const isReefer = bookingForm.containerTypeId === '40_REEFER';
+
     const newOrder = {
       id: `cust-ship-${Date.now()}`,
       shipmentCode: newCode,
@@ -698,6 +749,20 @@ export default function CustomerPortalPage() {
       waypoints: bookingQuote.previewWaypoints,
       cargoType: bookingForm.cargoType,
       cargoWeightTons: Number(bookingForm.cargoWeightTons),
+      containerCode,
+      containerTypeId: bookingForm.containerTypeId,
+      containerTypeLabel: containerConfig.label,
+      isoType: containerConfig.isoType,
+      eSealNumber,
+      eSealStatus: 'LOCKED_SECURE',
+      eSealIntegrityPct: 100,
+      shockG: 0.24,
+      supplyAirTempC: isReefer ? -18.4 : 26.5,
+      returnAirTempC: isReefer ? -17.9 : 27.1,
+      humidityPct: isReefer ? 88 : 55,
+      solarPowerWatts: 42,
+      iotUnitModel: containerConfig.telematicsUnit,
+      cellularNetwork: '4G LTE-M / 18 GNSS Sats (Roaming)',
       distanceKm: bookingQuote.distanceKm,
       powertrainId: bookingForm.powertrainId,
       vehicleType: bookingQuote.powertrain.name,
@@ -708,7 +773,7 @@ export default function CustomerPortalPage() {
       speedKmh: 52,
       initialEtaMinutes: bookingQuote.etaMinutes,
       etaMinutes: bookingQuote.etaMinutes,
-      temperatureC: bookingForm.cargoType.includes('-18°C') ? -18.0 : 18.5,
+      temperatureC: isReefer ? -18.0 : 18.5,
       baselineCo2Kg: bookingQuote.baselineCo2Kg,
       actualCo2Kg: bookingQuote.actualCo2Kg,
       co2SavedKg: bookingQuote.savedCo2Kg,
@@ -2165,7 +2230,10 @@ export default function CustomerPortalPage() {
                         weight={5}
                         showCorridorBuffer={true}
                       />
-                      <OriginMarker position={trackingWaypoints[0]} label={trackingOriginLabel} />
+                      <OriginMarker
+                        position={trackingWaypoints[0]}
+                        label={trackingOriginLabel}
+                      />
                       <DestinationMarker
                         position={trackingWaypoints[trackingWaypoints.length - 1]}
                         label={trackingDestLabel}
@@ -2289,8 +2357,7 @@ export default function CustomerPortalPage() {
                 <div
                   style={{
                     display: 'grid',
-                    gridTemplateColumns:
-                      'repeat(auto-fit, minmax(240px, 1fr)) auto repeat(auto-fit, minmax(240px, 1fr)) auto',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr)) auto repeat(auto-fit, minmax(240px, 1fr)) auto',
                     gap: 12,
                     alignItems: 'end'
                   }}
@@ -2828,7 +2895,10 @@ export default function CustomerPortalPage() {
                         weight={5}
                         showCorridorBuffer={true}
                       />
-                      <OriginMarker position={trackingWaypoints[0]} label={trackingOriginLabel} />
+                      <OriginMarker
+                        position={trackingWaypoints[0]}
+                        label={trackingOriginLabel}
+                      />
                       <DestinationMarker
                         position={trackingWaypoints[trackingWaypoints.length - 1]}
                         label={trackingDestLabel}
@@ -2943,6 +3013,204 @@ export default function CustomerPortalPage() {
                           ? `-${activeShipment.co2SavedKg} kg`
                           : `-${Math.round(trackingDistanceKm * 16 * 0.043)} kg`}
                       </strong>
+                    </div>
+                  </div>
+
+                  {/* Smart Container IoT Telematics & E-Seal Monitoring Card */}
+                  <div
+                    style={{
+                      padding: 16,
+                      borderRadius: 14,
+                      background: subtleBg,
+                      border: '1px solid rgba(56, 189, 248, 0.28)',
+                      marginBottom: 16
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                        gap: 8,
+                        marginBottom: 12
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div
+                          style={{
+                            width: 28,
+                            height: 28,
+                            borderRadius: 8,
+                            background: 'rgba(56, 189, 248, 0.18)',
+                            color: '#38bdf8',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          <Radio size={16} />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '0.84rem', fontWeight: 800 }}>
+                            HỘP ĐEN IOT CONTAINER &amp; KHÓA SEAL ĐIỆN TỬ HẢI QUAN
+                          </div>
+                          <div style={{ fontSize: '0.7rem', opacity: 0.75 }}>
+                            Hệ thống thiết bị viễn thông độc lập gắn trực tiếp trên vỏ container (Solar + Pin 7 năm)
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSelectedESealModal({
+                              eSealNumber: currentESealNumber,
+                              containerCode: currentContainerCode,
+                              status: 'LOCKED_SECURE',
+                              integrityPct: 100,
+                              batteryPct: 98,
+                              voltageV: 3.62,
+                              isoStandard: 'ISO 17712 High Security Seal',
+                              lastPing: new Date().toLocaleTimeString('vi-VN'),
+                              geofenceCorridor: `${trackingOriginLabel} ↔ ${trackingDestLabel}`
+                            })
+                          }
+                          style={{
+                            padding: '5px 10px',
+                            borderRadius: 8,
+                            border: '1px solid rgba(16, 185, 129, 0.4)',
+                            background: 'rgba(16, 185, 129, 0.12)',
+                            color: '#10b981',
+                            fontSize: '0.72rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4
+                          }}
+                        >
+                          <Lock size={12} /> Chứng Thư Seal Hải Quan
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSelectedIoTModal({
+                              containerCode: currentContainerCode,
+                              eSealNumber: currentESealNumber,
+                              hardwareModel: 'Carrier DataCOLD 600 / Nexxiot Globehopper Edge 3',
+                              solarPowerWatts: 42,
+                              batteryLife: 'Pin Li-SOCl2 19Ah (tuổi thọ 7 năm)',
+                              connectivity: '4G LTE-M / NB-IoT / Vệ tinh LEO Direct',
+                              supplyAirTemp: currentSupplyAirTempC,
+                              returnAirTemp: currentReturnAirTempC,
+                              humidity: currentHumidityPct,
+                              shockG: currentShockG,
+                              doorStatus: 'Đóng kín (Optical Door Breach OK)'
+                            })
+                          }
+                          style={{
+                            padding: '5px 10px',
+                            borderRadius: 8,
+                            border: '1px solid rgba(56, 189, 248, 0.4)',
+                            background: 'rgba(56, 189, 248, 0.12)',
+                            color: '#38bdf8',
+                            fontSize: '0.72rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4
+                          }}
+                        >
+                          <Cpu size={12} /> Thông Số Hộp Đen
+                        </button>
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
+                        gap: 10
+                      }}
+                    >
+                      <div
+                        style={{
+                          padding: 10,
+                          borderRadius: 10,
+                          background: isDark ? 'rgba(15, 23, 42, 0.6)' : '#ffffff',
+                          border: '1px solid rgba(148, 163, 184, 0.2)'
+                        }}
+                      >
+                        <div style={{ fontSize: '0.68rem', opacity: 0.72, textTransform: 'uppercase' }}>
+                          Mã Container ISO 6346
+                        </div>
+                        <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#38bdf8', marginTop: 2 }}>
+                          {currentContainerCode}
+                        </div>
+                        <div style={{ fontSize: '0.66rem', opacity: 0.7, marginTop: 2 }}>
+                          Loại: 40ft High Cube Reefer (45R1)
+                        </div>
+                      </div>
+
+                      <div
+                        style={{
+                          padding: 10,
+                          borderRadius: 10,
+                          background: isDark ? 'rgba(15, 23, 42, 0.6)' : '#ffffff',
+                          border: '1px solid rgba(16, 185, 129, 0.3)'
+                        }}
+                      >
+                        <div style={{ fontSize: '0.68rem', opacity: 0.72, textTransform: 'uppercase' }}>
+                          Khóa Seal Hải Quan ISO 17712
+                        </div>
+                        <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#10b981', marginTop: 2 }}>
+                          {currentESealNumber}
+                        </div>
+                        <div style={{ fontSize: '0.66rem', color: '#10b981', marginTop: 2, fontWeight: 700 }}>
+                          ● ĐANG KHÓA AN TOÀN (TAMPER-FREE)
+                        </div>
+                      </div>
+
+                      <div
+                        style={{
+                          padding: 10,
+                          borderRadius: 10,
+                          background: isDark ? 'rgba(15, 23, 42, 0.6)' : '#ffffff',
+                          border: '1px solid rgba(148, 163, 184, 0.2)'
+                        }}
+                      >
+                        <div style={{ fontSize: '0.68rem', opacity: 0.72, textTransform: 'uppercase' }}>
+                          Gia Tốc Kế 3 Trục (Chấn Động)
+                        </div>
+                        <div style={{ fontSize: '0.92rem', fontWeight: 800, marginTop: 2 }}>
+                          {currentShockG} G <span style={{ fontSize: '0.7rem', color: '#10b981' }}>(&lt; 1.0G Chuẩn)</span>
+                        </div>
+                        <div style={{ fontSize: '0.66rem', opacity: 0.7, marginTop: 2 }}>
+                          Triệt tiêu dằn xóc, hàng hóa êm ái
+                        </div>
+                      </div>
+
+                      <div
+                        style={{
+                          padding: 10,
+                          borderRadius: 10,
+                          background: isDark ? 'rgba(15, 23, 42, 0.6)' : '#ffffff',
+                          border: '1px solid rgba(148, 163, 184, 0.2)'
+                        }}
+                      >
+                        <div style={{ fontSize: '0.68rem', opacity: 0.72, textTransform: 'uppercase' }}>
+                          Chuỗi Lạnh: Gió Cấp / Gió Hồi
+                        </div>
+                        <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#38bdf8', marginTop: 2 }}>
+                          {currentSupplyAirTempC}°C / {currentReturnAirTempC}°C
+                        </div>
+                        <div style={{ fontSize: '0.66rem', opacity: 0.7, marginTop: 2 }}>
+                          Độ ẩm khoang hàng: {currentHumidityPct}% RH
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -3208,11 +3476,7 @@ export default function CustomerPortalPage() {
                       { o: 'catlai', d: 'songthan', label: 'Cát Lái → Sóng Thần (18.6 km)' },
                       { o: 'catlai', d: 'caimep', label: 'Cát Lái → Cái Mép (67.4 km)' },
                       { o: 'tanbinh', d: 'vsip', label: 'Tân Bình → VSIP 1 (24.2 km)' },
-                      {
-                        o: 'hiepphuoc',
-                        d: 'nhontrach',
-                        label: 'Hiệp Phước → Nhơn Trạch (39.8 km)'
-                      },
+                      { o: 'hiepphuoc', d: 'nhontrach', label: 'Hiệp Phước → Nhơn Trạch (39.8 km)' },
                       { o: 'caimep', d: 'vsip2', label: 'Cái Mép → VSIP 2 (82.1 km)' }
                     ].map((corr) => {
                       const isActive =
@@ -3303,6 +3567,143 @@ export default function CustomerPortalPage() {
                           </div>
                         );
                       })}
+                    </div>
+                  </div>
+
+                  {/* Smart Container Hardware & Telematics Selection */}
+                  <div style={{ marginBottom: 14 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                      <label style={{ fontSize: '0.78rem', fontWeight: 700 }}>
+                        Quy Cách Vỏ Container Thông Minh (Smart Container IoT Hardware)
+                      </label>
+                      <span style={{ fontSize: '0.68rem', color: '#10b981', fontWeight: 700 }}>
+                        ● Chuẩn ISO 6346 &amp; Hải Quan
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'grid', gap: 8 }}>
+                      {SMART_CONTAINER_CATALOG.map((cont) => {
+                        const isSelected = bookingForm.containerTypeId === cont.typeId;
+                        return (
+                          <div
+                            key={cont.typeId}
+                            onClick={() =>
+                              setBookingForm((prev) => ({
+                                ...prev,
+                                containerTypeId: cont.typeId,
+                                cargoType:
+                                  cont.typeId === '40_REEFER'
+                                    ? 'Chuỗi lạnh tiêu chuẩn (-18°C)'
+                                    : 'Linh kiện điện tử giá trị cao'
+                              }))
+                            }
+                            style={{
+                              padding: '10px 12px',
+                              borderRadius: 10,
+                              background: isSelected
+                                ? 'rgba(56, 189, 248, 0.12)'
+                                : isDark
+                                  ? 'rgba(15, 23, 42, 0.4)'
+                                  : '#f8fafc',
+                              border: isSelected
+                                ? '1.5px solid #38bdf8'
+                                : '1px solid rgba(148, 163, 184, 0.2)',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              gap: 8
+                            }}
+                          >
+                            <div style={{ flex: 1 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <span
+                                  style={{
+                                    fontSize: '0.7rem',
+                                    fontWeight: 800,
+                                    padding: '2px 6px',
+                                    borderRadius: 6,
+                                    background: isSelected ? '#38bdf8' : 'rgba(148,163,184,0.2)',
+                                    color: isSelected ? '#0f172a' : 'inherit'
+                                  }}
+                                >
+                                  {cont.isoType}
+                                </span>
+                                <strong
+                                  style={{
+                                    fontSize: '0.82rem',
+                                    color: isSelected ? '#38bdf8' : 'inherit'
+                                  }}
+                                >
+                                  {cont.label}
+                                </strong>
+                              </div>
+                              <div style={{ fontSize: '0.7rem', opacity: 0.75, marginTop: 3 }}>
+                                Hộp đen: <strong>{cont.telematicsUnit}</strong> • Tải max:{' '}
+                                {(cont.maxPayloadKg / 1000).toFixed(1)} tấn • Thể tích: {cont.cubicCapacityM3} m³
+                              </div>
+                            </div>
+                            {isSelected && <Check size={16} color="#38bdf8" />}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Hardware IoT & E-Seal Add-ons */}
+                    <div
+                      style={{
+                        marginTop: 10,
+                        padding: 10,
+                        borderRadius: 10,
+                        background: subtleBg,
+                        border: '1px solid rgba(148, 163, 184, 0.18)',
+                        display: 'grid',
+                        gap: 8
+                      }}
+                    >
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.74rem', cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          checked={bookingForm.requireESeal}
+                          onChange={(e) =>
+                            setBookingForm((prev) => ({ ...prev, requireESeal: e.target.checked }))
+                          }
+                          style={{ accentColor: '#10b981' }}
+                        />
+                        <span>
+                          <strong>Khóa Seal Chốt Điện Tử GPS Hải Quan ISO 17712</strong> (Cảnh báo mở trái phép qua viễn thông M2M)
+                        </span>
+                      </label>
+
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.74rem', cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          checked={bookingForm.requireShockSensor}
+                          onChange={(e) =>
+                            setBookingForm((prev) => ({ ...prev, requireShockSensor: e.target.checked }))
+                          }
+                          style={{ accentColor: '#10b981' }}
+                        />
+                        <span>
+                          <strong>Gia tốc kế 3 trục đo chấn động G-Force</strong> (Cảnh báo rung lắc, dằn xóc quá ngưỡng 1.0G)
+                        </span>
+                      </label>
+
+                      {bookingForm.containerTypeId === '40_REEFER' && (
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.74rem', cursor: 'pointer' }}>
+                          <input
+                            type="checkbox"
+                            checked={bookingForm.requireReeferTelematics}
+                            onChange={(e) =>
+                              setBookingForm((prev) => ({ ...prev, requireReeferTelematics: e.target.checked }))
+                            }
+                            style={{ accentColor: '#38bdf8' }}
+                          />
+                          <span>
+                            <strong>Cổng viễn thông máy lạnh Carrier DataCOLD / Thermo King</strong> (Đồng bộ nhiệt độ gió cấp &amp; gió hồi)
+                          </span>
+                        </label>
+                      )}
                     </div>
                   </div>
 
@@ -3756,6 +4157,7 @@ export default function CustomerPortalPage() {
                       <tr style={{ borderBottom: '1px solid rgba(148,163,184,0.24)' }}>
                         <th style={{ padding: '11px 10px' }}>Mã Vận Đơn</th>
                         <th style={{ padding: '11px 10px' }}>Lộ Trình Vận Tải</th>
+                        <th style={{ padding: '11px 10px' }}>Container &amp; Khóa Seal</th>
                         <th style={{ padding: '11px 10px' }}>Phương Tiện &amp; Biển Số</th>
                         <th style={{ padding: '11px 10px' }}>Tải Trọng</th>
                         <th style={{ padding: '11px 10px' }}>Cước Thuê</th>
@@ -3774,6 +4176,74 @@ export default function CustomerPortalPage() {
                           </td>
                           <td style={{ padding: '12px 10px' }}>
                             {s.originName} → {s.destinationName}
+                          </td>
+                          <td style={{ padding: '12px 10px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setSelectedIoTModal({
+                                    containerCode: s.containerCode || 'TCKU-781920-4',
+                                    eSealNumber: s.eSealNumber || 'VN-CUST-819204',
+                                    hardwareModel: s.iotUnitModel || 'Carrier DataCOLD 600 / Nexxiot Edge',
+                                    solarPowerWatts: s.solarPowerWatts || 42,
+                                    batteryLife: 'Pin Li-SOCl2 19Ah (tuổi thọ 7 năm)',
+                                    connectivity: s.cellularNetwork || '4G LTE-M / NB-IoT / Vệ tinh LEO',
+                                    supplyAirTemp: s.supplyAirTempC ?? -18.4,
+                                    returnAirTemp: s.returnAirTempC ?? -17.9,
+                                    humidity: s.humidityPct ?? 88,
+                                    shockG: s.shockG ?? 0.24,
+                                    doorStatus: 'Đóng kín (Optical Door Breach OK)'
+                                  })
+                                }
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  padding: 0,
+                                  textAlign: 'left',
+                                  color: '#38bdf8',
+                                  fontWeight: 700,
+                                  fontSize: '0.78rem',
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 4
+                                }}
+                              >
+                                <Cpu size={12} /> {s.containerCode || 'TCKU-781920-4'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setSelectedESealModal({
+                                    eSealNumber: s.eSealNumber || 'VN-CUST-819204',
+                                    containerCode: s.containerCode || 'TCKU-781920-4',
+                                    status: s.eSealStatus || 'LOCKED_SECURE',
+                                    integrityPct: s.eSealIntegrityPct || 100,
+                                    batteryPct: 98,
+                                    voltageV: 3.62,
+                                    isoStandard: 'ISO 17712 High Security Seal',
+                                    lastPing: 'Vừa cập nhật',
+                                    geofenceCorridor: `${s.originName} ↔ ${s.destinationName}`
+                                  })
+                                }
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  padding: 0,
+                                  textAlign: 'left',
+                                  color: '#10b981',
+                                  fontWeight: 700,
+                                  fontSize: '0.73rem',
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 4
+                                }}
+                              >
+                                <Lock size={11} /> {s.eSealNumber || 'VN-CUST-819204'}
+                              </button>
+                            </div>
                           </td>
                           <td style={{ padding: '12px 10px' }}>
                             {s.vehicleType} • <strong>{s.licensePlate}</strong>
@@ -4586,6 +5056,13 @@ export default function CustomerPortalPage() {
                 <strong>Điều khoản dịch vụ &amp; Cam kết tiêu chuẩn SLA:</strong>
                 <ul style={{ paddingLeft: 18, marginTop: 6, lineHeight: 1.6 }}>
                   <li>
+                    Mã Container ISO 6346: <strong>{selectedContractModal.containerCode || 'TCKU-781920-4'}</strong> (Loại:{' '}
+                    {selectedContractModal.containerTypeLabel || 'Container Lạnh 40ft High Cube ISO 45R1'}).
+                  </li>
+                  <li>
+                    Khóa niêm phong điện tử Hải quan: <strong>{selectedContractModal.eSealNumber || 'VN-CUST-819204'}</strong> (Chuẩn ISO 17712 High Security Seal).
+                  </li>
+                  <li>
                     Phương tiện cam kết: <strong>{selectedContractModal.vehicleType}</strong> (Biển
                     số: {selectedContractModal.licensePlate}).
                   </li>
@@ -4657,6 +5134,347 @@ export default function CustomerPortalPage() {
                 className="lp-btn lp-btn--primary lp-btn--sm"
               >
                 <Navigation size={14} /> Theo Dõi Hành Trình 3D
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL: CHỨNG THƯ GIÁM SÁT KHÓA SEAL ĐIỆN TỬ HẢI QUAN (E-SEAL ISO 17712) ── */}
+      {selectedESealModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 110,
+            background: 'rgba(0,0,0,0.7)',
+            backdropFilter: 'blur(6px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 20
+          }}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: 620,
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              borderRadius: 20,
+              background: isDark ? '#061611' : '#ffffff',
+              border: '1.5px solid rgba(16, 185, 129, 0.45)',
+              boxShadow: '0 25px 60px rgba(0,0,0,0.5)',
+              padding: 24,
+              color: isDark ? '#f8fafc' : '#0f172a'
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                borderBottom: '1px solid rgba(148, 163, 184, 0.2)',
+                paddingBottom: 12,
+                marginBottom: 16
+              }}
+            >
+              <div>
+                <span
+                  style={{
+                    fontSize: '0.7rem',
+                    fontWeight: 800,
+                    color: '#10b981',
+                    textTransform: 'uppercase'
+                  }}
+                >
+                  TỔNG CỤC HẢI QUAN VIỆT NAM • GIÁM SÁT NIÊM PHONG ĐIỆN TỬ
+                </span>
+                <h3 style={{ fontSize: '1.18rem', fontWeight: 800, margin: '3px 0 0' }}>
+                  Chứng Thư Khóa Seal GPS: {selectedESealModal.eSealNumber}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedESealModal(null)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'inherit',
+                  cursor: 'pointer',
+                  fontSize: '1.1rem',
+                  fontWeight: 800
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gap: 12, fontSize: '0.82rem' }}>
+              <div
+                style={{
+                  padding: 12,
+                  borderRadius: 12,
+                  background: 'rgba(16, 185, 129, 0.12)',
+                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12
+                }}
+              >
+                <ShieldCheck size={28} color="#10b981" />
+                <div>
+                  <div style={{ fontWeight: 800, color: '#10b981', fontSize: '0.88rem' }}>
+                    TRẠNG THÁI: KHÓA AN TOÀN TUYỆT ĐỐI (TAMPER-FREE)
+                  </div>
+                  <div style={{ fontSize: '0.74rem', opacity: 0.85, marginTop: 2 }}>
+                    Cáp chốt cơ học và mạch quang học nguyên vẹn 100%. Chưa phát hiện dấu hiệu can thiệp vật lý hoặc cắt seal.
+                  </div>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: 10,
+                  padding: 12,
+                  borderRadius: 12,
+                  background: subtleBg
+                }}
+              >
+                <div>
+                  <span style={{ opacity: 0.72 }}>Mã Container niêm phong:</span>
+                  <div style={{ fontWeight: 800, color: '#38bdf8', fontSize: '0.9rem', marginTop: 2 }}>
+                    {selectedESealModal.containerCode}
+                  </div>
+                </div>
+                <div>
+                  <span style={{ opacity: 0.72 }}>Tiêu chuẩn an ninh quốc tế:</span>
+                  <div style={{ fontWeight: 800, marginTop: 2 }}>
+                    {selectedESealModal.isoStandard || 'ISO 17712 High Security Seal'}
+                  </div>
+                </div>
+                <div>
+                  <span style={{ opacity: 0.72 }}>Dung lượng pin chốt seal:</span>
+                  <div style={{ fontWeight: 800, color: '#10b981', marginTop: 2 }}>
+                    {selectedESealModal.batteryPct || 98}% ({selectedESealModal.voltageV || 3.62}V Li-SOCl2)
+                  </div>
+                </div>
+                <div>
+                  <span style={{ opacity: 0.72 }}>Hành lang Geofencing:</span>
+                  <div style={{ fontWeight: 800, marginTop: 2 }}>
+                    {selectedESealModal.geofenceCorridor || 'Cát Lái ↔ VSIP 1'}
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <strong>Cơ chế bảo mật &amp; Quy định Hải quan:</strong>
+                <ul style={{ paddingLeft: 18, marginTop: 6, lineHeight: 1.6 }}>
+                  <li>
+                    <strong>Mạch cảm biến sợi quang lõi cáp (Optical Fiber):</strong> Tự động kích hoạt còi báo động và truyền gói tin cảnh báo khẩn SOS qua mạng 4G LTE-M / NB-IoT nếu chốt cáp bị cắt đứt.
+                  </li>
+                  <li>
+                    <strong>Định vị kép GNSS &amp; RFID UHF EPC Gen 2:</strong> Cổng hải quan cảng biển tự động quét nhận diện container trong 0.2 giây khi xe qua barie.
+                  </li>
+                  <li>
+                    <strong>Quy định pháp lý:</strong> Tuân thủ Quyết định của Tổng cục Hải quan về giám sát hàng hóa vận chuyển chịu sự giám sát hải quan bằng Seal định vị điện tử.
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div style={{ marginTop: 18, display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <button
+                type="button"
+                onClick={() => setSelectedESealModal(null)}
+                className="lp-btn lp-btn--ghost lp-btn--sm"
+              >
+                Đóng
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  alert(`Đã tải về Chứng thư Giám sát Niêm phong Hải quan điện tử cho Seal ${selectedESealModal.eSealNumber}!`);
+                }}
+                className="lp-btn lp-btn--primary lp-btn--sm"
+              >
+                <Download size={14} /> Tải Biên Bản Niêm Phong (PDF)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL: THÔNG SỐ HỘP ĐEN IOT CONTAINER ĐỘC LẬP ── */}
+      {selectedIoTModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 110,
+            background: 'rgba(0,0,0,0.7)',
+            backdropFilter: 'blur(6px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 20
+          }}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: 660,
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              borderRadius: 20,
+              background: isDark ? '#061611' : '#ffffff',
+              border: '1.5px solid rgba(56, 189, 248, 0.45)',
+              boxShadow: '0 25px 60px rgba(0,0,0,0.5)',
+              padding: 24,
+              color: isDark ? '#f8fafc' : '#0f172a'
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                borderBottom: '1px solid rgba(148, 163, 184, 0.2)',
+                paddingBottom: 12,
+                marginBottom: 16
+              }}
+            >
+              <div>
+                <span
+                  style={{
+                    fontSize: '0.7rem',
+                    fontWeight: 800,
+                    color: '#38bdf8',
+                    textTransform: 'uppercase'
+                  }}
+                >
+                  HỆ THỐNG GIÁM SÁT VIỄN THÔNG VỎ CONTAINER (SMART CONTAINER TELEMATICS)
+                </span>
+                <h3 style={{ fontSize: '1.18rem', fontWeight: 800, margin: '3px 0 0' }}>
+                  Hộp Đen IoT: {selectedIoTModal.containerCode}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedIoTModal(null)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'inherit',
+                  cursor: 'pointer',
+                  fontSize: '1.1rem',
+                  fontWeight: 800
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gap: 12, fontSize: '0.82rem' }}>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                  gap: 10,
+                  padding: 12,
+                  borderRadius: 12,
+                  background: subtleBg
+                }}
+              >
+                <div>
+                  <span style={{ opacity: 0.72 }}>Model Hộp Đen:</span>
+                  <div style={{ fontWeight: 800, color: '#38bdf8', marginTop: 2 }}>
+                    {selectedIoTModal.hardwareModel}
+                  </div>
+                </div>
+                <div>
+                  <span style={{ opacity: 0.72 }}>Nguồn năng lượng:</span>
+                  <div style={{ fontWeight: 800, color: '#10b981', marginTop: 2 }}>
+                    Solar Harvester {selectedIoTModal.solarPowerWatts || 42}W + {selectedIoTModal.batteryLife}
+                  </div>
+                </div>
+                <div>
+                  <span style={{ opacity: 0.72 }}>Kênh truyền thông:</span>
+                  <div style={{ fontWeight: 800, marginTop: 2 }}>
+                    {selectedIoTModal.connectivity}
+                  </div>
+                </div>
+                <div>
+                  <span style={{ opacity: 0.72 }}>Khóa Seal điện tử kèm theo:</span>
+                  <div style={{ fontWeight: 800, color: '#10b981', marginTop: 2 }}>
+                    {selectedIoTModal.eSealNumber}
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <strong>Mạng cảm biến không dây nội bộ (BLE Wireless Mesh):</strong>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                    gap: 10,
+                    marginTop: 8
+                  }}
+                >
+                  <div style={{ padding: 10, borderRadius: 10, background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.25)' }}>
+                    <div style={{ fontSize: '0.7rem', opacity: 0.75 }}>Nhiệt độ gió cấp</div>
+                    <strong style={{ fontSize: '1.05rem', color: '#38bdf8' }}>{selectedIoTModal.supplyAirTemp}°C</strong>
+                  </div>
+                  <div style={{ padding: 10, borderRadius: 10, background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.25)' }}>
+                    <div style={{ fontSize: '0.7rem', opacity: 0.75 }}>Nhiệt độ gió hồi</div>
+                    <strong style={{ fontSize: '1.05rem', color: '#38bdf8' }}>{selectedIoTModal.returnAirTemp}°C</strong>
+                  </div>
+                  <div style={{ padding: 10, borderRadius: 10, background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
+                    <div style={{ fontSize: '0.7rem', opacity: 0.75 }}>Độ ẩm khoang (%RH)</div>
+                    <strong style={{ fontSize: '1.05rem', color: '#10b981' }}>{selectedIoTModal.humidity}%</strong>
+                  </div>
+                  <div style={{ padding: 10, borderRadius: 10, background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.25)' }}>
+                    <div style={{ fontSize: '0.7rem', opacity: 0.75 }}>Gia tốc chấn động</div>
+                    <strong style={{ fontSize: '1.05rem', color: '#f59e0b' }}>{selectedIoTModal.shockG} G</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <strong>Lợi ích vượt trội so với định vị xe đầu kéo (OBD-II):</strong>
+                <ul style={{ paddingLeft: 18, marginTop: 6, lineHeight: 1.6 }}>
+                  <li>
+                    <strong>Giám sát liên tục ngay cả khi hạ bãi:</strong> Khi container được dỡ khỏi rơ-moóc lưu tại bãi depot Cát Lái hoặc sang sà lan đường thủy, hộp đen vẫn duy trì phát tín hiệu GPS và nhiệt độ không bị ngắt quãng.
+                  </li>
+                  <li>
+                    <strong>Không khoan thủng thành cách nhiệt:</strong> Cảm biến trong khoang kết nối không dây Bluetooth Low Energy Mesh tới Gateway gắn ngoài, đảm bảo không làm rò rỉ nhiệt hay mất thẩm mỹ vỏ container.
+                  </li>
+                  <li>
+                    <strong>Tự cấp nguồn vĩnh cửu:</strong> Tấm pin mặt trời tích hợp sạc liên tục ban ngày, pin Lithium Thionyl Chloride dự phòng hoạt động bền bỉ trong môi trường khắc nghiệt từ -30°C đến +70°C.
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div style={{ marginTop: 18, display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <button
+                type="button"
+                onClick={() => setSelectedIoTModal(null)}
+                className="lp-btn lp-btn--ghost lp-btn--sm"
+              >
+                Đóng
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  alert(`Đã xuất gói dữ liệu Telemetry chuẩn JSON cho Container ${selectedIoTModal.containerCode}!`);
+                }}
+                className="lp-btn lp-btn--primary lp-btn--sm"
+              >
+                <Download size={14} /> Xuất Dữ Liệu Hộp Đen (JSON)
               </button>
             </div>
           </div>

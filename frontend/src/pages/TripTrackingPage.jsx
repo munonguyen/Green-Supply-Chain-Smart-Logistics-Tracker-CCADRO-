@@ -12,7 +12,9 @@ import {
   ArrowLeftRight,
   CheckCircle2,
   Compass,
+  Cpu,
   Leaf,
+  Lock,
   Navigation,
   Pause,
   Play,
@@ -516,8 +518,48 @@ export default function TripTrackingPage() {
                   borderBottom: '1px solid var(--border-color)'
                 }}
               >
+                <span style={{ color: 'var(--text-muted)' }}>Mã Container ISO 6346</span>
+                <strong style={{ color: '#38bdf8', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <Cpu size={13} /> TCKU-781920-4 (45R1)
+                </strong>
+              </div>
+
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  paddingBottom: '10px',
+                  borderBottom: '1px solid var(--border-color)'
+                }}
+              >
+                <span style={{ color: 'var(--text-muted)' }}>Khóa Seal GPS Hải Quan</span>
+                <strong style={{ color: 'var(--accent-green)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <Lock size={13} /> VN-CUST-819204 (LOCKED)
+                </strong>
+              </div>
+
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  paddingBottom: '10px',
+                  borderBottom: '1px solid var(--border-color)'
+                }}
+              >
+                <span style={{ color: 'var(--text-muted)' }}>Gia tốc kế 3 trục (Shock)</span>
+                <strong>0.24 G (An toàn &lt; 1.0G)</strong>
+              </div>
+
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  paddingBottom: '10px',
+                  borderBottom: '1px solid var(--border-color)'
+                }}
+              >
                 <span style={{ color: 'var(--text-muted)' }}>Nhiệt độ chuỗi lạnh</span>
-                <strong style={{ color: 'var(--accent-blue)' }}>-18,2°C (Ổn định)</strong>
+                <strong style={{ color: 'var(--accent-blue)' }}>-18,2°C (Gió cấp -18.4°C)</strong>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
