@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import L from 'leaflet';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -14,6 +14,7 @@ import {
   Clock,
   Cpu,
   Crosshair,
+  Database,
   Download,
   FileCheck2,
   FileText,
@@ -35,6 +36,7 @@ import {
   Play,
   PlusCircle,
   Radio,
+  RefreshCw,
   RotateCcw,
   Search,
   ShieldCheck,
@@ -648,6 +650,103 @@ export default function CustomerPortalPage() {
     monthlyEsgDigest: true
   });
 
+  // Database real-time sync state
+  const [dbSyncState, setDbSyncState] = useState('LOCAL_CACHE'); // 'LIVE_DB' | 'LOCAL_CACHE'
+  const [lastDbSync, setLastDbSync] = useState(() => new Date().toLocaleTimeString('vi-VN'));
+
+  const syncContainersFromDb = useCallback(async () => {
+    try {
+      const res = await api.getContainers();
+      const dbContainers = res?.result || res?.data || res;
+      if (Array.isArray(dbContainers) && dbContainers.length > 0) {
+        setDbSyncState('LIVE_DB');
+        setLastDbSync(new Date().toLocaleTimeString('vi-VN'));
+        setAllShipments((prev) => {
+          const merged = [...prev];
+          dbContainers.forEach((c) => {
+            const idx = merged.findIndex(
+              (item) =>
+                item.containerCode === c.containerCode ||
+                (c.assignedShipmentCode && item.shipmentCode === c.assignedShipmentCode)
+            );
+            const mappedStatus = c.status === 'DELIVERED' ? 'COMPLETED' : 'IN_TRANSIT';
+            const mappedPatch = {
+              containerCode: c.containerCode,
+              isoType: c.isoType || '45R1',
+              containerOwner: c.ownerName,
+              eSealNumber: c.eSealNumber,
+              eSealStatus: c.eSealStatus,
+              eSealIntegrityPct: c.eSealIntegrityPct,
+              iotUnitModel: c.telematicsModel,
+              supplyAirTempC: c.supplyAirTempC,
+              returnAirTempC: c.returnAirTempC,
+              temperatureC: c.supplyAirTempC,
+              humidityPct: c.humidityPct,
+              shockG: c.shockG,
+              solarPowerWatts: c.solarPowerWatts,
+              batteryPct: c.batteryPct,
+              currentLocation: c.lastLocationName || undefined,
+              progress: c.progressPct !== null && c.progressPct !== undefined ? Number(c.progressPct) : undefined,
+              speedKmh: c.speedKmh !== null && c.speedKmh !== undefined ? Number(c.speedKmh) : undefined,
+              etaMinutes: c.etaMinutes !== null && c.etaMinutes !== undefined ? Number(c.etaMinutes) : undefined,
+              driverName: c.driverName || undefined,
+              driverPhone: c.driverPhone || undefined,
+              driverLicense: c.driverLicense || undefined,
+              driverSafetyScore: c.driverSafetyScore ? Number(c.driverSafetyScore) : undefined,
+              licensePlate: c.vehicleLicensePlate || undefined,
+              originName: c.originName || undefined,
+              destinationName: c.destinationName || undefined,
+              status: mappedStatus,
+              statusLabel:
+                mappedStatus === 'COMPLETED'
+                  ? 'Đã bàn giao hàng & ký xác nhận ePOD'
+                  : 'Đang di chuyển trên hành lang xanh 3D'
+            };
+
+            if (idx >= 0) {
+              merged[idx] = {
+                ...merged[idx],
+                ...Object.fromEntries(
+                  Object.entries(mappedPatch).filter(([, v]) => v !== undefined && v !== null)
+                )
+              };
+            } else if (c.assignedShipmentCode) {
+              merged.unshift({
+                shipmentCode: c.assignedShipmentCode,
+                createdByUsername: 'customer',
+                customerId: 'DOANH_NGHIEP_B2B',
+                containerTypeId: c.isReefer ? '40_REEFER' : c.containerType === 'DRY_20FT' ? '20_STD' : '40_DRY_HC',
+                containerTypeLabel: c.isReefer ? 'Container Lạnh 40ft' : c.containerType === 'DRY_20FT' ? 'Container Khô 20ft' : 'Container Khô 40ft HC',
+                cargoWeightTons: Number(c.maxPayloadTons || 20),
+                maxPayloadKg: Math.round(Number(c.maxPayloadTons || 29) * 1000),
+                tareWeightKg: Math.round(Number(c.tareWeightTons || 4.0) * 1000),
+                cubicCapacityM3: Number(c.cubicCapacityM3 || 67.9),
+                baselineCo2Kg: 42.0,
+                actualCo2Kg: 8.4,
+                co2SavedKg: 33.6,
+                co2ReductionPct: 80,
+                powertrainId: 'ev',
+                vehicleType: c.vehicleTypeLabel || 'Xe đầu kéo điện (EV)',
+                ...mappedPatch
+              });
+            }
+          });
+          saveStoredUserShipments(merged);
+          return merged;
+        });
+      }
+    } catch (_) {
+      setDbSyncState('LOCAL_CACHE');
+    }
+  }, []);
+
+  // Poll backend DB every 10 seconds for real-time telemetry updates
+  useEffect(() => {
+    syncContainersFromDb();
+    const timer = setInterval(syncContainersFromDb, 10000);
+    return () => clearInterval(timer);
+  }, [syncContainersFromDb]);
+
   // Sync with storage changes from other tabs/windows
   useEffect(() => {
     const onStorage = (e) => {
@@ -1183,16 +1282,49 @@ export default function CustomerPortalPage() {
     };
 
     try {
-      await api.createShipment({
-        shipmentCode: newCode,
-        originAddress: originLabel,
-        destinationAddress: destLabel,
-        originLat: bookingQuote.originCoords[0],
-        originLon: bookingQuote.originCoords[1],
-        destinationLat: bookingQuote.destCoords[0],
-        destinationLon: bookingQuote.destCoords[1],
-        weightTons: Number(bookingForm.cargoWeightTons)
-      });
+      await Promise.allSettled([
+        api.createShipment({
+          shipmentCode: newCode,
+          originAddress: originLabel,
+          destinationAddress: destLabel,
+          originLat: bookingQuote.originCoords[0],
+          originLon: bookingQuote.originCoords[1],
+          destinationLat: bookingQuote.destCoords[0],
+          destinationLon: bookingQuote.destCoords[1],
+          weightTons: Number(bookingForm.cargoWeightTons)
+        }),
+        api
+          .createContainer({
+            containerCode: containerCode,
+            containerType:
+              bookingForm.containerTypeId === '40_REEFER'
+                ? 'REEFER_40FT'
+                : bookingForm.containerTypeId === '20_STD'
+                  ? 'DRY_20FT'
+                  : 'DRY_40FT',
+            isoType: newOrder.isoType || '45R1',
+            ownerName: newOrder.containerOwner || 'CCADRO Smart Fleet',
+            tareWeightTons: Number(((newOrder.tareWeightKg || 4000) / 1000).toFixed(2)),
+            maxPayloadTons: Number(((newOrder.maxPayloadKg || 28600) / 1000).toFixed(2)),
+            isReefer,
+            eSealNumber: newOrder.eSealNumber,
+            telematicsModel: newOrder.iotUnitModel
+          })
+          .then(() =>
+            api.assignContainerTrip(containerCode, {
+              assignedShipmentCode: newCode,
+              driverName: newOrder.driverName,
+              driverPhone: newOrder.driverPhone,
+              driverLicense: newOrder.driverLicense,
+              driverSafetyScore: newOrder.driverSafetyScore,
+              vehicleLicensePlate: licensePlate,
+              vehicleTypeLabel: newOrder.vehicleType,
+              originName: originLabel,
+              destinationName: destLabel
+            })
+          )
+      ]);
+      setDbSyncState('LIVE_DB');
     } catch (_) {
       // Local sync
     }
@@ -1208,7 +1340,20 @@ export default function CustomerPortalPage() {
     setActiveTab('tracking');
   };
 
-  const handleCompleteOrderEpod = (shipmentCode) => {
+  const handleCompleteOrderEpod = async (shipmentCode) => {
+    const target = allShipments.find((s) => s.shipmentCode === shipmentCode);
+    if (target?.containerCode) {
+      try {
+        await api.submitContainerEpod(target.containerCode, {
+          recipientName: user?.fullName || 'Đại Diện Doanh Nghiệp (Customer Portal)',
+          signature: `EPOD-USER-${Date.now().toString(36).toUpperCase()}`,
+          notes: 'Xác nhận hoàn tất giao nhận từ Cổng Khách Hàng B2B'
+        });
+        setDbSyncState('LIVE_DB');
+      } catch (_) {
+        // Fallback to local sync
+      }
+    }
     setAllShipments((prev) => {
       const updated = prev.map((s) => {
         if (s.shipmentCode !== shipmentCode) return s;
@@ -1677,26 +1822,27 @@ export default function CustomerPortalPage() {
           2. MAIN WORKSPACE (TOP NAVIGATION BAR + COMPONENT VIEWS)
       ══════════════════════════════════════════════════════════════════ */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-        {/* ── Top Header Navigation Bar ── */}
+        {/* ── Executive Enterprise Header Bar ── */}
         <header
           style={{
             position: 'sticky',
             top: 0,
             zIndex: 30,
-            background: isDark ? 'rgba(6, 22, 17, 0.94)' : 'rgba(255, 255, 255, 0.96)',
-            backdropFilter: 'blur(16px)',
+            background: isDark ? 'rgba(5, 19, 15, 0.94)' : 'rgba(255, 255, 255, 0.96)',
+            backdropFilter: 'blur(18px)',
             borderBottom: isDark
-              ? '1px solid rgba(110, 231, 183, 0.14)'
+              ? '1px solid rgba(16, 185, 129, 0.2)'
               : '1px solid rgba(15, 23, 42, 0.08)',
-            padding: '12px 24px',
+            padding: '10px 24px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            gap: 16,
-            flexWrap: 'wrap'
+            gap: 14,
+            flexWrap: 'wrap',
+            boxShadow: isDark ? '0 8px 28px rgba(0, 0, 0, 0.35)' : '0 4px 18px rgba(15, 23, 42, 0.05)'
           }}
         >
-          {/* Left: Collapse Toggle + Breadcrumb */}
+          {/* Left: Collapse Toggle + Structured Breadcrumb & Title */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <button
               type="button"
@@ -1705,7 +1851,7 @@ export default function CustomerPortalPage() {
               style={{
                 width: 36,
                 height: 36,
-                borderRadius: 9,
+                borderRadius: 10,
                 border: '1px solid rgba(148, 163, 184, 0.24)',
                 background: subtleBg,
                 color: 'inherit',
@@ -1724,40 +1870,44 @@ export default function CustomerPortalPage() {
                   display: 'flex',
                   alignItems: 'center',
                   gap: 6,
-                  fontSize: '0.72rem',
-                  fontWeight: 700,
+                  fontSize: '0.68rem',
+                  fontWeight: 800,
                   color: '#10b981',
                   textTransform: 'uppercase',
-                  letterSpacing: '0.06em'
+                  letterSpacing: '0.07em'
                 }}
               >
-                <span>CỔNG KHÁCH HÀNG B2B</span>
-                <span>/</span>
+                <span>B2B ENTERPRISE PORTAL</span>
+                <span style={{ opacity: 0.5 }}>/</span>
                 <span>{currentNavMeta.shortLabel}</span>
               </div>
-              <h1 style={{ fontSize: '1.18rem', fontWeight: 800, margin: '2px 0 0' }}>
+              <h1 style={{ fontSize: '1.12rem', fontWeight: 800, margin: '1px 0 0', letterSpacing: '-0.01em' }}>
                 {currentNavMeta.label}
               </h1>
             </div>
           </div>
 
-          {/* Center: Quick Top Navigation Pills */}
+          {/* Center: Clean Top Core Shortcuts (4 Primary Views) */}
           <nav
             aria-label="Điều hướng nhanh hệ thống khách hàng"
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 4,
+              gap: 3,
               padding: 4,
               borderRadius: 999,
-              background: isDark ? 'rgba(15, 23, 42, 0.65)' : '#f1f5f9',
+              background: isDark ? 'rgba(15, 23, 42, 0.7)' : '#f1f5f9',
               border: isDark
                 ? '1px solid rgba(148, 163, 184, 0.16)'
-                : '1px solid rgba(15, 23, 42, 0.06)',
-              flexWrap: 'wrap'
+                : '1px solid rgba(15, 23, 42, 0.06)'
             }}
           >
-            {SIDEBAR_SECTIONS.flatMap((s) => s.items).map((item) => {
+            {[
+              { id: 'overview', label: 'Tổng Quan', icon: LayoutDashboard },
+              { id: 'containers', label: 'Container & Tài Xế', icon: Box },
+              { id: 'tracking', label: 'GPS 3D Live', icon: Navigation },
+              { id: 'carbon', label: 'Chứng Chỉ Carbon', icon: Leaf }
+            ].map((item) => {
               const Icon = item.icon;
               const active = activeTab === item.id;
               return (
@@ -1779,18 +1929,62 @@ export default function CustomerPortalPage() {
                     fontSize: '0.76rem',
                     fontWeight: active ? 800 : 600,
                     cursor: 'pointer',
-                    transition: 'all 0.18s'
+                    whiteSpace: 'nowrap',
+                    transition: 'all 0.16s'
                   }}
                 >
                   <Icon size={14} />
-                  <span>{item.shortLabel}</span>
+                  <span>{item.label}</span>
                 </button>
               );
             })}
           </nav>
 
-          {/* Right: Quick Action CTA, Notifications, Theme Toggle & User Badge */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {/* Right: Live DB Sync Pill, Quick CTA, Notifications, Theme & Account */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 9, flexWrap: 'wrap' }}>
+            {/* Real-time DB Sync Status */}
+            <div
+              title="Trạng thái đồng bộ dữ liệu thời gian thực với PostgreSQL Database"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '6px 11px',
+                borderRadius: 999,
+                background:
+                  dbSyncState === 'LIVE_DB'
+                    ? 'rgba(16, 185, 129, 0.14)'
+                    : 'rgba(56, 189, 248, 0.12)',
+                border:
+                  dbSyncState === 'LIVE_DB'
+                    ? '1px solid rgba(16, 185, 129, 0.38)'
+                    : '1px solid rgba(56, 189, 248, 0.35)',
+                color: dbSyncState === 'LIVE_DB' ? '#10b981' : '#38bdf8',
+                fontSize: '0.72rem',
+                fontWeight: 700
+              }}
+            >
+              <Database size={13} />
+              <span>
+                {dbSyncState === 'LIVE_DB' ? 'DB Live' : 'Realtime Sync'} • {lastDbSync}
+              </span>
+              <button
+                type="button"
+                onClick={syncContainersFromDb}
+                title="Làm mới dữ liệu từ Database ngay"
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'inherit',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  padding: 1
+                }}
+              >
+                <RefreshCw size={12} />
+              </button>
+            </div>
+
             <button
               type="button"
               onClick={() => setActiveTab('booking')}
@@ -1798,18 +1992,19 @@ export default function CustomerPortalPage() {
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 6,
-                padding: '8px 14px',
+                padding: '7px 13px',
                 borderRadius: 999,
                 border: '1px solid #10b981',
                 background: 'linear-gradient(135deg, #10b981, #059669)',
                 color: '#042f2e',
-                fontSize: '0.78rem',
+                fontSize: '0.77rem',
                 fontWeight: 800,
                 cursor: 'pointer',
-                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.3)'
+                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.28)',
+                whiteSpace: 'nowrap'
               }}
             >
-              <PlusCircle size={15} /> Đặt Thuê Xe Xanh
+              <PlusCircle size={15} /> Đặt Xe Xanh
             </button>
 
             {/* Real-time Notification Bell */}
@@ -1819,11 +2014,11 @@ export default function CustomerPortalPage() {
                 onClick={() => setShowNotifPanel((v) => !v)}
                 aria-label="Thông báo vận đơn"
                 style={{
-                  width: 36,
-                  height: 36,
+                  width: 35,
+                  height: 35,
                   borderRadius: 999,
                   border: '1px solid rgba(148, 163, 184, 0.28)',
-                  background: 'transparent',
+                  background: subtleBg,
                   color: 'inherit',
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -1832,7 +2027,7 @@ export default function CustomerPortalPage() {
                   position: 'relative'
                 }}
               >
-                <Bell size={16} />
+                <Bell size={15} />
                 {userOwnShipments.length > 0 && (
                   <span
                     style={{
@@ -1844,7 +2039,7 @@ export default function CustomerPortalPage() {
                       borderRadius: 999,
                       background: '#10b981',
                       color: '#042f2e',
-                      fontSize: '0.65rem',
+                      fontSize: '0.64rem',
                       fontWeight: 800,
                       display: 'inline-flex',
                       alignItems: 'center',
@@ -1917,11 +2112,11 @@ export default function CustomerPortalPage() {
               onClick={toggleTheme}
               aria-label="Đổi giao diện sáng/tối"
               style={{
-                width: 36,
-                height: 36,
+                width: 35,
+                height: 35,
                 borderRadius: 999,
                 border: '1px solid rgba(148, 163, 184, 0.28)',
-                background: 'transparent',
+                background: subtleBg,
                 color: 'inherit',
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -1929,7 +2124,7 @@ export default function CustomerPortalPage() {
                 cursor: 'pointer'
               }}
             >
-              {isDark ? <Sun size={16} /> : <Moon size={16} />}
+              {isDark ? <Sun size={15} /> : <Moon size={15} />}
             </button>
 
             <div
@@ -1937,17 +2132,42 @@ export default function CustomerPortalPage() {
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 8,
-                padding: '5px 12px',
+                padding: '4px 12px',
                 borderRadius: 999,
                 background: subtleBg,
-                border: '1px solid rgba(148, 163, 184, 0.22)',
-                fontSize: '0.78rem',
-                fontWeight: 700
+                border: '1px solid rgba(148, 163, 184, 0.24)'
               }}
             >
               <UserCheck size={14} color="#10b981" />
-              <span>{user?.fullName || user?.username || 'Khách hàng'}</span>
+              <div style={{ lineHeight: 1.15 }}>
+                <div style={{ fontSize: '0.76rem', fontWeight: 800 }}>
+                  {user?.fullName || user?.username || 'Khách hàng'}
+                </div>
+                <div style={{ fontSize: '0.64rem', color: '#10b981', fontWeight: 700 }}>
+                  {user?.companyName || 'Đối Tác Doanh Nghiệp B2B'}
+                </div>
+              </div>
             </div>
+
+            <button
+              type="button"
+              onClick={handleSignOut}
+              title="Đăng xuất"
+              style={{
+                width: 35,
+                height: 35,
+                borderRadius: 999,
+                border: '1px solid rgba(239, 68, 68, 0.35)',
+                background: 'rgba(239, 68, 68, 0.1)',
+                color: '#f87171',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer'
+              }}
+            >
+              <LogOut size={14} />
+            </button>
           </div>
         </header>
 

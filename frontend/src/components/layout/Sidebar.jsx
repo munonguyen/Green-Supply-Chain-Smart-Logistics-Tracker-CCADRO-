@@ -15,6 +15,7 @@ import {
   Lock,
   LogOut,
   Radio,
+  Truck,
   UserCheck,
   PanelLeftClose,
   PanelLeftOpen
@@ -224,6 +225,14 @@ export default function Sidebar({ collapsed = false, onToggleCollapse }) {
         >
           <Radio size={17} />
           <span>Giám Sát GPS & Lệch Tuyến</span>
+        </NavLink>
+
+        <NavLink
+          to="/driver"
+          className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+        >
+          <Truck size={17} />
+          <span>Khoang Lái Tài Xế (Driver)</span>
         </NavLink>
 
         {/* SECTION 2: GREEN INTELLIGENCE */}

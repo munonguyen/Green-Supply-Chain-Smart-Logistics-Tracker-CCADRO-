@@ -64,9 +64,41 @@ export const api = {
   getSystemHealth: () => fetchJson('/api/v1/health'),
   getActuatorHealth: () => fetchJson('/actuator/health'),
 
-  // Assets & Pre-Trip Safety (Port 8081)
+  // Assets, Drivers, Containers & Pre-Trip Safety (Port 8081)
   getVehicles: () => fetchJson('/api/v1/assets/vehicles'),
   getDrivers: () => fetchJson('/api/v1/assets/drivers'),
+  getContainers: (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.status) query.append('status', params.status);
+    if (params.driverId) query.append('driverId', params.driverId);
+    const queryString = query.toString();
+    return fetchJson(`/api/v1/assets/containers${queryString ? `?${queryString}` : ''}`);
+  },
+  getContainerByCode: (containerCode) => fetchJson(`/api/v1/assets/containers/${containerCode}`),
+  createContainer: (data) =>
+    fetchJson('/api/v1/assets/containers', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+  updateContainerTelemetry: (containerCode, telemetryData) =>
+    fetchJson(`/api/v1/assets/containers/${containerCode}/telemetry`, {
+      method: 'PUT',
+      body: JSON.stringify(telemetryData)
+    }),
+  assignContainerTrip: (containerCode, tripData) =>
+    fetchJson(`/api/v1/assets/containers/${containerCode}/assign-trip`, {
+      method: 'PUT',
+      body: JSON.stringify(tripData)
+    }),
+  submitContainerEpod: (containerCode, epodData) =>
+    fetchJson(`/api/v1/assets/containers/${containerCode}/epod`, {
+      method: 'POST',
+      body: JSON.stringify(epodData)
+    }),
+  updateContainerStatus: (containerCode, status) =>
+    fetchJson(`/api/v1/assets/containers/${containerCode}/status?status=${status}`, {
+      method: 'PUT'
+    }),
   submitPreTripInspection: (data) =>
     fetchJson('/api/v1/assets/inspections/pre-trip', {
       method: 'POST',
