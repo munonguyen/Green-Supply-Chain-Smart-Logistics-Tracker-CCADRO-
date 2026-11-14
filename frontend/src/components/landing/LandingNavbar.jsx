@@ -90,7 +90,11 @@ export default function LandingNavbar() {
                 {token
                   ? activePortalPath === '/customer'
                     ? 'Cổng Khách hàng'
-                    : 'Giám sát Nội bộ'
+                    : activePortalPath === '/shipper'
+                      ? 'Cổng Shipper 3PL'
+                      : activePortalPath === '/driver'
+                        ? 'Khoang Lái Tài Xế'
+                        : 'Giám sát Nội bộ'
                   : 'Đăng nhập'}
               </span>
             </button>

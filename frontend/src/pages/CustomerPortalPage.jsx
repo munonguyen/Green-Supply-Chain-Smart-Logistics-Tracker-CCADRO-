@@ -5,18 +5,26 @@ import {
   Activity,
   ArrowLeftRight,
   ArrowRight,
+  Award,
+  BadgeCheck,
   BarChart3,
   Bell,
   Box,
   Building2,
+  Calendar,
   Check,
   CheckCircle2,
   Clock,
+  Copy,
   Cpu,
+  CreditCard,
   Crosshair,
   Database,
   Download,
+  Eye,
+  EyeOff,
   FileCheck2,
+  FileSignature,
   FileText,
   Gauge,
   LayoutDashboard,
@@ -35,23 +43,52 @@ import {
   PieChart,
   Play,
   PlusCircle,
+  QrCode,
   Radio,
+  Receipt,
   RefreshCw,
   RotateCcw,
   Search,
   ShieldCheck,
+  Star,
   Sun,
   Thermometer,
   Trash2,
   Truck,
   User,
   UserCheck,
+  UserPlus,
+  Users,
   Zap
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { api } from '../services/api';
 import CcadroLogo from '../components/ui/CcadroLogo';
+import GrabDriverAvatar from '../components/ui/GrabDriverAvatar';
+import GrabDriverChatModal from '../components/chat/GrabDriverChatModal';
+import CustomerPaymentModal from '../components/customer/CustomerPaymentModal';
+import CustomerContractModal from '../components/customer/CustomerContractModal';
+import {
+  CONTRACT_STATUS_META,
+  confirmCustomerPayment,
+  createCustomerContract,
+  createCustomerPayment,
+  loadCustomerContracts,
+  loadCustomerPayments,
+  PAYMENT_METHODS,
+  PAYMENT_STATUS_META,
+  recordCustomerSlaEvent,
+  refundCustomerPayment,
+  settleCustomerContractWithEpod,
+  signCustomerContract,
+  triggerWebhookPaymentConfirm
+} from '../utils/paymentSync';
+import {
+  getUnreadCountForViewer,
+  loadChatThreadsMap,
+  subscribeDriverChat
+} from '../utils/driverChatSync';
 import { CountingNumber } from '../components/ui/CountingNumber';
 import MapView from '../components/map/MapView';
 import RoutePolyline from '../components/map/RoutePolyline';
@@ -513,6 +550,219 @@ function LogisticsHubMarkers({ map }) {
   return null;
 }
 
+const DRIVERS_STORAGE_KEY = 'ccadro_drivers_directory_v1';
+
+const INITIAL_DRIVERS_DIRECTORY = [
+  {
+    id: 'drv-001',
+    driverCode: 'DRV-FC-001',
+    fullName: 'Nguyễn Văn Tài',
+    phone: '0903 812 456',
+    email: 'tai.nguyen@ccadro-fleet.vn',
+    dateOfBirth: '14/05/1988',
+    nationalId: '0790 8800 4129',
+    hometown: 'TP. Thủ Đức, TP. Hồ Chí Minh',
+    licenseClass: 'FC',
+    licenseNumber: '7901-8842-9012',
+    licenseExpiryDate: '18/10/2029',
+    experienceYears: 9,
+    status: 'ON_TRIP',
+    rating: 4.95,
+    totalTrips: 418,
+    onTimeRate: 99.4,
+    ecoScore: 97,
+    greenKmTotal: 42860,
+    violationsCount: 0,
+    hosContinuousMin: 118,
+    hosDailyMin: 275,
+    preTripPassed: true,
+    preTripTime: '06:45 Sáng nay',
+    assignedVehiclePlate: '51C-888.99',
+    assignedVehicleType: 'Xe đầu kéo điện (EV) • Heavy-Duty BEV',
+    safetyCerts: ['Eco-Driving GLEC v3', 'Chuỗi Lạnh -25°C', 'An Toàn Cảng Biển'],
+    recentReviews: [
+      { id: 'rev-1', author: 'Minh Phú Seafood', rating: 5, date: 'Hôm nay', comment: 'Nhiệt độ cont lạnh giữ ổn định -18.4°C, tài xế cập cảng rất đúng giờ.' },
+      { id: 'rev-2', author: 'Samsung Vina', rating: 5, date: '2 ngày trước', comment: 'Thao tác khóa niêm phong E-Seal chuẩn xác, thái độ chuyên nghiệp.' }
+    ]
+  },
+  {
+    id: 'drv-002',
+    driverCode: 'DRV-FC-002',
+    fullName: 'Lê Minh Khôi',
+    phone: '0908 551 209',
+    email: 'khoi.le@ccadro-fleet.vn',
+    dateOfBirth: '22/09/1991',
+    nationalId: '0790 9101 5832',
+    hometown: 'Quận 7, TP. Hồ Chí Minh',
+    licenseClass: 'FC',
+    licenseNumber: '7901-9124-5501',
+    licenseExpiryDate: '04/03/2030',
+    experienceYears: 7,
+    status: 'ON_TRIP',
+    rating: 4.90,
+    totalTrips: 312,
+    onTimeRate: 98.7,
+    ecoScore: 95,
+    greenKmTotal: 36420,
+    violationsCount: 0,
+    hosContinuousMin: 145,
+    hosDailyMin: 310,
+    preTripPassed: true,
+    preTripTime: '07:10 Sáng nay',
+    assignedVehiclePlate: '51C-704.33',
+    assignedVehicleType: 'Xe đầu kéo điện (EV) • 40T BEV',
+    safetyCerts: ['Eco-Driving GLEC v3', 'Vận Chuyển Hàng Điện Tử', 'Sơ Cấp Cứu Đường Bộ'],
+    recentReviews: [
+      { id: 'rev-3', author: 'Samsung Electronics', rating: 5, date: 'Hôm nay', comment: 'Gia tốc kế < 0.25G suốt hành trình cao tốc, bảo vệ linh kiện cực tốt.' }
+    ]
+  },
+  {
+    id: 'drv-003',
+    driverCode: 'DRV-FC-003',
+    fullName: 'Trần Hoàng Nam',
+    phone: '0914 720 881',
+    email: 'nam.tran@ccadro-fleet.vn',
+    dateOfBirth: '03/11/1985',
+    nationalId: '0740 8500 2271',
+    hometown: 'TP. Dĩ An, Bình Dương',
+    licenseClass: 'FC',
+    licenseNumber: '7401-8511-2271',
+    licenseExpiryDate: '29/08/2028',
+    experienceYears: 11,
+    status: 'ON_TRIP',
+    rating: 4.98,
+    totalTrips: 589,
+    onTimeRate: 99.8,
+    ecoScore: 98,
+    greenKmTotal: 61540,
+    violationsCount: 0,
+    hosContinuousMin: 95,
+    hosDailyMin: 220,
+    preTripPassed: true,
+    preTripTime: '08:00 Sáng nay',
+    assignedVehiclePlate: '51D-662.18',
+    assignedVehicleType: 'Xe tải chuẩn Euro 5 SCR',
+    safetyCerts: ['Tài Xế Vàng 5 Năm', 'Eco-Driving GLEC v3', 'PCCC & Hóa Chất Nhẹ'],
+    recentReviews: [
+      { id: 'rev-4', author: 'Unilever VN', rating: 5, date: 'Hôm qua', comment: 'Tài xế kinh nghiệm dày dạn, xử lý ùn tắc QL13 rất linh hoạt.' }
+    ]
+  },
+  {
+    id: 'drv-004',
+    driverCode: 'DRV-FC-004',
+    fullName: 'Phạm Quốc Tuấn',
+    phone: '0989 341 612',
+    email: 'tuan.pham@ccadro-fleet.vn',
+    dateOfBirth: '19/02/1989',
+    nationalId: '0750 8900 7743',
+    hometown: 'TP. Biên Hòa, Đồng Nai',
+    licenseClass: 'FC',
+    licenseNumber: '7501-8900-7743',
+    licenseExpiryDate: '12/12/2029',
+    experienceYears: 8,
+    status: 'AVAILABLE',
+    rating: 4.92,
+    totalTrips: 364,
+    onTimeRate: 99.1,
+    ecoScore: 94,
+    greenKmTotal: 39180,
+    violationsCount: 0,
+    hosContinuousMin: 0,
+    hosDailyMin: 185,
+    preTripPassed: true,
+    preTripTime: '05:50 Sáng nay',
+    assignedVehiclePlate: '61C-419.52',
+    assignedVehicleType: 'Xe tải chuẩn Euro 5',
+    safetyCerts: ['Chuỗi Lạnh -25°C', 'Eco-Driving GLEC v3'],
+    recentReviews: [
+      { id: 'rev-5', author: 'Vinamilk Mega', rating: 5, date: 'Hôm nay', comment: 'Bàn giao ePOD đầy đủ chứng từ và mở seal đúng quy trình tại Nhơn Trạch.' }
+    ]
+  },
+  {
+    id: 'drv-005',
+    driverCode: 'DRV-FC-005',
+    fullName: 'Võ Thành Đạt',
+    phone: '0937 618 904',
+    email: 'dat.vo@ccadro-fleet.vn',
+    dateOfBirth: '28/07/1992',
+    nationalId: '0790 9203 1904',
+    hometown: 'Quận Bình Tân, TP. Hồ Chí Minh',
+    licenseClass: 'FC',
+    licenseNumber: '7902-9203-1904',
+    licenseExpiryDate: '15/06/2031',
+    experienceYears: 6,
+    status: 'AVAILABLE',
+    rating: 4.88,
+    totalTrips: 245,
+    onTimeRate: 98.0,
+    ecoScore: 92,
+    greenKmTotal: 27900,
+    violationsCount: 0,
+    hosContinuousMin: 0,
+    hosDailyMin: 160,
+    preTripPassed: true,
+    preTripTime: '04:40 Sáng nay',
+    assignedVehiclePlate: '51D-402.11',
+    assignedVehicleType: 'Xe diesel tối ưu lộ trình xanh',
+    safetyCerts: ['Eco-Driving GLEC v3', 'An Toàn Cảng Cái Mép'],
+    recentReviews: [
+      { id: 'rev-6', author: 'Yazaki EDS VN', rating: 5, date: 'Hôm nay', comment: 'Nhiệt tình hỗ trợ hạ cont và chụp biên bản hiện trường.' }
+    ]
+  },
+  {
+    id: 'drv-006',
+    driverCode: 'DRV-C-006',
+    fullName: 'Đặng Hữu Phước',
+    phone: '0975 440 218',
+    email: 'phuoc.dang@ccadro-fleet.vn',
+    dateOfBirth: '10/01/1986',
+    nationalId: '0770 8600 3318',
+    hometown: 'TX. Phú Mỹ, Bà Rịa - Vũng Tàu',
+    licenseClass: 'C',
+    licenseNumber: '7701-8600-3318',
+    licenseExpiryDate: '20/04/2028',
+    experienceYears: 10,
+    status: 'INACTIVE',
+    rating: 4.91,
+    totalTrips: 402,
+    onTimeRate: 98.9,
+    ecoScore: 93,
+    greenKmTotal: 45120,
+    violationsCount: 0,
+    hosContinuousMin: 0,
+    hosDailyMin: 0,
+    preTripPassed: false,
+    preTripTime: 'Đang nghỉ bù HOS sau ca đêm',
+    assignedVehiclePlate: '72C-195.80',
+    assignedVehicleType: 'Xe tải nhẹ Hybrid/EV 15T',
+    safetyCerts: ['Eco-Driving GLEC v3', 'An Toàn Depot Cái Mép'],
+    recentReviews: [
+      { id: 'rev-7', author: 'Phú Mỹ Logistics', rating: 5, date: '3 ngày trước', comment: 'Tuân thủ tuyệt đối giờ giấc và tốc độ an toàn.' }
+    ]
+  }
+];
+
+function loadStoredDriversDirectory() {
+  try {
+    const raw = window.localStorage.getItem(DRIVERS_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (_) {
+    // ignore storage errors
+  }
+  return INITIAL_DRIVERS_DIRECTORY;
+}
+
+function saveStoredDriversDirectory(list) {
+  try {
+    window.localStorage.setItem(DRIVERS_STORAGE_KEY, JSON.stringify(list));
+  } catch (_) {
+    // ignore storage errors
+  }
+}
+
 const SIDEBAR_SECTIONS = [
   {
     group: 'BÀN LÀM VIỆC & GIÁM SÁT',
@@ -533,10 +783,17 @@ const SIDEBAR_SECTIONS = [
       },
       {
         id: 'containers',
-        label: 'Giám Sát Danh Sách Container & Tài Xế',
+        label: 'Danh Sách & Viễn Thông Container',
         shortLabel: 'DS Container',
         icon: Box,
         badge: 'cont'
+      },
+      {
+        id: 'drivers',
+        label: 'Quản Lý Đội Ngũ Người Lái Xe',
+        shortLabel: 'QL Tài Xế',
+        icon: Users,
+        badge: 'drv'
       }
     ]
   },
@@ -556,6 +813,20 @@ const SIDEBAR_SECTIONS = [
         shortLabel: 'Quản Lý Đơn',
         icon: Package,
         badge: 'count'
+      },
+      {
+        id: 'contracts',
+        label: 'Hợp Đồng B2B & Đối Soát SLA',
+        shortLabel: 'Hợp Đồng & SLA',
+        icon: FileSignature,
+        badge: 'ctr'
+      },
+      {
+        id: 'payments',
+        label: 'Thanh Toán & Hóa Đơn VAT',
+        shortLabel: 'Thanh Toán',
+        icon: CreditCard,
+        badge: 'pay'
       }
     ]
   },
@@ -612,10 +883,37 @@ export default function CustomerPortalPage() {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [selectedCode, setSelectedCode] = useState(null);
   const [selectedCertificate, setSelectedCertificate] = useState(null);
-  const [selectedContractModal, setSelectedContractModal] = useState(null);
   const [selectedESealModal, setSelectedESealModal] = useState(null);
   const [selectedIoTModal, setSelectedIoTModal] = useState(null);
   const [selectedDriverModal, setSelectedDriverModal] = useState(null);
+  const [driverDirectory, setDriverDirectory] = useState(() => loadStoredDriversDirectory());
+  const [driverStatusFilter, setDriverStatusFilter] = useState('ALL'); // 'ALL' | 'ON_TRIP' | 'AVAILABLE' | 'INACTIVE'
+  const [driverLicenseFilter, setDriverLicenseFilter] = useState('ALL'); // 'ALL' | 'FC' | 'C'
+  const [driverSearch, setDriverSearch] = useState('');
+  const [showFullCccd, setShowFullCccd] = useState(false);
+  const [copiedPhone, setCopiedPhone] = useState(null);
+  const [showAddDriverModal, setShowAddDriverModal] = useState(false);
+  const [newDriverForm, setNewDriverForm] = useState({
+    fullName: '',
+    phone: '',
+    driverCode: '',
+    licenseNumber: '',
+    licenseClass: 'FC',
+    licenseExpiryDate: '31/12/2030',
+    experienceYears: 5,
+    hometown: 'TP. Hồ Chí Minh',
+    dateOfBirth: '15/06/1990',
+    nationalId: '0790 9001 6420',
+    assignedVehiclePlate: '51C-990.12',
+    assignedVehicleType: 'Xe đầu kéo điện (EV) • 40T BEV'
+  });
+  const [assignModalDriver, setAssignModalDriver] = useState(null);
+  const [chatModalOpen, setChatModalOpen] = useState(false);
+  const [chatTargetDriverCode, setChatTargetDriverCode] = useState('DRV-FC-001');
+  const [chatThreads, setChatThreads] = useState(() => loadChatThreadsMap());
+  const [driverFeedbackRating, setDriverFeedbackRating] = useState(5);
+  const [driverFeedbackNote, setDriverFeedbackNote] = useState('');
+  const [driverActionNotice, setDriverActionNotice] = useState(null);
   const [containerStatusFilter, setContainerStatusFilter] = useState('ALL'); // 'ALL' | 'IN_TRANSIT' | 'COMPLETED'
   const [containerTypeFilter, setContainerTypeFilter] = useState('ALL');
   const [containerSearch, setContainerSearch] = useState('');
@@ -639,8 +937,27 @@ export default function CustomerPortalPage() {
     requireReeferTelematics: true,
     pickupDate: new Date().toISOString().slice(0, 10),
     pickupTime: '08:30',
+    preferredPaymentMethod: 'VIETQR_NAPAS',
     notes: 'Ưu tiên lộ trình xanh tránh ùn tắc cầu Phú Mỹ, duy trì nhiệt độ thùng đông lạnh -18°C, giám sát Khóa Seal Hải quan GPS.'
   });
+
+  // Payment & Billing Service states (Port 8088)
+  const [customerPayments, setCustomerPayments] = useState([]);
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState('ALL');
+  const [paymentSearch, setPaymentSearch] = useState('');
+  const [paymentModalState, setPaymentModalState] = useState({
+    isOpen: false,
+    targetOrder: null,
+    targetPayment: null
+  });
+  const [paymentNotice, setPaymentNotice] = useState(null);
+
+  // B2B Contracts & SLA Settlement states (Port 8088)
+  const [customerContracts, setCustomerContracts] = useState([]);
+  const [contractFilter, setContractFilter] = useState('ALL');
+  const [contractSearch, setContractSearch] = useState('');
+  const [activeContractModal, setActiveContractModal] = useState(null);
+  const [contractNotice, setContractNotice] = useState(null);
 
   // Notification preferences state
   const [notifPrefs, setNotifPrefs] = useState({
@@ -735,6 +1052,80 @@ export default function CustomerPortalPage() {
           return merged;
         });
       }
+      // Sync drivers directory from PostgreSQL asset-service if live
+      try {
+        const drvRes = await api.getDrivers();
+        const dbDrivers = drvRes?.result || drvRes?.data || drvRes;
+        if (Array.isArray(dbDrivers) && dbDrivers.length > 0) {
+          setDriverDirectory((prev) => {
+            const merged = [...prev];
+            dbDrivers.forEach((d) => {
+              const idx = merged.findIndex(
+                (item) =>
+                  item.backendId === d.id ||
+                  (d.driverCode && item.driverCode === d.driverCode) ||
+                  (d.phone && item.phone === d.phone)
+              );
+              const mappedReviews = Array.isArray(d.recentReviews)
+                ? d.recentReviews.map((r) => ({
+                    id: r.id,
+                    author: r.authorName || 'Doanh nghiệp B2B',
+                    rating: r.rating || 5,
+                    date: r.createdAt ? new Date(r.createdAt).toLocaleDateString('vi-VN') : 'Gần đây',
+                    comment: r.comment || ''
+                  }))
+                : undefined;
+
+              const patch = {
+                backendId: d.id,
+                driverCode: d.driverCode || 'DRV-FC',
+                fullName: d.fullName || 'Tài xế đối tác',
+                phone: d.phone || '0903 000 000',
+                email: d.email,
+                dateOfBirth: d.dateOfBirth,
+                nationalId: d.nationalId,
+                hometown: d.hometown,
+                licenseClass: d.licenseClass || ((d.driverCode || '').includes('-C-') ? 'C' : 'FC'),
+                licenseNumber: d.licenseNumber || '7901-8800-1000',
+                licenseExpiryDate: d.licenseExpiryDate,
+                experienceYears: d.experienceYears,
+                status: d.status || 'AVAILABLE',
+                rating: d.rating !== null && d.rating !== undefined ? Number(d.rating) : undefined,
+                totalTrips: d.totalTrips,
+                onTimeRate: d.onTimeRate !== null && d.onTimeRate !== undefined ? Number(d.onTimeRate) : undefined,
+                ecoScore: d.ecoScore,
+                greenKmTotal: d.greenKmTotal !== null && d.greenKmTotal !== undefined ? Number(d.greenKmTotal) : undefined,
+                violationsCount: d.violationsCount,
+                hosContinuousMin: d.hosContinuousMin,
+                hosDailyMin: d.hosDailyMin,
+                preTripPassed: d.preTripPassed,
+                preTripTime: d.preTripTime,
+                assignedVehiclePlate: d.assignedVehiclePlate,
+                assignedVehicleType: d.assignedVehicleType,
+                safetyCerts: Array.isArray(d.safetyCerts) && d.safetyCerts.length > 0 ? d.safetyCerts : undefined,
+                recentReviews: mappedReviews
+              };
+              const cleanPatch = Object.fromEntries(
+                Object.entries(patch).filter(([, v]) => v !== undefined && v !== null)
+              );
+              if (idx >= 0) {
+                merged[idx] = { ...merged[idx], ...cleanPatch };
+              } else {
+                merged.push({
+                  ...INITIAL_DRIVERS_DIRECTORY[0],
+                  ...cleanPatch,
+                  id: d.id || `drv-db-${d.driverCode}`,
+                  recentReviews: mappedReviews || []
+                });
+              }
+            });
+            saveStoredDriversDirectory(merged);
+            return merged;
+          });
+        }
+      } catch (_) {
+        // ignore if driver endpoint unavailable offline
+      }
     } catch (_) {
       setDbSyncState('LOCAL_CACHE');
     }
@@ -747,7 +1138,320 @@ export default function CustomerPortalPage() {
     return () => clearInterval(timer);
   }, [syncContainersFromDb]);
 
-  // Sync with storage changes from other tabs/windows
+  // Sync Payment Service ledger (Port 8088)
+  const syncPaymentsFromDb = useCallback(async () => {
+    const customerKey = user?.customerId || 'DOANH_NGHIEP_B2B';
+    const { payments } = await loadCustomerPayments(customerKey);
+    setCustomerPayments(payments || []);
+  }, [user?.customerId]);
+
+  useEffect(() => {
+    syncPaymentsFromDb();
+    const timer = setInterval(syncPaymentsFromDb, 10000);
+    return () => clearInterval(timer);
+  }, [syncPaymentsFromDb]);
+
+  // Sync B2B Contracts & SLA ledger
+  const syncContractsFromDb = useCallback(async () => {
+    const customerKey = user?.customerId || 'DOANH_NGHIEP_B2B';
+    const { contracts } = await loadCustomerContracts(customerKey);
+    setCustomerContracts(contracts || []);
+  }, [user?.customerId]);
+
+  useEffect(() => {
+    syncContractsFromDb();
+    const timer = setInterval(syncContractsFromDb, 10000);
+    return () => clearInterval(timer);
+  }, [syncContractsFromDb]);
+
+  const paymentSummary = useMemo(() => {
+    const paidList = customerPayments.filter((p) => p.paymentStatus === 'PAID');
+    const pendingList = customerPayments.filter((p) => p.paymentStatus === 'PENDING');
+    const net30List = customerPayments.filter((p) => p.paymentStatus === 'NET30_CREDIT');
+    return {
+      totalCount: customerPayments.length,
+      paidCount: paidList.length,
+      pendingCount: pendingList.length,
+      net30Count: net30List.length,
+      totalPaidVnd: paidList.reduce((sum, p) => sum + Number(p.totalAmountVnd || 0), 0),
+      totalPendingVnd: pendingList.reduce((sum, p) => sum + Number(p.totalAmountVnd || 0), 0),
+      totalNet30Vnd: net30List.reduce((sum, p) => sum + Number(p.totalAmountVnd || 0), 0),
+      totalGreenDiscountVnd: customerPayments
+        .filter((p) => p.paymentStatus !== 'REFUNDED')
+        .reduce((sum, p) => sum + Number(p.greenEsgDiscountVnd || 0), 0)
+    };
+  }, [customerPayments]);
+
+  const paymentByShipmentMap = useMemo(() => {
+    const map = {};
+    customerPayments.forEach((p) => {
+      if (p.shipmentCode && !map[p.shipmentCode]) {
+        map[p.shipmentCode] = p;
+      }
+    });
+    return map;
+  }, [customerPayments]);
+
+  const filteredPayments = useMemo(() => {
+    const q = paymentSearch.trim().toLowerCase();
+    return customerPayments.filter((p) => {
+      if (paymentStatusFilter !== 'ALL' && p.paymentStatus !== paymentStatusFilter) return false;
+      if (!q) return true;
+      return (
+        (p.transactionCode || '').toLowerCase().includes(q) ||
+        (p.invoiceNumber || '').toLowerCase().includes(q) ||
+        (p.shipmentCode || '').toLowerCase().includes(q) ||
+        (p.containerCode || '').toLowerCase().includes(q)
+      );
+    });
+  }, [customerPayments, paymentStatusFilter, paymentSearch]);
+
+  const openPaymentForOrder = useCallback(
+    (order) => {
+      const existing = paymentByShipmentMap[order.shipmentCode] || null;
+      setPaymentModalState({
+        isOpen: true,
+        targetOrder: order,
+        targetPayment: existing
+      });
+    },
+    [paymentByShipmentMap]
+  );
+
+  const handleCreateAndConfirmPayment = useCallback(
+    async (order, modalPayload) => {
+      const { payment } = await createCustomerPayment({
+        shipmentCode: order.shipmentCode,
+        customerId: user?.customerId || order.customerId || 'DOANH_NGHIEP_B2B',
+        customerName: user?.companyName || order.customerName,
+        createdByUsername: user?.username || 'customer',
+        originName: order.originName,
+        destinationName: order.destinationName,
+        containerCode: order.containerCode,
+        vehicleType: order.vehicleType,
+        powertrainType: (order.powertrainId || 'ev').toUpperCase(),
+        paymentMethod: modalPayload.paymentMethod,
+        baseFreightVnd: order.estimatedCostVnd || 1850000,
+        co2SavedKg: order.co2SavedKg || 0,
+        payerName: modalPayload.payerName,
+        cardLast4: modalPayload.cardLast4,
+        notes: modalPayload.notes,
+        instantConfirm: modalPayload.instantConfirm
+      });
+      await Promise.all([syncPaymentsFromDb(), syncContractsFromDb()]);
+      setPaymentModalState({ isOpen: false, targetOrder: null, targetPayment: null });
+      setPaymentNotice(
+        `Đã xử lý hóa đơn ${payment?.invoiceNumber || ''} (${payment?.paymentStatus === 'PAID' ? 'Đã thanh toán' : 'Công nợ Net-30'}) cho vận đơn ${order.shipmentCode}.`
+      );
+      setTimeout(() => setPaymentNotice(null), 5000);
+    },
+    [syncContractsFromDb, syncPaymentsFromDb, user?.companyName, user?.customerId, user?.username]
+  );
+
+  const handleConfirmExistingPayment = useCallback(
+    async (transactionCode, modalPayload) => {
+      const { payment } = await confirmCustomerPayment(transactionCode, modalPayload);
+      await Promise.all([syncPaymentsFromDb(), syncContractsFromDb()]);
+      setPaymentModalState({ isOpen: false, targetOrder: null, targetPayment: null });
+      setPaymentNotice(
+        `Đã xác nhận thanh toán thành công giao dịch ${transactionCode} (${payment?.invoiceNumber || ''}).`
+      );
+      setTimeout(() => setPaymentNotice(null), 5000);
+    },
+    [syncContractsFromDb, syncPaymentsFromDb]
+  );
+
+  const handleRefundExistingPayment = useCallback(
+    async (transactionCode) => {
+      await refundCustomerPayment(
+        transactionCode,
+        'Khách hàng yêu cầu hoàn tiền / hủy hóa đơn từ Customer Portal',
+        user?.username || 'customer'
+      );
+      await Promise.all([syncPaymentsFromDb(), syncContractsFromDb()]);
+      setPaymentModalState({ isOpen: false, targetOrder: null, targetPayment: null });
+      setPaymentNotice(`Đã hoàn tiền và cập nhật trạng thái REFUNDED cho giao dịch ${transactionCode}.`);
+      setTimeout(() => setPaymentNotice(null), 5000);
+    },
+    [syncContractsFromDb, syncPaymentsFromDb, user?.username]
+  );
+
+  const handleWebhookPaymentConfirm = useCallback(
+    async (provider, webhookPayload) => {
+      const { payment } = await triggerWebhookPaymentConfirm(provider, webhookPayload);
+      await Promise.all([syncPaymentsFromDb(), syncContractsFromDb()]);
+      setPaymentModalState({ isOpen: false, targetOrder: null, targetPayment: null });
+      setPaymentNotice(
+        `Webhook ${provider} xác nhận đối soát tự động thành công: ${payment?.transactionCode || webhookPayload.transactionCode} → PAID.`
+      );
+      setTimeout(() => setPaymentNotice(null), 5000);
+    },
+    [syncContractsFromDb, syncPaymentsFromDb]
+  );
+
+  const masterMsaContract = useMemo(
+    () =>
+      customerContracts.find((c) => c.contractType === 'MASTER_MSA' && c.contractStatus === 'SIGNED_ACTIVE') ||
+      customerContracts.find((c) => c.contractType === 'MASTER_MSA') ||
+      null,
+    [customerContracts]
+  );
+
+  const contractSummary = useMemo(() => {
+    const msaLimitVnd = Number(masterMsaContract?.creditLimitVnd || 500000000);
+    const msaUsedVnd = Number(masterMsaContract?.usedCreditVnd || 0);
+    const msaRemainVnd = Math.max(0, msaLimitVnd - msaUsedVnd);
+    const msaUsedPct = msaLimitVnd > 0 ? Math.min(100, Math.round((msaUsedVnd / msaLimitVnd) * 100)) : 0;
+
+    let activeCount = 0;
+    let draftCount = 0;
+    let settledCount = 0;
+    let totalPenaltyVnd = 0;
+    let totalSpotSettlementVnd = 0;
+
+    customerContracts.forEach((c) => {
+      if (c.contractStatus === 'SIGNED_ACTIVE') activeCount += 1;
+      if (c.contractStatus === 'DRAFT') draftCount += 1;
+      if (c.contractStatus === 'SETTLED') settledCount += 1;
+      totalPenaltyVnd += Number(c.slaPenaltyDeductionVnd || 0);
+      if (c.contractType !== 'MASTER_MSA') {
+        totalSpotSettlementVnd += Number(
+          c.finalSettlementVnd ?? Math.max(0, Number(c.contractValueVnd || 0) - Number(c.slaPenaltyDeductionVnd || 0))
+        );
+      }
+    });
+
+    return {
+      totalCount: customerContracts.length,
+      activeCount,
+      draftCount,
+      settledCount,
+      totalPenaltyVnd,
+      totalSpotSettlementVnd,
+      msaLimitVnd,
+      msaUsedVnd,
+      msaRemainVnd,
+      msaUsedPct
+    };
+  }, [customerContracts, masterMsaContract]);
+
+  const contractByShipmentMap = useMemo(() => {
+    const map = {};
+    customerContracts.forEach((c) => {
+      if (c.shipmentCode && !map[c.shipmentCode]) map[c.shipmentCode] = c;
+    });
+    return map;
+  }, [customerContracts]);
+
+  const filteredContracts = useMemo(() => {
+    const q = contractSearch.trim().toLowerCase();
+    return customerContracts.filter((c) => {
+      if (contractFilter === 'MASTER_MSA' && c.contractType !== 'MASTER_MSA') return false;
+      if (contractFilter === 'SPOT_TRIP' && c.contractType !== 'SPOT_TRIP') return false;
+      if (contractFilter === 'SETTLED' && c.contractStatus !== 'SETTLED') return false;
+      if (contractFilter === 'SIGNED_ACTIVE' && c.contractStatus !== 'SIGNED_ACTIVE') return false;
+      if (contractFilter === 'DRAFT' && c.contractStatus !== 'DRAFT') return false;
+      if (!q) return true;
+      return (
+        (c.contractNumber || '').toLowerCase().includes(q) ||
+        (c.shipmentCode || '').toLowerCase().includes(q) ||
+        (c.corridorScope || '').toLowerCase().includes(q)
+      );
+    });
+  }, [customerContracts, contractFilter, contractSearch]);
+
+  const handleOpenContractForItem = useCallback(
+    (orderOrContract) => {
+      if (!orderOrContract) return;
+      if (orderOrContract.contractNumber) {
+        const linkedShipment = orderOrContract.shipmentCode
+          ? allShipments.find((s) => s.shipmentCode === orderOrContract.shipmentCode) || null
+          : null;
+        setActiveContractModal({ contract: orderOrContract, shipment: linkedShipment });
+        return;
+      }
+      const existing = contractByShipmentMap[orderOrContract.shipmentCode] || null;
+      setActiveContractModal({ contract: existing, shipment: orderOrContract });
+    },
+    [allShipments, contractByShipmentMap]
+  );
+
+  const handleCreateMsaContract = useCallback(
+    async (autoSign = true) => {
+      const { contract } = await createCustomerContract({
+        contractType: 'MASTER_MSA',
+        customerId: user?.customerId || 'DOANH_NGHIEP_B2B',
+        customerName: user?.companyName || user?.fullName || 'Doanh Nghiệp Đối Tác B2B',
+        corridorScope: 'Toàn tuyến Miền Nam & ĐBSCL (Cát Lái • Cái Mép • VSIP • Sóng Thần)',
+        vehicleType: 'Đội xe EV 40T & Hybrid LNG chuẩn GLEC v3',
+        slaOnTimeRatePct: 98.5,
+        slaMaxTempDeviationC: 2.0,
+        slaPenaltyPctPerBreach: 5.0,
+        creditLimitVnd: 500000000,
+        contractValueVnd: 500000000,
+        paymentTerms: 'NET30',
+        signedByCustomerUser: user?.username || 'customer',
+        autoSign,
+        notes: autoSign
+          ? 'Hợp đồng khung nguyên tắc B2B ký số điện tử trực tuyến từ Customer Portal'
+          : 'Dự thảo hợp đồng khung nguyên tắc B2B chờ ký số SHA-256'
+      });
+      await syncContractsFromDb();
+      if (contract) {
+        setActiveContractModal({ contract, shipment: null });
+      }
+      setContractNotice(
+        autoSign
+          ? `Đã khởi tạo & ký số Hợp đồng khung MSA ${contract?.contractNumber} (Hạn mức Net-30 500 triệu VNĐ).`
+          : `Đã khởi tạo dự thảo MSA ${contract?.contractNumber} — vui lòng ký số SHA-256 để kích hoạt.`
+      );
+      setTimeout(() => setContractNotice(null), 5000);
+    },
+    [syncContractsFromDb, user?.companyName, user?.customerId, user?.fullName, user?.username]
+  );
+
+  const handleSignContract = useCallback(
+    async (contractNumber, payload) => {
+      const { contract } = await signCustomerContract(contractNumber, payload);
+      await syncContractsFromDb();
+      if (contract) {
+        setActiveContractModal((prev) => (prev ? { ...prev, contract } : null));
+      }
+      setContractNotice(`Đã ký số SHA-256 kích hoạt hợp đồng ${contractNumber}.`);
+      setTimeout(() => setContractNotice(null), 5000);
+    },
+    [syncContractsFromDb]
+  );
+
+  const handleRecordSlaEvent = useCallback(
+    async (contractNumber, payload) => {
+      const { contract } = await recordCustomerSlaEvent(contractNumber, payload);
+      await syncContractsFromDb();
+      if (contract) {
+        setActiveContractModal((prev) => (prev ? { ...prev, contract } : null));
+      }
+      setContractNotice(`Đã ghi nhận sự kiện SLA vào hợp đồng ${contractNumber} (giảm trừ hiện tại: ${Number(contract?.slaPenaltyDeductionVnd || 0).toLocaleString('vi-VN')} ₫).`);
+      setTimeout(() => setContractNotice(null), 5000);
+    },
+    [syncContractsFromDb]
+  );
+
+  const handleSettleContractWithEpod = useCallback(
+    async (contractNumber, payload) => {
+      const { contract } = await settleCustomerContractWithEpod(contractNumber, payload);
+      await Promise.all([syncContractsFromDb(), syncPaymentsFromDb()]);
+      if (contract) {
+        setActiveContractModal((prev) => (prev ? { ...prev, contract } : null));
+      }
+      setContractNotice(
+        `Đã nghiệm thu ePOD & chốt đối soát hợp đồng ${contractNumber} — đồng bộ hóa đơn sang Payment Service.`
+      );
+      setTimeout(() => setContractNotice(null), 5000);
+    },
+    [syncContractsFromDb, syncPaymentsFromDb]
+  );
+
+  // Sync with storage changes from other tabs/windows & real-time Grab/Xanh SM driver chat
   useEffect(() => {
     const onStorage = (e) => {
       if (e.key === USER_SHIPMENTS_STORAGE_KEY) {
@@ -755,8 +1459,19 @@ export default function CustomerPortalPage() {
       }
     };
     window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
+    const unsubChat = subscribeDriverChat(() => {
+      setChatThreads(loadChatThreadsMap());
+    });
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      unsubChat();
+    };
   }, []);
+
+  const unreadDriverChatCount = useMemo(
+    () => getUnreadCountForViewer(chatThreads, 'CUSTOMER'),
+    [chatThreads]
+  );
 
   // PER-USER ISOLATION: Show shipments created by this user/account and company demo seed containers!
   const userOwnShipments = useMemo(() => {
@@ -772,7 +1487,9 @@ export default function CustomerPortalPage() {
         currentCustomerId !== 'KHACH_HANG_MOI' &&
         s.customerId?.toUpperCase().trim() === currentCustomerId;
       const matchCompanySeed =
-        s.createdByUsername === 'customer' || s.customerId === 'DOANH_NGHIEP_B2B';
+        s.createdByUsername === 'customer' ||
+        s.createdByUsername === 'shipper' ||
+        s.customerId === 'DOANH_NGHIEP_B2B';
       return matchUsername || matchCustomerId || matchCompanySeed;
     });
   }, [allShipments, user]);
@@ -802,6 +1519,413 @@ export default function CustomerPortalPage() {
     const dryCount = total - reeferCount;
     return { total, inTransit, completed, reeferCount, dryCount };
   }, [userOwnShipments]);
+
+  // Enriched Drivers Directory synchronized real-time with active containers/shipments
+  const enrichedDrivers = useMemo(() => {
+    const baseList = driverDirectory.map((drv) => {
+      const drvPhoneClean = (drv.phone || '').replace(/\s+/g, '');
+      const matchingShipments = userOwnShipments.filter((s) => {
+        const sPhone = (s.driverPhone || '').replace(/\s+/g, '');
+        return (
+          (s.driverName && s.driverName.toLowerCase().trim() === (drv.fullName || '').toLowerCase().trim()) ||
+          (drvPhoneClean && sPhone && sPhone === drvPhoneClean)
+        );
+      });
+      const activeTrip = matchingShipments.find((s) => s.status === 'IN_TRANSIT') || null;
+      const latestTrip = activeTrip || matchingShipments[0] || null;
+      const liveStatus = activeTrip
+        ? 'ON_TRIP'
+        : drv.status === 'INACTIVE'
+          ? 'INACTIVE'
+          : 'AVAILABLE';
+
+      return {
+        ...drv,
+        liveStatus,
+        activeTrip,
+        latestTrip,
+        assignedContainerCode: activeTrip?.containerCode || latestTrip?.containerCode || drv.assignedContainerCode || null,
+        assignedShipmentCode: activeTrip?.shipmentCode || latestTrip?.shipmentCode || null,
+        assignedVehiclePlate: activeTrip?.licensePlate || drv.assignedVehiclePlate || '51C-888.99',
+        assignedVehicleType: activeTrip?.vehicleType || drv.assignedVehicleType || 'Xe đầu kéo điện EV',
+        currentRoute: activeTrip
+          ? `${activeTrip.originName} ➔ ${activeTrip.destinationName}`
+          : latestTrip
+            ? `Hoàn tất: ${latestTrip.originName} ➔ ${latestTrip.destinationName}`
+            : 'Sẵn sàng tại Depot TP.HCM',
+        liveSpeedKmh: activeTrip?.speedKmh || 0,
+        liveProgressPct: activeTrip?.progress || 0,
+        liveEtaMinutes: activeTrip?.etaMinutes || 0,
+        eSealNumber: activeTrip?.eSealNumber || latestTrip?.eSealNumber || 'VN-CUST-STANDBY'
+      };
+    });
+
+    // Include any ad-hoc drivers created via shipments that aren't in driverDirectory yet
+    userOwnShipments.forEach((s) => {
+      if (!s.driverName) return;
+      const exists = baseList.some(
+        (d) =>
+          d.fullName.toLowerCase().trim() === s.driverName.toLowerCase().trim() ||
+          ((s.driverPhone || '').replace(/\s+/g, '') &&
+            (d.phone || '').replace(/\s+/g, '') === (s.driverPhone || '').replace(/\s+/g, ''))
+      );
+      if (!exists) {
+        baseList.push({
+          id: `drv-ship-${s.shipmentCode}`,
+          driverCode: `DRV-FC-${(s.shipmentCode || '000').slice(-3)}`,
+          fullName: s.driverName,
+          phone: s.driverPhone || '0903 812 456',
+          email: 'driver@ccadro-fleet.vn',
+          dateOfBirth: '18/08/1990',
+          nationalId: '0790 9002 8814',
+          hometown: 'TP. Hồ Chí Minh',
+          licenseClass: 'FC',
+          licenseNumber: '7901-9002-8814',
+          licenseExpiryDate: '30/12/2030',
+          experienceYears: 7,
+          status: s.status === 'IN_TRANSIT' ? 'ON_TRIP' : 'AVAILABLE',
+          liveStatus: s.status === 'IN_TRANSIT' ? 'ON_TRIP' : 'AVAILABLE',
+          rating: s.driverSafetyScore || 4.95,
+          totalTrips: 184,
+          onTimeRate: 99.0,
+          ecoScore: 95,
+          greenKmTotal: 19240,
+          violationsCount: 0,
+          hosContinuousMin: s.status === 'IN_TRANSIT' ? 92 : 0,
+          hosDailyMin: 210,
+          preTripPassed: true,
+          preTripTime: 'Đạt 6/6 hạng mục đầu ca',
+          assignedVehiclePlate: s.licensePlate || '51C-888.99',
+          assignedVehicleType: s.vehicleType || 'Xe đầu kéo điện EV',
+          assignedContainerCode: s.containerCode,
+          assignedShipmentCode: s.shipmentCode,
+          activeTrip: s.status === 'IN_TRANSIT' ? s : null,
+          latestTrip: s,
+          currentRoute: `${s.originName} ➔ ${s.destinationName}`,
+          liveSpeedKmh: s.speedKmh || 0,
+          liveProgressPct: s.progress || 0,
+          liveEtaMinutes: s.etaMinutes || 0,
+          eSealNumber: s.eSealNumber || 'VN-CUST-ACTIVE',
+          safetyCerts: ['Eco-Driving GLEC v3', 'An Toàn Container'],
+          recentReviews: []
+        });
+      }
+    });
+
+    return baseList;
+  }, [driverDirectory, userOwnShipments]);
+
+  const driverKpi = useMemo(() => {
+    const total = enrichedDrivers.length;
+    const onTrip = enrichedDrivers.filter((d) => d.liveStatus === 'ON_TRIP').length;
+    const available = enrichedDrivers.filter((d) => d.liveStatus === 'AVAILABLE').length;
+    const inactive = enrichedDrivers.filter((d) => d.liveStatus === 'INACTIVE').length;
+    const fcCount = enrichedDrivers.filter((d) => (d.licenseClass || 'FC').includes('FC')).length;
+    const avgRating =
+      total > 0
+        ? (enrichedDrivers.reduce((acc, d) => acc + Number(d.rating || 4.9), 0) / total).toFixed(2)
+        : '4.95';
+    return { total, onTrip, available, inactive, fcCount, avgRating };
+  }, [enrichedDrivers]);
+
+  const filteredDrivers = useMemo(() => {
+    return enrichedDrivers.filter((drv) => {
+      if (driverStatusFilter !== 'ALL' && drv.liveStatus !== driverStatusFilter) return false;
+      if (driverLicenseFilter !== 'ALL' && !(drv.licenseClass || 'FC').includes(driverLicenseFilter)) return false;
+      if (!driverSearch.trim()) return true;
+      const q = driverSearch.toLowerCase().trim();
+      return (
+        (drv.fullName || '').toLowerCase().includes(q) ||
+        (drv.driverCode || '').toLowerCase().includes(q) ||
+        (drv.phone || '').toLowerCase().includes(q) ||
+        (drv.assignedVehiclePlate || '').toLowerCase().includes(q) ||
+        (drv.assignedContainerCode || '').toLowerCase().includes(q) ||
+        (drv.hometown || '').toLowerCase().includes(q)
+      );
+    });
+  }, [enrichedDrivers, driverStatusFilter, driverLicenseFilter, driverSearch]);
+
+  const openDriverProfileFromContainer = useCallback(
+    (cont) => {
+      const phoneClean = (cont.driverPhone || '').replace(/\s+/g, '');
+      const found =
+        enrichedDrivers.find(
+          (d) =>
+            (cont.driverName && d.fullName.toLowerCase().trim() === cont.driverName.toLowerCase().trim()) ||
+            (phoneClean && (d.phone || '').replace(/\s+/g, '') === phoneClean)
+        ) || null;
+      setShowFullCccd(false);
+      if (found) {
+        setSelectedDriverModal({
+          ...found,
+          contextContainer: cont
+        });
+      } else {
+        setSelectedDriverModal({
+          id: `drv-cont-${cont.containerCode}`,
+          driverCode: 'DRV-FC-LIVE',
+          fullName: cont.driverName || 'Nguyễn Văn Tài',
+          phone: cont.driverPhone || '0903 812 456',
+          email: 'driver@ccadro-fleet.vn',
+          dateOfBirth: '14/05/1988',
+          nationalId: '0790 8800 4129',
+          hometown: 'TP. Hồ Chí Minh',
+          licenseClass: 'FC',
+          licenseNumber: cont.driverLicense || 'GPLX Hạng FC',
+          licenseExpiryDate: '18/10/2029',
+          experienceYears: 9,
+          liveStatus: cont.status === 'IN_TRANSIT' ? 'ON_TRIP' : 'AVAILABLE',
+          rating: cont.driverSafetyScore || 4.95,
+          totalTrips: 310,
+          onTimeRate: 99.1,
+          ecoScore: 96,
+          greenKmTotal: 34500,
+          hosContinuousMin: cont.status === 'IN_TRANSIT' ? 110 : 0,
+          hosDailyMin: 240,
+          preTripPassed: true,
+          preTripTime: 'Đạt chuẩn 6/6 hạng mục',
+          assignedVehiclePlate: cont.licensePlate,
+          assignedVehicleType: cont.vehicleType,
+          assignedContainerCode: cont.containerCode,
+          assignedShipmentCode: cont.shipmentCode,
+          currentRoute: `${cont.originName} ➔ ${cont.destinationName}`,
+          eSealNumber: cont.eSealNumber,
+          safetyCerts: ['Eco-Driving GLEC v3', 'An Toàn Container'],
+          recentReviews: [],
+          contextContainer: cont
+        });
+      }
+    },
+    [enrichedDrivers]
+  );
+
+  const handleCopyPhone = useCallback((phone) => {
+    if (!phone) return;
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(phone).catch(() => {});
+    }
+    setCopiedPhone(phone);
+    setTimeout(() => setCopiedPhone(null), 2000);
+  }, []);
+
+  const handleCreateDriver = async (e) => {
+    e.preventDefault();
+    if (!newDriverForm.fullName.trim() || !newDriverForm.phone.trim()) return;
+    const generatedCode =
+      newDriverForm.driverCode.trim() ||
+      `DRV-${newDriverForm.licenseClass}-${String(driverDirectory.length + 1).padStart(3, '0')}`;
+    const payload = {
+      driverCode: generatedCode,
+      fullName: newDriverForm.fullName.trim(),
+      phone: newDriverForm.phone.trim(),
+      email: `${generatedCode.toLowerCase()}@ccadro-fleet.vn`,
+      dateOfBirth: newDriverForm.dateOfBirth || '15/06/1990',
+      nationalId: newDriverForm.nationalId || '0790 9001 6420',
+      hometown: newDriverForm.hometown || 'TP. Hồ Chí Minh',
+      licenseClass: newDriverForm.licenseClass || 'FC',
+      licenseNumber: newDriverForm.licenseNumber.trim() || '7901-9900-4210',
+      licenseExpiryDate: newDriverForm.licenseExpiryDate || '31/12/2030',
+      experienceYears: Number(newDriverForm.experienceYears) || 5,
+      assignedVehiclePlate: newDriverForm.assignedVehiclePlate || '51C-990.12',
+      assignedVehicleType: newDriverForm.assignedVehicleType || 'Xe đầu kéo điện (EV) • 40T BEV',
+      safetyCerts: ['Eco-Driving GLEC v3', `GPLX Hạng ${newDriverForm.licenseClass || 'FC'}`]
+    };
+
+    let backendId = null;
+    try {
+      const res = await api.createDriver(payload);
+      backendId = res?.result?.id || res?.data?.id || res?.id || null;
+    } catch (_) {
+      // Fall back smoothly when backend offline
+    }
+
+    const newRecord = {
+      id: backendId || `drv-${Date.now()}`,
+      backendId,
+      driverCode: generatedCode,
+      fullName: payload.fullName,
+      phone: payload.phone,
+      email: `${generatedCode.toLowerCase()}@ccadro-fleet.vn`,
+      dateOfBirth: newDriverForm.dateOfBirth || '15/06/1990',
+      nationalId: newDriverForm.nationalId || '0790 9001 6420',
+      hometown: newDriverForm.hometown || 'TP. Hồ Chí Minh',
+      licenseClass: newDriverForm.licenseClass || 'FC',
+      licenseNumber: payload.licenseNumber,
+      licenseExpiryDate: newDriverForm.licenseExpiryDate || '31/12/2030',
+      experienceYears: Number(newDriverForm.experienceYears) || 5,
+      status: 'AVAILABLE',
+      rating: 5.0,
+      totalTrips: 1,
+      onTimeRate: 100.0,
+      ecoScore: 98,
+      greenKmTotal: 420,
+      violationsCount: 0,
+      hosContinuousMin: 0,
+      hosDailyMin: 0,
+      preTripPassed: true,
+      preTripTime: 'Vừa kiểm định hồ sơ mới',
+      assignedVehiclePlate: newDriverForm.assignedVehiclePlate || '51C-990.12',
+      assignedVehicleType: newDriverForm.assignedVehicleType || 'Xe đầu kéo điện (EV) • 40T BEV',
+      safetyCerts: ['Eco-Driving GLEC v3', `GPLX Hạng ${newDriverForm.licenseClass || 'FC'}`],
+      recentReviews: []
+    };
+
+    setDriverDirectory((prev) => {
+      const next = [newRecord, ...prev];
+      saveStoredDriversDirectory(next);
+      return next;
+    });
+    setShowAddDriverModal(false);
+    setNewDriverForm({
+      fullName: '',
+      phone: '',
+      driverCode: '',
+      licenseNumber: '',
+      licenseClass: 'FC',
+      licenseExpiryDate: '31/12/2030',
+      experienceYears: 5,
+      hometown: 'TP. Hồ Chí Minh',
+      dateOfBirth: '15/06/1990',
+      nationalId: '0790 9001 6420',
+      assignedVehiclePlate: '51C-990.12',
+      assignedVehicleType: 'Xe đầu kéo điện (EV) • 40T BEV'
+    });
+    setDriverActionNotice(`Đã tiếp nhận & lưu hồ sơ tài xế ${newRecord.fullName} (${generatedCode}).`);
+    setTimeout(() => setDriverActionNotice(null), 4000);
+  };
+
+  const handleToggleDriverStatus = async (driver, nextStatus) => {
+    if (driver.backendId) {
+      api.updateDriverStatus(driver.backendId, nextStatus).catch(() => {});
+    }
+    setDriverDirectory((prev) => {
+      const next = prev.map((d) =>
+        d.id === driver.id || d.driverCode === driver.driverCode ? { ...d, status: nextStatus } : d
+      );
+      saveStoredDriversDirectory(next);
+      return next;
+    });
+    if (selectedDriverModal && selectedDriverModal.id === driver.id) {
+      setSelectedDriverModal((prev) => (prev ? { ...prev, liveStatus: nextStatus, status: nextStatus } : prev));
+    }
+    setDriverActionNotice(
+      `Đã cập nhật trạng thái tài xế ${driver.fullName} sang ${
+        nextStatus === 'AVAILABLE' ? 'Sẵn sàng nhận chuyến' : nextStatus === 'ON_TRIP' ? 'Đang chạy' : 'Nghỉ ca (HOS)'
+      }.`
+    );
+    setTimeout(() => setDriverActionNotice(null), 3500);
+  };
+
+  const handleAssignDriverToShipment = async (driver, shipmentCode) => {
+    const targetShip = userOwnShipments.find((s) => s.shipmentCode === shipmentCode);
+    if (!targetShip) return;
+
+    // Persist assignment to DB if container exists on backend
+    if (targetShip.containerCode) {
+      api
+        .assignContainerTrip(targetShip.containerCode, {
+          assignedShipmentCode: shipmentCode,
+          assignedDriverId: driver.backendId || undefined,
+          driverName: driver.fullName,
+          driverPhone: driver.phone,
+          driverLicense: `GPLX Hạng ${driver.licenseClass || 'FC'} • ${driver.experienceYears || 7} năm kinh nghiệm`,
+          vehicleLicensePlate: driver.assignedVehiclePlate || targetShip.licensePlate
+        })
+        .catch(() => {});
+    }
+
+    setAllShipments((prev) => {
+      const next = prev.map((s) =>
+        s.shipmentCode === shipmentCode
+          ? {
+              ...s,
+              driverName: driver.fullName,
+              driverPhone: driver.phone,
+              driverLicense: `GPLX Hạng ${driver.licenseClass || 'FC'} • ${driver.experienceYears || 7} năm kinh nghiệm`,
+              driverSafetyScore: driver.rating || 4.95
+            }
+          : s
+      );
+      saveStoredUserShipments(next);
+      return next;
+    });
+    setAssignModalDriver(null);
+    setDriverActionNotice(
+      `Đã điều phối tài xế ${driver.fullName} phụ trách container ${targetShip.containerCode} (${shipmentCode}).`
+    );
+    setTimeout(() => setDriverActionNotice(null), 4500);
+  };
+
+  const handleSubmitDriverReview = async (driver) => {
+    if (!driver) return;
+    const commentText =
+      driverFeedbackNote.trim() ||
+      'Tài xế chạy đúng hành lang xanh, giao nhận ePOD chuyên nghiệp.';
+    const authorText = user?.companyName || user?.fullName || 'Doanh nghiệp B2B';
+
+    if (driver.backendId) {
+      api
+        .submitDriverReview(driver.backendId, {
+          authorName: authorText,
+          shipmentCode: driver.assignedShipmentCode || undefined,
+          rating: driverFeedbackRating,
+          comment: commentText
+        })
+        .catch(() => {});
+    }
+
+    const newReview = {
+      id: `rev-${Date.now()}`,
+      author: authorText,
+      rating: driverFeedbackRating,
+      date: 'Vừa xong',
+      comment: commentText
+    };
+    setDriverDirectory((prev) => {
+      const next = prev.map((d) => {
+        if (d.id !== driver.id && d.driverCode !== driver.driverCode) return d;
+        const updatedReviews = [newReview, ...(d.recentReviews || [])];
+        const nextRating = Number(
+          (((Number(d.rating || 4.9) * 10) + driverFeedbackRating) / 11).toFixed(2)
+        );
+        return { ...d, rating: nextRating, recentReviews: updatedReviews };
+      });
+      saveStoredDriversDirectory(next);
+      return next;
+    });
+    setSelectedDriverModal((prev) =>
+      prev
+        ? {
+            ...prev,
+            recentReviews: [newReview, ...(prev.recentReviews || [])],
+            rating: Number((((Number(prev.rating || 4.9) * 10) + driverFeedbackRating) / 11).toFixed(2))
+          }
+        : prev
+    );
+    setDriverFeedbackNote('');
+    setDriverActionNotice(`Đã gửi đánh giá ${driverFeedbackRating}★ cho tài xế ${driver.fullName}.`);
+    setTimeout(() => setDriverActionNotice(null), 3500);
+  };
+
+  const openDriverChat = useCallback((driverCode) => {
+    setChatTargetDriverCode(driverCode || 'DRV-FC-001');
+    setChatModalOpen(true);
+  }, []);
+
+  const openChatFromContainer = useCallback(
+    (cont) => {
+      const phoneClean = (cont?.driverPhone || '').replace(/\s+/g, '');
+      const found =
+        enrichedDrivers.find(
+          (d) =>
+            (cont?.driverName && d.fullName.toLowerCase().trim() === cont.driverName.toLowerCase().trim()) ||
+            (phoneClean && (d.phone || '').replace(/\s+/g, '') === phoneClean) ||
+            (cont?.containerCode && d.assignedContainerCode === cont.containerCode)
+        ) || enrichedDrivers[0];
+      openDriverChat(found?.driverCode || 'DRV-FC-001');
+    },
+    [enrichedDrivers, openDriverChat]
+  );
 
   // Filtered containers for the Containers Monitoring Tab
   const filteredContainers = useMemo(() => {
@@ -1333,11 +2457,58 @@ export default function CustomerPortalPage() {
     setAllShipments(updated);
     saveStoredUserShipments(updated);
 
+    const chosenMethod = bookingForm.preferredPaymentMethod || 'VIETQR_NAPAS';
+    const isNet30Order = chosenMethod === 'GREEN_CREDIT_NET30';
+    const { payment: issuedPayment } = await createCustomerPayment({
+      shipmentCode: newCode,
+      customerId: user?.customerId || 'DOANH_NGHIEP_B2B',
+      customerName: user?.companyName || user?.fullName || 'Doanh Nghiệp Đối Tác B2B',
+      createdByUsername: user?.username || 'customer',
+      originName: originLabel,
+      destinationName: destLabel,
+      containerCode,
+      vehicleType: newOrder.vehicleType,
+      powertrainType: (bookingForm.powertrainId || 'ev').toUpperCase(),
+      paymentMethod: chosenMethod,
+      baseFreightVnd: newOrder.estimatedCostVnd || 1850000,
+      co2SavedKg: newOrder.co2SavedKg || 0,
+      payerName: user?.companyName || user?.fullName,
+      notes: isNet30Order
+        ? 'Hợp đồng công nợ Xanh Net-30 tạo tự động khi đặt vận đơn'
+        : `Hóa đơn chờ thanh toán ${chosenMethod} cho vận đơn ${newCode}`,
+      instantConfirm: false
+    });
+    await createCustomerContract({
+      contractType: 'SPOT_TRIP',
+      shipmentCode: newCode,
+      customerId: user?.customerId || 'DOANH_NGHIEP_B2B',
+      customerName: user?.companyName || user?.fullName || 'Doanh Nghiệp Đối Tác B2B',
+      corridorScope: `${originLabel} → ${destLabel} (${bookingQuote.distanceKm} km)`,
+      containerCode,
+      eSealNumber,
+      vehicleType: newOrder.vehicleType,
+      licensePlate,
+      minCo2ReductionKg: newOrder.co2SavedKg || 0,
+      contractValueVnd: newOrder.estimatedCostVnd || 1850000,
+      paymentTerms: isNet30Order ? 'NET30' : 'PREPAID',
+      signedByCustomerUser: user?.username || 'customer',
+      autoSign: true,
+      notes: `Hợp đồng chuyến điện tử tự động cho vận đơn ${newCode}`
+    });
+    await Promise.all([syncPaymentsFromDb(), syncContractsFromDb()]);
+
     setSelectedCode(newCode);
     setBookingSuccess(
-      `Đã đặt thuê xe & khởi tạo vận đơn ${newCode} thành công! Xe ${licensePlate} đã sẵn sàng xuất bến tại ${bookingQuote.originNode.label} (tiết kiệm ${bookingQuote.savedCo2Kg} kg CO2e).`
+      `Đã đặt thuê xe & khởi tạo vận đơn ${newCode} thành công! Hóa đơn ${issuedPayment?.invoiceNumber || ''} đã được đồng bộ sang Payment Service.`
     );
     setActiveTab('tracking');
+    if (!isNet30Order && issuedPayment) {
+      setPaymentModalState({
+        isOpen: true,
+        targetOrder: newOrder,
+        targetPayment: issuedPayment
+      });
+    }
   };
 
   const handleCompleteOrderEpod = async (shipmentCode) => {
@@ -1370,8 +2541,16 @@ export default function CustomerPortalPage() {
       saveStoredUserShipments(updated);
       return updated;
     });
+    const linkedContract = contractByShipmentMap[shipmentCode];
+    if (linkedContract && linkedContract.contractStatus !== 'SETTLED') {
+      await settleCustomerContractWithEpod(linkedContract.contractNumber, {
+        epodSignerName: user?.fullName || user?.companyName || 'Customer B2B',
+        notes: `Nghiệm thu ePOD tự động từ vận đơn ${shipmentCode}`
+      });
+      await Promise.all([syncContractsFromDb(), syncPaymentsFromDb()]);
+    }
     setBookingSuccess(
-      `Đã ký biên bản bàn giao điện tử (ePOD) và phát hành chứng nhận ISO 14083 cho vận đơn ${shipmentCode}!`
+      `Đã ký biên bản bàn giao điện tử (ePOD), chốt đối soát hợp đồng & phát hành chứng nhận ISO 14083 cho vận đơn ${shipmentCode}!`
     );
   };
 
@@ -1704,6 +2883,39 @@ export default function CustomerPortalPage() {
                               {kpiStats.totalOrders}
                             </span>
                           )}
+                          {item.id === 'payments' && (
+                            <span
+                              style={{
+                                fontSize: '0.68rem',
+                                fontWeight: 800,
+                                padding: '1px 7px',
+                                borderRadius: 999,
+                                background:
+                                  paymentSummary.pendingCount > 0
+                                    ? 'rgba(245, 158, 11, 0.2)'
+                                    : 'rgba(16, 185, 129, 0.18)',
+                                color: paymentSummary.pendingCount > 0 ? '#f59e0b' : '#10b981'
+                              }}
+                            >
+                              {paymentSummary.pendingCount > 0
+                                ? `${paymentSummary.pendingCount} Chờ`
+                                : paymentSummary.totalCount}
+                            </span>
+                          )}
+                          {item.id === 'contracts' && (
+                            <span
+                              style={{
+                                fontSize: '0.68rem',
+                                fontWeight: 800,
+                                padding: '1px 7px',
+                                borderRadius: 999,
+                                background: 'rgba(56, 189, 248, 0.18)',
+                                color: '#38bdf8'
+                              }}
+                            >
+                              {customerContracts.length}
+                            </span>
+                          )}
                           {item.id === 'containers' && (
                             <span
                               style={{
@@ -1716,6 +2928,20 @@ export default function CustomerPortalPage() {
                               }}
                             >
                               {containerKpi.inTransit > 0 ? `${containerKpi.inTransit} Đi` : containerKpi.total}
+                            </span>
+                          )}
+                          {item.id === 'drivers' && (
+                            <span
+                              style={{
+                                fontSize: '0.68rem',
+                                fontWeight: 800,
+                                padding: '1px 7px',
+                                borderRadius: 999,
+                                background: 'rgba(16, 185, 129, 0.18)',
+                                color: '#10b981'
+                              }}
+                            >
+                              {driverKpi.total}
                             </span>
                           )}
                           {item.id === 'tracking' && kpiStats.inTransitCount > 0 && (
@@ -1822,352 +3048,590 @@ export default function CustomerPortalPage() {
           2. MAIN WORKSPACE (TOP NAVIGATION BAR + COMPONENT VIEWS)
       ══════════════════════════════════════════════════════════════════ */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-        {/* ── Executive Enterprise Header Bar ── */}
+        {/* ── Executive Enterprise Header Bar (2-Tier Command & Contextual Nav) ── */}
         <header
           style={{
             position: 'sticky',
             top: 0,
             zIndex: 30,
-            background: isDark ? 'rgba(5, 19, 15, 0.94)' : 'rgba(255, 255, 255, 0.96)',
-            backdropFilter: 'blur(18px)',
+            background: isDark ? 'rgba(4, 15, 12, 0.92)' : 'rgba(255, 255, 255, 0.94)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
             borderBottom: isDark
-              ? '1px solid rgba(16, 185, 129, 0.2)'
+              ? '1px solid rgba(16, 185, 129, 0.16)'
               : '1px solid rgba(15, 23, 42, 0.08)',
-            padding: '10px 24px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 14,
-            flexWrap: 'wrap',
-            boxShadow: isDark ? '0 8px 28px rgba(0, 0, 0, 0.35)' : '0 4px 18px rgba(15, 23, 42, 0.05)'
+            boxShadow: isDark
+              ? '0 8px 24px rgba(0, 0, 0, 0.35)'
+              : '0 2px 12px rgba(15, 23, 42, 0.04)'
           }}
         >
-          {/* Left: Collapse Toggle + Structured Breadcrumb & Title */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <button
-              type="button"
-              onClick={() => setIsSidebarCollapsed((v) => !v)}
-              title={isSidebarCollapsed ? 'Mở rộng menu' : 'Thu gọn menu'}
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 10,
-                border: '1px solid rgba(148, 163, 184, 0.24)',
-                background: subtleBg,
-                color: 'inherit',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer'
-              }}
-            >
-              {isSidebarCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
-            </button>
-
-            <div>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  fontSize: '0.68rem',
-                  fontWeight: 800,
-                  color: '#10b981',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.07em'
-                }}
-              >
-                <span>B2B ENTERPRISE PORTAL</span>
-                <span style={{ opacity: 0.5 }}>/</span>
-                <span>{currentNavMeta.shortLabel}</span>
-              </div>
-              <h1 style={{ fontSize: '1.12rem', fontWeight: 800, margin: '1px 0 0', letterSpacing: '-0.01em' }}>
-                {currentNavMeta.label}
-              </h1>
-            </div>
-          </div>
-
-          {/* Center: Clean Top Core Shortcuts (4 Primary Views) */}
-          <nav
-            aria-label="Điều hướng nhanh hệ thống khách hàng"
+          {/* Tier 1: Primary Command Strip (Single non-wrapping row) */}
+          <div
             style={{
+              height: 60,
+              padding: '0 24px',
               display: 'flex',
               alignItems: 'center',
-              gap: 3,
-              padding: 4,
-              borderRadius: 999,
-              background: isDark ? 'rgba(15, 23, 42, 0.7)' : '#f1f5f9',
-              border: isDark
-                ? '1px solid rgba(148, 163, 184, 0.16)'
-                : '1px solid rgba(15, 23, 42, 0.06)'
+              justifyContent: 'space-between',
+              gap: 16
             }}
           >
-            {[
-              { id: 'overview', label: 'Tổng Quan', icon: LayoutDashboard },
-              { id: 'containers', label: 'Container & Tài Xế', icon: Box },
-              { id: 'tracking', label: 'GPS 3D Live', icon: Navigation },
-              { id: 'carbon', label: 'Chứng Chỉ Carbon', icon: Leaf }
-            ].map((item) => {
-              const Icon = item.icon;
-              const active = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setActiveTab(item.id)}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    padding: '6px 12px',
-                    borderRadius: 999,
-                    border: 'none',
-                    background: active
-                      ? 'linear-gradient(135deg, #10b981, #059669)'
-                      : 'transparent',
-                    color: active ? '#042f2e' : 'inherit',
-                    fontSize: '0.76rem',
-                    fontWeight: active ? 800 : 600,
-                    cursor: 'pointer',
-                    whiteSpace: 'nowrap',
-                    transition: 'all 0.16s'
-                  }}
-                >
-                  <Icon size={14} />
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
-          </nav>
-
-          {/* Right: Live DB Sync Pill, Quick CTA, Notifications, Theme & Account */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 9, flexWrap: 'wrap' }}>
-            {/* Real-time DB Sync Status */}
-            <div
-              title="Trạng thái đồng bộ dữ liệu thời gian thực với PostgreSQL Database"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '6px 11px',
-                borderRadius: 999,
-                background:
-                  dbSyncState === 'LIVE_DB'
-                    ? 'rgba(16, 185, 129, 0.14)'
-                    : 'rgba(56, 189, 248, 0.12)',
-                border:
-                  dbSyncState === 'LIVE_DB'
-                    ? '1px solid rgba(16, 185, 129, 0.38)'
-                    : '1px solid rgba(56, 189, 248, 0.35)',
-                color: dbSyncState === 'LIVE_DB' ? '#10b981' : '#38bdf8',
-                fontSize: '0.72rem',
-                fontWeight: 700
-              }}
-            >
-              <Database size={13} />
-              <span>
-                {dbSyncState === 'LIVE_DB' ? 'DB Live' : 'Realtime Sync'} • {lastDbSync}
-              </span>
+            {/* Left: Sidebar Toggle + Hairline + Breadcrumb & Page Title */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: '1 1 auto' }}>
               <button
                 type="button"
-                onClick={syncContainersFromDb}
-                title="Làm mới dữ liệu từ Database ngay"
+                onClick={() => setIsSidebarCollapsed((v) => !v)}
+                title={isSidebarCollapsed ? 'Mở rộng menu' : 'Thu gọn menu'}
                 style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: 'inherit',
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  padding: 1
-                }}
-              >
-                <RefreshCw size={12} />
-              </button>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab('booking')}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '7px 13px',
-                borderRadius: 999,
-                border: '1px solid #10b981',
-                background: 'linear-gradient(135deg, #10b981, #059669)',
-                color: '#042f2e',
-                fontSize: '0.77rem',
-                fontWeight: 800,
-                cursor: 'pointer',
-                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.28)',
-                whiteSpace: 'nowrap'
-              }}
-            >
-              <PlusCircle size={15} /> Đặt Xe Xanh
-            </button>
-
-            {/* Real-time Notification Bell */}
-            <div style={{ position: 'relative' }}>
-              <button
-                type="button"
-                onClick={() => setShowNotifPanel((v) => !v)}
-                aria-label="Thông báo vận đơn"
-                style={{
-                  width: 35,
-                  height: 35,
-                  borderRadius: 999,
-                  border: '1px solid rgba(148, 163, 184, 0.28)',
-                  background: subtleBg,
+                  width: 34,
+                  height: 34,
+                  flexShrink: 0,
+                  borderRadius: 9,
+                  border: isDark
+                    ? '1px solid rgba(148, 163, 184, 0.2)'
+                    : '1px solid rgba(15, 23, 42, 0.1)',
+                  background: isDark ? 'rgba(15, 23, 42, 0.6)' : '#f8fafc',
                   color: 'inherit',
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
-                  position: 'relative'
+                  transition: 'background 0.15s, border-color 0.15s'
                 }}
               >
-                <Bell size={15} />
-                {userOwnShipments.length > 0 && (
+                {isSidebarCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+              </button>
+
+              <div
+                aria-hidden="true"
+                style={{
+                  width: 1,
+                  height: 24,
+                  flexShrink: 0,
+                  background: isDark ? 'rgba(148, 163, 184, 0.18)' : 'rgba(15, 23, 42, 0.09)'
+                }}
+              />
+
+              <div style={{ minWidth: 0 }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    fontSize: '0.66rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.07em',
+                    textTransform: 'uppercase',
+                    color: isDark ? '#94a3b8' : '#64748b',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  <span style={{ color: '#059669' }}>CCADRO B2B</span>
+                  <span style={{ opacity: 0.45 }}>/</span>
+                  <span style={{ color: isDark ? '#cbd5e1' : '#334155' }}>{currentNavMeta.shortLabel}</span>
+                </div>
+                <h1
+                  style={{
+                    fontSize: '1.06rem',
+                    fontWeight: 800,
+                    margin: '1px 0 0',
+                    letterSpacing: '-0.02em',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                  }}
+                >
+                  {currentNavMeta.label}
+                </h1>
+              </div>
+            </div>
+
+            {/* Right: Telemetry Sync, CTA, Utility Icons, Hairline & User Account */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+              {/* Subtle Enterprise DB Sync Chip */}
+              <div
+                title="Trạng thái đồng bộ dữ liệu thời gian thực với PostgreSQL Database"
+                style={{
+                  height: 34,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 7,
+                  padding: '0 10px',
+                  borderRadius: 9,
+                  background: isDark ? 'rgba(15, 23, 42, 0.72)' : '#f8fafc',
+                  border:
+                    dbSyncState === 'LIVE_DB'
+                      ? '1px solid rgba(16, 185, 129, 0.34)'
+                      : isDark
+                        ? '1px solid rgba(148, 163, 184, 0.2)'
+                        : '1px solid rgba(15, 23, 42, 0.1)',
+                  fontSize: '0.73rem',
+                  fontWeight: 600,
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                <span
+                  style={{
+                    width: 7,
+                    height: 7,
+                    borderRadius: '50%',
+                    background: dbSyncState === 'LIVE_DB' ? '#10b981' : '#0ea5e9',
+                    boxShadow:
+                      dbSyncState === 'LIVE_DB'
+                        ? '0 0 0 3px rgba(16, 185, 129, 0.18)'
+                        : '0 0 0 3px rgba(14, 165, 233, 0.18)'
+                  }}
+                />
+                <Database size={12} color={dbSyncState === 'LIVE_DB' ? '#10b981' : '#0284c7'} />
+                <span style={{ color: isDark ? '#e2e8f0' : '#0f172a', fontWeight: 700 }}>
+                  {dbSyncState === 'LIVE_DB' ? 'DB Live' : 'Realtime Sync'}
+                </span>
+                <span
+                  style={{
+                    color: isDark ? '#94a3b8' : '#64748b',
+                    fontVariantNumeric: 'tabular-nums',
+                    fontSize: '0.71rem'
+                  }}
+                >
+                  {lastDbSync}
+                </span>
+                <button
+                  type="button"
+                  onClick={syncContainersFromDb}
+                  title="Làm mới dữ liệu từ Database ngay"
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: isDark ? '#94a3b8' : '#64748b',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    padding: 2,
+                    borderRadius: 4
+                  }}
+                >
+                  <RefreshCw size={12} />
+                </button>
+              </div>
+
+              {/* Primary CTA + Grab Chat Trigger */}
+              <button
+                type="button"
+                onClick={() => openDriverChat(chatTargetDriverCode)}
+                style={{
+                  height: 34,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '0 12px',
+                  borderRadius: 9,
+                  border: '1px solid rgba(16, 185, 129, 0.42)',
+                  background: isDark ? 'rgba(16, 185, 129, 0.14)' : '#ecfdf5',
+                  color: '#059669',
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                <MessageSquare size={14} />
+                <span>Chat Tài Xế</span>
+                {unreadDriverChatCount > 0 && (
                   <span
                     style={{
-                      position: 'absolute',
-                      top: -2,
-                      right: -2,
-                      width: 16,
-                      height: 16,
+                      minWidth: 18,
+                      height: 18,
+                      padding: '0 5px',
                       borderRadius: 999,
-                      background: '#10b981',
-                      color: '#042f2e',
-                      fontSize: '0.64rem',
+                      background: '#00b14f',
+                      color: '#ffffff',
+                      fontSize: '0.66rem',
                       fontWeight: 800,
                       display: 'inline-flex',
                       alignItems: 'center',
                       justifyContent: 'center'
                     }}
                   >
-                    {userOwnShipments.length}
+                    {unreadDriverChatCount}
                   </span>
                 )}
               </button>
 
-              {showNotifPanel && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('booking')}
+                style={{
+                  height: 34,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '0 13px',
+                  borderRadius: 9,
+                  border: '1px solid #059669',
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  color: '#ffffff',
+                  fontSize: '0.76rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 10px rgba(5, 150, 105, 0.24)',
+                  whiteSpace: 'nowrap',
+                  letterSpacing: '0.01em'
+                }}
+              >
+                <PlusCircle size={14} />
+                <span>Đặt Xe Xanh</span>
+              </button>
+
+              <div
+                aria-hidden="true"
+                style={{
+                  width: 1,
+                  height: 20,
+                  background: isDark ? 'rgba(148, 163, 184, 0.18)' : 'rgba(15, 23, 42, 0.09)'
+                }}
+              />
+
+              {/* Notification Bell + Theme Switcher */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ position: 'relative' }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowNotifPanel((v) => !v)}
+                    aria-label="Thông báo vận đơn"
+                    style={{
+                      width: 34,
+                      height: 34,
+                      borderRadius: 9,
+                      border: isDark
+                        ? '1px solid rgba(148, 163, 184, 0.2)'
+                        : '1px solid rgba(15, 23, 42, 0.1)',
+                      background: isDark ? 'rgba(15, 23, 42, 0.6)' : '#f8fafc',
+                      color: 'inherit',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      position: 'relative'
+                    }}
+                  >
+                    <Bell size={15} />
+                    {userOwnShipments.length > 0 && (
+                      <span
+                        style={{
+                          position: 'absolute',
+                          top: -4,
+                          right: -4,
+                          minWidth: 16,
+                          height: 16,
+                          padding: '0 4px',
+                          borderRadius: 999,
+                          background: '#059669',
+                          color: '#ffffff',
+                          border: isDark ? '2px solid #040f0c' : '2px solid #ffffff',
+                          fontSize: '0.62rem',
+                          fontWeight: 800,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          lineHeight: 1
+                        }}
+                      >
+                        {userOwnShipments.length}
+                      </span>
+                    )}
+                  </button>
+
+                  {showNotifPanel && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        right: 0,
+                        top: 42,
+                        width: 320,
+                        padding: 14,
+                        borderRadius: 14,
+                        background: isDark ? '#071a14' : '#ffffff',
+                        border: '1px solid rgba(16, 185, 129, 0.3)',
+                        boxShadow: '0 16px 36px rgba(0, 0, 0, 0.22)',
+                        zIndex: 50
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: '0.78rem',
+                          fontWeight: 800,
+                          marginBottom: 8,
+                          display: 'flex',
+                          justifyContent: 'space-between'
+                        }}
+                      >
+                        <span>Thông báo Vận đơn Real-time</span>
+                        <span style={{ color: '#10b981' }}>{userOwnShipments.length} sự kiện</span>
+                      </div>
+                      {userOwnShipments.length === 0 ? (
+                        <div style={{ fontSize: '0.76rem', opacity: 0.72, padding: '8px 0' }}>
+                          Tài khoản mới khởi tạo chưa có thông báo vận đơn nào.
+                        </div>
+                      ) : (
+                        <div style={{ display: 'grid', gap: 8, maxHeight: 220, overflowY: 'auto' }}>
+                          {userOwnShipments.map((s) => (
+                            <div
+                              key={s.shipmentCode}
+                              style={{
+                                padding: 8,
+                                borderRadius: 8,
+                                background: subtleBg,
+                                fontSize: '0.74rem'
+                              }}
+                            >
+                              <strong style={{ color: '#10b981' }}>{s.shipmentCode}</strong> •{' '}
+                              {s.statusLabel}
+                              <div style={{ opacity: 0.7, marginTop: 2 }}>
+                                {s.originName} → {s.destinationName}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={toggleTheme}
+                  aria-label="Đổi giao diện sáng/tối"
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: 9,
+                    border: isDark
+                      ? '1px solid rgba(148, 163, 184, 0.2)'
+                      : '1px solid rgba(15, 23, 42, 0.1)',
+                    background: isDark ? 'rgba(15, 23, 42, 0.6)' : '#f8fafc',
+                    color: 'inherit',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {isDark ? <Sun size={15} /> : <Moon size={15} />}
+                </button>
+              </div>
+
+              <div
+                aria-hidden="true"
+                style={{
+                  width: 1,
+                  height: 20,
+                  background: isDark ? 'rgba(148, 163, 184, 0.18)' : 'rgba(15, 23, 42, 0.09)'
+                }}
+              />
+
+              {/* Enterprise Account Chip + Sign Out */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                 <div
                   style={{
-                    position: 'absolute',
-                    right: 0,
-                    top: 44,
-                    width: 320,
-                    padding: 14,
-                    borderRadius: 14,
-                    background: isDark ? '#071a14' : '#ffffff',
-                    border: '1px solid rgba(16, 185, 129, 0.35)',
-                    boxShadow: '0 16px 36px rgba(0,0,0,0.35)',
-                    zIndex: 50
+                    height: 36,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '0 10px 0 5px',
+                    borderRadius: 9,
+                    background: isDark ? 'rgba(15, 23, 42, 0.68)' : '#f8fafc',
+                    border: isDark
+                      ? '1px solid rgba(148, 163, 184, 0.2)'
+                      : '1px solid rgba(15, 23, 42, 0.1)'
                   }}
                 >
                   <div
                     style={{
-                      fontSize: '0.78rem',
+                      width: 26,
+                      height: 26,
+                      borderRadius: 7,
+                      background: 'linear-gradient(135deg, #10b981, #047857)',
+                      color: '#ffffff',
+                      fontSize: '0.68rem',
                       fontWeight: 800,
-                      marginBottom: 8,
-                      display: 'flex',
-                      justifyContent: 'space-between'
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      letterSpacing: '0.03em',
+                      flexShrink: 0
                     }}
                   >
-                    <span>Thông báo Vận đơn Real-time</span>
-                    <span style={{ color: '#10b981' }}>{userOwnShipments.length} sự kiện</span>
+                    {(user?.fullName || user?.username || 'KH')
+                      .trim()
+                      .split(/\s+/)
+                      .slice(-2)
+                      .map((w) => w[0]?.toUpperCase() || '')
+                      .join('') || 'KH'}
                   </div>
-                  {userOwnShipments.length === 0 ? (
-                    <div style={{ fontSize: '0.76rem', opacity: 0.72, padding: '8px 0' }}>
-                      Tài khoản mới khởi tạo chưa có thông báo vận đơn nào.
+                  <div style={{ lineHeight: 1.15, whiteSpace: 'nowrap' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 700 }}>
+                      {user?.fullName || user?.username || 'Khách hàng'}
                     </div>
-                  ) : (
-                    <div style={{ display: 'grid', gap: 8, maxHeight: 220, overflowY: 'auto' }}>
-                      {userOwnShipments.map((s) => (
-                        <div
-                          key={s.shipmentCode}
-                          style={{
-                            padding: 8,
-                            borderRadius: 8,
-                            background: subtleBg,
-                            fontSize: '0.74rem'
-                          }}
-                        >
-                          <strong style={{ color: '#10b981' }}>{s.shipmentCode}</strong> •{' '}
-                          {s.statusLabel}
-                          <div style={{ opacity: 0.7, marginTop: 2 }}>
-                            {s.originName} → {s.destinationName}
-                          </div>
-                        </div>
-                      ))}
+                    <div
+                      style={{
+                        fontSize: '0.63rem',
+                        color: isDark ? '#34d399' : '#059669',
+                        fontWeight: 700,
+                        maxWidth: 130,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis'
+                      }}
+                    >
+                      {user?.companyName || 'Đối Tác Doanh Nghiệp B2B'}
                     </div>
-                  )}
+                  </div>
                 </div>
-              )}
-            </div>
 
-            <button
-              type="button"
-              onClick={toggleTheme}
-              aria-label="Đổi giao diện sáng/tối"
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  title="Đăng xuất"
+                  aria-label="Đăng xuất"
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: 9,
+                    border: isDark
+                      ? '1px solid rgba(248, 113, 113, 0.26)'
+                      : '1px solid rgba(220, 38, 38, 0.18)',
+                    background: isDark ? 'rgba(239, 68, 68, 0.1)' : 'rgba(239, 68, 68, 0.06)',
+                    color: isDark ? '#f87171' : '#dc2626',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <LogOut size={14} />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Tier 2: Slim Contextual Navigation Strip */}
+          <div
+            style={{
+              height: 41,
+              padding: '0 24px',
+              borderTop: isDark
+                ? '1px solid rgba(148, 163, 184, 0.1)'
+                : '1px solid rgba(15, 23, 42, 0.06)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 16
+            }}
+          >
+            <nav
+              aria-label="Điều hướng nhanh hệ thống khách hàng"
               style={{
-                width: 35,
-                height: 35,
-                borderRadius: 999,
-                border: '1px solid rgba(148, 163, 184, 0.28)',
-                background: subtleBg,
-                color: 'inherit',
-                display: 'inline-flex',
+                display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer'
+                gap: 4,
+                height: '100%',
+                overflowX: 'auto',
+                scrollbarWidth: 'none'
               }}
             >
-              {isDark ? <Sun size={15} /> : <Moon size={15} />}
-            </button>
+              {[
+                { id: 'overview', label: 'Tổng Quan', icon: LayoutDashboard },
+                { id: 'orders', label: 'Vận Đơn', icon: Package, badge: userOwnShipments.length },
+                { id: 'contracts', label: 'Hợp Đồng & SLA', icon: FileSignature, badge: customerContracts.length },
+                {
+                  id: 'payments',
+                  label: 'Thanh Toán',
+                  icon: CreditCard,
+                  badge: paymentSummary.pendingCount > 0 ? paymentSummary.pendingCount : undefined
+                },
+                { id: 'containers', label: 'Danh Sách Container', icon: Box, badge: containerKpi.total },
+                { id: 'drivers', label: 'Quản Lý Tài Xế', icon: Users, badge: driverKpi.total },
+                { id: 'tracking', label: 'GPS 3D Live', icon: Navigation },
+                { id: 'carbon', label: 'Chứng Chỉ Carbon', icon: Leaf }
+              ].map((item) => {
+                const Icon = item.icon;
+                const active = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setActiveTab(item.id)}
+                    style={{
+                      position: 'relative',
+                      height: '100%',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 7,
+                      padding: '0 12px',
+                      border: 'none',
+                      borderBottom: active ? '2px solid #10b981' : '2px solid transparent',
+                      background: 'transparent',
+                      color: active
+                        ? isDark
+                          ? '#34d399'
+                          : '#059669'
+                        : isDark
+                          ? '#94a3b8'
+                          : '#475569',
+                      fontSize: '0.78rem',
+                      fontWeight: active ? 700 : 600,
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                      transition: 'color 0.15s, border-color 0.15s'
+                    }}
+                  >
+                    <Icon size={14} />
+                    <span>{item.label}</span>
+                    {typeof item.badge === 'number' && (
+                      <span
+                        style={{
+                          padding: '1px 6px',
+                          borderRadius: 999,
+                          fontSize: '0.65rem',
+                          fontWeight: 700,
+                          background: active
+                            ? 'rgba(16, 185, 129, 0.15)'
+                            : isDark
+                              ? 'rgba(148, 163, 184, 0.14)'
+                              : '#e2e8f0',
+                          color: active ? (isDark ? '#34d399' : '#047857') : 'inherit'
+                        }}
+                      >
+                        {item.badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
 
             <div
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: 8,
-                padding: '4px 12px',
-                borderRadius: 999,
-                background: subtleBg,
-                border: '1px solid rgba(148, 163, 184, 0.24)'
+                gap: 6,
+                fontSize: '0.71rem',
+                fontWeight: 600,
+                color: isDark ? '#94a3b8' : '#64748b',
+                whiteSpace: 'nowrap',
+                flexShrink: 0
               }}
             >
-              <UserCheck size={14} color="#10b981" />
-              <div style={{ lineHeight: 1.15 }}>
-                <div style={{ fontSize: '0.76rem', fontWeight: 800 }}>
-                  {user?.fullName || user?.username || 'Khách hàng'}
-                </div>
-                <div style={{ fontSize: '0.64rem', color: '#10b981', fontWeight: 700 }}>
-                  {user?.companyName || 'Đối Tác Doanh Nghiệp B2B'}
-                </div>
-              </div>
+              <span
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: '50%',
+                  background: '#10b981'
+                }}
+              />
+              <span>
+                Đang giám sát <strong style={{ color: isDark ? '#e2e8f0' : '#0f172a' }}>{userOwnShipments.length}</strong> vận đơn chuẩn GLEC v3
+              </span>
             </div>
-
-            <button
-              type="button"
-              onClick={handleSignOut}
-              title="Đăng xuất"
-              style={{
-                width: 35,
-                height: 35,
-                borderRadius: 999,
-                border: '1px solid rgba(239, 68, 68, 0.35)',
-                background: 'rgba(239, 68, 68, 0.1)',
-                color: '#f87171',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer'
-              }}
-            >
-              <LogOut size={14} />
-            </button>
           </div>
         </header>
 
@@ -3946,7 +5410,7 @@ export default function CustomerPortalPage() {
           )}
 
           {/* ══════════════════════════════════════════════════════════════════
-              TAB: GIÁM SÁT DANH SÁCH CONTAINER & THÔNG TIN TÀI XẾ (SMART IOT)
+              TAB: QUẢN LÝ DANH SÁCH CONTAINER (SMART IOT & HỒ SƠ TÀI XẾ LIÊN KẾT)
           ══════════════════════════════════════════════════════════════════ */}
           {activeTab === 'containers' && (
             <div style={{ display: 'grid', gap: 20 }}>
@@ -3982,20 +5446,28 @@ export default function CustomerPortalPage() {
                     </div>
                     <div>
                       <h2 style={{ fontSize: '1.24rem', fontWeight: 800, margin: 0 }}>
-                        Giám Sát Danh Sách Container &amp; Đội Ngũ Tài Xế
+                        Danh Sách Vỏ Container &amp; Viễn Thông IoT
                       </h2>
                       <span style={{ fontSize: '0.74rem', color: '#10b981', fontWeight: 700 }}>
-                        ● HỆ THỐNG VIỄN THÔNG VỎ CONTAINER ĐỘC LẬP &amp; HẢI QUAN ĐIỆN TỬ
+                        ● HỆ THỐNG GIÁM SÁT VỎ CONTAINER ISO 6346 &amp; KHÓA E-SEAL ĐỘC LẬP
                       </span>
                     </div>
                   </div>
                   <p style={{ fontSize: '0.82rem', opacity: 0.78, margin: 0, maxWidth: 760 }}>
-                    Theo dõi trực quan danh mục vỏ container chuẩn ISO 6346, phân loại Container Đang Đi / Container Đã Tới,
-                    kiểm soát chỉ số viễn thông IoT, khóa E-Seal hải quan và kết nối điện thoại trực tiếp với người lái.
+                    Kiểm soát riêng biệt danh mục vỏ container đang chạy và đã cập bến, chỉ số hộp đen IoT (nhiệt độ, rung chấn, năng lượng mặt trời)
+                    và bấm trực tiếp vào thẻ tài xế trên mỗi vỏ cont để mở hồ sơ Grab chi tiết.
                   </p>
                 </div>
 
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('drivers')}
+                    className="lp-btn lp-btn--ghost lp-btn--sm"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, borderColor: 'rgba(16, 185, 129, 0.35)', color: '#10b981' }}
+                  >
+                    <Users size={14} /> Quản Lý Đội Ngũ Tài Xế ({driverKpi.total})
+                  </button>
                   <button
                     type="button"
                     onClick={() => setActiveTab('tracking')}
@@ -4591,13 +6063,17 @@ export default function CustomerPortalPage() {
                           </div>
                         </div>
 
-                        {/* Section 4: DRIVER INFORMATION & TELEPHONE CONTACT BOX */}
+                        {/* Section 4: GRAB-STYLE COMPACT DRIVER PROFILE PREVIEW */}
                         <div
                           style={{
-                            padding: '14px 16px',
+                            padding: '13px 16px',
                             borderRadius: 14,
-                            background: isDark ? 'rgba(15, 23, 42, 0.55)' : '#f1f5f9',
-                            border: '1px solid rgba(148, 163, 184, 0.22)',
+                            background: isDark
+                              ? 'linear-gradient(135deg, rgba(6, 78, 59, 0.22), rgba(15, 23, 42, 0.65))'
+                              : 'linear-gradient(135deg, #ecfdf5 0%, #f8fafc 100%)',
+                            border: isDark
+                              ? '1px solid rgba(16, 185, 129, 0.28)'
+                              : '1px solid rgba(16, 185, 129, 0.22)',
                             display: 'flex',
                             justifyContent: 'space-between',
                             alignItems: 'center',
@@ -4605,56 +6081,69 @@ export default function CustomerPortalPage() {
                             gap: 12
                           }}
                         >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                            <div
-                              style={{
-                                width: 44,
-                                height: 44,
-                                borderRadius: 12,
-                                background: 'linear-gradient(135deg, #10b981, #059669)',
-                                color: '#042f2e',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontWeight: 800,
-                                fontSize: '1.05rem',
-                                flexShrink: 0
-                              }}
-                            >
-                              {cont.driverName ? cont.driverName.charAt(0) : 'T'}
-                            </div>
+                          <div
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => openDriverProfileFromContainer(cont)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') openDriverProfileFromContainer(cont);
+                            }}
+                            title="Bấm để xem Hồ sơ Tài xế chuẩn Grab"
+                            style={{ display: 'flex', alignItems: 'center', gap: 13, cursor: 'pointer' }}
+                          >
+                            <GrabDriverAvatar
+                              name={cont.driverName || 'Nguyễn Văn Tài'}
+                              status={isInTransit ? 'ON_TRIP' : 'AVAILABLE'}
+                              size={52}
+                            />
 
                             <div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <span style={{ fontSize: '0.94rem', fontWeight: 800 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
+                                <span style={{ fontSize: '0.96rem', fontWeight: 800 }}>
                                   {cont.driverName || 'Nguyễn Văn Tài'}
                                 </span>
                                 <span
                                   style={{
-                                    fontSize: '0.68rem',
-                                    fontWeight: 700,
-                                    padding: '1px 7px',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 3,
+                                    fontSize: '0.7rem',
+                                    fontWeight: 800,
+                                    padding: '2px 8px',
+                                    borderRadius: 999,
+                                    background: 'rgba(245, 158, 11, 0.16)',
+                                    color: '#f59e0b'
+                                  }}
+                                >
+                                  <Star size={11} fill="#f59e0b" color="#f59e0b" />
+                                  {cont.driverSafetyScore || 4.95}
+                                </span>
+                                <span
+                                  style={{
+                                    fontSize: '0.67rem',
+                                    fontWeight: 800,
+                                    padding: '2px 7px',
                                     borderRadius: 6,
-                                    background: 'rgba(16, 185, 129, 0.18)',
+                                    background: 'rgba(16, 185, 129, 0.16)',
                                     color: '#10b981'
                                   }}
                                 >
-                                  ★ {cont.driverSafetyScore || 4.95} Eco-Driver
+                                  GPLX FC • Đã xác thực
                                 </span>
                               </div>
 
-                              <div style={{ fontSize: '0.74rem', opacity: 0.78, marginTop: 2 }}>
-                                {cont.driverLicense || 'GPLX Hạng FC • 9 năm kinh nghiệm'} • Xe đầu kéo:{' '}
-                                <strong>{cont.licensePlate}</strong> ({cont.vehicleType})
+                              <div style={{ fontSize: '0.74rem', opacity: 0.82, marginTop: 3 }}>
+                                Đầu kéo: <strong>{cont.licensePlate}</strong> ({cont.vehicleType}) •{' '}
+                                {cont.driverLicense || 'GPLX Hạng FC • 9 năm KN'}
                               </div>
 
-                              <div style={{ fontSize: '0.8rem', marginTop: 4, fontWeight: 800, color: '#10b981' }}>
-                                📞 Số điện thoại: <span>{cont.driverPhone || '0903 812 456'}</span>
+                              <div style={{ fontSize: '0.79rem', marginTop: 4, fontWeight: 800, color: '#059669' }}>
+                                📞 Hotline: <span>{cont.driverPhone || '0903 812 456'}</span>
                               </div>
                             </div>
                           </div>
 
-                          {/* Quick Call & Message Telephony Actions */}
+                          {/* Quick Call & Grab Profile Actions */}
                           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                             <a
                               href={`tel:${(cont.driverPhone || '0903812456').replace(/\s+/g, '')}`}
@@ -4663,58 +6152,59 @@ export default function CustomerPortalPage() {
                                 alignItems: 'center',
                                 gap: 6,
                                 padding: '7px 14px',
-                                borderRadius: 999,
+                                borderRadius: 9,
                                 background: 'linear-gradient(135deg, #10b981, #059669)',
-                                color: '#042f2e',
+                                color: '#ffffff',
                                 fontSize: '0.76rem',
-                                fontWeight: 800,
+                                fontWeight: 700,
                                 textDecoration: 'none',
-                                boxShadow: '0 3px 10px rgba(16, 185, 129, 0.28)'
+                                boxShadow: '0 3px 10px rgba(5, 150, 105, 0.25)'
                               }}
                             >
                               <PhoneCall size={13} />
-                              Gọi Điện Thoại
-                            </a>
-
-                            <a
-                              href={`sms:${(cont.driverPhone || '0903812456').replace(/\s+/g, '')}`}
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 6,
-                                padding: '7px 12px',
-                                borderRadius: 999,
-                                background: subtleBg,
-                                border: '1px solid rgba(148, 163, 184, 0.3)',
-                                color: 'inherit',
-                                fontSize: '0.76rem',
-                                fontWeight: 700,
-                                textDecoration: 'none'
-                              }}
-                            >
-                              <MessageSquare size={13} />
-                              Nhắn Tin
+                              Gọi Tài Xế
                             </a>
 
                             <button
                               type="button"
-                              onClick={() => setSelectedDriverModal(cont)}
+                              onClick={() => openChatFromContainer(cont)}
                               style={{
                                 display: 'inline-flex',
                                 alignItems: 'center',
-                                gap: 5,
-                                padding: '7px 12px',
-                                borderRadius: 999,
-                                background: subtleBg,
-                                border: '1px solid rgba(56, 189, 248, 0.35)',
-                                color: '#38bdf8',
+                                gap: 6,
+                                padding: '7px 13px',
+                                borderRadius: 9,
+                                background: isDark ? 'rgba(16, 185, 129, 0.16)' : '#ecfdf5',
+                                border: '1px solid rgba(16, 185, 129, 0.45)',
+                                color: '#059669',
+                                fontSize: '0.76rem',
+                                fontWeight: 700,
+                                cursor: 'pointer'
+                              }}
+                            >
+                              <MessageSquare size={13} />
+                              Chat Tài Xế
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => openDriverProfileFromContainer(cont)}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                padding: '7px 13px',
+                                borderRadius: 9,
+                                background: isDark ? 'rgba(15, 23, 42, 0.72)' : '#ffffff',
+                                border: '1px solid rgba(16, 185, 129, 0.42)',
+                                color: isDark ? '#34d399' : '#059669',
                                 fontSize: '0.76rem',
                                 fontWeight: 700,
                                 cursor: 'pointer'
                               }}
                             >
                               <User size={13} />
-                              Hồ Sơ
+                              Xem Profile Tài Xế
                             </button>
                           </div>
                         </div>
@@ -4827,7 +6317,7 @@ export default function CustomerPortalPage() {
 
                             <button
                               type="button"
-                              onClick={() => setSelectedContractModal(cont)}
+                              onClick={() => handleOpenContractForItem(cont)}
                               style={{
                                 padding: '6px 12px',
                                 borderRadius: 8,
@@ -4844,6 +6334,725 @@ export default function CustomerPortalPage() {
                             >
                               <FileText size={13} /> Hợp Đồng / ePOD
                             </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════════════
+              TAB: QUẢN LÝ ĐỘI NGŨ NGƯỜI LÁI XE (GRAB DRIVER PROFILE & HOS)
+          ══════════════════════════════════════════════════════════════════ */}
+          {activeTab === 'drivers' && (
+            <div style={{ display: 'grid', gap: 20 }}>
+              {/* Enterprise Header Card */}
+              <div
+                style={{
+                  padding: 24,
+                  borderRadius: 20,
+                  background: cardBg,
+                  border: cardBorder,
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: 16
+                }}
+              >
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                    <div
+                      style={{
+                        width: 38,
+                        height: 38,
+                        borderRadius: 11,
+                        background: 'rgba(16, 185, 129, 0.16)',
+                        color: '#10b981',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      <Users size={20} />
+                    </div>
+                    <div>
+                      <h2 style={{ fontSize: '1.24rem', fontWeight: 800, margin: 0 }}>
+                        Quản Lý Đội Ngũ Người Lái Xe &amp; Điều Phối Nhân Sự
+                      </h2>
+                      <span style={{ fontSize: '0.74rem', color: '#10b981', fontWeight: 700 }}>
+                        ● HỒ SƠ ĐỊNH DANH CHUẨN GRAB DRIVER • GIỜ LÁI HOS • ĐÁNH GIÁ &amp; PHÂN CÔNG CONTAINER
+                      </span>
+                    </div>
+                  </div>
+                  <p style={{ fontSize: '0.82rem', opacity: 0.78, margin: 0, maxWidth: 780 }}>
+                    Quản lý tách biệt đội ngũ tài xế đầu kéo container với đầy đủ thông tin cá nhân, bằng cấp FC,
+                    kiểm định an toàn Pre-Trip 6 điểm, nhật ký giờ lái HOS, đánh giá sao và điều phối container real-time.
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('containers')}
+                    className="lp-btn lp-btn--ghost lp-btn--sm"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                  >
+                    <Box size={14} color="#38bdf8" /> Xem DS Container ({containerKpi.total})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddDriverModal(true)}
+                    className="lp-btn lp-btn--primary lp-btn--sm"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                  >
+                    <UserPlus size={14} /> Thêm Hồ Sơ Tài Xế
+                  </button>
+                </div>
+              </div>
+
+              {driverActionNotice && (
+                <div
+                  style={{
+                    padding: '12px 16px',
+                    borderRadius: 12,
+                    background: 'rgba(16, 185, 129, 0.14)',
+                    border: '1px solid rgba(16, 185, 129, 0.4)',
+                    color: isDark ? '#34d399' : '#065f46',
+                    fontSize: '0.82rem',
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 10
+                  }}
+                >
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                    <CheckCircle2 size={16} color="#10b981" /> {driverActionNotice}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setDriverActionNotice(null)}
+                    style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer', fontWeight: 800 }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+
+              {/* 4 KPI Summary Cards */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                  gap: 14
+                }}
+              >
+                <div style={{ padding: 16, borderRadius: 16, background: cardBg, border: cardBorder }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.73rem', opacity: 0.75, fontWeight: 700 }}>
+                      TỔNG TÀI XẾ ĐỊNH DANH
+                    </span>
+                    <Users size={18} color="#10b981" />
+                  </div>
+                  <div style={{ fontSize: '1.65rem', fontWeight: 800, marginTop: 4, color: '#10b981' }}>
+                    {driverKpi.total} <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>tài xế</span>
+                  </div>
+                  <div style={{ fontSize: '0.72rem', opacity: 0.75, marginTop: 4 }}>
+                    {driverKpi.fcCount} Bằng FC đầu kéo • Điểm TB ★ {driverKpi.avgRating}
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    padding: 16,
+                    borderRadius: 16,
+                    background: cardBg,
+                    border: '1.5px solid rgba(56, 189, 248, 0.4)'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.73rem', color: '#38bdf8', fontWeight: 700 }}>
+                      ĐANG CHẠY CHUYẾN (ON TRIP)
+                    </span>
+                    <Navigation size={18} color="#38bdf8" />
+                  </div>
+                  <div style={{ fontSize: '1.65rem', fontWeight: 800, marginTop: 4, color: '#38bdf8' }}>
+                    {driverKpi.onTrip} <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>tài xế</span>
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: '#38bdf8', marginTop: 4, fontWeight: 600 }}>
+                    ● Đang bám lộ trình xanh &amp; phát tín hiệu GPS
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    padding: 16,
+                    borderRadius: 16,
+                    background: cardBg,
+                    border: '1.5px solid rgba(16, 185, 129, 0.4)'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.73rem', color: '#10b981', fontWeight: 700 }}>
+                      SẴN SÀNG NHẬN CONTAINER
+                    </span>
+                    <BadgeCheck size={18} color="#10b981" />
+                  </div>
+                  <div style={{ fontSize: '1.65rem', fontWeight: 800, marginTop: 4, color: '#10b981' }}>
+                    {driverKpi.available} <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>tài xế</span>
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: '#10b981', marginTop: 4, fontWeight: 600 }}>
+                    ✓ Đã đạt Pre-Trip 6 điểm • Chờ gán chuyến
+                  </div>
+                </div>
+
+                <div style={{ padding: 16, borderRadius: 16, background: cardBg, border: cardBorder }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.73rem', opacity: 0.75, fontWeight: 700 }}>
+                      NGHỈ BÙ CA / HOS AN TOÀN
+                    </span>
+                    <Clock size={18} color="#f59e0b" />
+                  </div>
+                  <div style={{ fontSize: '1.65rem', fontWeight: 800, marginTop: 4, color: '#f59e0b' }}>
+                    {driverKpi.inactive} <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>tài xế</span>
+                  </div>
+                  <div style={{ fontSize: '0.72rem', opacity: 0.75, marginTop: 4 }}>
+                    Tuân thủ chuẩn HOS &le; 4h liên tục / 10h ngày
+                  </div>
+                </div>
+              </div>
+
+              {/* Filter & Search Toolbar */}
+              <div
+                style={{
+                  padding: 16,
+                  borderRadius: 16,
+                  background: cardBg,
+                  border: cardBorder,
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: 12
+                }}
+              >
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {[
+                    { id: 'ALL', label: `Tất Cả (${driverKpi.total})` },
+                    { id: 'ON_TRIP', label: `Đang Chạy Chuyến (${driverKpi.onTrip})` },
+                    { id: 'AVAILABLE', label: `Sẵn Sàng (${driverKpi.available})` },
+                    { id: 'INACTIVE', label: `Nghỉ Ca / HOS (${driverKpi.inactive})` }
+                  ].map((tab) => {
+                    const active = driverStatusFilter === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setDriverStatusFilter(tab.id)}
+                        style={{
+                          padding: '7px 14px',
+                          borderRadius: 999,
+                          border: active
+                            ? '1.5px solid #10b981'
+                            : '1px solid rgba(148, 163, 184, 0.25)',
+                          background: active ? 'rgba(16, 185, 129, 0.16)' : 'transparent',
+                          color: active ? '#10b981' : 'inherit',
+                          fontSize: '0.78rem',
+                          fontWeight: active ? 800 : 600,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {tab.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+                  <select
+                    value={driverLicenseFilter}
+                    onChange={(e) => setDriverLicenseFilter(e.target.value)}
+                    style={{
+                      padding: '7px 12px',
+                      borderRadius: 10,
+                      background: isDark ? '#0f172a' : '#f8fafc',
+                      border: '1px solid rgba(148, 163, 184, 0.3)',
+                      color: 'inherit',
+                      fontSize: '0.78rem'
+                    }}
+                  >
+                    <option value="ALL">Tất cả hạng GPLX</option>
+                    <option value="FC">GPLX Hạng FC (Đầu kéo Cont)</option>
+                    <option value="C">GPLX Hạng C (Xe tải nặng)</option>
+                  </select>
+
+                  <div style={{ position: 'relative', minWidth: 260 }}>
+                    <Search
+                      size={14}
+                      style={{
+                        position: 'absolute',
+                        left: 11,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        opacity: 0.55
+                      }}
+                    />
+                    <input
+                      type="text"
+                      value={driverSearch}
+                      onChange={(e) => setDriverSearch(e.target.value)}
+                      placeholder="Tìm tên tài xế, mã DRV, SĐT, biển số..."
+                      style={{
+                        width: '100%',
+                        padding: '7px 12px 7px 32px',
+                        borderRadius: 999,
+                        border: '1px solid rgba(148, 163, 184, 0.3)',
+                        background: 'transparent',
+                        color: 'inherit',
+                        fontSize: '0.78rem'
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Grab-Style 2-Column Driver Directory Cards */}
+              {filteredDrivers.length === 0 ? (
+                <div
+                  style={{
+                    padding: '44px 20px',
+                    textAlign: 'center',
+                    borderRadius: 20,
+                    background: subtleBg,
+                    border: '1px dashed rgba(148, 163, 184, 0.3)'
+                  }}
+                >
+                  <Users size={36} color="#10b981" style={{ opacity: 0.65, marginBottom: 10 }} />
+                  <h3 style={{ fontSize: '1.06rem', fontWeight: 800, marginBottom: 6 }}>
+                    Không tìm thấy tài xế phù hợp
+                  </h3>
+                  <p style={{ fontSize: '0.82rem', opacity: 0.75, marginBottom: 14 }}>
+                    Hãy thử đổi bộ lọc trạng thái, hạng GPLX hoặc xóa từ khóa tìm kiếm.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDriverStatusFilter('ALL');
+                      setDriverLicenseFilter('ALL');
+                      setDriverSearch('');
+                    }}
+                    className="lp-btn lp-btn--ghost lp-btn--sm"
+                  >
+                    Đặt Lại Bộ Lọc
+                  </button>
+                </div>
+              ) : (
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(460px, 1fr))',
+                    gap: 18
+                  }}
+                >
+                  {filteredDrivers.map((drv) => {
+                    const isDriving = drv.liveStatus === 'ON_TRIP';
+                    const isAvailable = drv.liveStatus === 'AVAILABLE';
+                    const hosPct = Math.min(100, Math.round(((drv.hosContinuousMin || 0) / 240) * 100));
+                    const maskedCccd = drv.nationalId
+                      ? `${drv.nationalId.slice(0, 9)} ••••`
+                      : '0790 8800 ••••';
+
+                    return (
+                      <div
+                        key={drv.id || drv.driverCode}
+                        style={{
+                          borderRadius: 20,
+                          overflow: 'hidden',
+                          background: cardBg,
+                          border: isDriving
+                            ? '1.5px solid rgba(56, 189, 248, 0.45)'
+                            : isAvailable
+                              ? '1px solid rgba(16, 185, 129, 0.35)'
+                              : cardBorder,
+                          boxShadow: isDark
+                            ? '0 10px 26px rgba(0,0,0,0.32)'
+                            : '0 4px 20px rgba(15, 23, 42, 0.05)',
+                          display: 'grid'
+                        }}
+                      >
+                        {/* Card Header: Grab-style Portrait + Identity & Status */}
+                        <div
+                          style={{
+                            padding: '18px 20px 14px',
+                            background: isDark
+                              ? 'linear-gradient(135deg, rgba(6, 78, 59, 0.3), rgba(15, 23, 42, 0.5))'
+                              : 'linear-gradient(135deg, #ecfdf5 0%, #f8fafc 100%)',
+                            borderBottom: '1px solid rgba(148, 163, 184, 0.14)',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'flex-start',
+                            gap: 12,
+                            flexWrap: 'wrap'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                            <GrabDriverAvatar
+                              name={drv.fullName}
+                              status={drv.liveStatus}
+                              size={62}
+                            />
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
+                                <h3 style={{ fontSize: '1.08rem', fontWeight: 800, margin: 0 }}>
+                                  {drv.fullName}
+                                </h3>
+                                <span
+                                  style={{
+                                    fontSize: '0.68rem',
+                                    fontWeight: 800,
+                                    padding: '2px 7px',
+                                    borderRadius: 6,
+                                    background: '#059669',
+                                    color: '#ffffff'
+                                  }}
+                                >
+                                  HẠNG {drv.licenseClass || 'FC'}
+                                </span>
+                              </div>
+                              <div style={{ fontSize: '0.74rem', opacity: 0.78, marginTop: 3 }}>
+                                Mã nhân sự: <code>{drv.driverCode}</code> • {drv.experienceYears || 7} năm kinh nghiệm
+                              </div>
+                              <div style={{ fontSize: '0.73rem', opacity: 0.78, marginTop: 2 }}>
+                                Khu vực: <strong>{drv.hometown || 'TP. Hồ Chí Minh'}</strong>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+                            <span
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                padding: '4px 11px',
+                                borderRadius: 999,
+                                fontSize: '0.72rem',
+                                fontWeight: 800,
+                                background: isDriving
+                                  ? 'rgba(56, 189, 248, 0.18)'
+                                  : isAvailable
+                                    ? 'rgba(16, 185, 129, 0.18)'
+                                    : 'rgba(148, 163, 184, 0.2)',
+                                color: isDriving ? '#38bdf8' : isAvailable ? '#10b981' : '#94a3b8',
+                                border: isDriving
+                                  ? '1px solid rgba(56, 189, 248, 0.4)'
+                                  : isAvailable
+                                    ? '1px solid rgba(16, 185, 129, 0.4)'
+                                    : '1px solid rgba(148, 163, 184, 0.3)'
+                              }}
+                            >
+                              ● {isDriving ? 'ĐANG CHẠY CHUYẾN' : isAvailable ? 'SẴN SÀNG' : 'ĐANG NGHỈ CA'}
+                            </span>
+                            <span
+                              style={{
+                                fontSize: '0.68rem',
+                                fontWeight: 700,
+                                color: drv.preTripPassed ? '#10b981' : '#f59e0b'
+                              }}
+                            >
+                              {drv.preTripPassed ? '✓ Pre-Trip 6/6 Đạt' : '○ Chờ kiểm định đầu ca'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Card Body: Grab Metrics Strip + Personal Info + HOS + Container Assignment */}
+                        <div style={{ padding: '16px 20px', display: 'grid', gap: 14 }}>
+                          {/* 4 Grab-Style Metric Cells */}
+                          <div
+                            style={{
+                              display: 'grid',
+                              gridTemplateColumns: 'repeat(4, 1fr)',
+                              gap: 8,
+                              padding: '10px 12px',
+                              borderRadius: 12,
+                              background: subtleBg,
+                              border: '1px solid rgba(148, 163, 184, 0.16)',
+                              textAlign: 'center'
+                            }}
+                          >
+                            <div>
+                              <div style={{ fontSize: '0.65rem', opacity: 0.7, fontWeight: 700 }}>ĐÁNH GIÁ</div>
+                              <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#f59e0b', marginTop: 2 }}>
+                                ★ {Number(drv.rating || 4.95).toFixed(2)}
+                              </div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '0.65rem', opacity: 0.7, fontWeight: 700 }}>CHUYẾN</div>
+                              <div style={{ fontSize: '0.92rem', fontWeight: 800, marginTop: 2 }}>
+                                {drv.totalTrips || 240}
+                              </div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '0.65rem', opacity: 0.7, fontWeight: 700 }}>ĐÚNG GIỜ</div>
+                              <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#10b981', marginTop: 2 }}>
+                                {drv.onTimeRate || 99.1}%
+                              </div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '0.65rem', opacity: 0.7, fontWeight: 700 }}>ECO-SCORE</div>
+                              <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#38bdf8', marginTop: 2 }}>
+                                {drv.ecoScore || 95}/100
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Personal & License Details Grid */}
+                          <div
+                            style={{
+                              display: 'grid',
+                              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                              gap: '8px 14px',
+                              fontSize: '0.76rem'
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+                              <span style={{ opacity: 0.72 }}>SĐT trực tiếp:</span>
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontWeight: 800, color: '#10b981' }}>
+                                {drv.phone}
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopyPhone(drv.phone)}
+                                  title="Sao chép số điện thoại"
+                                  style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer', padding: 1 }}
+                                >
+                                  {copiedPhone === drv.phone ? <Check size={12} /> : <Copy size={12} />}
+                                </button>
+                              </span>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+                              <span style={{ opacity: 0.72 }}>CCCD định danh:</span>
+                              <strong>{maskedCccd}</strong>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+                              <span style={{ opacity: 0.72 }}>Số GPLX:</span>
+                              <code>{drv.licenseNumber || '7901-8842-9012'}</code>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+                              <span style={{ opacity: 0.72 }}>Hạn GPLX:</span>
+                              <strong>{drv.licenseExpiryDate || '31/12/2030'}</strong>
+                            </div>
+                          </div>
+
+                          {/* HOS Driving Hours Meter */}
+                          <div
+                            style={{
+                              padding: '9px 12px',
+                              borderRadius: 10,
+                              background: subtleBg,
+                              border: '1px solid rgba(148, 163, 184, 0.16)'
+                            }}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.71rem', fontWeight: 700, marginBottom: 5 }}>
+                              <span>Thời gian lái liên tục (Chuẩn HOS &le; 4h)</span>
+                              <span style={{ color: hosPct > 80 ? '#f59e0b' : '#10b981' }}>
+                                {drv.hosContinuousMin || 0} / 240 phút ({drv.hosDailyMin || 0}p trong ngày)
+                              </span>
+                            </div>
+                            <div style={{ height: 6, borderRadius: 999, background: 'rgba(148, 163, 184, 0.22)', overflow: 'hidden' }}>
+                              <div
+                                style={{
+                                  width: `${hosPct}%`,
+                                  height: '100%',
+                                  background: hosPct > 80 ? '#f59e0b' : 'linear-gradient(90deg, #10b981, #38bdf8)',
+                                  borderRadius: 999
+                                }}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Current Assigned Vehicle / Container Box */}
+                          <div
+                            style={{
+                              padding: '10px 13px',
+                              borderRadius: 12,
+                              background: isDriving
+                                ? 'rgba(56, 189, 248, 0.09)'
+                                : subtleBg,
+                              border: isDriving
+                                ? '1px solid rgba(56, 189, 248, 0.3)'
+                                : '1px solid rgba(148, 163, 184, 0.18)',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              flexWrap: 'wrap',
+                              gap: 8,
+                              fontSize: '0.75rem'
+                            }}
+                          >
+                            <div>
+                              <div style={{ fontWeight: 800 }}>
+                                Xe: <span style={{ color: '#38bdf8' }}>{drv.assignedVehiclePlate}</span>
+                                {drv.assignedContainerCode && (
+                                  <>
+                                    {' '}• Cont: <span style={{ color: '#10b981' }}>{drv.assignedContainerCode}</span>
+                                  </>
+                                )}
+                              </div>
+                              <div style={{ opacity: 0.78, marginTop: 2 }}>
+                                {drv.currentRoute}
+                                {isDriving && drv.liveSpeedKmh > 0 && ` • ${drv.liveSpeedKmh} km/h (${Math.round(drv.liveProgressPct)}%)`}
+                              </div>
+                            </div>
+
+                            {drv.assignedShipmentCode && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedCode(drv.assignedShipmentCode);
+                                  setActiveTab('tracking');
+                                }}
+                                style={{
+                                  padding: '5px 10px',
+                                  borderRadius: 8,
+                                  border: '1px solid rgba(56, 189, 248, 0.4)',
+                                  background: 'rgba(56, 189, 248, 0.14)',
+                                  color: '#38bdf8',
+                                  fontSize: '0.71rem',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 4
+                                }}
+                              >
+                                <Navigation size={12} /> Theo Dõi 3D
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Full Operational Action Strip */}
+                          <div
+                            style={{
+                              display: 'flex',
+                              flexWrap: 'wrap',
+                              gap: 8,
+                              paddingTop: 6,
+                              borderTop: '1px solid rgba(148, 163, 184, 0.14)'
+                            }}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowFullCccd(false);
+                                setSelectedDriverModal(drv);
+                              }}
+                              style={{
+                                padding: '7px 12px',
+                                borderRadius: 9,
+                                border: '1px solid #059669',
+                                background: 'linear-gradient(135deg, #10b981, #059669)',
+                                color: '#ffffff',
+                                fontSize: '0.74rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 5
+                              }}
+                            >
+                              <User size={13} /> Hồ Sơ Grab
+                            </button>
+
+                            <a
+                              href={`tel:${(drv.phone || '').replace(/\s+/g, '')}`}
+                              style={{
+                                padding: '7px 11px',
+                                borderRadius: 9,
+                                border: '1px solid rgba(16, 185, 129, 0.35)',
+                                background: 'rgba(16, 185, 129, 0.1)',
+                                color: '#10b981',
+                                fontSize: '0.74rem',
+                                fontWeight: 700,
+                                textDecoration: 'none',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 5
+                              }}
+                            >
+                              <PhoneCall size={13} /> Gọi Ngay
+                            </a>
+
+                            <button
+                              type="button"
+                              onClick={() => openDriverChat(drv.driverCode)}
+                              style={{
+                                padding: '7px 11px',
+                                borderRadius: 9,
+                                border: '1px solid rgba(16, 185, 129, 0.35)',
+                                background: isDark ? 'rgba(16, 185, 129, 0.14)' : '#ecfdf5',
+                                color: '#059669',
+                                fontSize: '0.74rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 5
+                              }}
+                            >
+                              <MessageSquare size={13} /> Chat Grab
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setAssignModalDriver(drv)}
+                              style={{
+                                padding: '7px 11px',
+                                borderRadius: 9,
+                                border: '1px solid rgba(56, 189, 248, 0.38)',
+                                background: 'rgba(56, 189, 248, 0.1)',
+                                color: '#38bdf8',
+                                fontSize: '0.74rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 5
+                              }}
+                            >
+                              <Box size={13} /> Gán Container
+                            </button>
+
+                            {!isDriving && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleToggleDriverStatus(
+                                    drv,
+                                    isAvailable ? 'INACTIVE' : 'AVAILABLE'
+                                  )
+                                }
+                                style={{
+                                  marginLeft: 'auto',
+                                  padding: '7px 11px',
+                                  borderRadius: 9,
+                                  border: '1px solid rgba(245, 158, 11, 0.35)',
+                                  background: 'rgba(245, 158, 11, 0.1)',
+                                  color: '#f59e0b',
+                                  fontSize: '0.73rem',
+                                  fontWeight: 700,
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                {isAvailable ? 'Chuyển Nghỉ Ca' : 'Bật Sẵn Sàng'}
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -5427,6 +7636,44 @@ export default function CustomerPortalPage() {
                     </div>
                   </div>
 
+                  <div style={{ marginBottom: 14 }}>
+                    <label
+                      style={{
+                        display: 'block',
+                        fontSize: '0.78rem',
+                        fontWeight: 700,
+                        marginBottom: 6
+                      }}
+                    >
+                      Phương Thức Thanh Toán &amp; Xuất Hóa Đơn VAT (Payment Service)
+                    </label>
+                    <select
+                      value={bookingForm.preferredPaymentMethod}
+                      onChange={(e) =>
+                        setBookingForm((prev) => ({
+                          ...prev,
+                          preferredPaymentMethod: e.target.value
+                        }))
+                      }
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        borderRadius: 10,
+                        background: isDark ? '#0f172a' : '#f8fafc',
+                        border: '1px solid rgba(16, 185, 129, 0.35)',
+                        color: 'inherit',
+                        fontSize: '0.84rem',
+                        fontWeight: 600
+                      }}
+                    >
+                      {PAYMENT_METHODS.map((pm) => (
+                        <option key={pm.id} value={pm.id}>
+                          {pm.label} ({pm.badge})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
                   <button
                     type="submit"
                     className="lp-btn lp-btn--primary"
@@ -5701,6 +7948,7 @@ export default function CustomerPortalPage() {
                         <th style={{ padding: '11px 10px' }}>Phương Tiện &amp; Biển Số</th>
                         <th style={{ padding: '11px 10px' }}>Tải Trọng</th>
                         <th style={{ padding: '11px 10px' }}>Cước Thuê</th>
+                        <th style={{ padding: '11px 10px' }}>Thanh Toán</th>
                         <th style={{ padding: '11px 10px' }}>Tiến Độ</th>
                         <th style={{ padding: '11px 10px' }}>Thao Tác</th>
                       </tr>
@@ -5793,12 +8041,58 @@ export default function CustomerPortalPage() {
                             {(s.estimatedCostVnd || 1850000).toLocaleString('vi-VN')} ₫
                           </td>
                           <td style={{ padding: '12px 10px' }}>
+                            {(() => {
+                              const pay = paymentByShipmentMap[s.shipmentCode];
+                              const meta = pay
+                                ? PAYMENT_STATUS_META[pay.paymentStatus] || PAYMENT_STATUS_META.PENDING
+                                : { label: 'Chưa thanh toán', color: '#f59e0b', bg: 'rgba(245,158,11,0.14)' };
+                              return (
+                                <span
+                                  style={{
+                                    display: 'inline-block',
+                                    padding: '3px 8px',
+                                    borderRadius: 999,
+                                    fontSize: '0.7rem',
+                                    fontWeight: 800,
+                                    color: meta.color,
+                                    background: meta.bg,
+                                    whiteSpace: 'nowrap'
+                                  }}
+                                >
+                                  {meta.label}
+                                </span>
+                              );
+                            })()}
+                          </td>
+                          <td style={{ padding: '12px 10px' }}>
                             <span style={{ color: '#10b981', fontWeight: 700 }}>
                               {Number(s.progress || 0).toFixed(1)}%
                             </span>
                           </td>
                           <td style={{ padding: '12px 10px' }}>
                             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                              <button
+                                type="button"
+                                onClick={() => openPaymentForOrder(s)}
+                                style={{
+                                  padding: '5px 10px',
+                                  borderRadius: 8,
+                                  border: '1px solid rgba(16,185,129,0.4)',
+                                  background: 'rgba(16,185,129,0.15)',
+                                  color: '#10b981',
+                                  fontSize: '0.74rem',
+                                  fontWeight: 800,
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 4
+                                }}
+                              >
+                                <QrCode size={12} />{' '}
+                                {paymentByShipmentMap[s.shipmentCode]?.paymentStatus === 'PAID'
+                                  ? 'Hóa Đơn'
+                                  : 'Thanh Toán'}
+                              </button>
                               <button
                                 type="button"
                                 onClick={() => {
@@ -5821,7 +8115,7 @@ export default function CustomerPortalPage() {
 
                               <button
                                 type="button"
-                                onClick={() => setSelectedContractModal(s)}
+                                onClick={() => handleOpenContractForItem(s)}
                                 style={{
                                   padding: '5px 10px',
                                   borderRadius: 8,
@@ -5882,6 +8176,7 @@ export default function CustomerPortalPage() {
               )}
             </div>
           )}
+
 
           {/* ══════════════════════════════════════════════════════════════════
               TAB 5: HUBS & ECO-INFRASTRUCTURE DIRECTORY (MỚI)
@@ -6348,6 +8643,1030 @@ export default function CustomerPortalPage() {
             </div>
           )}
 
+
+          {/* ══════════════════════════════════════════════════════════════════
+              TAB: B2B E-CONTRACTS & SLA SETTLEMENT (NET-30 CREDIT + EPOD)
+          ══════════════════════════════════════════════════════════════════ */}
+          {activeTab === 'contracts' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              {contractNotice && (
+                <div
+                  style={{
+                    padding: '12px 16px',
+                    borderRadius: 12,
+                    background: 'rgba(16, 185, 129, 0.14)',
+                    border: '1px solid rgba(16, 185, 129, 0.42)',
+                    color: '#10b981',
+                    fontSize: '0.84rem',
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8
+                  }}
+                >
+                  <CheckCircle2 size={16} /> {contractNotice}
+                </div>
+              )}
+
+              {/* Bento 4-KPI Legal & SLA Summary Strip */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(215px, 1fr))',
+                  gap: 14
+                }}
+              >
+                {[
+                  {
+                    label: 'Hạn Mức Net-30 Khả Dụng',
+                    value: `${contractSummary.msaRemainVnd.toLocaleString('vi-VN')} ₫`,
+                    sub: `Đã dùng ${contractSummary.msaUsedPct}% / ${contractSummary.msaLimitVnd.toLocaleString('vi-VN')} ₫`,
+                    accent: '#38bdf8',
+                    icon: ShieldCheck
+                  },
+                  {
+                    label: 'Hợp Đồng Đang Hiệu Lực',
+                    value: `${contractSummary.activeCount} Hợp Đồng`,
+                    sub: `${contractSummary.draftCount} dự thảo chờ ký • ${contractSummary.settledCount} đã ePOD`,
+                    accent: '#10b981',
+                    icon: FileSignature
+                  },
+                  {
+                    label: 'Khấu Trừ Vi Phạm SLA',
+                    value:
+                      contractSummary.totalPenaltyVnd > 0
+                        ? `-${contractSummary.totalPenaltyVnd.toLocaleString('vi-VN')} ₫`
+                        : '0 ₫ (100% Đạt)',
+                    sub: `Cam kết OTIF ≥ ${masterMsaContract?.slaOnTimeRatePct ?? 98.5}% • Nhiệt độ ±${masterMsaContract?.slaMaxTempDeviationC ?? 2.0}°C`,
+                    accent: contractSummary.totalPenaltyVnd > 0 ? '#f59e0b' : '#10b981',
+                    icon: Gauge
+                  },
+                  {
+                    label: 'Tổng Giá Trị Chuyến Đối Soát',
+                    value: `${contractSummary.totalSpotSettlementVnd.toLocaleString('vi-VN')} ₫`,
+                    sub: `${contractSummary.totalCount} hồ sơ MSA & Phụ lục chuyến`,
+                    accent: '#34d399',
+                    icon: Receipt
+                  }
+                ].map((kpi) => {
+                  const KpiIcon = kpi.icon;
+                  return (
+                    <div
+                      key={kpi.label}
+                      style={{
+                        padding: '16px 18px',
+                        borderRadius: 16,
+                        background: cardBg,
+                        border: cardBorder,
+                        borderTop: `3px solid ${kpi.accent}`,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 6
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.73rem', fontWeight: 700, opacity: 0.72 }}>
+                          {kpi.label}
+                        </span>
+                        <span
+                          style={{
+                            width: 28,
+                            height: 28,
+                            borderRadius: 8,
+                            background: `${kpi.accent}1f`,
+                            color: kpi.accent,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          <KpiIcon size={15} />
+                        </span>
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '1.22rem',
+                          fontWeight: 900,
+                          color: kpi.accent,
+                          fontVariantNumeric: 'tabular-nums',
+                          letterSpacing: '-0.02em'
+                        }}
+                      >
+                        {kpi.value}
+                      </div>
+                      <div style={{ fontSize: '0.72rem', opacity: 0.72 }}>{kpi.sub}</div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Master MSA Executive Legal Card */}
+              <div
+                style={{
+                  padding: 22,
+                  borderRadius: 20,
+                  background: isDark
+                    ? 'linear-gradient(135deg, rgba(16,185,129,0.12), rgba(14,165,233,0.08))'
+                    : 'linear-gradient(135deg, rgba(16,185,129,0.08), rgba(14,165,233,0.05))',
+                  border: '1px solid rgba(16, 185, 129, 0.34)',
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(310px, 1fr))',
+                  gap: 18,
+                  alignItems: 'center'
+                }}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      fontSize: '0.7rem',
+                      fontWeight: 800,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.06em',
+                      color: '#10b981'
+                    }}
+                  >
+                    <ShieldCheck size={14} /> HỢP ĐỒNG NGUYÊN TẮC B2B (MASTER SERVICE AGREEMENT)
+                  </div>
+                  <h2 style={{ fontSize: '1.24rem', fontWeight: 900, margin: 0, letterSpacing: '-0.02em' }}>
+                    {masterMsaContract
+                      ? `${masterMsaContract.contractNumber} • ${masterMsaContract.customerName}`
+                      : 'Chưa Kích Hoạt Hợp Đồng Khung B2B Net-30'}
+                  </h2>
+                  <p style={{ fontSize: '0.8rem', opacity: 0.8, margin: 0, lineHeight: 1.5 }}>
+                    {masterMsaContract
+                      ? masterMsaContract.corridorScope ||
+                        'Toàn tuyến Miền Nam & ĐBSCL • Ưu đãi cước xanh EV 5%, LNG 3%'
+                      : 'Khởi tạo hợp đồng khung để mở khóa thanh toán công nợ cuối kỳ Net-30 lên tới 500 triệu VNĐ.'}
+                  </p>
+
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {[
+                      `OTIF ≥ ${masterMsaContract?.slaOnTimeRatePct ?? 98.5}%`,
+                      `Nhiệt độ ±${masterMsaContract?.slaMaxTempDeviationC ?? 2.0}°C`,
+                      `Phạt SLA ${masterMsaContract?.slaPenaltyPctPerBreach ?? 5}%/sự cố`,
+                      'ISO 14083 & GLEC v3'
+                    ].map((chip) => (
+                      <span
+                        key={chip}
+                        style={{
+                          fontSize: '0.7rem',
+                          fontWeight: 700,
+                          padding: '3px 9px',
+                          borderRadius: 999,
+                          background: cardBg,
+                          border: cardBorder
+                        }}
+                      >
+                        {chip}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
+                    {masterMsaContract && (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenContractForItem(masterMsaContract)}
+                        className="lp-btn lp-btn--ghost lp-btn--sm"
+                      >
+                        <FileText size={14} /> Xem Hồ Sơ &amp; Timeline
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleCreateMsaContract(true)}
+                      className="lp-btn lp-btn--primary lp-btn--sm"
+                    >
+                      <PlusCircle size={14} />{' '}
+                      {masterMsaContract ? 'Cấp Hợp Đồng Khung Mới' : 'Khởi Tạo & Ký Số MSA'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleCreateMsaContract(false)}
+                      className="lp-btn lp-btn--ghost lp-btn--sm"
+                      title="Tạo bản dự thảo để kiểm thử luồng ký số SHA-256"
+                    >
+                      <FileSignature size={14} /> Tạo Dự Thảo Chờ Ký
+                    </button>
+                  </div>
+                </div>
+
+                {/* Right: Net-30 Credit Meter Box */}
+                {masterMsaContract && (() => {
+                  const limitVnd = Number(masterMsaContract.creditLimitVnd || 500000000);
+                  const usedVnd = Number(masterMsaContract.usedCreditVnd || 0);
+                  const remainVnd = Math.max(0, limitVnd - usedVnd);
+                  const usedPct = limitVnd > 0 ? Math.min(100, Math.round((usedVnd / limitVnd) * 100)) : 0;
+                  const barColor = usedPct >= 85 ? '#ef4444' : usedPct >= 60 ? '#f59e0b' : '#10b981';
+
+                  return (
+                    <div
+                      style={{
+                        padding: 18,
+                        borderRadius: 16,
+                        background: cardBg,
+                        border: cardBorder,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 10
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                          Hạn Mức Tín Dụng Net-30
+                        </span>
+                        <span
+                          style={{
+                            fontSize: '0.71rem',
+                            fontWeight: 800,
+                            padding: '2px 9px',
+                            borderRadius: 999,
+                            background: `${barColor}20`,
+                            color: barColor
+                          }}
+                        >
+                          Đã dùng {usedPct}%
+                        </span>
+                      </div>
+
+                      <div
+                        style={{
+                          width: '100%',
+                          height: 10,
+                          borderRadius: 999,
+                          background: subtleBg,
+                          overflow: 'hidden',
+                          position: 'relative'
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: `${usedPct}%`,
+                            height: '100%',
+                            background: barColor,
+                            transition: 'width 0.35s ease'
+                          }}
+                        />
+                      </div>
+
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: '1fr 1fr',
+                          gap: 10,
+                          fontSize: '0.76rem',
+                          fontVariantNumeric: 'tabular-nums'
+                        }}
+                      >
+                        <div>
+                          <div style={{ opacity: 0.7 }}>Dư nợ Net-30 hiện tại</div>
+                          <strong style={{ fontSize: '0.96rem', color: barColor }}>
+                            {usedVnd.toLocaleString('vi-VN')} ₫
+                          </strong>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ opacity: 0.7 }}>Hạn mức khả dụng</div>
+                          <strong style={{ fontSize: '0.96rem', color: '#10b981' }}>
+                            {remainVnd.toLocaleString('vi-VN')} ₫
+                          </strong>
+                        </div>
+                      </div>
+
+                      <div
+                        style={{
+                          paddingTop: 8,
+                          borderTop: '1px dashed rgba(148,163,184,0.22)',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          gap: 8,
+                          fontSize: '0.72rem',
+                          opacity: 0.8
+                        }}
+                      >
+                        <span>Dấu ký số SHA-256:</span>
+                        <code style={{ fontWeight: 700, color: masterMsaContract.customerSignatureHash ? '#10b981' : '#f59e0b' }}>
+                          {masterMsaContract.customerSignatureHash
+                            ? `${masterMsaContract.customerSignatureHash.slice(0, 22)}...`
+                            : 'CHỜ KÝ KÍCH HOẠT'}
+                        </code>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Filter & Search Toolbar + Ledger Table Card */}
+              <div
+                style={{
+                  padding: 22,
+                  borderRadius: 20,
+                  background: cardBg,
+                  border: cardBorder,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 16
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: 12
+                  }}
+                >
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    {[
+                      { id: 'ALL', label: `Tất Cả (${customerContracts.length})` },
+                      { id: 'MASTER_MSA', label: 'Hợp Đồng Khung MSA' },
+                      { id: 'SPOT_TRIP', label: 'Phụ Lục Chuyến' },
+                      { id: 'SIGNED_ACTIVE', label: `Đang Hiệu Lực (${contractSummary.activeCount})` },
+                      { id: 'SETTLED', label: `Đã Nghiệm Thu (${contractSummary.settledCount})` },
+                      { id: 'DRAFT', label: `Dự Thảo (${contractSummary.draftCount})` }
+                    ].map((f) => (
+                      <button
+                        key={f.id}
+                        type="button"
+                        onClick={() => setContractFilter(f.id)}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: 999,
+                          border:
+                            contractFilter === f.id
+                              ? '1.5px solid #10b981'
+                              : '1px solid rgba(148,163,184,0.26)',
+                          background:
+                            contractFilter === f.id ? 'rgba(16, 185, 129, 0.16)' : subtleBg,
+                          color: contractFilter === f.id ? '#10b981' : 'inherit',
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div style={{ position: 'relative' }}>
+                      <Search
+                        size={14}
+                        style={{
+                          position: 'absolute',
+                          left: 11,
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          opacity: 0.6
+                        }}
+                      />
+                      <input
+                        type="text"
+                        value={contractSearch}
+                        onChange={(e) => setContractSearch(e.target.value)}
+                        placeholder="Tìm mã HĐ, mã chuyến, tuyến..."
+                        style={{
+                          padding: '7px 12px 7px 32px',
+                          borderRadius: 999,
+                          border: '1px solid rgba(148,163,184,0.3)',
+                          background: subtleBg,
+                          color: 'inherit',
+                          fontSize: '0.8rem',
+                          minWidth: 230
+                        }}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={syncContractsFromDb}
+                      className="lp-btn lp-btn--ghost lp-btn--sm"
+                      title="Đồng bộ danh sách hợp đồng"
+                    >
+                      <RefreshCw size={14} /> Đồng Bộ
+                    </button>
+                  </div>
+                </div>
+
+                {/* Enterprise Contracts Table */}
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+                    <thead>
+                      <tr
+                        style={{
+                          textAlign: 'left',
+                          borderBottom: '1px solid rgba(148,163,184,0.24)',
+                          background: subtleBg
+                        }}
+                      >
+                        <th style={{ padding: '12px 14px', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                          Mã Hợp Đồng &amp; Loại
+                        </th>
+                        <th style={{ padding: '12px 14px', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                          Chuyến Hàng &amp; Hành Lang
+                        </th>
+                        <th style={{ padding: '12px 14px', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                          Cam Kết SLA &amp; Giảm Trừ
+                        </th>
+                        <th style={{ padding: '12px 14px', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                          Giá Trị Đối Soát
+                        </th>
+                        <th style={{ padding: '12px 14px', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                          Trạng Thái &amp; SHA-256
+                        </th>
+                        <th style={{ padding: '12px 14px', textAlign: 'right', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                          Thao Tác
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredContracts.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} style={{ padding: 32, textAlign: 'center', opacity: 0.72 }}>
+                            Không tìm thấy hợp đồng nào phù hợp với bộ lọc hiện tại.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredContracts.map((ctr) => {
+                          const statusMeta = CONTRACT_STATUS_META[ctr.contractStatus] || {
+                            label: ctr.contractStatus,
+                            color: '#94a3b8',
+                            bg: 'rgba(148,163,184,0.16)'
+                          };
+                          const penaltyVnd = Number(ctr.slaPenaltyDeductionVnd || 0);
+                          const finalAmountVnd = Number(
+                            ctr.finalSettlementVnd ??
+                              Math.max(0, Number(ctr.contractValueVnd || 0) - penaltyVnd)
+                          );
+                          const linkedOrder = ctr.shipmentCode
+                            ? allShipments.find((s) => s.shipmentCode === ctr.shipmentCode) || {
+                                shipmentCode: ctr.shipmentCode,
+                                customerId: ctr.customerId,
+                                customerName: ctr.customerName,
+                                estimatedCostVnd: finalAmountVnd || ctr.contractValueVnd
+                              }
+                            : null;
+                          const isMsaRow = ctr.contractType === 'MASTER_MSA';
+
+                          return (
+                            <tr
+                              key={ctr.contractNumber}
+                              style={{ borderBottom: '1px solid rgba(148,163,184,0.14)' }}
+                            >
+                              <td style={{ padding: '13px 14px', verticalAlign: 'top' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                  <code style={{ fontWeight: 800, color: '#10b981', fontSize: '0.82rem' }}>
+                                    {ctr.contractNumber}
+                                  </code>
+                                  <span
+                                    style={{
+                                      fontSize: '0.64rem',
+                                      fontWeight: 800,
+                                      padding: '1px 6px',
+                                      borderRadius: 6,
+                                      background: isMsaRow
+                                        ? 'rgba(56,189,248,0.16)'
+                                        : 'rgba(16,185,129,0.14)',
+                                      color: isMsaRow ? '#38bdf8' : '#10b981'
+                                    }}
+                                  >
+                                    {isMsaRow ? 'MSA' : 'SPOT'}
+                                  </span>
+                                </div>
+                                <div style={{ fontSize: '0.72rem', opacity: 0.74, marginTop: 3 }}>
+                                  Điều khoản: <strong>{ctr.paymentTerms || 'PREPAID'}</strong>
+                                </div>
+                              </td>
+
+                              <td style={{ padding: '13px 14px', verticalAlign: 'top', maxWidth: 265 }}>
+                                <div style={{ fontWeight: 700, color: ctr.shipmentCode ? 'inherit' : '#38bdf8' }}>
+                                  {ctr.shipmentCode || 'Toàn hệ thống B2B'}
+                                </div>
+                                <div style={{ fontSize: '0.73rem', opacity: 0.78, marginTop: 2 }}>
+                                  {ctr.corridorScope || 'Tuyến logistics xanh CCADRO'}
+                                </div>
+                                {(ctr.containerCode || ctr.vehicleType) && (
+                                  <div style={{ fontSize: '0.7rem', opacity: 0.65, marginTop: 2 }}>
+                                    {ctr.containerCode ? `${ctr.containerCode} • ` : ''}
+                                    {ctr.vehicleType || ''}
+                                  </div>
+                                )}
+                              </td>
+
+                              <td style={{ padding: '13px 14px', verticalAlign: 'top' }}>
+                                <div style={{ fontSize: '0.76rem' }}>
+                                  OTIF ≥ {ctr.slaOnTimeRatePct ?? 98.5}% • ΔT ≤{' '}
+                                  {ctr.slaMaxTempDeviationC ?? 2.0}°C
+                                </div>
+                                {penaltyVnd > 0 ? (
+                                  <span
+                                    style={{
+                                      display: 'inline-block',
+                                      marginTop: 4,
+                                      padding: '2px 8px',
+                                      borderRadius: 999,
+                                      background: 'rgba(245, 158, 11, 0.16)',
+                                      color: '#f59e0b',
+                                      fontSize: '0.7rem',
+                                      fontWeight: 800,
+                                      fontVariantNumeric: 'tabular-nums'
+                                    }}
+                                  >
+                                    Vi phạm SLA (-{penaltyVnd.toLocaleString('vi-VN')} ₫)
+                                  </span>
+                                ) : (
+                                  <span
+                                    style={{
+                                      display: 'inline-block',
+                                      marginTop: 4,
+                                      padding: '2px 8px',
+                                      borderRadius: 999,
+                                      background: 'rgba(16, 185, 129, 0.14)',
+                                      color: '#10b981',
+                                      fontSize: '0.7rem',
+                                      fontWeight: 700
+                                    }}
+                                  >
+                                    Đạt chuẩn SLA 100%
+                                  </span>
+                                )}
+                              </td>
+
+                              <td style={{ padding: '13px 14px', verticalAlign: 'top', fontVariantNumeric: 'tabular-nums' }}>
+                                <div style={{ fontWeight: 900, fontSize: '0.86rem' }}>
+                                  {isMsaRow
+                                    ? `${Number(ctr.creditLimitVnd || 500000000).toLocaleString('vi-VN')} ₫`
+                                    : `${finalAmountVnd.toLocaleString('vi-VN')} ₫`}
+                                </div>
+                                {isMsaRow ? (
+                                  <div style={{ fontSize: '0.71rem', opacity: 0.72, marginTop: 2 }}>
+                                    Đang dùng: {Number(ctr.usedCreditVnd || 0).toLocaleString('vi-VN')} ₫
+                                  </div>
+                                ) : (
+                                  penaltyVnd > 0 && (
+                                    <div
+                                      style={{
+                                        fontSize: '0.71rem',
+                                        opacity: 0.68,
+                                        textDecoration: 'line-through',
+                                        marginTop: 2
+                                      }}
+                                    >
+                                      Gốc: {Number(ctr.contractValueVnd || 0).toLocaleString('vi-VN')} ₫
+                                    </div>
+                                  )
+                                )}
+                              </td>
+
+                              <td style={{ padding: '13px 14px', verticalAlign: 'top' }}>
+                                <span
+                                  style={{
+                                    display: 'inline-block',
+                                    padding: '3px 9px',
+                                    borderRadius: 999,
+                                    fontSize: '0.7rem',
+                                    fontWeight: 800,
+                                    background: statusMeta.bg,
+                                    color: statusMeta.color,
+                                    whiteSpace: 'nowrap'
+                                  }}
+                                >
+                                  {statusMeta.label}
+                                </span>
+                                <div style={{ fontSize: '0.68rem', opacity: 0.72, marginTop: 5 }}>
+                                  {ctr.customerSignatureHash ? (
+                                    <code>{ctr.customerSignatureHash.slice(0, 18)}...</code>
+                                  ) : (
+                                    <span style={{ color: '#f59e0b', fontWeight: 700 }}>
+                                      Chờ ký số SHA-256
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+
+                              <td
+                                style={{
+                                  padding: '13px 14px',
+                                  verticalAlign: 'top',
+                                  textAlign: 'right'
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    display: 'inline-flex',
+                                    gap: 6,
+                                    flexWrap: 'wrap',
+                                    justifyContent: 'flex-end'
+                                  }}
+                                >
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenContractForItem(ctr)}
+                                    className="lp-btn lp-btn--ghost lp-btn--sm"
+                                  >
+                                    <FileText size={13} /> Chi Tiết SLA
+                                  </button>
+                                  {ctr.contractStatus === 'DRAFT' && (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleSignContract(ctr.contractNumber, {
+                                          signedByUsername: user?.username || 'customer',
+                                          notes: 'Chủ hàng ký số SHA-256 kích hoạt hợp đồng'
+                                        })
+                                      }
+                                      className="lp-btn lp-btn--primary lp-btn--sm"
+                                    >
+                                      <FileSignature size={13} /> Ký SHA-256
+                                    </button>
+                                  )}
+                                  {!isMsaRow && linkedOrder && (
+                                    <button
+                                      type="button"
+                                      onClick={() => openPaymentForOrder(linkedOrder)}
+                                      className="lp-btn lp-btn--ghost lp-btn--sm"
+                                      style={{
+                                        color: '#10b981',
+                                        borderColor: 'rgba(16,185,129,0.45)'
+                                      }}
+                                    >
+                                      <CreditCard size={13} /> Thanh Toán
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════════════
+              TAB: PAYMENT & GREEN BILLING LEDGER (PAYMENT SERVICE PORT 8088)
+          ══════════════════════════════════════════════════════════════════ */}
+          {activeTab === 'payments' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              {paymentNotice && (
+                <div
+                  style={{
+                    padding: '12px 16px',
+                    borderRadius: 12,
+                    background: 'rgba(16, 185, 129, 0.16)',
+                    border: '1px solid rgba(16, 185, 129, 0.45)',
+                    color: '#10b981',
+                    fontSize: '0.84rem',
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8
+                  }}
+                >
+                  <CheckCircle2 size={16} /> {paymentNotice}
+                </div>
+              )}
+
+              {/* Financial & Green Discount Summary Bento KPIs */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(215px, 1fr))',
+                  gap: 14
+                }}
+              >
+                {[
+                  {
+                    label: 'Tổng Đã Thanh Toán',
+                    value: `${paymentSummary.totalPaidVnd.toLocaleString('vi-VN')} ₫`,
+                    sub: `${paymentSummary.paidCount} hóa đơn hoàn tất`,
+                    color: '#10b981',
+                    icon: CheckCircle2
+                  },
+                  {
+                    label: 'Chờ Thanh Toán (QR / Thẻ)',
+                    value: `${paymentSummary.totalPendingVnd.toLocaleString('vi-VN')} ₫`,
+                    sub: `${paymentSummary.pendingCount} hóa đơn chờ quét mã`,
+                    color: '#f59e0b',
+                    icon: Clock
+                  },
+                  {
+                    label: 'Công Nợ Xanh Net-30',
+                    value: `${paymentSummary.totalNet30Vnd.toLocaleString('vi-VN')} ₫`,
+                    sub: `${paymentSummary.net30Count} hợp đồng đối soát 30 ngày`,
+                    color: '#38bdf8',
+                    icon: Building2
+                  },
+                  {
+                    label: 'Ưu Đãi Cước Xanh ESG Tiết Kiệm',
+                    value: `-${paymentSummary.totalGreenDiscountVnd.toLocaleString('vi-VN')} ₫`,
+                    sub: 'Chiết khấu trực tiếp xe điện EV & LNG',
+                    color: '#34d399',
+                    icon: Leaf
+                  }
+                ].map((kpi) => {
+                  const KpiIcon = kpi.icon;
+                  return (
+                    <div
+                      key={kpi.label}
+                      style={{
+                        padding: '16px 18px',
+                        borderRadius: 16,
+                        background: cardBg,
+                        border: cardBorder,
+                        borderTop: `3px solid ${kpi.color}`,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 6
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.73rem', opacity: 0.72, fontWeight: 700 }}>
+                          {kpi.label}
+                        </span>
+                        <span
+                          style={{
+                            width: 28,
+                            height: 28,
+                            borderRadius: 8,
+                            background: `${kpi.color}1f`,
+                            color: kpi.color,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          <KpiIcon size={15} />
+                        </span>
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '1.26rem',
+                          fontWeight: 900,
+                          color: kpi.color,
+                          fontVariantNumeric: 'tabular-nums',
+                          letterSpacing: '-0.02em'
+                        }}
+                      >
+                        {kpi.value}
+                      </div>
+                      <div style={{ fontSize: '0.72rem', opacity: 0.72 }}>{kpi.sub}</div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Transactions & Invoices Table */}
+              <div
+                style={{
+                  padding: 22,
+                  borderRadius: 20,
+                  background: cardBg,
+                  border: cardBorder
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: 12,
+                    marginBottom: 18
+                  }}
+                >
+                  <div>
+                    <div
+                      style={{
+                        fontSize: '0.7rem',
+                        fontWeight: 800,
+                        color: '#10b981',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.06em'
+                      }}
+                    >
+                      PAYMENT SERVICE (:8088) • HÓA ĐƠN ĐIỆN TỬ VAT &amp; CÔNG NỢ B2B
+                    </div>
+                    <h2 style={{ fontSize: '1.2rem', fontWeight: 900, margin: '2px 0 4px', letterSpacing: '-0.015em' }}>
+                      Sổ Cái Thanh Toán &amp; Hóa Đơn Vận Tải Xanh
+                    </h2>
+                    <p style={{ fontSize: '0.8rem', opacity: 0.76, margin: 0 }}>
+                      Thanh toán qua VietQR Napas 24/7, VNPay-QR, MoMo Business, Thẻ Doanh Nghiệp hoặc
+                      đối soát Công nợ Xanh Net-30.
+                    </p>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <div style={{ position: 'relative', minWidth: 220 }}>
+                      <Search
+                        size={14}
+                        style={{
+                          position: 'absolute',
+                          left: 11,
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          opacity: 0.55
+                        }}
+                      />
+                      <input
+                        type="text"
+                        value={paymentSearch}
+                        onChange={(e) => setPaymentSearch(e.target.value)}
+                        placeholder="Tìm mã GD, số HĐ, vận đơn..."
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px 8px 32px',
+                          borderRadius: 999,
+                          border: '1px solid rgba(148,163,184,0.3)',
+                          background: subtleBg,
+                          color: 'inherit',
+                          fontSize: '0.8rem'
+                        }}
+                      />
+                    </div>
+
+                    {[
+                      { id: 'ALL', label: `Tất cả (${paymentSummary.totalCount})` },
+                      { id: 'PENDING', label: `Chờ thanh toán (${paymentSummary.pendingCount})` },
+                      { id: 'PAID', label: `Đã thanh toán (${paymentSummary.paidCount})` },
+                      { id: 'NET30_CREDIT', label: `Công nợ Net-30 (${paymentSummary.net30Count})` },
+                      { id: 'REFUNDED', label: 'Đã hoàn tiền' }
+                    ].map((st) => (
+                      <button
+                        key={st.id}
+                        type="button"
+                        onClick={() => setPaymentStatusFilter(st.id)}
+                        style={{
+                          padding: '7px 12px',
+                          borderRadius: 999,
+                          border:
+                            paymentStatusFilter === st.id
+                              ? '1.5px solid #10b981'
+                              : '1px solid rgba(148,163,184,0.25)',
+                          background:
+                            paymentStatusFilter === st.id ? 'rgba(16,185,129,0.16)' : subtleBg,
+                          color: paymentStatusFilter === st.id ? '#10b981' : 'inherit',
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {st.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {filteredPayments.length === 0 ? (
+                  <div
+                    style={{
+                      padding: '40px 20px',
+                      textAlign: 'center',
+                      borderRadius: 16,
+                      background: subtleBg,
+                      border: '1px dashed rgba(148,163,184,0.3)'
+                    }}
+                  >
+                    <Receipt size={34} color="#10b981" style={{ opacity: 0.6, marginBottom: 10 }} />
+                    <h3 style={{ fontSize: '1.02rem', fontWeight: 800, marginBottom: 6 }}>
+                      Không có giao dịch thanh toán phù hợp
+                    </h3>
+                    <p style={{ fontSize: '0.82rem', opacity: 0.75, marginBottom: 14 }}>
+                      Đặt chuyến xe xanh mới hoặc đổi bộ lọc trạng thái để xem hóa đơn VAT.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="table-wrapper">
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '1px solid rgba(148,163,184,0.24)' }}>
+                          <th style={{ padding: '11px 10px' }}>Mã GD / Số Hóa Đơn VAT</th>
+                          <th style={{ padding: '11px 10px' }}>Vận Đơn &amp; Tuyến</th>
+                          <th style={{ padding: '11px 10px' }}>Phương Thức</th>
+                          <th style={{ padding: '11px 10px' }}>Cước &amp; Ưu Đãi ESG</th>
+                          <th style={{ padding: '11px 10px' }}>Tổng Thanh Toán (VAT 8%)</th>
+                          <th style={{ padding: '11px 10px' }}>Trạng Thái</th>
+                          <th style={{ padding: '11px 10px' }}>Thao Tác</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredPayments.map((pay) => {
+                          const meta =
+                            PAYMENT_STATUS_META[pay.paymentStatus] || PAYMENT_STATUS_META.PENDING;
+                          const methodMeta =
+                            PAYMENT_METHODS.find((m) => m.id === pay.paymentMethod) ||
+                            PAYMENT_METHODS[0];
+                          const canPay =
+                            pay.paymentStatus === 'PENDING' || pay.paymentStatus === 'NET30_CREDIT';
+                          return (
+                            <tr
+                              key={pay.transactionCode}
+                              style={{ borderBottom: '1px solid rgba(148,163,184,0.12)' }}
+                            >
+                              <td style={{ padding: '12px 10px' }}>
+                                <div style={{ fontWeight: 800, color: '#10b981' }}>
+                                  {pay.transactionCode}
+                                </div>
+                                <div style={{ fontSize: '0.73rem', opacity: 0.76 }}>
+                                  {pay.invoiceNumber}
+                                </div>
+                              </td>
+                              <td style={{ padding: '12px 10px' }}>
+                                <div style={{ fontWeight: 700 }}>{pay.shipmentCode}</div>
+                                <div style={{ fontSize: '0.73rem', opacity: 0.76 }}>
+                                  {pay.originName} → {pay.destinationName}
+                                </div>
+                              </td>
+                              <td style={{ padding: '12px 10px' }}>
+                                <span style={{ fontWeight: 700 }}>{methodMeta.shortLabel}</span>
+                                <div style={{ fontSize: '0.7rem', opacity: 0.7 }}>
+                                  {pay.gatewayReference || 'Chờ đối soát'}
+                                </div>
+                              </td>
+                              <td style={{ padding: '12px 10px' }}>
+                                <div>{Number(pay.baseFreightVnd || 0).toLocaleString('vi-VN')} ₫</div>
+                                <div style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 700 }}>
+                                  ESG: -{Number(pay.greenEsgDiscountVnd || 0).toLocaleString('vi-VN')} ₫
+                                </div>
+                              </td>
+                              <td style={{ padding: '12px 10px', fontWeight: 900, fontSize: '0.88rem' }}>
+                                {Number(pay.totalAmountVnd || 0).toLocaleString('vi-VN')} ₫
+                              </td>
+                              <td style={{ padding: '12px 10px' }}>
+                                <span
+                                  style={{
+                                    padding: '4px 10px',
+                                    borderRadius: 999,
+                                    fontSize: '0.72rem',
+                                    fontWeight: 800,
+                                    color: meta.color,
+                                    background: meta.bg,
+                                    whiteSpace: 'nowrap'
+                                  }}
+                                >
+                                  {meta.label}
+                                </span>
+                              </td>
+                              <td style={{ padding: '12px 10px' }}>
+                                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setPaymentModalState({
+                                        isOpen: true,
+                                        targetOrder:
+                                          userOwnShipments.find(
+                                            (s) => s.shipmentCode === pay.shipmentCode
+                                          ) || null,
+                                        targetPayment: pay
+                                      })
+                                    }
+                                    style={{
+                                      padding: '6px 11px',
+                                      borderRadius: 8,
+                                      border: canPay
+                                        ? '1px solid #10b981'
+                                        : '1px solid rgba(148,163,184,0.35)',
+                                      background: canPay ? 'rgba(16,185,129,0.16)' : subtleBg,
+                                      color: canPay ? '#10b981' : 'inherit',
+                                      fontSize: '0.74rem',
+                                      fontWeight: 800,
+                                      cursor: 'pointer',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: 4
+                                    }}
+                                  >
+                                    {canPay ? (
+                                      <>
+                                        <QrCode size={13} /> Thanh Toán Ngay
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Receipt size={13} /> Xem Hóa Đơn
+                                      </>
+                                    )}
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* ══════════════════════════════════════════════════════════════════
               TAB 8: COMPANY PROFILE & NOTIFICATION SETTINGS
           ══════════════════════════════════════════════════════════════════ */}
@@ -6491,194 +9810,6 @@ export default function CustomerPortalPage() {
         </main>
       </div>
 
-      {/* ── MODAL: HỢP ĐỒNG THUÊ VẬN TẢI XANH ĐIỆN TỬ (E-CONTRACT) ── */}
-      {selectedContractModal && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 100,
-            background: 'rgba(0,0,0,0.65)',
-            backdropFilter: 'blur(6px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 20
-          }}
-        >
-          <div
-            style={{
-              width: '100%',
-              maxWidth: 680,
-              maxHeight: '90vh',
-              overflowY: 'auto',
-              borderRadius: 20,
-              background: isDark ? '#061611' : '#ffffff',
-              border: '1.5px solid rgba(16, 185, 129, 0.45)',
-              boxShadow: '0 25px 60px rgba(0,0,0,0.5)',
-              padding: 24,
-              color: isDark ? '#f8fafc' : '#0f172a'
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start',
-                borderBottom: '1px solid rgba(148, 163, 184, 0.2)',
-                paddingBottom: 14,
-                marginBottom: 16
-              }}
-            >
-              <div>
-                <span
-                  style={{
-                    fontSize: '0.7rem',
-                    fontWeight: 800,
-                    color: '#10b981',
-                    textTransform: 'uppercase'
-                  }}
-                >
-                  HỢP ĐỒNG ĐIỆN TỬ THUÊ VẬN TẢI XANH SỐ
-                </span>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: '2px 0 0' }}>
-                  HĐ-{selectedContractModal.shipmentCode}
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedContractModal(null)}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: 'inherit',
-                  cursor: 'pointer',
-                  fontSize: '1.1rem',
-                  fontWeight: 800
-                }}
-              >
-                ✕
-              </button>
-            </div>
-
-            <div style={{ display: 'grid', gap: 14, fontSize: '0.82rem' }}>
-              <div
-                style={{
-                  padding: 12,
-                  borderRadius: 12,
-                  background: subtleBg,
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
-                  gap: 10
-                }}
-              >
-                <div>
-                  <span style={{ opacity: 0.7 }}>Bên Thuê Vận Tải (Chủ Hàng):</span>
-                  <div>
-                    <strong>{selectedContractModal.customerName}</strong>
-                  </div>
-                  <div style={{ fontSize: '0.74rem', opacity: 0.75 }}>
-                    Mã B2B: {selectedContractModal.customerId}
-                  </div>
-                </div>
-                <div>
-                  <span style={{ opacity: 0.7 }}>Đơn Vị Cung Cấp Hạ Tầng Vận Tải:</span>
-                  <div>
-                    <strong>CCADRO GREEN LOGISTICS ALLIANCE</strong>
-                  </div>
-                  <div style={{ fontSize: '0.74rem', opacity: 0.75 }}>
-                    Mã vận hành: CCADRO-FLEET-NETZERO
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <strong>Điều khoản dịch vụ &amp; Cam kết tiêu chuẩn SLA:</strong>
-                <ul style={{ paddingLeft: 18, marginTop: 6, lineHeight: 1.6 }}>
-                  <li>
-                    Mã Container ISO 6346: <strong>{selectedContractModal.containerCode || 'TCKU-781920-4'}</strong> (Loại:{' '}
-                    {selectedContractModal.containerTypeLabel || 'Container Lạnh 40ft High Cube ISO 45R1'}).
-                  </li>
-                  <li>
-                    Khóa niêm phong điện tử Hải quan: <strong>{selectedContractModal.eSealNumber || 'VN-CUST-819204'}</strong> (Chuẩn ISO 17712 High Security Seal).
-                  </li>
-                  <li>
-                    Phương tiện cam kết: <strong>{selectedContractModal.vehicleType}</strong> (Biển
-                    số: {selectedContractModal.licensePlate}).
-                  </li>
-                  <li>
-                    Lộ trình chuẩn:{' '}
-                    <strong>
-                      {selectedContractModal.originName} → {selectedContractModal.destinationName}
-                    </strong>{' '}
-                    ({selectedContractModal.distanceKm} km).
-                  </li>
-                  <li>
-                    Duy trì kiểm soát nhiệt độ thùng hàng liên tục:{' '}
-                    <strong style={{ color: '#10b981' }}>
-                      {selectedContractModal.temperatureC}°C
-                    </strong>{' '}
-                    (Báo động nếu lệch &gt; 2°C).
-                  </li>
-                  <li>
-                    Cam kết phát thải Scope 3 theo ISO 14083: Cắt giảm tối thiểu{' '}
-                    <strong style={{ color: '#10b981' }}>
-                      {selectedContractModal.co2SavedKg} kg CO2e
-                    </strong>
-                    .
-                  </li>
-                  <li>Bàn giao và ký xác nhận điện tử (ePOD) ngay khi phương tiện cập bến.</li>
-                </ul>
-              </div>
-
-              <div
-                style={{
-                  padding: 12,
-                  borderRadius: 12,
-                  background: 'rgba(16, 185, 129, 0.12)',
-                  border: '1px solid rgba(16, 185, 129, 0.3)',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center'
-                }}
-              >
-                <div>
-                  <div style={{ fontSize: '0.74rem', opacity: 0.8 }}>Tổng cước phí hợp đồng:</div>
-                  <strong style={{ fontSize: '1.15rem', color: '#10b981' }}>
-                    {(selectedContractModal.estimatedCostVnd || 1850000).toLocaleString('vi-VN')}{' '}
-                    VNĐ
-                  </strong>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '0.72rem', opacity: 0.75 }}>Trạng thái hợp đồng:</div>
-                  <strong style={{ color: '#38bdf8' }}>● ĐANG THỰC HIỆN</strong>
-                </div>
-              </div>
-            </div>
-
-            <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-              <button
-                type="button"
-                onClick={() => setSelectedContractModal(null)}
-                className="lp-btn lp-btn--ghost lp-btn--sm"
-              >
-                Đóng
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedContractModal(null);
-                  setSelectedCode(selectedContractModal.shipmentCode);
-                  setActiveTab('tracking');
-                }}
-                className="lp-btn lp-btn--primary lp-btn--sm"
-              >
-                <Navigation size={14} /> Theo Dõi Hành Trình 3D
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ── MODAL: CHỨNG THƯ GIÁM SÁT KHÓA SEAL ĐIỆN TỬ HẢI QUAN (E-SEAL ISO 17712) ── */}
       {selectedESealModal && (
@@ -7021,69 +10152,67 @@ export default function CustomerPortalPage() {
         </div>
       )}
 
-      {/* ── MODAL: THÔNG TIN HỒ SƠ TÀI XẾ & ĐIỀU PHỐI ĐƯỜNG TRƯỜNG ── */}
+      {/* ── MODAL 1: HỒ SƠ TÀI XẾ CHUẨN GRAB DRIVER & THÔNG TIN CÁ NHÂN ── */}
       {selectedDriverModal && (
         <div
           style={{
             position: 'fixed',
             inset: 0,
             zIndex: 110,
-            background: 'rgba(0,0,0,0.7)',
-            backdropFilter: 'blur(6px)',
+            background: 'rgba(2, 12, 9, 0.72)',
+            backdropFilter: 'blur(8px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: 20
+            padding: 18
           }}
         >
           <div
             style={{
               width: '100%',
-              maxWidth: 620,
-              maxHeight: '90vh',
+              maxWidth: 680,
+              maxHeight: '92vh',
               overflowY: 'auto',
-              borderRadius: 20,
+              borderRadius: 22,
               background: isDark ? '#061611' : '#ffffff',
-              border: '1.5px solid rgba(16, 185, 129, 0.45)',
-              boxShadow: '0 25px 60px rgba(0,0,0,0.5)',
-              padding: 24,
-              color: isDark ? '#f8fafc' : '#0f172a'
+              border: '1.5px solid rgba(16, 185, 129, 0.42)',
+              boxShadow: '0 28px 65px rgba(0,0,0,0.52)',
+              color: isDark ? '#f8fafc' : '#0f172a',
+              overflowX: 'hidden'
             }}
           >
+            {/* Grab-Style Top Emerald Banner */}
             <div
               style={{
+                background: 'linear-gradient(135deg, #065f46 0%, #059669 55%, #10b981 100%)',
+                padding: '18px 24px 52px',
+                color: '#ffffff',
                 display: 'flex',
                 justifyContent: 'space-between',
-                alignItems: 'flex-start',
-                borderBottom: '1px solid rgba(148, 163, 184, 0.2)',
-                paddingBottom: 12,
-                marginBottom: 16
+                alignItems: 'flex-start'
               }}
             >
               <div>
-                <span
-                  style={{
-                    fontSize: '0.7rem',
-                    fontWeight: 800,
-                    color: '#10b981',
-                    textTransform: 'uppercase'
-                  }}
-                >
-                  CCADRO GREEN FLEET ALLIANCE • HỒ SƠ TÀI XẾ CONTAINER
-                </span>
-                <h3 style={{ fontSize: '1.22rem', fontWeight: 800, margin: '3px 0 0' }}>
-                  {selectedDriverModal.driverName || 'Nguyễn Văn Tài'}
-                </h3>
+                <div style={{ fontSize: '0.68rem', fontWeight: 800, letterSpacing: '0.08em', opacity: 0.9 }}>
+                  CCADRO GRAB-GRADE DRIVER PROFILE • XÁC THỰC ĐỊNH DANH B2B
+                </div>
+                <div style={{ fontSize: '0.82rem', fontWeight: 600, opacity: 0.92, marginTop: 2 }}>
+                  Mã nhân sự: <strong>{selectedDriverModal.driverCode || 'DRV-FC-001'}</strong> • Hạng GPLX{' '}
+                  <strong>{selectedDriverModal.licenseClass || 'FC'}</strong>
+                </div>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedDriverModal(null)}
                 style={{
-                  background: 'transparent',
+                  width: 32,
+                  height: 32,
+                  borderRadius: '50%',
+                  background: 'rgba(255, 255, 255, 0.2)',
                   border: 'none',
-                  color: 'inherit',
+                  color: '#ffffff',
                   cursor: 'pointer',
-                  fontSize: '1.1rem',
+                  fontSize: '0.95rem',
                   fontWeight: 800
                 }}
               >
@@ -7091,166 +10220,829 @@ export default function CustomerPortalPage() {
               </button>
             </div>
 
-            <div style={{ display: 'grid', gap: 14, fontSize: '0.82rem' }}>
-              {/* Driver Contact Highlight Card */}
+            {/* Overlapping Grab Portrait & Headline Identity */}
+            <div style={{ padding: '0 24px 24px', marginTop: -38, display: 'grid', gap: 16, fontSize: '0.82rem' }}>
               <div
                 style={{
-                  padding: 16,
-                  borderRadius: 14,
-                  background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(5, 150, 105, 0.08))',
-                  border: '1.5px solid rgba(16, 185, 129, 0.4)',
+                  padding: '16px 18px',
+                  borderRadius: 18,
+                  background: isDark ? '#0b221a' : '#ffffff',
+                  border: cardBorder,
+                  boxShadow: '0 10px 28px rgba(0, 0, 0, 0.12)',
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
                   flexWrap: 'wrap',
-                  gap: 12
+                  gap: 14
                 }}
               >
-                <div>
-                  <div style={{ fontSize: '0.74rem', opacity: 0.8, textTransform: 'uppercase' }}>
-                    Số Điện Thoại Trực Tiếp (24/7)
-                  </div>
-                  <strong style={{ fontSize: '1.35rem', color: '#10b981', letterSpacing: '0.5px' }}>
-                    {selectedDriverModal.driverPhone || '0903 812 456'}
-                  </strong>
-                  <div style={{ fontSize: '0.72rem', opacity: 0.85, marginTop: 2 }}>
-                    Tài xế đang sẵn sàng nhận cuộc gọi điều phối chuyến hàng.
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <GrabDriverAvatar
+                    name={selectedDriverModal.fullName || selectedDriverModal.driverName || 'Nguyễn Văn Tài'}
+                    status={selectedDriverModal.liveStatus || 'ON_TRIP'}
+                    size={78}
+                  />
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0 }}>
+                        {selectedDriverModal.fullName || selectedDriverModal.driverName || 'Nguyễn Văn Tài'}
+                      </h3>
+                      <span
+                        style={{
+                          fontSize: '0.7rem',
+                          fontWeight: 800,
+                          padding: '2px 9px',
+                          borderRadius: 999,
+                          background:
+                            selectedDriverModal.liveStatus === 'ON_TRIP'
+                              ? 'rgba(56, 189, 248, 0.16)'
+                              : selectedDriverModal.liveStatus === 'INACTIVE'
+                                ? 'rgba(148, 163, 184, 0.2)'
+                                : 'rgba(16, 185, 129, 0.16)',
+                          color:
+                            selectedDriverModal.liveStatus === 'ON_TRIP'
+                              ? '#38bdf8'
+                              : selectedDriverModal.liveStatus === 'INACTIVE'
+                                ? '#94a3b8'
+                                : '#10b981'
+                        }}
+                      >
+                        ●{' '}
+                        {selectedDriverModal.liveStatus === 'ON_TRIP'
+                          ? 'Đang Chạy Chuyến'
+                          : selectedDriverModal.liveStatus === 'INACTIVE'
+                            ? 'Nghỉ Ca HOS'
+                            : 'Sẵn Sàng Nhận Chuyến'}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.76rem', opacity: 0.8, marginTop: 3 }}>
+                      Khu vực: <strong>{selectedDriverModal.hometown || 'TP. Hồ Chí Minh'}</strong> •{' '}
+                      {selectedDriverModal.experienceYears || 8} năm lái xe container
+                    </div>
+                    <div style={{ fontSize: '0.84rem', fontWeight: 800, color: '#10b981', marginTop: 4 }}>
+                      📞 {selectedDriverModal.phone || selectedDriverModal.driverPhone || '0903 812 456'}
+                    </div>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: 8 }}>
+                {/* Quick Call & Message Actions */}
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   <a
-                    href={`tel:${(selectedDriverModal.driverPhone || '0903812456').replace(/\s+/g, '')}`}
+                    href={`tel:${(selectedDriverModal.phone || selectedDriverModal.driverPhone || '0903812456').replace(/\s+/g, '')}`}
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: 6,
-                      padding: '9px 16px',
-                      borderRadius: 999,
+                      padding: '8px 14px',
+                      borderRadius: 10,
                       background: 'linear-gradient(135deg, #10b981, #059669)',
-                      color: '#042f2e',
-                      fontSize: '0.82rem',
-                      fontWeight: 800,
-                      textDecoration: 'none',
-                      boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)'
-                    }}
-                  >
-                    <PhoneCall size={14} /> Gọi Điện Ngay
-                  </a>
-                  <a
-                    href={`sms:${(selectedDriverModal.driverPhone || '0903812456').replace(/\s+/g, '')}`}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      padding: '9px 14px',
-                      borderRadius: 999,
-                      background: subtleBg,
-                      border: '1px solid rgba(148, 163, 184, 0.3)',
-                      color: 'inherit',
-                      fontSize: '0.82rem',
+                      color: '#ffffff',
+                      fontSize: '0.78rem',
                       fontWeight: 700,
                       textDecoration: 'none'
                     }}
                   >
-                    <MessageSquare size={14} /> Nhắn Tin
+                    <PhoneCall size={14} /> Gọi Ngay
                   </a>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyPhone(selectedDriverModal.phone || selectedDriverModal.driverPhone)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 5,
+                      padding: '8px 11px',
+                      borderRadius: 10,
+                      background: subtleBg,
+                      border: '1px solid rgba(148, 163, 184, 0.3)',
+                      color: 'inherit',
+                      fontSize: '0.76rem',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {copiedPhone === (selectedDriverModal.phone || selectedDriverModal.driverPhone) ? (
+                      <>
+                        <Check size={13} color="#10b981" /> Đã Copy
+                      </>
+                    ) : (
+                      <>
+                        <Copy size={13} /> Copy SĐT
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const d = selectedDriverModal;
+                      setSelectedDriverModal(null);
+                      openDriverChat(d?.driverCode);
+                    }}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 5,
+                      padding: '8px 12px',
+                      borderRadius: 10,
+                      background: isDark ? 'rgba(16, 185, 129, 0.14)' : '#ecfdf5',
+                      border: '1px solid rgba(16, 185, 129, 0.45)',
+                      color: '#059669',
+                      fontSize: '0.76rem',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <MessageSquare size={13} /> Chat Grab
+                  </button>
                 </div>
               </div>
 
-              {/* Driver Details Table */}
+              {/* 4 Grab-Style Golden Performance Stats */}
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                  gap: 10,
+                  gridTemplateColumns: 'repeat(4, 1fr)',
+                  gap: 10
+                }}
+              >
+                {[
+                  {
+                    label: 'ĐÁNH GIÁ SAO',
+                    value: `★ ${Number(selectedDriverModal.rating || selectedDriverModal.driverSafetyScore || 4.95).toFixed(2)}`,
+                    sub: 'Từ khách B2B',
+                    color: '#f59e0b'
+                  },
+                  {
+                    label: 'SỐ CHUYẾN CONT',
+                    value: `${selectedDriverModal.totalTrips || 310}`,
+                    sub: 'Hoàn tất an toàn',
+                    color: '#10b981'
+                  },
+                  {
+                    label: 'TỶ LỆ ĐÚNG GIỜ',
+                    value: `${selectedDriverModal.onTimeRate || 99.2}%`,
+                    sub: 'Cam kết SLA',
+                    color: '#10b981'
+                  },
+                  {
+                    label: 'ECO-DRIVING SCORE',
+                    value: `${selectedDriverModal.ecoScore || 96}/100`,
+                    sub: `${((selectedDriverModal.greenKmTotal || 36500) / 1000).toFixed(1)}k km xanh`,
+                    color: '#38bdf8'
+                  }
+                ].map((stat) => (
+                  <div
+                    key={stat.label}
+                    style={{
+                      padding: '11px 10px',
+                      borderRadius: 12,
+                      background: subtleBg,
+                      border: '1px solid rgba(148, 163, 184, 0.18)',
+                      textAlign: 'center'
+                    }}
+                  >
+                    <div style={{ fontSize: '0.64rem', opacity: 0.72, fontWeight: 700 }}>{stat.label}</div>
+                    <div style={{ fontSize: '1.05rem', fontWeight: 800, color: stat.color, marginTop: 2 }}>
+                      {stat.value}
+                    </div>
+                    <div style={{ fontSize: '0.65rem', opacity: 0.7, marginTop: 1 }}>{stat.sub}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Personal & Legal Dossier with Privacy CCCD Toggle */}
+              <div
+                style={{
+                  padding: 15,
+                  borderRadius: 14,
+                  background: subtleBg,
+                  border: '1px solid rgba(148, 163, 184, 0.18)',
+                  display: 'grid',
+                  gap: 10
+                }}
+              >
+                <div style={{ fontSize: '0.76rem', fontWeight: 800, color: '#10b981', textTransform: 'uppercase' }}>
+                  Thông Tin Cá Nhân &amp; Hồ Sơ Pháp Lý Tài Xế
+                </div>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))',
+                    gap: 10
+                  }}
+                >
+                  <div>
+                    <span style={{ fontSize: '0.72rem', opacity: 0.72 }}>Số CCCD / Định danh:</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 800, marginTop: 2 }}>
+                      <span>
+                        {showFullCccd
+                          ? selectedDriverModal.nationalId || '0790 8800 4129'
+                          : `${(selectedDriverModal.nationalId || '0790 8800 4129').slice(0, 9)} ••••`}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setShowFullCccd((v) => !v)}
+                        title={showFullCccd ? 'Che bớt số CCCD' : 'Hiện đầy đủ số CCCD'}
+                        style={{ background: 'transparent', border: 'none', color: '#38bdf8', cursor: 'pointer', padding: 2 }}
+                      >
+                        {showFullCccd ? <EyeOff size={13} /> : <Eye size={13} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <span style={{ fontSize: '0.72rem', opacity: 0.72 }}>Ngày sinh &amp; Quê quán:</span>
+                    <div style={{ fontWeight: 800, marginTop: 2, display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <Calendar size={12} color="#10b981" />
+                      {selectedDriverModal.dateOfBirth || '14/05/1988'} • {selectedDriverModal.hometown || 'TP.HCM'}
+                    </div>
+                  </div>
+
+                  <div>
+                    <span style={{ fontSize: '0.72rem', opacity: 0.72 }}>Số GPLX &amp; Hạng:</span>
+                    <div style={{ fontWeight: 800, marginTop: 2 }}>
+                      {selectedDriverModal.licenseNumber || '7901-8842-9012'} (Hạng {selectedDriverModal.licenseClass || 'FC'})
+                    </div>
+                  </div>
+
+                  <div>
+                    <span style={{ fontSize: '0.72rem', opacity: 0.72 }}>Ngày hết hạn GPLX:</span>
+                    <div style={{ fontWeight: 800, color: '#10b981', marginTop: 2 }}>
+                      {selectedDriverModal.licenseExpiryDate || '18/10/2029'} (Còn hiệu lực)
+                    </div>
+                  </div>
+                </div>
+
+                {/* Safety Cert Badges */}
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', paddingTop: 4 }}>
+                  {(selectedDriverModal.safetyCerts || ['Eco-Driving GLEC v3', 'An Toàn Container']).map((cert) => (
+                    <span
+                      key={cert}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        fontSize: '0.7rem',
+                        fontWeight: 700,
+                        padding: '3px 9px',
+                        borderRadius: 999,
+                        background: 'rgba(16, 185, 129, 0.14)',
+                        color: '#10b981',
+                        border: '1px solid rgba(16, 185, 129, 0.28)'
+                      }}
+                    >
+                      <Award size={11} /> {cert}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Assigned Container & Vehicle Box */}
+              <div
+                style={{
                   padding: 14,
-                  borderRadius: 12,
-                  background: subtleBg
+                  borderRadius: 14,
+                  background: 'rgba(56, 189, 248, 0.08)',
+                  border: '1px solid rgba(56, 189, 248, 0.28)',
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                  gap: 10
                 }}
               >
                 <div>
-                  <span style={{ opacity: 0.72 }}>Giấy phép lái xe:</span>
-                  <div style={{ fontWeight: 800, marginTop: 2 }}>
-                    {selectedDriverModal.driverLicense || 'GPLX Hạng FC • 9 năm kinh nghiệm'}
-                  </div>
-                </div>
-
-                <div>
-                  <span style={{ opacity: 0.72 }}>Điểm đánh giá an toàn:</span>
-                  <div style={{ fontWeight: 800, color: '#10b981', marginTop: 2 }}>
-                    ★ {selectedDriverModal.driverSafetyScore || 4.95} / 5.0 (0 vi phạm)
-                  </div>
-                </div>
-
-                <div>
-                  <span style={{ opacity: 0.72 }}>Phương tiện đầu kéo:</span>
+                  <span style={{ fontSize: '0.72rem', opacity: 0.72 }}>Phương tiện đầu kéo:</span>
                   <div style={{ fontWeight: 800, color: '#38bdf8', marginTop: 2 }}>
-                    {selectedDriverModal.licensePlate} ({selectedDriverModal.vehicleType})
+                    {selectedDriverModal.assignedVehiclePlate || selectedDriverModal.licensePlate || '51C-888.99'} (
+                    {selectedDriverModal.assignedVehicleType || selectedDriverModal.vehicleType || 'EV 40T'})
                   </div>
                 </div>
-
                 <div>
-                  <span style={{ opacity: 0.72 }}>Container đang chở:</span>
-                  <div style={{ fontWeight: 800, color: '#38bdf8', marginTop: 2 }}>
-                    {selectedDriverModal.containerCode} ({selectedDriverModal.isoType || '45R1'})
-                  </div>
-                </div>
-
-                <div>
-                  <span style={{ opacity: 0.72 }}>Lộ trình được phân công:</span>
-                  <div style={{ fontWeight: 800, marginTop: 2 }}>
-                    {selectedDriverModal.originName} ➔ {selectedDriverModal.destinationName}
-                  </div>
-                </div>
-
-                <div>
-                  <span style={{ opacity: 0.72 }}>Khóa Seal Hải quan:</span>
+                  <span style={{ fontSize: '0.72rem', opacity: 0.72 }}>Container đang phụ trách:</span>
                   <div style={{ fontWeight: 800, color: '#10b981', marginTop: 2 }}>
-                    {selectedDriverModal.eSealNumber} (ISO 17712)
+                    {selectedDriverModal.assignedContainerCode || selectedDriverModal.containerCode || 'Chưa gán vỏ Cont'}
+                  </div>
+                </div>
+                <div>
+                  <span style={{ fontSize: '0.72rem', opacity: 0.72 }}>Hành trình &amp; Kiểm định Pre-Trip:</span>
+                  <div style={{ fontWeight: 700, marginTop: 2 }}>
+                    {selectedDriverModal.currentRoute || 'Sẵn sàng tại Depot TP.HCM'} •{' '}
+                    <span style={{ color: '#10b981' }}>{selectedDriverModal.preTripTime || 'Pre-Trip 6/6 Đạt'}</span>
                   </div>
                 </div>
               </div>
 
-              <div>
-                <strong>Cam kết Tiêu chuẩn Lái xe An toàn &amp; Tiết kiệm Năng lượng (Eco-Driving):</strong>
-                <ul style={{ paddingLeft: 18, marginTop: 6, lineHeight: 1.6 }}>
-                  <li>
-                    <strong>Tuyệt đối bám sát tim đường lộ trình xanh (UC05):</strong> Không rẽ lệch hành lang &gt; 200m trừ khi có điều phối viên duyệt đổi tuyến (UC10).
-                  </li>
-                  <li>
-                    <strong>Giữ vận tốc ổn định chuẩn GLEC v3:</strong> Duy trì dải tốc độ tối ưu 45 - 60 km/h trên cao tốc, hạn chế phanh gấp giúp bảo vệ chất lượng hàng hóa và triệt tiêu rung chấn.
-                  </li>
-                  <li>
-                    <strong>Hỗ trợ kiểm tra niêm phong khóa seal:</strong> Ký biên bản giao nhận điện tử (ePOD) đầy đủ tại kho đích và bàn giao chứng từ ngay khi đến nơi.
-                  </li>
-                </ul>
+              {/* Grab-Style B2B Customer Reviews & Live Rating Form */}
+              <div
+                style={{
+                  padding: 15,
+                  borderRadius: 14,
+                  background: subtleBg,
+                  border: '1px solid rgba(148, 163, 184, 0.18)',
+                  display: 'grid',
+                  gap: 10
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.76rem', fontWeight: 800, textTransform: 'uppercase' }}>
+                    Đánh Giá &amp; Nhận Xét Từ Khách Hàng Doanh Nghiệp
+                  </span>
+                  <span style={{ fontSize: '0.72rem', color: '#f59e0b', fontWeight: 800 }}>
+                    {(selectedDriverModal.recentReviews || []).length} nhận xét gần nhất
+                  </span>
+                </div>
+
+                {(selectedDriverModal.recentReviews || []).length > 0 && (
+                  <div style={{ display: 'grid', gap: 7, maxHeight: 130, overflowY: 'auto' }}>
+                    {selectedDriverModal.recentReviews.map((rev) => (
+                      <div
+                        key={rev.id}
+                        style={{
+                          padding: '8px 11px',
+                          borderRadius: 10,
+                          background: isDark ? 'rgba(15, 23, 42, 0.6)' : '#ffffff',
+                          border: '1px solid rgba(148, 163, 184, 0.16)',
+                          fontSize: '0.75rem'
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800 }}>
+                          <span>{rev.author}</span>
+                          <span style={{ color: '#f59e0b' }}>{'★'.repeat(rev.rating || 5)} • {rev.date}</span>
+                        </div>
+                        <div style={{ opacity: 0.82, marginTop: 2 }}>{rev.comment}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', paddingTop: 4 }}>
+                  <div style={{ display: 'inline-flex', gap: 3 }}>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setDriverFeedbackRating(star)}
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          cursor: 'pointer',
+                          padding: 2
+                        }}
+                      >
+                        <Star
+                          size={16}
+                          fill={star <= driverFeedbackRating ? '#f59e0b' : 'none'}
+                          color="#f59e0b"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                  <input
+                    type="text"
+                    value={driverFeedbackNote}
+                    onChange={(e) => setDriverFeedbackNote(e.target.value)}
+                    placeholder="Nhập nhận xét dịch vụ tài xế..."
+                    style={{
+                      flex: '1 1 200px',
+                      padding: '6px 11px',
+                      borderRadius: 8,
+                      border: '1px solid rgba(148, 163, 184, 0.3)',
+                      background: 'transparent',
+                      color: 'inherit',
+                      fontSize: '0.76rem'
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleSubmitDriverReview(selectedDriverModal)}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: 8,
+                      border: 'none',
+                      background: '#059669',
+                      color: '#ffffff',
+                      fontSize: '0.74rem',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Gửi Đánh Giá
+                  </button>
+                </div>
               </div>
             </div>
 
-            <div style={{ marginTop: 18, display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-              <button
-                type="button"
-                onClick={() => setSelectedDriverModal(null)}
-                className="lp-btn lp-btn--ghost lp-btn--sm"
-              >
-                Đóng
-              </button>
+            <div
+              style={{
+                padding: '0 24px 22px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: 10
+              }}
+            >
               <button
                 type="button"
                 onClick={() => {
+                  const drv = selectedDriverModal;
                   setSelectedDriverModal(null);
-                  setSelectedCode(selectedDriverModal.shipmentCode);
-                  setActiveTab('tracking');
+                  setAssignModalDriver(drv);
                 }}
-                className="lp-btn lp-btn--primary lp-btn--sm"
+                className="lp-btn lp-btn--ghost lp-btn--sm"
               >
-                <Navigation size={14} /> Theo Dõi Xe &amp; Container Này 3D
+                <Box size={14} /> Phân Công Container
               </button>
+
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const drv = selectedDriverModal;
+                    setSelectedDriverModal(null);
+                    openDriverChat(drv.driverCode);
+                  }}
+                  style={{
+                    padding: '7px 13px',
+                    borderRadius: 9,
+                    border: '1px solid rgba(16, 185, 129, 0.45)',
+                    background: isDark ? 'rgba(16, 185, 129, 0.16)' : '#ecfdf5',
+                    color: '#059669',
+                    fontSize: '0.76rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6
+                  }}
+                >
+                  <MessageSquare size={14} /> Chat Tài Xế
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedDriverModal(null)}
+                  className="lp-btn lp-btn--ghost lp-btn--sm"
+                >
+                  Đóng
+                </button>
+                {(selectedDriverModal.assignedShipmentCode || selectedDriverModal.shipmentCode) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const code = selectedDriverModal.assignedShipmentCode || selectedDriverModal.shipmentCode;
+                      setSelectedDriverModal(null);
+                      setSelectedCode(code);
+                      setActiveTab('tracking');
+                    }}
+                    className="lp-btn lp-btn--primary lp-btn--sm"
+                  >
+                    <Navigation size={14} /> Theo Dõi Xe &amp; Container 3D
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
       )}
+
+      {/* ── MODAL 2: THÊM HỒ SƠ TÀI XẾ MỚI (LƯU DB & DIRECTORY) ── */}
+      {showAddDriverModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 115,
+            background: 'rgba(2, 12, 9, 0.72)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 18
+          }}
+        >
+          <form
+            onSubmit={handleCreateDriver}
+            style={{
+              width: '100%',
+              maxWidth: 560,
+              borderRadius: 20,
+              background: isDark ? '#061611' : '#ffffff',
+              border: '1.5px solid rgba(16, 185, 129, 0.45)',
+              boxShadow: '0 24px 55px rgba(0,0,0,0.48)',
+              padding: 24,
+              color: isDark ? '#f8fafc' : '#0f172a',
+              display: 'grid',
+              gap: 14
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#10b981' }}>
+                  QUẢN LÝ NHÂN SỰ LÁI XE • UC01
+                </div>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: '2px 0 0' }}>
+                  Đăng Ký Hồ Sơ Tài Xế Mới
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddDriverModal(false)}
+                style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: '1rem', fontWeight: 800 }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, fontSize: '0.78rem' }}>
+              <label style={{ display: 'grid', gap: 5 }}>
+                <span>Họ và tên tài xế *</span>
+                <input
+                  required
+                  type="text"
+                  value={newDriverForm.fullName}
+                  onChange={(e) => setNewDriverForm((f) => ({ ...f, fullName: e.target.value }))}
+                  placeholder="VD: Huỳnh Minh Tiến"
+                  style={{ padding: '8px 11px', borderRadius: 9, border: '1px solid rgba(148,163,184,0.35)', background: 'transparent', color: 'inherit' }}
+                />
+              </label>
+              <label style={{ display: 'grid', gap: 5 }}>
+                <span>Số điện thoại trực tiếp *</span>
+                <input
+                  required
+                  type="text"
+                  value={newDriverForm.phone}
+                  onChange={(e) => setNewDriverForm((f) => ({ ...f, phone: e.target.value }))}
+                  placeholder="VD: 0909 456 789"
+                  style={{ padding: '8px 11px', borderRadius: 9, border: '1px solid rgba(148,163,184,0.35)', background: 'transparent', color: 'inherit' }}
+                />
+              </label>
+              <label style={{ display: 'grid', gap: 5 }}>
+                <span>Mã nhân sự (DRV)</span>
+                <input
+                  type="text"
+                  value={newDriverForm.driverCode}
+                  onChange={(e) => setNewDriverForm((f) => ({ ...f, driverCode: e.target.value }))}
+                  placeholder="Tự động tạo nếu để trống"
+                  style={{ padding: '8px 11px', borderRadius: 9, border: '1px solid rgba(148,163,184,0.35)', background: 'transparent', color: 'inherit' }}
+                />
+              </label>
+              <label style={{ display: 'grid', gap: 5 }}>
+                <span>Hạng GPLX</span>
+                <select
+                  value={newDriverForm.licenseClass}
+                  onChange={(e) => setNewDriverForm((f) => ({ ...f, licenseClass: e.target.value }))}
+                  style={{ padding: '8px 11px', borderRadius: 9, border: '1px solid rgba(148,163,184,0.35)', background: isDark ? '#0f172a' : '#f8fafc', color: 'inherit' }}
+                >
+                  <option value="FC">Hạng FC (Đầu kéo Container)</option>
+                  <option value="C">Hạng C (Xe tải nặng)</option>
+                </select>
+              </label>
+              <label style={{ display: 'grid', gap: 5 }}>
+                <span>Số GPLX</span>
+                <input
+                  type="text"
+                  value={newDriverForm.licenseNumber}
+                  onChange={(e) => setNewDriverForm((f) => ({ ...f, licenseNumber: e.target.value }))}
+                  placeholder="7901-8899-1122"
+                  style={{ padding: '8px 11px', borderRadius: 9, border: '1px solid rgba(148,163,184,0.35)', background: 'transparent', color: 'inherit' }}
+                />
+              </label>
+              <label style={{ display: 'grid', gap: 5 }}>
+                <span>Số CCCD định danh</span>
+                <input
+                  type="text"
+                  value={newDriverForm.nationalId}
+                  onChange={(e) => setNewDriverForm((f) => ({ ...f, nationalId: e.target.value }))}
+                  style={{ padding: '8px 11px', borderRadius: 9, border: '1px solid rgba(148,163,184,0.35)', background: 'transparent', color: 'inherit' }}
+                />
+              </label>
+              <label style={{ display: 'grid', gap: 5 }}>
+                <span>Khu vực thường trú</span>
+                <input
+                  type="text"
+                  value={newDriverForm.hometown}
+                  onChange={(e) => setNewDriverForm((f) => ({ ...f, hometown: e.target.value }))}
+                  style={{ padding: '8px 11px', borderRadius: 9, border: '1px solid rgba(148,163,184,0.35)', background: 'transparent', color: 'inherit' }}
+                />
+              </label>
+              <label style={{ display: 'grid', gap: 5 }}>
+                <span>Biển số đầu kéo giao khoán</span>
+                <input
+                  type="text"
+                  value={newDriverForm.assignedVehiclePlate}
+                  onChange={(e) => setNewDriverForm((f) => ({ ...f, assignedVehiclePlate: e.target.value }))}
+                  style={{ padding: '8px 11px', borderRadius: 9, border: '1px solid rgba(148,163,184,0.35)', background: 'transparent', color: 'inherit' }}
+                />
+              </label>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, paddingTop: 8 }}>
+              <button type="button" onClick={() => setShowAddDriverModal(false)} className="lp-btn lp-btn--ghost lp-btn--sm">
+                Hủy
+              </button>
+              <button type="submit" className="lp-btn lp-btn--primary lp-btn--sm">
+                <UserPlus size={14} /> Lưu Hồ Sơ Tài Xế
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* ── MODAL 3: PHÂN CÔNG CONTAINER CHO TÀI XẾ ── */}
+      {assignModalDriver && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 115,
+            background: 'rgba(2, 12, 9, 0.72)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 18
+          }}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: 540,
+              borderRadius: 20,
+              background: isDark ? '#061611' : '#ffffff',
+              border: '1.5px solid rgba(56, 189, 248, 0.45)',
+              boxShadow: '0 24px 55px rgba(0,0,0,0.48)',
+              padding: 24,
+              color: isDark ? '#f8fafc' : '#0f172a',
+              display: 'grid',
+              gap: 14
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#38bdf8' }}>
+                  ĐIỀU PHỐI CONTAINER &amp; NHÂN SỰ
+                </div>
+                <h3 style={{ fontSize: '1.12rem', fontWeight: 800, margin: '2px 0 0' }}>
+                  Gán Container cho Tài Xế: {assignModalDriver.fullName}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAssignModalDriver(null)}
+                style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: '1rem', fontWeight: 800 }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ fontSize: '0.78rem', opacity: 0.8 }}>
+              Chọn vỏ container / vận đơn bên dưới để bàn giao trực tiếp cho tài xế{' '}
+              <strong>{assignModalDriver.fullName}</strong> ({assignModalDriver.phone}).
+            </div>
+
+            <div style={{ display: 'grid', gap: 9, maxHeight: 300, overflowY: 'auto' }}>
+              {userOwnShipments.map((s) => (
+                <div
+                  key={s.shipmentCode}
+                  style={{
+                    padding: '11px 14px',
+                    borderRadius: 12,
+                    background: subtleBg,
+                    border: '1px solid rgba(148, 163, 184, 0.22)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: 10,
+                    fontSize: '0.76rem'
+                  }}
+                >
+                  <div>
+                    <div style={{ fontWeight: 800 }}>
+                      <span style={{ color: '#38bdf8' }}>{s.containerCode}</span> • <code>{s.shipmentCode}</code>
+                    </div>
+                    <div style={{ opacity: 0.78, marginTop: 2 }}>
+                      {s.originName} ➔ {s.destinationName}
+                    </div>
+                    <div style={{ fontSize: '0.7rem', opacity: 0.72, marginTop: 2 }}>
+                      Hiện tại: <strong>{s.driverName || 'Chưa phân công'}</strong>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleAssignDriverToShipment(assignModalDriver, s.shipmentCode)}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: 8,
+                      border: 'none',
+                      background: '#059669',
+                      color: '#ffffff',
+                      fontSize: '0.74rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    Giao Chuyến Này
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── FLOATING GRAB / XANH SM DRIVER CHAT BUTTON ── */}
+      {!chatModalOpen && (
+        <button
+          type="button"
+          onClick={() => openDriverChat(chatTargetDriverCode)}
+          style={{
+            position: 'fixed',
+            right: 22,
+            bottom: 22,
+            zIndex: 95,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 10,
+            padding: '11px 16px',
+            borderRadius: 999,
+            border: '1.5px solid rgba(255,255,255,0.28)',
+            background: 'linear-gradient(135deg, #00b14f 0%, #059669 100%)',
+            color: '#ffffff',
+            fontSize: '0.82rem',
+            fontWeight: 800,
+            cursor: 'pointer',
+            boxShadow: '0 14px 32px rgba(5, 150, 105, 0.42)'
+          }}
+        >
+          <MessageSquare size={17} />
+          <span>Chat Tài Xế</span>
+          {unreadDriverChatCount > 0 && (
+            <span
+              style={{
+                minWidth: 20,
+                height: 20,
+                padding: '0 6px',
+                borderRadius: 999,
+                background: '#ef4444',
+                color: '#ffffff',
+                fontSize: '0.7rem',
+                fontWeight: 800,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              {unreadDriverChatCount}
+            </span>
+          )}
+        </button>
+      )}
+
+      {/* ── MODAL 4: GRAB / XANH SM 2-WAY DRIVER CHAT DRAWER ── */}
+      <GrabDriverChatModal
+        isOpen={chatModalOpen}
+        onClose={() => setChatModalOpen(false)}
+        isDark={isDark}
+        drivers={enrichedDrivers}
+        shipments={userOwnShipments}
+        chatThreads={chatThreads}
+        initialDriverCode={chatTargetDriverCode}
+        user={user}
+      />
+
+      {/* ── MODAL 4B: B2B E-CONTRACT, SHA-256 SIGNATURE & SLA SETTLEMENT MODAL ── */}
+      <CustomerContractModal
+        isOpen={Boolean(activeContractModal)}
+        onClose={() => setActiveContractModal(null)}
+        isDark={isDark}
+        contract={activeContractModal?.contract || null}
+        shipment={activeContractModal?.shipment || null}
+        user={user}
+        onSignContract={handleSignContract}
+        onRecordSlaEvent={handleRecordSlaEvent}
+        onSettleWithEpod={handleSettleContractWithEpod}
+        onOpenPayment={openPaymentForOrder}
+        onTrack3D={(shipmentCode) => {
+          setSelectedCode(shipmentCode);
+          setActiveTab('tracking');
+        }}
+      />
+
+      {/* ── MODAL 5: CUSTOMER B2B PAYMENT & VAT INVOICE MODAL ── */}
+      <CustomerPaymentModal
+        isOpen={paymentModalState.isOpen}
+        onClose={() =>
+          setPaymentModalState({ isOpen: false, targetOrder: null, targetPayment: null })
+        }
+        isDark={isDark}
+        targetOrder={paymentModalState.targetOrder}
+        targetPayment={paymentModalState.targetPayment}
+        user={user}
+        onCreateAndConfirm={handleCreateAndConfirmPayment}
+        onConfirmExisting={handleConfirmExistingPayment}
+        onRefundExisting={handleRefundExistingPayment}
+        onWebhookConfirm={handleWebhookPaymentConfirm}
+      />
     </div>
   );
 }

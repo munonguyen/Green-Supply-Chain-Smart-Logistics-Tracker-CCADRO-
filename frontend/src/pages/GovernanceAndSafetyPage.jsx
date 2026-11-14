@@ -78,6 +78,7 @@ export default function GovernanceAndSafetyPage() {
     return accounts.filter((acc) => {
       if (accountFilter === 'INTERNAL' && acc.portalType !== 'INTERNAL') return false;
       if (accountFilter === 'CUSTOMER' && acc.portalType !== 'CUSTOMER') return false;
+      if (accountFilter === 'SHIPPER' && acc.portalType !== 'SHIPPER') return false;
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase().trim();
       return (
@@ -252,6 +253,7 @@ export default function GovernanceAndSafetyPage() {
 
   const internalCount = accounts.filter((a) => a.portalType === 'INTERNAL').length;
   const customerCount = accounts.filter((a) => a.portalType === 'CUSTOMER').length;
+  const shipperCount = accounts.filter((a) => a.portalType === 'SHIPPER').length;
 
   return (
     <div className="page-body">
@@ -441,7 +443,8 @@ export default function GovernanceAndSafetyPage() {
                   {[
                     { id: 'ALL', label: `Tất cả (${accounts.length})` },
                     { id: 'INTERNAL', label: `Nội bộ (${internalCount})` },
-                    { id: 'CUSTOMER', label: `Khách hàng (${customerCount})` }
+                    { id: 'CUSTOMER', label: `Khách hàng (${customerCount})` },
+                    { id: 'SHIPPER', label: `Shipper 3PL (${shipperCount})` }
                   ].map((f) => (
                     <button
                       key={f.id}
@@ -527,6 +530,7 @@ export default function GovernanceAndSafetyPage() {
                     <tbody>
                       {filteredAccounts.map((acc) => {
                         const isRoot = acc.username === 'admin' || acc.isRootAdmin;
+                        const isSeed = Boolean(acc.isSystemSeed);
                         const permCount = Array.isArray(acc.permissions)
                           ? acc.permissions.length
                           : 0;
@@ -557,16 +561,18 @@ export default function GovernanceAndSafetyPage() {
                             </td>
 
                             <td>
-                              {isRoot ? (
+                              {isRoot || isSeed ? (
                                 <span
                                   className="badge"
                                   style={{
-                                    background: 'rgba(168, 85, 247, 0.2)',
-                                    color: '#d8b4fe',
-                                    border: '1px solid #a855f7'
+                                    background: isRoot
+                                      ? 'rgba(168, 85, 247, 0.2)'
+                                      : 'rgba(16, 185, 129, 0.16)',
+                                    color: isRoot ? '#d8b4fe' : '#6ee7b7',
+                                    border: isRoot ? '1px solid #a855f7' : '1px solid #10b981'
                                   }}
                                 >
-                                  ROOT ADMIN
+                                  {isRoot ? 'ROOT ADMIN' : `${acc.role} (CỐ ĐỊNH)`}
                                 </span>
                               ) : (
                                 <select
@@ -640,7 +646,7 @@ export default function GovernanceAndSafetyPage() {
                                   {acc.status === 'LOCKED' ? 'ĐÃ KHÓA' : 'ACTIVE'}
                                 </span>
 
-                                {!isRoot && isAdmin && (
+                                {!isRoot && !isSeed && isAdmin && (
                                   <>
                                     <button
                                       type="button"
@@ -813,9 +819,11 @@ export default function GovernanceAndSafetyPage() {
                 <span>Khởi Tạo Tài Khoản Nội Bộ &amp; Phân Quyền (Dành Cho ADMIN)</span>
               </h3>
               <p style={{ fontSize: '0.79rem', color: '#94a3b8', marginBottom: '16px' }}>
-                Hệ thống không tạo sẵn tài khoản mặc định cho các role nội bộ. ADMIN sử dụng biểu
-                mẫu này để cấp tài khoản và phân quyền cho <code>DISPATCHER</code>,{' '}
-                <code>SAFETY_MANAGER</code>, <code>DRIVER</code>, <code>ESG_AUDITOR</code>.
+                Hệ thống khóa cứng 7 vai trò hạt nhân (<code>ADMIN</code>, <code>DISPATCHER</code>,{' '}
+                <code>SAFETY_MANAGER</code>, <code>DRIVER</code>, <code>ESG_AUDITOR</code>,{' '}
+                <code>CUSTOMER</code>, <code>SHIPPER</code>) kèm 7 tài khoản gốc tương ứng.{' '}
+                <code>CUSTOMER</code> đặt xe tại <code>/customer</code>, còn <code>SHIPPER</code> là
+                đối tác kho/giao nhận điểm đích 3PL tại <code>/shipper</code>.
               </p>
 
               <form
@@ -980,7 +988,8 @@ export default function GovernanceAndSafetyPage() {
                       <option value="DRIVER">DRIVER — Tài xế Vận tải</option>
                       <option value="ESG_AUDITOR">ESG_AUDITOR — Kiểm toán viên Carbon</option>
                       <option value="ADMIN">ADMIN — Quản trị viên hệ thống</option>
-                      <option value="SHIPPER">SHIPPER — Tài khoản Khách hàng B2B</option>
+                      <option value="CUSTOMER">CUSTOMER — Khách hàng / Chủ hàng B2B</option>
+                      <option value="SHIPPER">SHIPPER — Đối tác Điểm đích / Kho 3PL (Bên thứ 3)</option>
                     </select>
                   </div>
 

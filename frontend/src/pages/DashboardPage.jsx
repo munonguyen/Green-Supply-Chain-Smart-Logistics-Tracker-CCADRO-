@@ -209,7 +209,7 @@ export default function DashboardPage() {
   }, []);
 
   const visibleShipments =
-    user?.role === 'SHIPPER' && user?.customerId
+    (user?.role === 'CUSTOMER' || user?.role === 'SHIPPER') && user?.customerId
       ? shipments.filter((s) => s.customerId === user.customerId)
       : shipments;
 
@@ -776,7 +776,9 @@ export default function DashboardPage() {
                       <td>
                         <span
                           className={
-                            acc.role === 'SHIPPER' ? 'badge badge-amber' : 'badge badge-green'
+                            acc.role === 'CUSTOMER' || acc.role === 'SHIPPER'
+                              ? 'badge badge-amber'
+                              : 'badge badge-green'
                           }
                           style={{ fontSize: '0.7rem' }}
                         >

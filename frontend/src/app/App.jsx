@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from '../context/AuthContext';
+import { AuthProvider, useAuth, getDefaultPortalPath } from '../context/AuthContext';
 import { ThemeProvider } from '../context/ThemeContext';
 import Sidebar from '../components/layout/Sidebar';
 import Header from '../components/layout/Header';
@@ -12,6 +12,7 @@ import NewsPage from '../pages/NewsPage';
 import LoginPage from '../pages/LoginPage';
 import RegisterPage from '../pages/RegisterPage';
 import CustomerPortalPage from '../pages/CustomerPortalPage';
+import ShipperPortalPage from '../pages/ShipperPortalPage';
 import DriverTerminalPage from '../pages/DriverTerminalPage';
 import DashboardPage from '../pages/DashboardPage';
 import ShipmentsPage from '../pages/ShipmentsPage';
@@ -43,6 +44,19 @@ function ConsoleLayout({ children }) {
   );
 }
 
+const INTERNAL_CONSOLE_ROLES = ['ADMIN', 'DISPATCHER', 'SAFETY_MANAGER', 'ESG_AUDITOR'];
+
+function RequireRole({ allowedRoles, children }) {
+  const { user } = useAuth();
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  if (Array.isArray(allowedRoles) && !allowedRoles.includes(user.role)) {
+    return <Navigate to={getDefaultPortalPath(user)} replace />;
+  }
+  return children;
+}
+
 export default function App() {
   return (
     <ThemeProvider>
@@ -61,19 +75,45 @@ export default function App() {
             <Route path="/register" element={<RegisterPage />} />
 
             {/* 3. Dedicated External User / B2B Customer Portal */}
-            <Route path="/customer" element={<CustomerPortalPage />} />
+            <Route
+              path="/customer"
+              element={
+                <RequireRole allowedRoles={['CUSTOMER', 'ADMIN']}>
+                  <CustomerPortalPage />
+                </RequireRole>
+              }
+            />
             <Route path="/user-portal" element={<Navigate to="/customer" replace />} />
 
+            {/* 3a. Dedicated Third-Party Destination Shipper / 3PL Handover Portal */}
+            <Route
+              path="/shipper"
+              element={
+                <RequireRole allowedRoles={['SHIPPER', 'ADMIN']}>
+                  <ShipperPortalPage />
+                </RequireRole>
+              }
+            />
+
             {/* 3b. Dedicated Internal Driver Terminal / Cabin HUD */}
-            <Route path="/driver" element={<DriverTerminalPage />} />
+            <Route
+              path="/driver"
+              element={
+                <RequireRole allowedRoles={['DRIVER', 'ADMIN']}>
+                  <DriverTerminalPage />
+                </RequireRole>
+              }
+            />
 
             {/* 4. Internal Monitoring & Operations System */}
             <Route
               path="/portal"
               element={
-                <ConsoleLayout>
-                  <DashboardPage />
-                </ConsoleLayout>
+                <RequireRole allowedRoles={INTERNAL_CONSOLE_ROLES}>
+                  <ConsoleLayout>
+                    <DashboardPage />
+                  </ConsoleLayout>
+                </RequireRole>
               }
             />
             <Route path="/dashboard" element={<Navigate to="/portal" replace />} />
@@ -81,73 +121,91 @@ export default function App() {
             <Route
               path="/shipments"
               element={
-                <ConsoleLayout>
-                  <ShipmentsPage />
-                </ConsoleLayout>
+                <RequireRole allowedRoles={INTERNAL_CONSOLE_ROLES}>
+                  <ConsoleLayout>
+                    <ShipmentsPage />
+                  </ConsoleLayout>
+                </RequireRole>
               }
             />
             <Route
               path="/shipments/new"
               element={
-                <ConsoleLayout>
-                  <NewShipmentPage />
-                </ConsoleLayout>
+                <RequireRole allowedRoles={['ADMIN', 'DISPATCHER']}>
+                  <ConsoleLayout>
+                    <NewShipmentPage />
+                  </ConsoleLayout>
+                </RequireRole>
               }
             />
             <Route
               path="/planning/:shipmentId"
               element={
-                <ConsoleLayout>
-                  <PlanningPage />
-                </ConsoleLayout>
+                <RequireRole allowedRoles={['ADMIN', 'DISPATCHER']}>
+                  <ConsoleLayout>
+                    <PlanningPage />
+                  </ConsoleLayout>
+                </RequireRole>
               }
             />
             <Route
               path="/dispatch/:shipmentId"
               element={
-                <ConsoleLayout>
-                  <DispatchPage />
-                </ConsoleLayout>
+                <RequireRole allowedRoles={['ADMIN', 'DISPATCHER']}>
+                  <ConsoleLayout>
+                    <DispatchPage />
+                  </ConsoleLayout>
+                </RequireRole>
               }
             />
             <Route
               path="/trips/:tripId"
               element={
-                <ConsoleLayout>
-                  <TripTrackingPage />
-                </ConsoleLayout>
+                <RequireRole allowedRoles={INTERNAL_CONSOLE_ROLES}>
+                  <ConsoleLayout>
+                    <TripTrackingPage />
+                  </ConsoleLayout>
+                </RequireRole>
               }
             />
             <Route
               path="/trips/:tripId/tracking"
               element={
-                <ConsoleLayout>
-                  <TripTrackingPage />
-                </ConsoleLayout>
+                <RequireRole allowedRoles={INTERNAL_CONSOLE_ROLES}>
+                  <ConsoleLayout>
+                    <TripTrackingPage />
+                  </ConsoleLayout>
+                </RequireRole>
               }
             />
             <Route
               path="/trips/:tripId/carbon"
               element={
-                <ConsoleLayout>
-                  <TripCarbonPage />
-                </ConsoleLayout>
+                <RequireRole allowedRoles={['ADMIN', 'DISPATCHER', 'ESG_AUDITOR']}>
+                  <ConsoleLayout>
+                    <TripCarbonPage />
+                  </ConsoleLayout>
+                </RequireRole>
               }
             />
             <Route
               path="/analytics/benchmark"
               element={
-                <ConsoleLayout>
-                  <BenchmarkPage />
-                </ConsoleLayout>
+                <RequireRole allowedRoles={['ADMIN', 'DISPATCHER', 'ESG_AUDITOR']}>
+                  <ConsoleLayout>
+                    <BenchmarkPage />
+                  </ConsoleLayout>
+                </RequireRole>
               }
             />
             <Route
               path="/governance"
               element={
-                <ConsoleLayout>
-                  <GovernanceAndSafetyPage />
-                </ConsoleLayout>
+                <RequireRole allowedRoles={['ADMIN', 'SAFETY_MANAGER']}>
+                  <ConsoleLayout>
+                    <GovernanceAndSafetyPage />
+                  </ConsoleLayout>
+                </RequireRole>
               }
             />
 
