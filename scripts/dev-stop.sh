@@ -18,7 +18,7 @@ if [ -d .pids ]; then
 fi
 
 # Clean up any orphan processes on microservice ports and frontend
-PORTS=(5173 8888 8080 8081 8082 8083 8084 8085 8086 8087)
+PORTS=(5173 8888 8080 8081 8082 8083 8084 8085 8086 8087 8088)
 for port in "${PORTS[@]}"; do
   lsof -ti :$port | xargs kill -9 2>/dev/null || true
 done
