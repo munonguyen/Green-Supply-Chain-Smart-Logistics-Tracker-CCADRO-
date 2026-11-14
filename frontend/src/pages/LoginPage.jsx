@@ -21,8 +21,8 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      const loggedUser = await login(username.trim(), password);
-      navigate(getDefaultPortalPath(loggedUser));
+      const authResult = await login(username.trim(), password);
+      navigate(authResult?.redirectTo || getDefaultPortalPath(authResult?.user || authResult));
     } catch (err) {
       setError(err?.message || 'Tên đăng nhập hoặc mật khẩu không chính xác.');
     } finally {

@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import {
   AlertOctagon,
   AlertTriangle,
+  Check,
+  CheckCheck,
   CheckCircle2,
   Compass,
   Database,
@@ -11,6 +13,7 @@ import {
   Lock,
   LogOut,
   MapPin,
+  MessageSquare,
   Moon,
   Navigation,
   Package,
@@ -19,10 +22,13 @@ import {
   Play,
   Radio,
   RefreshCw,
+  Send,
   ShieldAlert,
   ShieldCheck,
+  Sparkles,
   Sun,
   Thermometer,
+  Truck,
   Unlock,
   UserCheck
 } from 'lucide-react';
@@ -30,6 +36,15 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { api } from '../services/api';
 import CcadroLogo from '../components/ui/CcadroLogo';
+import GrabDriverAvatar from '../components/ui/GrabDriverAvatar';
+import {
+  getUnreadCountForViewer,
+  loadChatThreadsMap,
+  markChatThreadRead,
+  sendGrabChatMessage,
+  subscribeDriverChat,
+  syncChatThreadFromDb
+} from '../utils/driverChatSync';
 import MapView from '../components/map/MapView';
 import RoutePolyline from '../components/map/RoutePolyline';
 import VehicleMarker from '../components/map/VehicleMarker';
@@ -222,7 +237,21 @@ export default function DriverTerminalPage() {
   const { isDark, toggleTheme } = useTheme();
 
   // Active workspace tab
-  const [activeTab, setActiveTab] = useState('mission'); // 'mission' | 'inspection' | 'navigation' | 'epod'
+  const [activeTab, setActiveTab] = useState('mission'); // 'mission' | 'inspection' | 'navigation' | 'epod' | 'chat'
+
+  // Two-way Grab / Xanh SM Customer Chat state
+  const [chatThreads, setChatThreads] = useState(() => loadChatThreadsMap());
+  const [driverProfilesList, setDriverProfilesList] = useState([
+    { driverCode: 'DRV-FC-001', fullName: 'Nguyễn Văn Hùng', phone: '0903 812 456', backendId: '11111111-1111-4111-8111-111111110001' },
+    { driverCode: 'DRV-FC-002', fullName: 'Lê Minh Khôi', phone: '0908 551 209', backendId: '11111111-1111-4111-8111-111111110002' },
+    { driverCode: 'DRV-FC-003', fullName: 'Trần Hoàng Nam', phone: '0914 720 881', backendId: '11111111-1111-4111-8111-111111110003' },
+    { driverCode: 'DRV-FC-004', fullName: 'Phạm Quốc Tuấn', phone: '0989 341 612', backendId: '11111111-1111-4111-8111-111111110004' },
+    { driverCode: 'DRV-FC-005', fullName: 'Võ Thành Đạt', phone: '0937 618 904', backendId: '11111111-1111-4111-8111-111111110005' }
+  ]);
+  const [activeChatDriverCode, setActiveChatDriverCode] = useState('DRV-FC-001');
+  const [chatDraft, setChatDraft] = useState('');
+  const [sendingChat, setSendingChat] = useState(false);
+  const chatEndRef = useRef(null);
 
   // Container fleet & DB synchronization state
   const [containers, setContainers] = useState(DRIVER_SEED_CONTAINERS);
@@ -313,6 +342,16 @@ export default function DriverTerminalPage() {
           ? drvRes.value?.result || drvRes.value?.data || drvRes.value
           : [];
 
+      if (Array.isArray(drvList) && drvList.length > 0) {
+        setDriverProfilesList(
+          drvList.map((d) => ({
+            driverCode: d.driverCode,
+            fullName: d.fullName,
+            phone: d.phone,
+            backendId: d.id
+          }))
+        );
+      }
       if (Array.isArray(vehList) && vehList.length > 0 && Array.isArray(drvList) && drvList.length > 0) {
         setBackendIds({
           vehicleId: vehList[0].id,
@@ -326,11 +365,61 @@ export default function DriverTerminalPage() {
 
   useEffect(() => {
     loadFromBackend();
+    const unsubChat = subscribeDriverChat(() => {
+      setChatThreads(loadChatThreadsMap());
+    });
+    return () => unsubChat();
   }, [loadFromBackend]);
 
   const activeContainer = useMemo(() => {
     return containers.find((c) => c.containerCode === selectedCode) || containers[0];
   }, [containers, selectedCode]);
+
+  // Synchronize active chat thread with container's assigned driver
+  useEffect(() => {
+    if (!activeContainer?.driverName) return;
+    const match = driverProfilesList.find(
+      (d) => d.fullName.toLowerCase().trim() === activeContainer.driverName.toLowerCase().trim()
+    );
+    if (match) {
+      setActiveChatDriverCode(match.driverCode);
+    }
+  }, [activeContainer?.driverName, driverProfilesList]);
+
+  const activeChatDriver = useMemo(() => {
+    return (
+      driverProfilesList.find((d) => d.driverCode === activeChatDriverCode) ||
+      driverProfilesList[0]
+    );
+  }, [driverProfilesList, activeChatDriverCode]);
+
+  const driverChatMessages = useMemo(() => {
+    if (!activeChatDriver) return [];
+    const list = Array.isArray(chatThreads[activeChatDriver.driverCode])
+      ? chatThreads[activeChatDriver.driverCode]
+      : [];
+    return [...list].sort(
+      (a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime()
+    );
+  }, [chatThreads, activeChatDriver]);
+
+  const unreadCustomerMessagesTotal = useMemo(
+    () => getUnreadCountForViewer(chatThreads, 'DRIVER'),
+    [chatThreads]
+  );
+
+  useEffect(() => {
+    if (activeTab !== 'chat' || !activeChatDriver) return;
+    if (activeChatDriver.backendId) {
+      syncChatThreadFromDb(activeChatDriver.driverCode, activeChatDriver.backendId);
+    }
+    markChatThreadRead({
+      driverCode: activeChatDriver.driverCode,
+      backendDriverId: activeChatDriver.backendId,
+      viewerRole: 'DRIVER'
+    });
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [activeTab, activeChatDriver, driverChatMessages.length]);
 
   // Resolve real road route for active container
   const routeData = useMemo(() => {
@@ -558,16 +647,16 @@ export default function DriverTerminalPage() {
           prev.map((c) =>
             c.containerCode === activeContainer.containerCode
               ? {
-                  ...c,
-                  status: 'DELIVERED',
-                  progressPct: 100,
-                  speedKmh: 0,
-                  etaMinutes: 0,
-                  eSealStatus: 'UNLOCKED_AUTHORIZED',
-                  epodRecipient: epodRecipient.trim(),
-                  epodSignature: sigToken,
-                  completedAt: new Date().toISOString()
-                }
+                ...c,
+                status: 'DELIVERED',
+                progressPct: 100,
+                speedKmh: 0,
+                etaMinutes: 0,
+                eSealStatus: 'UNLOCKED_AUTHORIZED',
+                epodRecipient: epodRecipient.trim(),
+                epodSignature: sigToken,
+                completedAt: new Date().toISOString()
+              }
               : c
           )
         );
@@ -582,16 +671,16 @@ export default function DriverTerminalPage() {
         prev.map((c) =>
           c.containerCode === activeContainer.containerCode
             ? {
-                ...c,
-                status: 'DELIVERED',
-                progressPct: 100,
-                speedKmh: 0,
-                etaMinutes: 0,
-                eSealStatus: 'UNLOCKED_AUTHORIZED',
-                epodRecipient: epodRecipient.trim(),
-                epodSignature: sigToken,
-                completedAt: new Date().toISOString()
-              }
+              ...c,
+              status: 'DELIVERED',
+              progressPct: 100,
+              speedKmh: 0,
+              etaMinutes: 0,
+              eSealStatus: 'UNLOCKED_AUTHORIZED',
+              epodRecipient: epodRecipient.trim(),
+              epodSignature: sigToken,
+              completedAt: new Date().toISOString()
+            }
             : c
         )
       );
@@ -948,13 +1037,19 @@ export default function DriverTerminalPage() {
           flexWrap: 'wrap'
         }}
       >
-        {/* 4 Functional Tabs */}
+        {/* 5 Functional Tabs */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           {[
             { id: 'mission', label: '1. Nhiệm Vụ & Smart Container', icon: Package },
             { id: 'inspection', label: '2. Kiểm Tra 6 Điểm (UC03)', icon: ShieldCheck },
             { id: 'navigation', label: '3. Dẫn Đường 3D & Eco-HUD', icon: Navigation },
-            { id: 'epod', label: '4. Ký Nhận ePOD & Sự Cố', icon: FileCheck }
+            { id: 'epod', label: '4. Ký Nhận ePOD & Sự Cố', icon: FileCheck },
+            {
+              id: 'chat',
+              label: '5. Chat Khách Hàng B2B',
+              icon: MessageSquare,
+              badge: unreadCustomerMessagesTotal
+            }
           ].map((tab) => {
             const Icon = tab.icon;
             const active = activeTab === tab.id;
@@ -982,6 +1077,25 @@ export default function DriverTerminalPage() {
               >
                 <Icon size={16} />
                 <span>{tab.label}</span>
+                {tab.badge > 0 && (
+                  <span
+                    style={{
+                      minWidth: 18,
+                      height: 18,
+                      padding: '0 5px',
+                      borderRadius: 999,
+                      background: '#ef4444',
+                      color: '#ffffff',
+                      fontSize: '0.68rem',
+                      fontWeight: 800,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    {tab.badge}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -2218,6 +2332,398 @@ export default function DriverTerminalPage() {
                   </span>
                 </button>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* ======================== TAB 5: GRAB / XANH SM 2-WAY DRIVER CHAT ======================== */}
+        {activeTab === 'chat' && (
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'minmax(240px, 300px) 1fr',
+              gap: 16,
+              minHeight: 540
+            }}
+          >
+            {/* Driver Identity & Thread Selector */}
+            <div
+              style={{
+                borderRadius: 18,
+                background: cardBg,
+                border: cardBorder,
+                padding: 14,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8
+              }}
+            >
+              <div style={{ fontSize: '0.84rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
+                <MessageSquare size={16} color="#10b981" />
+                <span>Hộp Thư Tài Xế Cabin OS</span>
+              </div>
+              <div style={{ fontSize: '0.72rem', color: textMuted, marginBottom: 4 }}>
+                Chọn hồ sơ tài xế để nhận &amp; phản hồi tin nhắn trực tiếp từ Khách hàng (`/customer`):
+              </div>
+              {driverProfilesList.map((drv) => {
+                const active = activeChatDriver?.driverCode === drv.driverCode;
+                const unread = getUnreadCountForViewer(chatThreads, 'DRIVER', drv.driverCode);
+                const list = Array.isArray(chatThreads[drv.driverCode]) ? chatThreads[drv.driverCode] : [];
+                const last = list[list.length - 1];
+                return (
+                  <button
+                    key={drv.driverCode}
+                    type="button"
+                    onClick={() => setActiveChatDriverCode(drv.driverCode)}
+                    style={{
+                      width: '100%',
+                      textAlign: 'left',
+                      padding: '10px 11px',
+                      borderRadius: 12,
+                      border: active ? '1.5px solid #10b981' : cardBorder,
+                      background: active ? 'rgba(16, 185, 129, 0.14)' : subtleBg,
+                      color: textMain,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10
+                    }}
+                  >
+                    <GrabDriverAvatar name={drv.fullName} status="ON_TRIP" size={38} verified />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
+                        <strong style={{ fontSize: '0.79rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {drv.fullName}
+                        </strong>
+                        {unread > 0 && (
+                          <span
+                            style={{
+                              minWidth: 18,
+                              height: 18,
+                              padding: '0 5px',
+                              borderRadius: 999,
+                              background: '#ef4444',
+                              color: '#ffffff',
+                              fontSize: '0.66rem',
+                              fontWeight: 800,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}
+                          >
+                            {unread}
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: '0.68rem', color: '#10b981', fontWeight: 700 }}>
+                        {drv.driverCode} • {drv.phone}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '0.69rem',
+                          color: textMuted,
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          marginTop: 2
+                        }}
+                      >
+                        {last ? last.messageText : 'Chưa có tin nhắn từ khách hàng'}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Active Chat Conversation */}
+            <div
+              style={{
+                borderRadius: 18,
+                background: cardBg,
+                border: cardBorder,
+                display: 'flex',
+                flexDirection: 'column',
+                minHeight: 540,
+                overflow: 'hidden'
+              }}
+            >
+              <div
+                style={{
+                  padding: '14px 18px',
+                  borderBottom: cardBorder,
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: 10
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <GrabDriverAvatar
+                    name={activeChatDriver?.fullName || 'Tài xế'}
+                    status="ON_TRIP"
+                    size={42}
+                    verified
+                  />
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: '0.94rem' }}>
+                      {activeChatDriver?.fullName} ↔ Khách hàng B2B
+                    </div>
+                    <div style={{ fontSize: '0.73rem', color: '#10b981', fontWeight: 700 }}>
+                      ● Đang đồng bộ hai chiều với Portal Khách hàng (/customer) •{' '}
+                      {activeContainer?.containerCode || 'TCKU-781920-4'}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.74rem', color: textMuted }}>
+                  <Truck size={14} color="#10b981" />
+                  <span>{activeContainer?.originName} → {activeContainer?.destinationName}</span>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  flex: 1,
+                  overflowY: 'auto',
+                  padding: '16px 18px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 10,
+                  background: isDark ? 'rgba(2, 10, 8, 0.5)' : '#f8fafc'
+                }}
+              >
+                {driverChatMessages.length === 0 ? (
+                  <div
+                    style={{
+                      margin: 'auto',
+                      textAlign: 'center',
+                      maxWidth: 360,
+                      padding: 20,
+                      borderRadius: 16,
+                      border: cardBorder,
+                      color: textMuted,
+                      fontSize: '0.8rem'
+                    }}
+                  >
+                    <Sparkles size={20} color="#10b981" style={{ marginBottom: 6 }} />
+                    Chưa có tin nhắn nào cho {activeChatDriver?.fullName}. Bạn có thể gửi cập nhật trạng thái tới Khách hàng ngay bên dưới.
+                  </div>
+                ) : (
+                  driverChatMessages.map((msg) => {
+                    const isSelfDriver = (msg.senderRole || 'CUSTOMER').toUpperCase() === 'DRIVER';
+                    const isLocation = msg.messageType === 'LOCATION';
+                    return (
+                      <div
+                        key={msg.id}
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: isSelfDriver ? 'flex-end' : 'flex-start'
+                        }}
+                      >
+                        <div style={{ fontSize: '0.68rem', color: textMuted, marginBottom: 3, paddingInline: 4 }}>
+                          {isSelfDriver
+                            ? `Cabin (${msg.senderName})`
+                            : (msg.senderRole || '').toUpperCase() === 'SHIPPER'
+                              ? `${msg.senderName} • Kho Đích 3PL`
+                              : `${msg.senderName} • Khách hàng`}
+                        </div>
+                        <div
+                          style={{
+                            maxWidth: '78%',
+                            padding: '10px 14px',
+                            borderRadius: isSelfDriver ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                            background: isSelfDriver
+                              ? 'linear-gradient(135deg, #00b14f 0%, #059669 100%)'
+                              : cardBg,
+                            color: isSelfDriver ? '#ffffff' : textMain,
+                            border: isSelfDriver ? 'none' : cardBorder,
+                            fontSize: '0.82rem',
+                            lineHeight: 1.45
+                          }}
+                        >
+                          {isLocation && (
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.69rem', fontWeight: 800, marginBottom: 4 }}>
+                              <MapPin size={12} /> TỌA ĐỘ GPS TRỰC TIẾP
+                            </div>
+                          )}
+                          <div>{msg.messageText}</div>
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'flex-end',
+                              gap: 4,
+                              marginTop: 5,
+                              fontSize: '0.66rem',
+                              opacity: isSelfDriver ? 0.85 : 0.68
+                            }}
+                          >
+                            <span>
+                              {msg.createdAt
+                                ? new Date(msg.createdAt).toLocaleTimeString('vi-VN', {
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })
+                                : ''}
+                            </span>
+                            {isSelfDriver &&
+                              (msg.read ? <CheckCheck size={12} /> : <Check size={12} />)}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+                <div ref={chatEndRef} />
+              </div>
+
+              {/* Driver Safe Quick Replies + Input */}
+              <div style={{ padding: '10px 16px 14px', borderTop: cardBorder }}>
+                <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 8 }}>
+                  {[
+                    'Em đang trên đường tới, còn khoảng 15 phút ạ',
+                    'Xe đã vào cổng cảng làm thủ tục',
+                    'Nhiệt độ lạnh & khóa e-Seal đang ổn định 100%',
+                    'Đang kẹt xe nhẹ gần trạm thu phí, xin phép báo trước',
+                    'Đã tới điểm giao hàng, nhờ kho ra nhận ePOD ạ'
+                  ].map((chip) => (
+                    <button
+                      key={chip}
+                      type="button"
+                      onClick={() => {
+                        if (!activeChatDriver || sendingChat) return;
+                        setSendingChat(true);
+                        sendGrabChatMessage({
+                          driverCode: activeChatDriver.driverCode,
+                          backendDriverId: activeChatDriver.backendId,
+                          senderName: activeChatDriver.fullName,
+                          senderRole: 'DRIVER',
+                          senderUsername: user?.username || 'driver',
+                          containerCode: activeContainer?.containerCode,
+                          shipmentCode: activeContainer?.assignedShipmentCode,
+                          messageText: chip,
+                          messageType: 'QUICK_REPLY'
+                        }).finally(() => setSendingChat(false));
+                      }}
+                      style={{
+                        whiteSpace: 'nowrap',
+                        padding: '5px 10px',
+                        borderRadius: 999,
+                        border: cardBorder,
+                        background: subtleBg,
+                        color: '#10b981',
+                        fontSize: '0.72rem',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {chip}
+                    </button>
+                  ))}
+                </div>
+
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!activeChatDriver || !chatDraft.trim() || sendingChat) return;
+                    const text = chatDraft.trim();
+                    setSendingChat(true);
+                    sendGrabChatMessage({
+                      driverCode: activeChatDriver.driverCode,
+                      backendDriverId: activeChatDriver.backendId,
+                      senderName: activeChatDriver.fullName,
+                      senderRole: 'DRIVER',
+                      senderUsername: user?.username || 'driver',
+                      containerCode: activeContainer?.containerCode,
+                      shipmentCode: activeContainer?.assignedShipmentCode,
+                      messageText: text,
+                      messageType: 'TEXT'
+                    })
+                      .then(() => setChatDraft(''))
+                      .finally(() => setSendingChat(false));
+                  }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!activeChatDriver || sendingChat) return;
+                      setSendingChat(true);
+                      sendGrabChatMessage({
+                        driverCode: activeChatDriver.driverCode,
+                        backendDriverId: activeChatDriver.backendId,
+                        senderName: activeChatDriver.fullName,
+                        senderRole: 'DRIVER',
+                        senderUsername: user?.username || 'driver',
+                        containerCode: activeContainer?.containerCode,
+                        shipmentCode: activeContainer?.assignedShipmentCode,
+                        messageText: `📍 Vị trí Cabin hiện tại: ${currentCoords[0].toFixed(4)}°N, ${currentCoords[1].toFixed(4)}°E • Tốc độ ${Math.round(activeContainer?.speedKmh || 48)} km/h • Nhiệt độ ${activeContainer?.supplyAirTempC ?? -18.4}°C`,
+                        messageType: 'LOCATION'
+                      }).finally(() => setSendingChat(false));
+                    }}
+                    style={{
+                      height: 40,
+                      padding: '0 12px',
+                      borderRadius: 11,
+                      border: cardBorder,
+                      background: subtleBg,
+                      color: '#10b981',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 5,
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    <MapPin size={14} /> Gửi GPS Xe
+                  </button>
+
+                  <input
+                    type="text"
+                    value={chatDraft}
+                    onChange={(e) => setChatDraft(e.target.value)}
+                    placeholder="Nhập tin nhắn phản hồi Khách hàng B2B..."
+                    style={{
+                      flex: 1,
+                      height: 40,
+                      padding: '0 14px',
+                      borderRadius: 11,
+                      border: cardBorder,
+                      background: subtleBg,
+                      color: textMain,
+                      fontSize: '0.84rem',
+                      outline: 'none'
+                    }}
+                  />
+
+                  <button
+                    type="submit"
+                    disabled={sendingChat || !chatDraft.trim()}
+                    style={{
+                      height: 40,
+                      padding: '0 16px',
+                      borderRadius: 11,
+                      border: 'none',
+                      background: 'linear-gradient(135deg, #00b14f 0%, #059669 100%)',
+                      color: '#ffffff',
+                      fontSize: '0.82rem',
+                      fontWeight: 800,
+                      cursor: sendingChat || !chatDraft.trim() ? 'not-allowed' : 'pointer',
+                      opacity: sendingChat || !chatDraft.trim() ? 0.6 : 1,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6
+                    }}
+                  >
+                    <Send size={14} /> Gửi
+                  </button>
+                </form>
+              </div>
             </div>
           </div>
         )}

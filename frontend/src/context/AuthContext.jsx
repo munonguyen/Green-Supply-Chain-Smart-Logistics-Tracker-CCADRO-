@@ -2,11 +2,20 @@ import React, { createContext, useContext, useState } from 'react';
 import { api } from '../services/api';
 
 /**
- * Định nghĩa khuôn mẫu 6 Vai trò (Role Templates) và danh sách quyền chuẩn (Default Permissions).
- * Lưu ý: Hệ thống KHÔNG tạo sẵn các tài khoản mặc định cho các role nội bộ (ngoại trừ tài khoản
- * quản trị viên gốc `admin`). Mọi tài khoản nhân sự nội bộ khác đều do ADMIN trực tiếp khởi tạo
- * và phân quyền trong phân hệ Quản trị IAM (/governance).
+ * Định nghĩa cố định (Hardcoded) 7 Vai trò (Role Templates) chuẩn CCADRO v4.0
+ * Tách biệt hoàn toàn CUSTOMER (Khách hàng B2B tại /customer) và SHIPPER (Bên giao nhận điểm đích / 3PL tại /shipper)
+ * đồng bộ 1-1 với Flyway V014 -> V020.
  */
+export const SYSTEM_FIXED_ROLES = Object.freeze([
+  'ADMIN',
+  'DISPATCHER',
+  'SAFETY_MANAGER',
+  'DRIVER',
+  'ESG_AUDITOR',
+  'CUSTOMER',
+  'SHIPPER'
+]);
+
 export const ALL_SYSTEM_PERMISSIONS = [
   { code: 'USER_MANAGE', label: 'Quản lý & cấp phát tài khoản', group: 'IAM & Quản trị' },
   { code: 'ROLE_MANAGE', label: 'Phân quyền vai trò (RBAC)', group: 'IAM & Quản trị' },
@@ -19,8 +28,18 @@ export const ALL_SYSTEM_PERMISSIONS = [
   { code: 'SHIPMENT_READ', label: 'Xem toàn bộ vận đơn hệ thống', group: 'Vận đơn & Điều phối' },
   {
     code: 'SHIPMENT_READ_OWN',
-    label: 'Xem vận đơn của riêng doanh nghiệp',
+    label: 'Xem vận đơn của riêng doanh nghiệp (Customer)',
     group: 'Vận đơn & Điều phối'
+  },
+  {
+    code: 'SHIPMENT_READ_INBOUND',
+    label: 'Xem hàng/container giao tới bãi điểm đích (3PL Shipper)',
+    group: 'Giao nhận Điểm đích (3PL)'
+  },
+  {
+    code: 'EXTERNAL_3PL_SYNC',
+    label: 'Đồng bộ trạng thái & Webhook qua hệ thống thứ 3 (WMS/3PL)',
+    group: 'Giao nhận Điểm đích (3PL)'
   },
   { code: 'SHIPMENT_WRITE', label: 'Cập nhật thông tin vận đơn', group: 'Vận đơn & Điều phối' },
   { code: 'SHIPMENT_DISPATCH', label: 'Phát lệnh điều xe xuất bến', group: 'Vận đơn & Điều phối' },
@@ -38,7 +57,15 @@ export const ALL_SYSTEM_PERMISSIONS = [
   { code: 'CARBON_READ', label: 'Tra cứu sổ cái phát thải CO2e', group: 'Carbon & Chứng từ' },
   { code: 'CARBON_CALCULATE', label: 'Quyết toán phát thải GLEC v3', group: 'Carbon & Chứng từ' },
   { code: 'BENCHMARK_READ', label: 'Xem định mức carbon hành lang', group: 'Carbon & Chứng từ' },
-  { code: 'REPORT_EXPORT', label: 'Xuất chứng nhận ISO 14083', group: 'Carbon & Chứng từ' }
+  { code: 'REPORT_EXPORT', label: 'Xuất chứng nhận ISO 14083', group: 'Carbon & Chứng từ' },
+  { code: 'DRIVER_CHAT', label: 'Nhắn tin trực tiếp 2 chiều Customer ↔ Tài xế', group: 'Điều phối & Giao tiếp' },
+  { code: 'PAYMENT_CREATE', label: 'Khởi tạo yêu cầu thanh toán & hóa đơn VAT', group: 'Thanh toán & Tài chính' },
+  { code: 'PAYMENT_READ_OWN', label: 'Xem lịch sử thanh toán & công nợ Net-30', group: 'Thanh toán & Tài chính' },
+  { code: 'PAYMENT_MANAGE', label: 'Quản trị đối soát & hoàn tiền giao dịch', group: 'Thanh toán & Tài chính' },
+  { code: 'CONTRACT_READ_OWN', label: 'Xem hợp đồng khung MSA, hợp đồng chuyến & SLA', group: 'Hợp đồng & SLA' },
+  { code: 'CONTRACT_CREATE', label: 'Khởi tạo hợp đồng điện tử B2B', group: 'Hợp đồng & SLA' },
+  { code: 'CONTRACT_SIGN', label: 'Ký số xác nhận hợp đồng & nghiệm thu ePOD', group: 'Hợp đồng & SLA' },
+  { code: 'CONTRACT_MANAGE', label: 'Quản trị hạn mức công nợ & đối soát SLA', group: 'Hợp đồng & SLA' }
 ];
 
 export const ENTERPRISE_ROLES = {
@@ -78,7 +105,8 @@ export const ENTERPRISE_ROLES = {
       'TRACKING_LIVE',
       'ALERT_ACK',
       'VEHICLE_READ',
-      'CARBON_CALCULATE'
+      'CARBON_CALCULATE',
+      'DRIVER_CHAT'
     ]
   },
   SAFETY_MANAGER: {
@@ -121,7 +149,8 @@ export const ENTERPRISE_ROLES = {
       'TELEMETRY_SEND',
       'INCIDENT_REPORT',
       'POD_SUBMIT',
-      'VEHICLE_READ'
+      'VEHICLE_READ',
+      'DRIVER_CHAT'
     ]
   },
   ESG_AUDITOR: {
@@ -138,10 +167,10 @@ export const ENTERPRISE_ROLES = {
       'Truy cập chỉ đọc (Read-only): Kiểm toán phát thải WTW/TTW/WTT (UC12), đối sánh hành lang (UC13) & xác thực báo cáo SHA-256 (UC14).',
     permissions: ['CARBON_READ', 'BENCHMARK_READ', 'REPORT_EXPORT', 'SHIPMENT_READ']
   },
-  SHIPPER: {
-    role: 'SHIPPER',
+  CUSTOMER: {
+    role: 'CUSTOMER',
     portalType: 'CUSTOMER',
-    fullName: 'Khách Hàng / Chủ Hàng Doanh Nghiệp (User)',
+    fullName: 'Khách Hàng / Chủ Hàng Doanh Nghiệp B2B',
     department: 'Khách Hàng Doanh Nghiệp B2B',
     zone: 'B2B_EXTRANET',
     zoneLabel: 'Hệ Thống Khách Hàng & Chủ Hàng (Customer Portal)',
@@ -149,17 +178,47 @@ export const ENTERPRISE_ROLES = {
     bgDim: 'rgba(236, 72, 153, 0.16)',
     border: 'rgba(236, 72, 153, 0.45)',
     description:
-      'Tài khoản do Khách hàng tự đăng ký hoặc được cấp: đặt lịch vận chuyển xanh, theo dõi đơn hàng riêng (BRULE-16) & tải chứng nhận ISO 14083.',
-    permissions: ['SHIPMENT_CREATE', 'SHIPMENT_READ_OWN', 'POD_VIEW_OWN', 'CARBON_READ']
+      'Khách hàng B2B đặt xe xanh tại /customer: khởi tạo vận đơn, giám sát container & IoT, chat 2 chiều với tài xế Grab/Xanh SM, xem ePOD & chứng chỉ ISO 14083 (BRULE-16).',
+    permissions: [
+      'SHIPMENT_CREATE',
+      'SHIPMENT_READ_OWN',
+      'POD_VIEW_OWN',
+      'CARBON_READ',
+      'DRIVER_CHAT',
+      'PAYMENT_CREATE',
+      'PAYMENT_READ_OWN',
+      'CONTRACT_READ_OWN',
+      'CONTRACT_CREATE',
+      'CONTRACT_SIGN'
+    ]
+  },
+  SHIPPER: {
+    role: 'SHIPPER',
+    portalType: 'SHIPPER',
+    fullName: 'Đối Tác Giao Nhận Điểm Đích / Kho 3PL (Bên Thứ 3)',
+    department: 'Kho Giao Nhận Điểm Đích & Hệ Thống 3PL',
+    zone: 'THIRD_PARTY_DEST_3PL',
+    zoneLabel: 'Cổng Đối Tác Giao Nhận Điểm Đích / Hệ Thống Thứ 3 (/shipper)',
+    color: '#06b6d4',
+    bgDim: 'rgba(6, 182, 212, 0.16)',
+    border: 'rgba(6, 182, 212, 0.45)',
+    description:
+      'Bên thứ 3 tại địa điểm hàng được giao tới: xem container đang về bãi đích, xác nhận Dock-In/e-Seal, ký nhận bàn giao ePOD, chat chỉ dẫn tài xế vào cổng & đồng bộ Webhook sang WMS/ERP thứ 3.',
+    permissions: [
+      'SHIPMENT_READ_INBOUND',
+      'POD_SUBMIT',
+      'EXTERNAL_3PL_SYNC',
+      'TRACKING_LIVE',
+      'DRIVER_CHAT'
+    ]
   }
 };
 
 const ACCOUNTS_STORAGE_KEY = 'ccadro_accounts_v2';
 
 /**
- * Chỉ duy nhất tài khoản Quản trị viên gốc (`admin`) tồn tại mặc định để khởi tạo hệ thống.
- * Các tài khoản role nội bộ khác (DISPATCHER, SAFETY_MANAGER, DRIVER, ESG_AUDITOR) phải do ADMIN tạo.
- * Các tài khoản Khách hàng (USER / SHIPPER) do người dùng tự đăng ký tại /register (hoặc do ADMIN tạo).
+ * Bộ 6 tài khoản hạt nhân cố định (System Seed Accounts) đồng bộ 1-1 với bảng `users` trong Flyway V014/V018.
+ * Các tài khoản này được bảo vệ khỏi thao tác xóa hoặc hạ role trái phép.
  */
 const ROOT_ADMIN_ACCOUNT = {
   userId: '10000000-0000-0000-0000-000000000001',
@@ -178,16 +237,39 @@ const ROOT_ADMIN_ACCOUNT = {
   permissions: [...ENTERPRISE_ROLES.ADMIN.permissions],
   status: 'ACTIVE',
   isRootAdmin: true,
+  isSystemSeed: true,
+  createdBy: 'SYSTEM_BOOTSTRAP',
+  createdAt: '2026-11-01'
+};
+
+const ROOT_DISPATCHER_ACCOUNT = {
+  userId: '10000000-0000-0000-0000-000000000002',
+  username: 'dispatcher',
+  password: 'ccadro@123',
+  email: 'dispatcher@ccadro.com',
+  fullName: 'Nguyễn Văn Nam (Điều Phối Trưởng)',
+  companyName: 'CCADRO Green Logistics Corporation',
+  department: 'Trung Tâm Điều Hành Vận Tải Xanh',
+  customerId: 'CCADRO_CORE',
+  phone: '028 3888 8802',
+  industry: 'Điều độ & Định tuyến Pareto',
+  role: 'DISPATCHER',
+  portalType: 'INTERNAL',
+  zone: 'INTERNAL_CORE',
+  permissions: [...ENTERPRISE_ROLES.DISPATCHER.permissions],
+  status: 'ACTIVE',
+  isRootAdmin: false,
+  isSystemSeed: true,
   createdBy: 'SYSTEM_BOOTSTRAP',
   createdAt: '2026-11-01'
 };
 
 const ROOT_DRIVER_ACCOUNT = {
-  userId: '10000000-0000-0000-0000-000000000004',
+  userId: '10000000-0000-0000-0000-000000000003',
   username: 'driver',
   password: 'ccadro@123',
   email: 'driver@ccadro.com',
-  fullName: 'Nguyễn Văn Tài (Tài Xế Trưởng)',
+  fullName: 'Trần Văn Tài (Tài Xế Trưởng)',
   companyName: 'CCADRO Green Logistics Corporation',
   department: 'Đội Vận Tải Đường Dài Nam Bộ',
   customerId: 'CCADRO_FLEET',
@@ -199,17 +281,116 @@ const ROOT_DRIVER_ACCOUNT = {
   permissions: [...ENTERPRISE_ROLES.DRIVER.permissions],
   status: 'ACTIVE',
   isRootAdmin: false,
+  isSystemSeed: true,
   createdBy: 'SYSTEM_BOOTSTRAP',
   createdAt: '2026-11-01'
 };
 
+const ROOT_AUDITOR_ACCOUNT = {
+  userId: '10000000-0000-0000-0000-000000000004',
+  username: 'auditor',
+  password: 'ccadro@123',
+  email: 'auditor@ccadro.com',
+  fullName: 'Lê Thị Kiểm Toán (GLEC v3 Auditor)',
+  companyName: 'CCADRO Green Logistics Corporation',
+  department: 'Tổ Chức Chứng Nhận Phát Thải Xanh',
+  customerId: 'CCADRO_AUDIT',
+  phone: '028 3888 8804',
+  industry: 'Kiểm toán Carbon ISO 14083',
+  role: 'ESG_AUDITOR',
+  portalType: 'INTERNAL',
+  zone: 'INTERNAL_CORE',
+  permissions: [...ENTERPRISE_ROLES.ESG_AUDITOR.permissions],
+  status: 'ACTIVE',
+  isRootAdmin: false,
+  isSystemSeed: true,
+  createdBy: 'SYSTEM_BOOTSTRAP',
+  createdAt: '2026-11-01'
+};
+
+const ROOT_SAFETY_ACCOUNT = {
+  userId: '10000000-0000-0000-0000-000000000005',
+  username: 'safety',
+  password: 'ccadro@123',
+  email: 'safety@ccadro.com',
+  fullName: 'Phạm Văn An Toàn (Safety Manager)',
+  companyName: 'CCADRO Green Logistics Corporation',
+  department: 'Phòng Thanh Tra Kỹ Thuật & An Toàn',
+  customerId: 'CCADRO_SAFETY',
+  phone: '028 3888 8805',
+  industry: 'Thanh tra Kỹ thuật & An toàn Đội xe',
+  role: 'SAFETY_MANAGER',
+  portalType: 'INTERNAL',
+  zone: 'INTERNAL_CORE',
+  permissions: [...ENTERPRISE_ROLES.SAFETY_MANAGER.permissions],
+  status: 'ACTIVE',
+  isRootAdmin: false,
+  isSystemSeed: true,
+  createdBy: 'SYSTEM_BOOTSTRAP',
+  createdAt: '2026-11-01'
+};
+
+const ROOT_SHIPPER_ACCOUNT = {
+  userId: '10000000-0000-0000-0000-000000000006',
+  username: 'shipper',
+  password: 'ccadro@123',
+  email: 'shipper-3pl@ccadro.com',
+  fullName: 'Gemadept Destination 3PL Hub (Đối Tác Điểm Đích)',
+  companyName: 'Gemadept & Kerry SmartWMS 3PL',
+  department: 'Kho Giao Nhận Điểm Đích & Tích Hợp Hệ Thống Thứ 3',
+  customerId: 'DEST_3PL_HUB',
+  externalSystemName: 'Gemadept SmartPort API / SAP EWM',
+  phone: '028 3899 3PL0',
+  industry: 'Kho Vận Điểm Đích & Giao Nhận Bên Thứ 3 (3PL)',
+  role: 'SHIPPER',
+  portalType: 'SHIPPER',
+  zone: 'THIRD_PARTY_DEST_3PL',
+  permissions: [...ENTERPRISE_ROLES.SHIPPER.permissions],
+  status: 'ACTIVE',
+  isRootAdmin: false,
+  isSystemSeed: true,
+  createdBy: 'SYSTEM_BOOTSTRAP',
+  createdAt: '2026-11-01'
+};
+
+const ROOT_CUSTOMER_ACCOUNT = {
+  userId: '10000000-0000-0000-0000-000000000007',
+  username: 'customer',
+  password: 'ccadro@123',
+  email: 'customer@ccadro.com',
+  fullName: 'Minh Phú & Vinamilk B2B (Chủ Hàng)',
+  companyName: 'Vinamilk Logistics Hub',
+  department: 'Khách Hàng Doanh Nghiệp B2B',
+  customerId: 'DOANH_NGHIEP_B2B',
+  phone: '028 5415 5555',
+  industry: 'Sản xuất & Chuỗi cung ứng Lạnh',
+  role: 'CUSTOMER',
+  portalType: 'CUSTOMER',
+  zone: 'B2B_EXTRANET',
+  permissions: [...ENTERPRISE_ROLES.CUSTOMER.permissions],
+  status: 'ACTIVE',
+  isRootAdmin: false,
+  isSystemSeed: true,
+  createdBy: 'SYSTEM_BOOTSTRAP',
+  createdAt: '2026-11-01'
+};
+
+export const ROOT_SYSTEM_ACCOUNTS = [
+  ROOT_ADMIN_ACCOUNT,
+  ROOT_DISPATCHER_ACCOUNT,
+  ROOT_DRIVER_ACCOUNT,
+  ROOT_AUDITOR_ACCOUNT,
+  ROOT_SAFETY_ACCOUNT,
+  ROOT_CUSTOMER_ACCOUNT,
+  ROOT_SHIPPER_ACCOUNT
+];
+
 export function getDefaultPortalPath(targetUser) {
   if (!targetUser) return '/login';
-  if (
-    targetUser.portalType === 'CUSTOMER' ||
-    targetUser.role === 'SHIPPER' ||
-    targetUser.role === 'CUSTOMER'
-  ) {
+  if (targetUser.role === 'SHIPPER' || targetUser.portalType === 'SHIPPER') {
+    return '/shipper';
+  }
+  if (targetUser.role === 'CUSTOMER' || targetUser.portalType === 'CUSTOMER') {
     return '/customer';
   }
   if (targetUser.role === 'DRIVER') {
@@ -219,19 +400,22 @@ export function getDefaultPortalPath(targetUser) {
 }
 
 function hydrateAccountWithRoleVisuals(acc) {
-  const roleKey = ENTERPRISE_ROLES[acc.role] ? acc.role : 'SHIPPER';
+  const roleKey = ENTERPRISE_ROLES[acc.role] ? acc.role : 'CUSTOMER';
   const tpl = ENTERPRISE_ROLES[roleKey];
-  const isCustomer = roleKey === 'SHIPPER' || acc.portalType === 'CUSTOMER';
+  const isShipper = roleKey === 'SHIPPER';
+  const isCustomer = roleKey === 'CUSTOMER';
 
   return {
     ...tpl,
     ...acc,
     role: roleKey,
-    portalType: isCustomer ? 'CUSTOMER' : 'INTERNAL',
-    zone: isCustomer ? 'B2B_EXTRANET' : 'INTERNAL_CORE',
-    zoneLabel: isCustomer
-      ? 'Hệ Thống Khách Hàng & Chủ Hàng (Customer Portal)'
-      : 'Hệ Thống Giám Sát Nội Bộ (Internal Core)',
+    portalType: isShipper ? 'SHIPPER' : isCustomer ? 'CUSTOMER' : 'INTERNAL',
+    zone: isShipper ? 'THIRD_PARTY_DEST_3PL' : isCustomer ? 'B2B_EXTRANET' : 'INTERNAL_CORE',
+    zoneLabel: isShipper
+      ? 'Cổng Đối Tác Giao Nhận Điểm Đích / Hệ Thống Thứ 3 (/shipper)'
+      : isCustomer
+        ? 'Hệ Thống Khách Hàng & Chủ Hàng (Customer Portal)'
+        : 'Hệ Thống Giám Sát Nội Bộ (Internal Core)',
     color: tpl.color,
     bgDim: tpl.bgDim,
     border: tpl.border,
@@ -248,12 +432,28 @@ function loadSystemAccounts() {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        let list = [...parsed];
-        if (!list.some((a) => a.username === 'admin')) {
-          list = [ROOT_ADMIN_ACCOUNT, ...list];
-        }
-        if (!list.some((a) => a.username === 'driver')) {
-          list.push(ROOT_DRIVER_ACCOUNT);
+        let list = parsed.map((acc) => {
+          const seed = ROOT_SYSTEM_ACCOUNTS.find(
+            (s) => s.username.toLowerCase() === (acc.username || '').toLowerCase()
+          );
+          if (seed) {
+            return {
+              ...seed,
+              ...acc,
+              userId: seed.userId,
+              role: seed.role,
+              portalType: seed.portalType,
+              isRootAdmin: seed.isRootAdmin,
+              isSystemSeed: true
+            };
+          }
+          return acc;
+        });
+
+        for (const seed of ROOT_SYSTEM_ACCOUNTS) {
+          if (!list.some((a) => a.username?.toLowerCase() === seed.username)) {
+            list.push(seed);
+          }
         }
         return list.map(hydrateAccountWithRoleVisuals);
       }
@@ -261,10 +461,7 @@ function loadSystemAccounts() {
   } catch (_) {
     // ignore storage errors
   }
-  return [
-    hydrateAccountWithRoleVisuals(ROOT_ADMIN_ACCOUNT),
-    hydrateAccountWithRoleVisuals(ROOT_DRIVER_ACCOUNT)
-  ];
+  return ROOT_SYSTEM_ACCOUNTS.map(hydrateAccountWithRoleVisuals);
 }
 
 function saveSystemAccounts(list) {
@@ -289,7 +486,7 @@ export function AuthProvider({ children }) {
     } catch (_) {
       // ignore
     }
-    return hydrateAccountWithRoleVisuals(ROOT_ADMIN_ACCOUNT);
+    return null;
   });
 
   const [token, setToken] = useState(() => {
@@ -351,7 +548,13 @@ export function AuthProvider({ children }) {
     const profile = hydrateAccountWithRoleVisuals(matched);
     setToken(sessionToken);
     setUser(profile);
-    setAuthMode(profile.portalType === 'CUSTOMER' ? 'CUSTOMER_PORTAL_AUTH' : 'INTERNAL_IAM_AUTH');
+    setAuthMode(
+      profile.portalType === 'SHIPPER'
+        ? 'THIRD_PARTY_SHIPPER_AUTH'
+        : profile.portalType === 'CUSTOMER'
+          ? 'CUSTOMER_PORTAL_AUTH'
+          : 'INTERNAL_IAM_AUTH'
+    );
 
     try {
       window.localStorage.setItem('ccadro_token', sessionToken);
@@ -420,7 +623,7 @@ export function AuthProvider({ children }) {
         email: cleanEmail,
         firstName,
         lastName,
-        roles: ['SHIPPER']
+        roles: ['CUSTOMER']
       });
     } catch (_) {
       // ignore backend offline error
@@ -437,9 +640,9 @@ export function AuthProvider({ children }) {
       customerId: customerCode,
       phone: phone || '0909 888 999',
       industry,
-      role: 'SHIPPER',
+      role: 'CUSTOMER',
       portalType: 'CUSTOMER',
-      permissions: [...ENTERPRISE_ROLES.SHIPPER.permissions],
+      permissions: [...ENTERPRISE_ROLES.CUSTOMER.permissions],
       status: 'ACTIVE',
       createdBy: 'SELF_REGISTERED',
       createdAt: new Date().toISOString().slice(0, 10)
@@ -503,12 +706,15 @@ export function AuthProvider({ children }) {
         ? payload.permissions
         : [...roleTemplate.permissions];
 
-    const isCustomer = roleKey === 'SHIPPER';
+    const isCustomer = roleKey === 'CUSTOMER';
+    const isShipper = roleKey === 'SHIPPER';
     const department =
       (payload.department || '').trim() || roleTemplate.department || 'Trung Tâm Điều Hành Nội Bộ';
     const customerId = isCustomer
       ? (payload.customerId || cleanUsername).toUpperCase()
-      : 'CCADRO_INTERNAL';
+      : isShipper
+        ? `3PL_${cleanUsername.toUpperCase()}`
+        : 'CCADRO_INTERNAL';
 
     try {
       const nameParts = fullName.split(/\s+/);
@@ -530,13 +736,17 @@ export function AuthProvider({ children }) {
       password,
       email: cleanEmail,
       fullName: fullName || cleanUsername,
-      companyName: isCustomer ? department : 'CCADRO Green Logistics Corporation',
+      companyName: isCustomer || isShipper ? department : 'CCADRO Green Logistics Corporation',
       department,
       customerId,
       phone: payload.phone || '028 3888 9999',
-      industry: isCustomer ? 'Đối tác Chủ hàng B2B' : 'Vận hành & Giám sát Nội bộ',
+      industry: isShipper
+        ? 'Đối tác Giao nhận Điểm đích (3PL / WMS)'
+        : isCustomer
+          ? 'Đối tác Chủ hàng B2B'
+          : 'Vận hành & Giám sát Nội bộ',
       role: roleKey,
-      portalType: isCustomer ? 'CUSTOMER' : 'INTERNAL',
+      portalType: isShipper ? 'SHIPPER' : isCustomer ? 'CUSTOMER' : 'INTERNAL',
       permissions: assignedPermissions,
       status: 'ACTIVE',
       createdBy: user?.username || 'admin',
@@ -559,7 +769,7 @@ export function AuthProvider({ children }) {
     const updated = currentAccounts.map((acc) => {
       if (acc.username.toLowerCase() !== normalized) return acc;
 
-      // Không cho phép khóa hoặc hạ quyền tài khoản Root Admin
+      // Không cho phép khóa, đổi role hoặc hạ quyền tài khoản Root Admin
       if (acc.isRootAdmin || acc.username === 'admin') {
         return hydrateAccountWithRoleVisuals({
           ...acc,
@@ -568,11 +778,20 @@ export function AuthProvider({ children }) {
         });
       }
 
-      const nextRole = changes.role && ENTERPRISE_ROLES[changes.role] ? changes.role : acc.role;
+      // 6 tài khoản hạt nhân cố định giữ nguyên Role cứng và trạng thái ACTIVE; cho phép tinh chỉnh permissions
+      const isSeed =
+        acc.isSystemSeed ||
+        ROOT_SYSTEM_ACCOUNTS.some((s) => s.username === acc.username?.toLowerCase());
+      const requestedRole =
+        !isSeed && changes.role && SYSTEM_FIXED_ROLES.includes(changes.role)
+          ? changes.role
+          : acc.role;
+      const nextRole = requestedRole;
+      const nextStatus = isSeed ? 'ACTIVE' : changes.status || acc.status;
       const nextPermissions =
         Array.isArray(changes.permissions) && changes.permissions.length > 0
           ? changes.permissions
-          : changes.role && changes.role !== acc.role
+          : nextRole !== acc.role
             ? [...ENTERPRISE_ROLES[nextRole].permissions]
             : acc.permissions;
 
@@ -580,6 +799,8 @@ export function AuthProvider({ children }) {
         ...acc,
         ...changes,
         role: nextRole,
+        status: nextStatus,
+        isSystemSeed: isSeed,
         permissions: nextPermissions
       });
     });
@@ -604,12 +825,14 @@ export function AuthProvider({ children }) {
   };
 
   /**
-   * Dành cho ADMIN: Xóa tài khoản khỏi hệ thống (ngoại trừ Root Admin).
+   * Dành cho ADMIN: Xóa tài khoản khỏi hệ thống (ngoại trừ 6 tài khoản hạt nhân cố định).
    */
   const adminDeleteAccount = (usernameToDelete) => {
     const normalized = (usernameToDelete || '').toLowerCase();
-    if (normalized === 'admin') {
-      throw new Error('Không thể xóa tài khoản Quản trị viên gốc (Root Admin).');
+    if (ROOT_SYSTEM_ACCOUNTS.some((s) => s.username === normalized)) {
+      throw new Error(
+        `Không thể xóa tài khoản hạt nhân cố định "@${normalized}" của hệ thống.`
+      );
     }
     const currentAccounts = loadSystemAccounts();
     const updated = currentAccounts.filter((a) => a.username.toLowerCase() !== normalized);
@@ -627,6 +850,8 @@ export function AuthProvider({ children }) {
       }
     }
     setToken(null);
+    setUser(null);
+    setAuthMode('IAM_MANAGED');
     try {
       window.localStorage.removeItem('ccadro_token');
       window.localStorage.removeItem('ccadro_user');
@@ -641,9 +866,18 @@ export function AuthProvider({ children }) {
     return Array.isArray(user.permissions) && user.permissions.includes(perm);
   };
 
-  // Tương thích ngược với các màn hình hiển thị danh sách khách hàng
+  const hasRole = (...allowedRoles) => {
+    if (!user) return false;
+    return allowedRoles.includes(user.role);
+  };
+
+  // Tách danh sách Khách hàng B2B (CUSTOMER) và Đối tác Điểm đích 3PL (SHIPPER)
   const registeredUsers = accounts.filter(
-    (a) => a.portalType === 'CUSTOMER' || a.role === 'SHIPPER'
+    (a) => a.portalType === 'CUSTOMER' || a.role === 'CUSTOMER'
+  );
+
+  const shipperPartners = accounts.filter(
+    (a) => a.portalType === 'SHIPPER' || a.role === 'SHIPPER'
   );
 
   return (
@@ -654,6 +888,7 @@ export function AuthProvider({ children }) {
         authMode,
         accounts,
         registeredUsers,
+        shipperPartners,
         login,
         registerUser,
         adminCreateAccount,
@@ -661,7 +896,10 @@ export function AuthProvider({ children }) {
         adminDeleteAccount,
         logout,
         hasPermission,
+        hasRole,
         getDefaultPortalPath,
+        SYSTEM_FIXED_ROLES,
+        ROOT_SYSTEM_ACCOUNTS,
         ENTERPRISE_ROLES,
         ALL_SYSTEM_PERMISSIONS
       }}

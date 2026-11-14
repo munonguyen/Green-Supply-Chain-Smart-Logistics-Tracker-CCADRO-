@@ -281,6 +281,14 @@ export default function Sidebar({ collapsed = false, onToggleCollapse }) {
           <span>Cổng Khách Hàng B2B</span>
         </NavLink>
 
+        <NavLink
+          to="/shipper"
+          className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+        >
+          <Package size={17} />
+          <span>Cổng Shipper Đích (3PL)</span>
+        </NavLink>
+
         <NavLink to="/login" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
           <Lock size={17} />
           <span>Cổng Xác Thực IAM</span>

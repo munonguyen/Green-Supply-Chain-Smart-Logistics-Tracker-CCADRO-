@@ -66,7 +66,54 @@ export const api = {
 
   // Assets, Drivers, Containers & Pre-Trip Safety (Port 8081)
   getVehicles: () => fetchJson('/api/v1/assets/vehicles'),
-  getDrivers: () => fetchJson('/api/v1/assets/drivers'),
+  getDrivers: (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.status) query.append('status', params.status);
+    if (params.licenseClass) query.append('licenseClass', params.licenseClass);
+    const queryString = query.toString();
+    return fetchJson(`/api/v1/assets/drivers${queryString ? `?${queryString}` : ''}`);
+  },
+  getDriverById: (id) => fetchJson(`/api/v1/assets/drivers/${id}`),
+  createDriver: (data) =>
+    fetchJson('/api/v1/assets/drivers', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+  updateDriverProfile: (id, data) =>
+    fetchJson(`/api/v1/assets/drivers/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    }),
+  updateDriverStatus: (id, status) =>
+    fetchJson(`/api/v1/assets/drivers/${id}/status?status=${status}`, {
+      method: 'PUT'
+    }),
+  getDriverReviews: (id) => fetchJson(`/api/v1/assets/drivers/${id}/reviews`),
+  submitDriverReview: (id, data) =>
+    fetchJson(`/api/v1/assets/drivers/${id}/reviews`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+  getDriverDispatchMessages: (id) => fetchJson(`/api/v1/assets/drivers/${id}/messages`),
+  sendDriverDispatchMessage: (id, data) =>
+    fetchJson(`/api/v1/assets/drivers/${id}/messages`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+  markDriverMessagesAsRead: (id, viewerRole = 'CUSTOMER') =>
+    fetchJson(`/api/v1/assets/drivers/${id}/messages/read?viewerRole=${encodeURIComponent(viewerRole)}`, {
+      method: 'PUT'
+    }),
+  getShipperHandovers: () => fetchJson('/api/v1/assets/shipper-handovers'),
+  updateShipperHandoverStatus: (containerCode, data) =>
+    fetchJson(`/api/v1/assets/shipper-handovers/${containerCode}/status`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    }),
+  syncShipperWebhook: (containerCode) =>
+    fetchJson(`/api/v1/assets/shipper-handovers/${containerCode}/sync-webhook`, {
+      method: 'POST'
+    }),
   getContainers: (params = {}) => {
     const query = new URLSearchParams();
     if (params.status) query.append('status', params.status);
@@ -186,5 +233,72 @@ export const api = {
     fetchJson(`/api/v1/notifications/${id}/acknowledge`, {
       method: 'PUT',
       body: JSON.stringify({ acknowledgedBy, actionNotes })
+    }),
+
+  // Payment & Green Billing Service (Port 8088 via Gateway :8888)
+  getPayments: (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.customerId) query.append('customerId', params.customerId);
+    if (params.status) query.append('status', params.status);
+    if (params.shipmentCode) query.append('shipmentCode', params.shipmentCode);
+    const qs = query.toString();
+    return fetchJson(`/api/v1/payments${qs ? `?${qs}` : ''}`);
+  },
+  getPaymentSummary: (customerId) =>
+    fetchJson(`/api/v1/payments/summary${customerId ? `?customerId=${encodeURIComponent(customerId)}` : ''}`),
+  getPaymentByCode: (transactionCode) => fetchJson(`/api/v1/payments/${transactionCode}`),
+  getPaymentLogs: (transactionCode) => fetchJson(`/api/v1/payments/${transactionCode}/logs`),
+  createPayment: (payload) =>
+    fetchJson('/api/v1/payments', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    }),
+  confirmPayment: (transactionCode, payload = {}) =>
+    fetchJson(`/api/v1/payments/${transactionCode}/confirm`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    }),
+  refundPayment: (transactionCode, payload = {}) =>
+    fetchJson(`/api/v1/payments/${transactionCode}/refund`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    }),
+  simulatePaymentWebhook: (provider, payload) =>
+    fetchJson(`/api/v1/payments/webhook/${encodeURIComponent(provider)}`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    }),
+
+  // B2B Contracts & SLA Settlement (Port 8088 via Gateway :8888)
+  getContracts: (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.customerId) query.append('customerId', params.customerId);
+    if (params.contractType) query.append('contractType', params.contractType);
+    if (params.status) query.append('status', params.status);
+    if (params.shipmentCode) query.append('shipmentCode', params.shipmentCode);
+    const qs = query.toString();
+    return fetchJson(`/api/v1/contracts${qs ? `?${qs}` : ''}`);
+  },
+  getContractDetail: (contractNumber) => fetchJson(`/api/v1/contracts/${contractNumber}`),
+  getContractEvents: (contractNumber) => fetchJson(`/api/v1/contracts/${contractNumber}/events`),
+  createContract: (payload) =>
+    fetchJson('/api/v1/contracts', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    }),
+  signContract: (contractNumber, payload = {}) =>
+    fetchJson(`/api/v1/contracts/${contractNumber}/sign`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    }),
+  recordContractSlaEvent: (contractNumber, payload) =>
+    fetchJson(`/api/v1/contracts/${contractNumber}/sla-events`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    }),
+  settleContractWithEpod: (contractNumber, payload = {}) =>
+    fetchJson(`/api/v1/contracts/${contractNumber}/settle-epod`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
     })
 };
