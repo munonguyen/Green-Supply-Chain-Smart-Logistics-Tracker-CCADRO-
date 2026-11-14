@@ -21,5 +21,6 @@
         <module>carbon-service</module>
         <module>incident-service</module>
         <module>notification-service</module>
+        <module>payment-service</module>
     </modules>
 </project>
