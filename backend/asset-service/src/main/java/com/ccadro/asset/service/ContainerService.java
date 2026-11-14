@@ -6,11 +6,14 @@ import com.ccadro.asset.dto.request.ContainerEpodRequest;
 import com.ccadro.asset.dto.request.ContainerTelemetryUpdateRequest;
 import com.ccadro.asset.dto.response.ContainerResponse;
 import com.ccadro.asset.entity.Container;
+import com.ccadro.asset.entity.Driver;
 import com.ccadro.asset.entity.enums.ContainerStatus;
+import com.ccadro.asset.entity.enums.DriverStatus;
 import com.ccadro.asset.exception.AppException;
 import com.ccadro.asset.exception.ErrorCode;
 import com.ccadro.asset.mapper.ContainerMapper;
 import com.ccadro.asset.repository.ContainerRepository;
+import com.ccadro.asset.repository.DriverRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -20,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -32,6 +36,7 @@ import java.util.UUID;
 public class ContainerService {
 
     ContainerRepository containerRepository;
+    DriverRepository driverRepository;
     ContainerMapper containerMapper;
 
     public List<ContainerResponse> getAllContainersResponse(ContainerStatus status, UUID driverId) {
@@ -94,15 +99,35 @@ public class ContainerService {
         Container container = containerRepository.findByContainerCode(containerCode)
                 .orElseThrow(() -> new AppException(ErrorCode.CONTAINER_NOT_FOUND, "Không tìm thấy container có mã: " + containerCode));
 
+        Driver assignedDriver = resolveDriver(request.getAssignedDriverId(), request.getDriverPhone(), request.getDriverName());
+
         container.setAssignedShipmentId(request.getAssignedShipmentId());
         container.setAssignedShipmentCode(request.getAssignedShipmentCode());
-        container.setAssignedDriverId(request.getAssignedDriverId());
-        container.setDriverName(request.getDriverName());
-        container.setDriverPhone(request.getDriverPhone());
-        container.setDriverLicense(request.getDriverLicense());
-        if (request.getDriverSafetyScore() != null) {
-            container.setDriverSafetyScore(request.getDriverSafetyScore());
+        if (assignedDriver != null) {
+            container.setAssignedDriverId(assignedDriver.getId());
+            container.setDriverName(assignedDriver.getFullName());
+            container.setDriverPhone(assignedDriver.getPhone());
+            container.setDriverLicense(request.getDriverLicense() != null
+                    ? request.getDriverLicense()
+                    : "GPLX Hạng " + assignedDriver.getLicenseClass() + " • " + assignedDriver.getExperienceYears() + " năm kinh nghiệm");
+            container.setDriverSafetyScore(assignedDriver.getRating());
+
+            assignedDriver.setStatus(DriverStatus.ON_TRIP);
+            assignedDriver.setTotalTrips((assignedDriver.getTotalTrips() != null ? assignedDriver.getTotalTrips() : 0) + 1);
+            if (request.getVehicleLicensePlate() != null && !request.getVehicleLicensePlate().isBlank()) {
+                assignedDriver.setAssignedVehiclePlate(request.getVehicleLicensePlate());
+            }
+            driverRepository.save(assignedDriver);
+        } else {
+            container.setAssignedDriverId(request.getAssignedDriverId());
+            container.setDriverName(request.getDriverName());
+            container.setDriverPhone(request.getDriverPhone());
+            container.setDriverLicense(request.getDriverLicense());
+            if (request.getDriverSafetyScore() != null) {
+                container.setDriverSafetyScore(request.getDriverSafetyScore());
+            }
         }
+
         container.setAssignedVehicleId(request.getAssignedVehicleId());
         container.setVehicleLicensePlate(request.getVehicleLicensePlate());
         container.setVehicleTypeLabel(request.getVehicleTypeLabel());
@@ -127,7 +152,37 @@ public class ContainerService {
         container.setEtaMinutes(0);
         container.setESealStatus("UNLOCKED_AUTHORIZED");
 
-        return containerMapper.toResponse(containerRepository.save(container));
+        Container saved = containerRepository.save(container);
+
+        // Automatically release assigned driver back to AVAILABLE if no other active trips remain
+        if (saved.getAssignedDriverId() != null) {
+            boolean hasOtherActive = containerRepository.findByStatusAndAssignedDriverId(
+                    ContainerStatus.IN_TRANSIT, saved.getAssignedDriverId()).stream()
+                    .anyMatch(c -> !c.getContainerCode().equals(containerCode));
+            if (!hasOtherActive) {
+                driverRepository.findById(saved.getAssignedDriverId()).ifPresent(drv -> {
+                    drv.setStatus(DriverStatus.AVAILABLE);
+                    driverRepository.save(drv);
+                });
+            }
+        }
+
+        return containerMapper.toResponse(saved);
+    }
+
+    private Driver resolveDriver(UUID driverId, String phone, String fullName) {
+        if (driverId != null) {
+            Optional<Driver> byId = driverRepository.findById(driverId);
+            if (byId.isPresent()) return byId.get();
+        }
+        if (phone != null && !phone.isBlank()) {
+            Optional<Driver> byPhone = driverRepository.findByPhone(phone.trim());
+            if (byPhone.isPresent()) return byPhone.get();
+        }
+        if (fullName != null && !fullName.isBlank()) {
+            return driverRepository.findByFullNameIgnoreCase(fullName.trim()).orElse(null);
+        }
+        return null;
     }
 
     @Transactional

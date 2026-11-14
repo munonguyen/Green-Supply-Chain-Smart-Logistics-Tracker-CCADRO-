@@ -48,6 +48,9 @@ ccadro:
   demerit:
     warningThreshold: ${CCADRO_DEMERIT_WARNING_THRESHOLD:10}
     reviewRequiredThreshold: ${CCADRO_DEMERIT_REVIEW_THRESHOLD:20}
+  hos:
+    continuousLimitMinutes: ${CCADRO_HOS_CONTINUOUS_LIMIT_MIN:240}
+    dailyLimitMinutes: ${CCADRO_HOS_DAILY_LIMIT_MIN:600}
   security:
     jwtSecret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
     jwtExpirationMs: ${JWT_EXPIRATION_MS:86400000}

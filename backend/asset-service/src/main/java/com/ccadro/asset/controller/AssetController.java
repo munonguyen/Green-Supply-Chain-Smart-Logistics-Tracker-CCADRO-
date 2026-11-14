@@ -55,32 +55,81 @@ public class AssetController {
                 assetService.updateVehicleStatus(id, status));
     }
 
-    // --- UC01: Drivers ---
+    // --- UC01: Drivers & Grab Driver Profile Operations ---
     @GetMapping("/drivers")
-    @Operation(summary = "List all drivers (UC01)")
-    public ApiResponse<List<DriverResponse>> getDrivers() {
-        return ApiResponse.success(assetService.getAllDriversResponse());
+    @Operation(summary = "List all drivers with optional status and licenseClass filters (UC01)")
+    public ApiResponse<List<DriverResponse>> getDrivers(
+            @RequestParam(required = false) DriverStatus status,
+            @RequestParam(required = false) String licenseClass) {
+        return ApiResponse.success(assetService.getAllDriversResponse(status, licenseClass));
     }
 
     @GetMapping("/drivers/{id}")
-    @Operation(summary = "Get driver by ID")
+    @Operation(summary = "Get full Grab-style driver profile by ID")
     public ApiResponse<DriverResponse> getDriverById(@PathVariable UUID id) {
         return ApiResponse.success(assetService.getDriverResponseById(id));
     }
 
     @PostMapping("/drivers")
-    @Operation(summary = "Register new driver (UC01, BRULE-02)")
+    @Operation(summary = "Register new driver profile (UC01, BRULE-02)")
     public ApiResponse<DriverResponse> createDriver(@RequestBody @Valid DriverCreateRequest request) {
-        return ApiResponse.success("Đăng ký tài xế thành công", assetService.createDriver(request));
+        return ApiResponse.success("Đăng ký hồ sơ tài xế thành công", assetService.createDriver(request));
+    }
+
+    @PutMapping("/drivers/{id}")
+    @Operation(summary = "Update driver personal info, license FC dossier, HOS hours & pre-trip status")
+    public ApiResponse<DriverResponse> updateDriverProfile(
+            @PathVariable UUID id,
+            @RequestBody @Valid DriverUpdateRequest request) {
+        return ApiResponse.success("Cập nhật hồ sơ tài xế thành công",
+                assetService.updateDriverProfile(id, request));
     }
 
     @PutMapping("/drivers/{id}/status")
-    @Operation(summary = "Update driver status")
+    @Operation(summary = "Update driver duty status with HOS validation")
     public ApiResponse<DriverResponse> updateDriverStatus(
             @PathVariable UUID id,
             @RequestParam DriverStatus status) {
         return ApiResponse.success("Cập nhật trạng thái tài xế thành công",
                 assetService.updateDriverStatus(id, status));
+    }
+
+    @GetMapping("/drivers/{id}/reviews")
+    @Operation(summary = "List B2B customer star reviews for a driver")
+    public ApiResponse<List<DriverReviewResponse>> getDriverReviews(@PathVariable UUID id) {
+        return ApiResponse.success(assetService.getDriverReviews(id));
+    }
+
+    @PostMapping("/drivers/{id}/reviews")
+    @Operation(summary = "Submit Grab-style star rating and review for a driver")
+    public ApiResponse<DriverReviewResponse> addDriverReview(
+            @PathVariable UUID id,
+            @RequestBody @Valid DriverReviewRequest request) {
+        return ApiResponse.success("Ghi nhận đánh giá tài xế thành công",
+                assetService.addDriverReview(id, request));
+    }
+
+    @GetMapping("/drivers/{id}/messages")
+    @Operation(summary = "List dispatch commands/messages sent to driver Cabin OS")
+    public ApiResponse<List<DriverDispatchMessageResponse>> getDriverMessages(@PathVariable UUID id) {
+        return ApiResponse.success(assetService.getDriverDispatchMessages(id));
+    }
+
+    @PostMapping("/drivers/{id}/messages")
+    @Operation(summary = "Send 2-way Grab/XanhSM chat message between Customer/Dispatcher and Driver Cabin OS")
+    public ApiResponse<DriverDispatchMessageResponse> sendDispatchMessage(
+            @PathVariable UUID id,
+            @RequestBody @Valid DriverDispatchMessageRequest request) {
+        return ApiResponse.success("Đã gửi tin nhắn tới kênh giao tiếp tài xế",
+                assetService.sendDispatchMessage(id, request));
+    }
+
+    @PutMapping("/drivers/{id}/messages/read")
+    @Operation(summary = "Mark chat messages from counterparty as read")
+    public ApiResponse<Integer> markDriverMessagesAsRead(
+            @PathVariable UUID id,
+            @RequestParam(defaultValue = "CUSTOMER") String viewerRole) {
+        return ApiResponse.success(assetService.markDriverMessagesAsRead(id, viewerRole));
     }
 
     // --- UC01: Smart Containers & IoT Telematics ---
@@ -175,5 +224,28 @@ public class AssetController {
     @Operation(summary = "Get latest pre-trip inspection for vehicle (UC03)")
     public ApiResponse<PreTripInspectionResponse> getLatestInspection(@PathVariable UUID vehicleId) {
         return ApiResponse.success(assetService.getLatestInspectionByVehicle(vehicleId));
+    }
+
+    // --- Third-Party Destination Shipper (3PL / WMS Integration) ---
+    @GetMapping("/shipper-handovers")
+    @Operation(summary = "List inbound container handovers for third-party destination Shipper (3PL/WMS)")
+    public ApiResponse<List<ThirdPartyHandoverResponse>> getShipperHandovers() {
+        return ApiResponse.success(assetService.getAllShipperHandovers());
+    }
+
+    @PutMapping("/shipper-handovers/{containerCode}/status")
+    @Operation(summary = "Update destination dock/handover/ePOD status from third-party Shipper system")
+    public ApiResponse<ThirdPartyHandoverResponse> updateShipperHandoverStatus(
+            @PathVariable String containerCode,
+            @RequestBody @Valid ThirdPartyHandoverUpdateRequest request) {
+        return ApiResponse.success("Đã cập nhật trạng thái giao nhận tại bãi điểm đích",
+                assetService.updateShipperHandoverStatus(containerCode, request));
+    }
+
+    @PostMapping("/shipper-handovers/{containerCode}/sync-webhook")
+    @Operation(summary = "Dispatch webhook status payload to external third-party WMS/3PL system")
+    public ApiResponse<ThirdPartyHandoverResponse> syncShipperWebhook(@PathVariable String containerCode) {
+        return ApiResponse.success("Đã đồng bộ dữ liệu sang hệ thống thứ 3 (3PL Webhook)",
+                assetService.syncShipperWebhook(containerCode));
     }
 }
