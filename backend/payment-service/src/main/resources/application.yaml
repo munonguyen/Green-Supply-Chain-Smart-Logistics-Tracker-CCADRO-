@@ -1,0 +1,55 @@
+server:
+  port: 8088
+
+spring:
+  application:
+    name: payment-service
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:ccadro}
+    username: ${DB_USER:ccadro}
+    password: ${DB_PASSWORD:ccadro_dev_secret}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+ccadro:
+  payment:
+    vatRate: ${CCADRO_PAYMENT_VAT_RATE:0.08}
+    evGreenDiscountRate: ${CCADRO_PAYMENT_EV_DISCOUNT_RATE:0.05}
+    lngGreenDiscountRate: ${CCADRO_PAYMENT_LNG_DISCOUNT_RATE:0.03}
+    net30Days: ${CCADRO_PAYMENT_NET30_DAYS:30}
+    defaultDueDays: ${CCADRO_PAYMENT_DEFAULT_DUE_DAYS:3}
+    merchantBankCode: ${CCADRO_PAYMENT_BANK_CODE:VCB}
+    merchantAccountNo: ${CCADRO_PAYMENT_BANK_ACCOUNT:1038889999}
+    merchantAccountName: ${CCADRO_PAYMENT_ACCOUNT_NAME:CCADRO GREEN LOGISTICS JSC}
+    webhookSecret: ${CCADRO_PAYMENT_WEBHOOK_SECRET:ccadro-vnpay-vietqr-hmac-secret}
+    defaultCreditLimitVnd: ${CCADRO_CONTRACT_DEFAULT_CREDIT_LIMIT:500000000}
+    defaultSlaOnTimePct: ${CCADRO_CONTRACT_SLA_ONTIME_PCT:98.5}
+    defaultMaxTempDeviationC: ${CCADRO_CONTRACT_MAX_TEMP_DEV_C:2.0}
+    defaultSlaPenaltyPct: ${CCADRO_CONTRACT_SLA_PENALTY_PCT:5.0}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    operationsSorter: method
+    tagsSorter: alpha
+
