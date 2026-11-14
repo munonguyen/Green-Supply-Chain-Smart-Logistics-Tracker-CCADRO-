@@ -10,6 +10,7 @@ public class CcadroProperties {
     private Carbon carbon = new Carbon();
     private Demerit demerit = new Demerit();
     private Security security = new Security();
+    private Hos hos = new Hos();
 
     public static class Routing {
         private String provider = "mock";
@@ -76,6 +77,16 @@ public class CcadroProperties {
         public void setJwtExpirationMs(long jwtExpirationMs) { this.jwtExpirationMs = jwtExpirationMs; }
     }
 
+    public static class Hos {
+        private int continuousLimitMinutes = 240;
+        private int dailyLimitMinutes = 600;
+
+        public int getContinuousLimitMinutes() { return continuousLimitMinutes; }
+        public void setContinuousLimitMinutes(int continuousLimitMinutes) { this.continuousLimitMinutes = continuousLimitMinutes; }
+        public int getDailyLimitMinutes() { return dailyLimitMinutes; }
+        public void setDailyLimitMinutes(int dailyLimitMinutes) { this.dailyLimitMinutes = dailyLimitMinutes; }
+    }
+
     public Routing getRouting() { return routing; }
     public void setRouting(Routing routing) { this.routing = routing; }
     public Deviation getDeviation() { return deviation; }
@@ -86,4 +97,6 @@ public class CcadroProperties {
     public void setDemerit(Demerit demerit) { this.demerit = demerit; }
     public Security getSecurity() { return security; }
     public void setSecurity(Security security) { this.security = security; }
+    public Hos getHos() { return hos; }
+    public void setHos(Hos hos) { this.hos = hos; }
 }

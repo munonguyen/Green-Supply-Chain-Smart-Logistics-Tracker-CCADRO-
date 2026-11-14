@@ -36,6 +36,7 @@ public class AssetService {
     ContainerService containerService;
     MaintenanceService maintenanceService;
     PreTripInspectionService preTripInspectionService;
+    ThirdPartyHandoverService thirdPartyHandoverService;
 
     // --- Vehicle APIs ---
     public List<VehicleResponse> getAllVehiclesResponse() {
@@ -65,8 +66,12 @@ public class AssetService {
     }
 
     // --- Driver APIs ---
+    public List<DriverResponse> getAllDriversResponse(DriverStatus status, String licenseClass) {
+        return driverService.getAllDriversResponse(status, licenseClass);
+    }
+
     public List<DriverResponse> getAllDriversResponse() {
-        return driverService.getAllDriversResponse();
+        return driverService.getAllDriversResponse(null, null);
     }
 
     public DriverResponse getDriverResponseById(UUID id) {
@@ -79,8 +84,36 @@ public class AssetService {
     }
 
     @Transactional
+    public DriverResponse updateDriverProfile(UUID id, DriverUpdateRequest request) {
+        return driverService.updateDriverProfile(id, request);
+    }
+
+    @Transactional
     public DriverResponse updateDriverStatus(UUID id, DriverStatus status) {
         return driverService.updateDriverStatus(id, status);
+    }
+
+    public List<DriverReviewResponse> getDriverReviews(UUID driverId) {
+        return driverService.getDriverReviews(driverId);
+    }
+
+    @Transactional
+    public DriverReviewResponse addDriverReview(UUID driverId, DriverReviewRequest request) {
+        return driverService.addDriverReview(driverId, request);
+    }
+
+    public List<DriverDispatchMessageResponse> getDriverDispatchMessages(UUID driverId) {
+        return driverService.getDriverDispatchMessages(driverId);
+    }
+
+    @Transactional
+    public DriverDispatchMessageResponse sendDispatchMessage(UUID driverId, DriverDispatchMessageRequest request) {
+        return driverService.sendDispatchMessage(driverId, request);
+    }
+
+    @Transactional
+    public int markDriverMessagesAsRead(UUID driverId, String viewerRole) {
+        return driverService.markMessagesAsRead(driverId, viewerRole);
     }
 
     public List<Driver> getAllDrivers() {
@@ -152,5 +185,21 @@ public class AssetService {
 
     public PreTripInspectionResponse getLatestInspectionByVehicle(UUID vehicleId) {
         return preTripInspectionService.getLatestInspectionByVehicle(vehicleId);
+    }
+
+    // --- Third-Party Destination Shipper (3PL) Handover APIs ---
+    public List<ThirdPartyHandoverResponse> getAllShipperHandovers() {
+        return thirdPartyHandoverService.getAllHandovers();
+    }
+
+    @Transactional
+    public ThirdPartyHandoverResponse updateShipperHandoverStatus(
+            String containerCode, ThirdPartyHandoverUpdateRequest request) {
+        return thirdPartyHandoverService.updateHandoverStatus(containerCode, request);
+    }
+
+    @Transactional
+    public ThirdPartyHandoverResponse syncShipperWebhook(String containerCode) {
+        return thirdPartyHandoverService.syncWebhook(containerCode);
     }
 }
