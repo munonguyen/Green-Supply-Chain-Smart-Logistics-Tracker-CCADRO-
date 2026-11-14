@@ -19,6 +19,10 @@ public class Role {
     String name;
     String description;
 
+    @Builder.Default
+    @Column(name = "is_system_fixed", nullable = false)
+    boolean systemFixed = true;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "role_permissions",

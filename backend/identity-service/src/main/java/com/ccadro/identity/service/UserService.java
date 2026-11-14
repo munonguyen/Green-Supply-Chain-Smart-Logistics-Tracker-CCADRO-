@@ -18,6 +18,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -43,9 +45,20 @@ public class UserService {
 
         HashSet<Role> roles = new HashSet<>();
         if (request.getRoles() != null && !request.getRoles().isEmpty()) {
-            roleRepository.findAllById(request.getRoles()).forEach(roles::add);
+            Set<String> normalizedRoles = request.getRoles().stream()
+                    .map(r -> r == null ? "" : r.trim().toUpperCase(Locale.ROOT))
+                    .collect(java.util.stream.Collectors.toSet());
+            for (String roleName : normalizedRoles) {
+                if (!RoleService.SYSTEM_FIXED_ROLES.contains(roleName)) {
+                    throw new AppException(
+                            ErrorCode.ROLE_NOT_FOUND,
+                            "Vai trò không nằm trong 7 vai trò chuẩn hệ thống: " + roleName
+                    );
+                }
+            }
+            roleRepository.findAllById(normalizedRoles).forEach(roles::add);
         } else {
-            roleRepository.findById("DRIVER").ifPresent(roles::add);
+            roleRepository.findById("CUSTOMER").ifPresent(roles::add);
         }
         user.setRoles(roles);
 
