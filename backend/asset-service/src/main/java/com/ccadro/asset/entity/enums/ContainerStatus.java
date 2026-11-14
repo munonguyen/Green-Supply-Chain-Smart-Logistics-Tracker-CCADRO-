@@ -4,5 +4,6 @@ public enum ContainerStatus {
     AVAILABLE,
     ASSIGNED,
     IN_TRANSIT,
+    DELIVERED,
     MAINTENANCE
 }
