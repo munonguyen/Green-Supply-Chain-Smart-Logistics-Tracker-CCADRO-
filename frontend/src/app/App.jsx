@@ -12,6 +12,7 @@ import NewsPage from '../pages/NewsPage';
 import LoginPage from '../pages/LoginPage';
 import RegisterPage from '../pages/RegisterPage';
 import CustomerPortalPage from '../pages/CustomerPortalPage';
+import DriverTerminalPage from '../pages/DriverTerminalPage';
 import DashboardPage from '../pages/DashboardPage';
 import ShipmentsPage from '../pages/ShipmentsPage';
 import NewShipmentPage from '../pages/NewShipmentPage';
@@ -62,6 +63,9 @@ export default function App() {
             {/* 3. Dedicated External User / B2B Customer Portal */}
             <Route path="/customer" element={<CustomerPortalPage />} />
             <Route path="/user-portal" element={<Navigate to="/customer" replace />} />
+
+            {/* 3b. Dedicated Internal Driver Terminal / Cabin HUD */}
+            <Route path="/driver" element={<DriverTerminalPage />} />
 
             {/* 4. Internal Monitoring & Operations System */}
             <Route

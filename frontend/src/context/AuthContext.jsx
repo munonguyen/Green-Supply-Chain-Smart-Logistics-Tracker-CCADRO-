@@ -182,6 +182,27 @@ const ROOT_ADMIN_ACCOUNT = {
   createdAt: '2026-11-01'
 };
 
+const ROOT_DRIVER_ACCOUNT = {
+  userId: '10000000-0000-0000-0000-000000000004',
+  username: 'driver',
+  password: 'ccadro@123',
+  email: 'driver@ccadro.com',
+  fullName: 'Nguyễn Văn Tài (Tài Xế Trưởng)',
+  companyName: 'CCADRO Green Logistics Corporation',
+  department: 'Đội Vận Tải Đường Dài Nam Bộ',
+  customerId: 'CCADRO_FLEET',
+  phone: '0903 812 456',
+  industry: 'Vận Tải Hàng Hóa Đường Bộ Xanh',
+  role: 'DRIVER',
+  portalType: 'INTERNAL',
+  zone: 'INTERNAL_CORE',
+  permissions: [...ENTERPRISE_ROLES.DRIVER.permissions],
+  status: 'ACTIVE',
+  isRootAdmin: false,
+  createdBy: 'SYSTEM_BOOTSTRAP',
+  createdAt: '2026-11-01'
+};
+
 export function getDefaultPortalPath(targetUser) {
   if (!targetUser) return '/login';
   if (
@@ -190,6 +211,9 @@ export function getDefaultPortalPath(targetUser) {
     targetUser.role === 'CUSTOMER'
   ) {
     return '/customer';
+  }
+  if (targetUser.role === 'DRIVER') {
+    return '/driver';
   }
   return '/portal';
 }
@@ -224,15 +248,23 @@ function loadSystemAccounts() {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        const hasRoot = parsed.some((a) => a.username === 'admin');
-        const list = hasRoot ? parsed : [ROOT_ADMIN_ACCOUNT, ...parsed];
+        let list = [...parsed];
+        if (!list.some((a) => a.username === 'admin')) {
+          list = [ROOT_ADMIN_ACCOUNT, ...list];
+        }
+        if (!list.some((a) => a.username === 'driver')) {
+          list.push(ROOT_DRIVER_ACCOUNT);
+        }
         return list.map(hydrateAccountWithRoleVisuals);
       }
     }
   } catch (_) {
     // ignore storage errors
   }
-  return [hydrateAccountWithRoleVisuals(ROOT_ADMIN_ACCOUNT)];
+  return [
+    hydrateAccountWithRoleVisuals(ROOT_ADMIN_ACCOUNT),
+    hydrateAccountWithRoleVisuals(ROOT_DRIVER_ACCOUNT)
+  ];
 }
 
 function saveSystemAccounts(list) {
