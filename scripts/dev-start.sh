@@ -29,6 +29,7 @@ SERVICES=(
   "carbon-service:8085"
   "incident-service:8086"
   "notification-service:8087"
+  "payment-service:8088"
   "api-gateway:8888"
 )
 
@@ -88,4 +89,5 @@ echo "  • Tracking Service:      http://localhost:8084"
 echo "  • Carbon Service:        http://localhost:8085"
 echo "  • Incident Service:      http://localhost:8086"
 echo "  • Notification Service:  http://localhost:8087"
+echo "  • Payment Service:       http://localhost:8088"
 echo "=========================================================="
