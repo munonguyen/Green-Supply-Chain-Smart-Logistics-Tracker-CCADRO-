@@ -30,6 +30,8 @@ springdoc:
         url: /services/incidents/v3/api-docs
       - name: 8. Notification Service (Port 8087)
         url: /services/notifications/v3/api-docs
+      - name: 9. Payment & Green Billing Service (Port 8088)
+        url: /services/payments/v3/api-docs
 
 spring:
   application:
@@ -86,6 +88,12 @@ spring:
             - Path=/services/notifications/v3/api-docs
           filters:
             - SetPath=/v3/api-docs
+        - id: doc-payment-service
+          uri: http://localhost:8088
+          predicates:
+            - Path=/services/payments/v3/api-docs
+          filters:
+            - SetPath=/v3/api-docs
 
         # Microservice API Routes
         - id: identity-service-auth
@@ -124,3 +132,7 @@ spring:
           uri: http://localhost:8087
           predicates:
             - Path=${app.api-prefix}/notifications/**
+        - id: payment-service
+          uri: http://localhost:8088
+          predicates:
+            - Path=${app.api-prefix}/payments/**,${app.api-prefix}/contracts/**
