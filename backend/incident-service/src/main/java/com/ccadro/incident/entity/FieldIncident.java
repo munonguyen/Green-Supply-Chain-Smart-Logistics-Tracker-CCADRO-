@@ -56,6 +56,15 @@ public class FieldIncident {
     @Column(name = "reported_at", nullable = false)
     Instant reportedAt = Instant.now();
 
+    @Column(name = "is_deleted", nullable = false)
+    Boolean isDeleted = false;
+
+    @Column(name = "deleted_at")
+    Instant deletedAt;
+
+    @Column(name = "deleted_by", length = 60)
+    String deletedBy;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     Instant createdAt = Instant.now();
 }

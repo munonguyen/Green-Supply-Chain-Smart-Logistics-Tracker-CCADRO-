@@ -8,9 +8,10 @@ import com.ccadro.incident.exception.ErrorCode;
 import com.ccadro.incident.mapper.FieldIncidentMapper;
 import com.ccadro.incident.repository.ExceptionResolutionRepository;
 import com.ccadro.incident.repository.FieldIncidentRepository;
+import com.ccadro.incident.validate.IncidentGovernanceValidator;
 import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,7 +27,6 @@ import java.util.UUID;
  */
 @Service
 @Transactional(readOnly = true)
-@RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class ExceptionResolutionService {
 
@@ -34,29 +34,48 @@ public class ExceptionResolutionService {
     ExceptionResolutionRepository exceptionResolutionRepository;
     DemeritGovernanceService demeritGovernanceService;
     FieldIncidentMapper fieldIncidentMapper;
+    IncidentGovernanceValidator incidentGovernanceValidator;
+
+    public ExceptionResolutionService(
+            FieldIncidentRepository fieldIncidentRepository,
+            ExceptionResolutionRepository exceptionResolutionRepository,
+            DemeritGovernanceService demeritGovernanceService,
+            FieldIncidentMapper fieldIncidentMapper) {
+        this(fieldIncidentRepository, exceptionResolutionRepository, demeritGovernanceService,
+                fieldIncidentMapper, new IncidentGovernanceValidator(exceptionResolutionRepository));
+    }
+
+    @Autowired
+    public ExceptionResolutionService(
+            FieldIncidentRepository fieldIncidentRepository,
+            ExceptionResolutionRepository exceptionResolutionRepository,
+            DemeritGovernanceService demeritGovernanceService,
+            FieldIncidentMapper fieldIncidentMapper,
+            IncidentGovernanceValidator incidentGovernanceValidator) {
+        this.fieldIncidentRepository = fieldIncidentRepository;
+        this.exceptionResolutionRepository = exceptionResolutionRepository;
+        this.demeritGovernanceService = demeritGovernanceService;
+        this.fieldIncidentMapper = fieldIncidentMapper;
+        this.incidentGovernanceValidator = incidentGovernanceValidator;
+    }
 
     @Transactional
     public ExceptionResolution resolveIncident(UUID incidentId, ExceptionResolutionRequest request) {
         FieldIncident incident = fieldIncidentRepository.findById(incidentId)
                 .orElseThrow(() -> new AppException(ErrorCode.FIELD_INCIDENT_NOT_FOUND));
 
-        if (!"PENDING_REVIEW".equalsIgnoreCase(incident.getStatus())
-                || exceptionResolutionRepository.findByIncidentId(incidentId).isPresent()) {
-            throw new AppException(ErrorCode.RESOLUTION_ALREADY_CLOSED);
-        }
-
-        String decision = request.getDecision().trim().toUpperCase();
+        incidentGovernanceValidator.requireIncidentPendingReview(incident, incidentId);
+        String decision = incidentGovernanceValidator.parseAndValidateDecision(request.getDecision());
         switch (decision) {
             case "APPROVED_TRIGGER_REROUTE" -> incident.setStatus("APPROVED");
             case "APPROVED_EXCUSED" -> incident.setStatus("RESOLVED");
             case "REJECTED" -> incident.setStatus("REJECTED");
             case "ESCALATE_TO_DEMERIT" -> {
                 incident.setStatus("RESOLVED");
-                int points = request.getDemeritPoints() != null ? request.getDemeritPoints() : 5;
-                String category = (request.getViolationCategory() != null && !request.getViolationCategory().isBlank())
-                        ? request.getViolationCategory()
-                        : "ROUTE_DEVIATION_UNAUTHORIZED";
-                demeritGovernanceService.issueDemeritForDriver(incident.getDriverId(), incident.getId(), points, category, request.getReviewNotes());
+                int points = incidentGovernanceValidator.resolveDemeritPoints(request);
+                String category = incidentGovernanceValidator.resolveViolationCategory(request);
+                demeritGovernanceService.issueDemeritForDriver(
+                        incident.getDriverId(), incident.getId(), points, category, request.getReviewNotes());
             }
             default -> throw new AppException(ErrorCode.INVALID_REQUEST_ARGUMENT,
                     "Quyết định thẩm định không hợp lệ: " + decision);

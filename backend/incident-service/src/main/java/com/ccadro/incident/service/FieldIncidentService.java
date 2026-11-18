@@ -42,7 +42,25 @@ public class FieldIncidentService {
     DemeritGovernanceService demeritGovernanceService;
 
     public List<FieldIncidentResponse> getAllIncidents() {
-        return fieldIncidentMapper.toResponseList(fieldIncidentRepository.findAll());
+        return getAllIncidents(null, false);
+    }
+
+    public List<FieldIncidentResponse> getAllIncidents(String q, boolean includeDeleted) {
+        List<FieldIncident> active = fieldIncidentRepository.findAll().stream()
+                .filter(inc -> includeDeleted || !Boolean.TRUE.equals(inc.getIsDeleted()))
+                .toList();
+        List<FieldIncident> ranked = ElasticSearchSupport.filterAndRank(
+                active,
+                q,
+                inc -> List.of(
+                        new ElasticSearchSupport.WeightedField(inc.getIncidentCode(), 5.0),
+                        new ElasticSearchSupport.WeightedField(inc.getIncidentType(), 3.5),
+                        new ElasticSearchSupport.WeightedField(inc.getSeverity(), 2.5),
+                        new ElasticSearchSupport.WeightedField(inc.getDescription(), 3.0),
+                        new ElasticSearchSupport.WeightedField(inc.getStatus(), 2.0)
+                )
+        );
+        return fieldIncidentMapper.toResponseList(ranked);
     }
 
     public FieldIncidentResponse getIncidentById(UUID id) {
@@ -118,6 +136,24 @@ public class FieldIncidentService {
     @Transactional
     public DemeritRecord reviewDemeritRecord(UUID demeritId, DemeritReviewRequest request) {
         return demeritGovernanceService.reviewDemeritRecord(demeritId, request);
+    }
+
+    @Transactional
+    public FieldIncidentResponse softDeleteIncident(UUID id, String deletedBy) {
+        FieldIncident incident = findIncidentOrThrow(id);
+        incident.setIsDeleted(true);
+        incident.setDeletedAt(java.time.Instant.now());
+        incident.setDeletedBy(deletedBy != null && !deletedBy.isBlank() ? deletedBy : "SAFETY_MANAGER");
+        return fieldIncidentMapper.toResponse(fieldIncidentRepository.save(incident));
+    }
+
+    @Transactional
+    public FieldIncidentResponse restoreIncident(UUID id) {
+        FieldIncident incident = findIncidentOrThrow(id);
+        incident.setIsDeleted(false);
+        incident.setDeletedAt(null);
+        incident.setDeletedBy(null);
+        return fieldIncidentMapper.toResponse(fieldIncidentRepository.save(incident));
     }
 
     private FieldIncident findIncidentOrThrow(UUID id) {
