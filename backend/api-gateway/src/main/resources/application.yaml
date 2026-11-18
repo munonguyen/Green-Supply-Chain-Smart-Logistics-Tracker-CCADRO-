@@ -14,6 +14,9 @@ springdoc:
     path: /swagger-ui.html
     operationsSorter: method
     tagsSorter: alpha
+    persistAuthorization: true
+    displayRequestDuration: true
+    tryItOutEnabled: true
     urls:
       - name: 1. Identity Service (Port 8080)
         url: /services/identity/v3/api-docs
