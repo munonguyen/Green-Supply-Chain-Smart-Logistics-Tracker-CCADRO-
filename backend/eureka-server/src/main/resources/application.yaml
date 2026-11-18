@@ -1,0 +1,27 @@
+server:
+  port: ${EUREKA_PORT:8761}
+  address: ${EUREKA_BIND_ADDRESS:127.0.0.1}
+
+spring:
+  application:
+    name: eureka-server
+
+eureka:
+  instance:
+    hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:${server.port}/eureka/}
+  server:
+    enable-self-preservation: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
