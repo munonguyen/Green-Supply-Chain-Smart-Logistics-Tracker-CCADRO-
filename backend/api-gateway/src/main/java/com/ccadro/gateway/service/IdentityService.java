@@ -1,7 +1,7 @@
 package com.ccadro.gateway.service;
 
 import com.ccadro.gateway.dto.ApiResponse;
-import com.ccadro.gateway.dto.request.IntrospectRequest;
+import com.ccadro.gateway.mapper.IdentityRequestMapper;
 import com.ccadro.gateway.dto.response.IntrospectResponse;
 import com.ccadro.gateway.repository.IdentityClient;
 import lombok.AccessLevel;
@@ -15,11 +15,10 @@ import reactor.core.publisher.Mono;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class IdentityService {
     IdentityClient identityClient;
+    IdentityRequestMapper identityRequestMapper;
 
     public Mono<ApiResponse<IntrospectResponse>> introspect(String token) {
-        return identityClient.introspect(IntrospectRequest.builder()
-                .token(token)
-                .build());
+        return identityClient.introspect(identityRequestMapper.introspect(token));
     }
 }
 

@@ -1,5 +1,6 @@
 server:
   port: 8888
+  address: ${SERVER_ADDRESS:0.0.0.0}
 
 app:
   api-prefix: /api/v1
@@ -32,12 +33,23 @@ springdoc:
         url: /services/notifications/v3/api-docs
       - name: 9. Payment & Green Billing Service (Port 8088)
         url: /services/payments/v3/api-docs
+      - name: 10. Hub & Last-Mile Shipper Service (Port 8089)
+        url: /services/hub-shipper/v3/api-docs
+      - name: 11. MongoDB Chat Service (Port 8090)
+        url: /services/chat/v3/api-docs
 
 spring:
   application:
     name: api-gateway
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 1500ms
   cloud:
     gateway:
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
       routes:
         # Swagger OpenAPI Doc Aggregation Routes
         - id: doc-identity-service
@@ -94,16 +106,46 @@ spring:
             - Path=/services/payments/v3/api-docs
           filters:
             - SetPath=/v3/api-docs
+        - id: doc-hub-shipper-service
+          uri: http://localhost:8089
+          predicates:
+            - Path=/services/hub-shipper/v3/api-docs
+          filters:
+            - SetPath=/v3/api-docs
+
+        - id: doc-chat-service
+          uri: ${CHAT_SERVICE_URL:http://localhost:8090}
+          predicates:
+            - Path=/services/chat/v3/api-docs
+          filters:
+            - SetPath=/v3/api-docs
+        - id: chat-socketio-websocket
+          uri: ${CHAT_SOCKET_URL:ws://127.0.0.1:8091}
+          predicates:
+            - Path=${app.api-prefix}/chat/socket.io/**
+            - Header=Upgrade, websocket
+        - id: chat-socketio-polling
+          uri: ${CHAT_SOCKET_HTTP_URL:http://127.0.0.1:8091}
+          predicates:
+            - Path=${app.api-prefix}/chat/socket.io/**
+        - id: chat-service
+          uri: ${CHAT_SERVICE_URL:http://localhost:8090}
+          predicates:
+            - Path=${app.api-prefix}/chat/**
 
         # Microservice API Routes
         - id: identity-service-auth
           uri: http://localhost:8080
           predicates:
-            - Path=${app.api-prefix}/auth/**,${app.api-prefix}/users/**,${app.api-prefix}/roles/**,${app.api-prefix}/permissions/**
+            - Path=${app.api-prefix}/auth/**,${app.api-prefix}/users/**,${app.api-prefix}/roles/**,${app.api-prefix}/permissions/**,${app.api-prefix}/hub-iam/**,${app.api-prefix}/companies/**,${app.api-prefix}/branches/**,${app.api-prefix}/staff/**,${app.api-prefix}/careers/**,${app.api-prefix}/applications/**
         - id: identity-service-health
           uri: http://localhost:8080
           predicates:
             - Path=${app.api-prefix}/health
+        - id: identity-service-actuator
+          uri: http://localhost:8080
+          predicates:
+            - Path=/actuator/**,${app.api-prefix}/actuator/**
         - id: asset-service
           uri: http://localhost:8081
           predicates:
@@ -136,3 +178,34 @@ spring:
           uri: http://localhost:8088
           predicates:
             - Path=${app.api-prefix}/payments/**,${app.api-prefix}/contracts/**
+        - id: hub-shipper-service
+          uri: http://localhost:8089
+          predicates:
+            - Path=${app.api-prefix}/hub-shipper/**
+
+# Infrastructure registry is separate from business UI. dev-start enables registration.
+eureka:
+  client:
+    enabled: ${EUREKA_CLIENT_ENABLED:false}
+    register-with-eureka: true
+    fetch-registry: false
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://127.0.0.1:8761/eureka/}
+    healthcheck:
+      enabled: true
+  instance:
+    hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
+    instance-id: ${spring.application.name}:${EUREKA_INSTANCE_ID:${server.port}}
+    lease-renewal-interval-in-seconds: 30
+    lease-expiration-duration-in-seconds: 90
+    status-page-url-path: /actuator/info
+    health-check-url-path: /actuator/health
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
