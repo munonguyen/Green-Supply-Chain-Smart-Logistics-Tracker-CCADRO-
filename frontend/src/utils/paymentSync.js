@@ -1,4 +1,13 @@
 import { api } from '../services/api';
+import { readJsonArrayAllowEmpty, readJsonObject, writeJsonStore } from './storage';
+
+// Local ledgers are explicitly demo-only. Never turn an API failure into a paid receipt.
+const isDemoMode = () => import.meta.env.VITE_DEMO_MODE === 'true';
+async function requireResult(promise) {
+  const res = await promise;
+  if (!res?.result) throw new Error('Máy chủ chưa xác nhận dữ liệu giao dịch.');
+  return res.result;
+}
 
 const PAYMENT_STORAGE_KEY = 'ccadro_customer_payments_v1';
 
@@ -164,27 +173,15 @@ const DEFAULT_SEED_PAYMENTS = [
 ];
 
 function readLocalPayments() {
-  try {
-    const raw = window.localStorage.getItem(PAYMENT_STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed;
-    }
-  } catch (_) {
-    // ignore storage errors
-  }
-  return DEFAULT_SEED_PAYMENTS;
+  return readJsonArrayAllowEmpty(PAYMENT_STORAGE_KEY, DEFAULT_SEED_PAYMENTS);
 }
 
 function writeLocalPayments(list) {
-  try {
-    window.localStorage.setItem(PAYMENT_STORAGE_KEY, JSON.stringify(list));
-  } catch (_) {
-    // ignore
-  }
+  writeJsonStore(PAYMENT_STORAGE_KEY, list);
 }
 
 export async function loadCustomerPayments(customerId) {
+  if (!isDemoMode()) { const payments = await requireResult(api.getPayments(customerId ? { customerId } : {})); return { payments, source: 'LIVE_DB' }; }
   const local = readLocalPayments();
   try {
     const res = await api.getPayments(customerId ? { customerId } : {});
@@ -247,6 +244,7 @@ function adjustLocalMsaCredit(customerId, deltaVnd, validateLimit = false) {
 }
 
 export async function createCustomerPayment(payload) {
+  if (!isDemoMode()) { return { payment: await requireResult(api.createPayment({ ...payload, instantConfirm: false })), source: 'LIVE_DB' }; }
   try {
     const res = await api.createPayment(payload);
     if (res?.result) {
@@ -324,6 +322,7 @@ export async function createCustomerPayment(payload) {
 }
 
 export async function confirmCustomerPayment(transactionCode, payload = {}) {
+  if (!isDemoMode()) { return { payment: await requireResult(api.confirmPayment(transactionCode, payload)), source: 'LIVE_DB' }; }
   try {
     const res = await api.confirmPayment(transactionCode, payload);
     if (res?.result) {
@@ -361,17 +360,23 @@ export async function confirmCustomerPayment(transactionCode, payload = {}) {
   return { payment: matched, source: 'LOCAL_CACHE' };
 }
 export async function triggerWebhookPaymentConfirm(provider, payload) {
-  try {
-    const res = await api.simulatePaymentWebhook(provider, payload);
-    if (res?.result) {
-      const updated = readLocalPayments().map((p) =>
-        p.transactionCode === res.result.transactionCode ? res.result : p
-      );
-      writeLocalPayments(updated);
-      return { payment: res.result, source: 'LIVE_DB' };
+  if (!isDemoMode()) { if (!payload?.signature) throw new Error('Chờ webhook có chữ ký từ cổng thanh toán.'); return { payment: await requireResult(api.simulatePaymentWebhook(provider, payload)), source: 'LIVE_DB' }; }
+  // Never bundle backend webhook secrets inside browser JavaScript:
+  // Only call webhook endpoint when an external signed payload is explicitly supplied;
+  // interactive UI Sandbox confirmation uses the JWT-authenticated confirm endpoint.
+  if (payload?.signature) {
+    try {
+      const res = await api.simulatePaymentWebhook(provider, payload);
+      if (res?.result) {
+        const updated = readLocalPayments().map((p) =>
+          p.transactionCode === res.result.transactionCode ? res.result : p
+        );
+        writeLocalPayments(updated);
+        return { payment: res.result, source: 'LIVE_DB' };
+      }
+    } catch (_) {
+      // Fallback local webhook capture when backend is offline
     }
-  } catch (_) {
-    // Fallback local webhook capture when backend is offline
   }
 
   return confirmCustomerPayment(payload.transactionCode, {
@@ -576,48 +581,22 @@ const DEFAULT_SEED_CONTRACT_EVENTS = {
 };
 
 function readLocalContracts() {
-  try {
-    const raw = window.localStorage.getItem(CONTRACT_STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed;
-    }
-  } catch (_) {
-    // ignore
-  }
-  return DEFAULT_SEED_CONTRACTS;
+  return readJsonArrayAllowEmpty(CONTRACT_STORAGE_KEY, DEFAULT_SEED_CONTRACTS);
 }
 
 function writeLocalContracts(list) {
-  try {
-    window.localStorage.setItem(CONTRACT_STORAGE_KEY, JSON.stringify(list));
-  } catch (_) {
-    // ignore
-  }
+  writeJsonStore(CONTRACT_STORAGE_KEY, list);
 }
 
 function readLocalContractEventsMap() {
-  try {
-    const raw = window.localStorage.getItem(CONTRACT_EVENTS_STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === 'object') return parsed;
-    }
-  } catch (_) {
-    // ignore
-  }
-  return DEFAULT_SEED_CONTRACT_EVENTS;
+  return readJsonObject(CONTRACT_EVENTS_STORAGE_KEY, DEFAULT_SEED_CONTRACT_EVENTS);
 }
 
 function appendLocalContractEvent(contractNumber, eventItem) {
   const map = readLocalContractEventsMap();
   const prev = Array.isArray(map[contractNumber]) ? map[contractNumber] : [];
   map[contractNumber] = [eventItem, ...prev];
-  try {
-    window.localStorage.setItem(CONTRACT_EVENTS_STORAGE_KEY, JSON.stringify(map));
-  } catch (_) {
-    // ignore
-  }
+  writeJsonStore(CONTRACT_EVENTS_STORAGE_KEY, map);
   return map[contractNumber];
 }
 
@@ -635,6 +614,7 @@ function buildPseudoSha256(seed) {
 }
 
 export async function loadCustomerContracts(customerId) {
+  if (!isDemoMode()) { return { contracts: await requireResult(api.getContracts(customerId ? { customerId } : {})), source: 'LIVE_DB' }; }
   const local = readLocalContracts();
   try {
     const res = await api.getContracts(customerId ? { customerId } : {});
@@ -662,6 +642,7 @@ export async function loadCustomerContracts(customerId) {
 }
 
 export async function loadContractSlaEvents(contractNumber) {
+  if (!isDemoMode()) { return requireResult(api.getContractEvents(contractNumber)); }
   try {
     const res = await api.getContractEvents(contractNumber);
     if (Array.isArray(res?.result)) {
@@ -675,6 +656,7 @@ export async function loadContractSlaEvents(contractNumber) {
 }
 
 export async function createCustomerContract(payload) {
+  if (!isDemoMode()) { return { contract: await requireResult(api.createContract(payload)), source: 'LIVE_DB' }; }
   try {
     const res = await api.createContract(payload);
     if (res?.result) {
@@ -761,6 +743,7 @@ export async function createCustomerContract(payload) {
 }
 
 export async function signCustomerContract(contractNumber, payload = {}) {
+  if (!isDemoMode()) { return { contract: await requireResult(api.signContract(contractNumber, payload)), source: 'LIVE_DB' }; }
   try {
     const res = await api.signContract(contractNumber, payload);
     if (res?.result) {
@@ -807,6 +790,7 @@ export async function signCustomerContract(contractNumber, payload = {}) {
 }
 
 export async function recordCustomerSlaEvent(contractNumber, payload) {
+  if (!isDemoMode()) { return { contract: await requireResult(api.recordContractSlaEvent(contractNumber, payload)), source: 'LIVE_DB' }; }
   try {
     const res = await api.recordContractSlaEvent(contractNumber, payload);
     if (res?.result) {
@@ -863,6 +847,7 @@ export async function recordCustomerSlaEvent(contractNumber, payload) {
 }
 
 export async function settleCustomerContractWithEpod(contractNumber, payload = {}) {
+  if (!isDemoMode()) { return { contract: await requireResult(api.settleContractWithEpod(contractNumber, payload)), source: 'LIVE_DB' }; }
   try {
     const res = await api.settleContractWithEpod(contractNumber, payload);
     if (res?.result) {
@@ -950,6 +935,7 @@ export async function settleCustomerContractWithEpod(contractNumber, payload = {
 }
 
 export async function refundCustomerPayment(transactionCode, reason, actor) {
+  if (!isDemoMode()) { return { payment: await requireResult(api.refundPayment(transactionCode, { reason, actor })), source: 'LIVE_DB' }; }
   try {
     const res = await api.refundPayment(transactionCode, { reason, actor });
     if (res?.result) {

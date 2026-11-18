@@ -2,9 +2,10 @@ import React from 'react';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import CustomerContractModal from '../components/customer/CustomerContractModal';
-import CustomerPaymentModal from '../components/customer/CustomerPaymentModal';
-import CustomerPortalPage from '../pages/CustomerPortalPage';
+import CustomerContractModal from '../systems/customer/shared/CustomerContractModal';
+import CustomerPaymentModal from '../systems/customer/shared/CustomerPaymentModal';
+import CustomerPortalPage from '../systems/customer/features/portal/CustomerPortalPage';
+import ShipperPortalPage, { calculateHaversineKm } from '../systems/hub/features/portal/ShipperPortalPage';
 import {
   calculateGreenInvoiceBreakdown,
   confirmCustomerPayment,
@@ -20,35 +21,110 @@ import {
   triggerWebhookPaymentConfirm
 } from '../utils/paymentSync';
 
-vi.mock('../context/AuthContext', () => ({
-  useAuth: () => ({
-    user: {
-      userId: '10000000-0000-0000-0000-000000000007',
-      username: 'customer',
-      fullName: 'Minh Phú & Vinamilk B2B (Chủ Hàng)',
-      companyName: 'Vinamilk Logistics Hub',
-      customerId: 'DOANH_NGHIEP_B2B',
-      email: 'customer@ccadro.com',
-      phone: '028 5415 5555',
-      role: 'CUSTOMER',
-      permissions: [
-        'CONTRACT_READ_OWN',
-        'CONTRACT_CREATE',
-        'CONTRACT_SIGN',
-        'PAYMENT_READ_OWN',
-        'PAYMENT_CREATE'
-      ]
+const mockAuthState = vi.hoisted(() => ({
+  currentUser: {
+    userId: '10000000-0000-0000-0000-000000000007',
+    username: 'customer',
+    fullName: 'Minh Phú & Vinamilk B2B (Chủ Hàng)',
+    companyName: 'Vinamilk Logistics Hub',
+    customerId: 'DOANH_NGHIEP_B2B',
+    email: 'customer@ccadro.com',
+    phone: '028 5415 5555',
+    role: 'CUSTOMER',
+    permissions: [
+      'CONTRACT_READ_OWN',
+      'CONTRACT_CREATE',
+      'CONTRACT_SIGN',
+      'PAYMENT_READ_OWN',
+      'PAYMENT_CREATE'
+    ]
+  },
+  accounts: [
+    {
+      username: 'hub_mgr_dinhbang',
+      fullName: 'Trần Minh Quang (Trưởng Trụ Sở Đình Bảng)',
+      role: 'HUB_MANAGER',
+      primaryRole: 'HUB_MANAGER',
+      assignedHubCode: 'HUB-DINHBANG-BN',
+      assignedShipperCode: null,
+      status: 'ACTIVE',
+      failedLoginAttempts: 0
     },
-    logout: vi.fn(),
-    isAuthenticated: true
+    {
+      username: 'shipper',
+      fullName: 'Nguyễn Văn Toàn (Shipper Đình Bảng #1)',
+      role: 'HUB_SHIPPER',
+      primaryRole: 'HUB_SHIPPER',
+      assignedHubCode: 'HUB-DINHBANG-BN',
+      assignedShipperCode: 'SHP-BN-001',
+      status: 'ACTIVE',
+      failedLoginAttempts: 0
+    },
+    {
+      username: 'hub_inspector_bn',
+      fullName: 'Vũ Thu Hà (Kiểm Tra Viên Ảnh POD & SLA)',
+      role: 'HUB_AUDITOR',
+      primaryRole: 'HUB_AUDITOR',
+      assignedHubCode: 'HUB-DINHBANG-BN',
+      assignedShipperCode: null,
+      status: 'ACTIVE',
+      failedLoginAttempts: 0
+    }
+  ],
+  hubAuthAuditLogs: [
+    {
+      id: 'audit-test-01',
+      eventType: 'LOGIN_SUCCESS',
+      username: 'hub_mgr_dinhbang',
+      assignedHubCode: 'HUB-DINHBANG-BN',
+      outcome: 'SUCCESS',
+      detail: 'Đăng nhập thành công HUB_MANAGER • HUB-DINHBANG-BN',
+      createdAt: '2026-11-14T08:30:00Z'
+    }
+  ],
+  provisionHubAccount: vi.fn(async (payload) => {
+    const created = {
+      username: payload.username,
+      fullName: payload.fullName,
+      role: payload.role,
+      primaryRole: payload.role,
+      assignedHubCode: payload.assignedHubCode,
+      assignedShipperCode: payload.assignedShipperCode || null,
+      status: 'ACTIVE',
+      failedLoginAttempts: 0
+    };
+    mockAuthState.accounts = [...mockAuthState.accounts, created];
+    return created;
+  }),
+  toggleHubAccountStatus: vi.fn(async (targetUsername, nextStatus) => {
+    mockAuthState.accounts = mockAuthState.accounts.map((a) =>
+      a.username === targetUsername ? { ...a, status: nextStatus } : a
+    );
+    return mockAuthState.accounts;
   })
 }));
+
+vi.mock('../context/AuthContext', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    useAuth: () => ({
+      user: mockAuthState.currentUser,
+      accounts: mockAuthState.accounts,
+      hubAuthAuditLogs: mockAuthState.hubAuthAuditLogs,
+      provisionHubAccount: mockAuthState.provisionHubAccount,
+      toggleHubAccountStatus: mockAuthState.toggleHubAccountStatus,
+      logout: vi.fn(),
+      isAuthenticated: true
+    })
+  };
+});
 
 vi.mock('../context/ThemeContext', () => ({
   useTheme: () => ({ isDark: false, toggleTheme: vi.fn() })
 }));
 
-vi.mock('../components/map/MapView', () => ({
+vi.mock('../shared/map/MapView', () => ({
   default: () => <div data-testid="map-view-stub" />
 }));
 
@@ -71,6 +147,24 @@ vi.mock('../services/api', () => ({
 
 describe('B2B Contract, SLA Settlement, Net-30 Credit & Payment Webhook E2E Flow', () => {
   beforeEach(() => {
+  vi.stubEnv('VITE_DEMO_MODE', 'true');
+    mockAuthState.currentUser = {
+      userId: '10000000-0000-0000-0000-000000000007',
+      username: 'customer',
+      fullName: 'Minh Phú & Vinamilk B2B (Chủ Hàng)',
+      companyName: 'Vinamilk Logistics Hub',
+      customerId: 'DOANH_NGHIEP_B2B',
+      email: 'customer@ccadro.com',
+      phone: '028 5415 5555',
+      role: 'CUSTOMER',
+      permissions: [
+        'CONTRACT_READ_OWN',
+        'CONTRACT_CREATE',
+        'CONTRACT_SIGN',
+        'PAYMENT_READ_OWN',
+        'PAYMENT_CREATE'
+      ]
+    };
     const store = new Map();
     Object.defineProperty(window, 'localStorage', {
       configurable: true,
@@ -409,5 +503,163 @@ describe('B2B Contract, SLA Settlement, Net-30 Credit & Payment Webhook E2E Flow
 
     const txRow = (await screen.findByText('PAY-2026-492002')).closest('tr');
     expect(within(txRow).getByText('Đã thanh toán')).toBeInTheDocument();
+  }, 20000);
+
+  it('ingests container cargo manifest into Local Hub and auto-dispatches each cargo item to the nearest assigned Shipper as HUB_MANAGER', async () => {
+    const distNorth = calculateHaversineKm(10.9532, 106.8978, 10.952, 106.8965);
+    expect(distNorth).toBeLessThan(0.25);
+
+    mockAuthState.currentUser = {
+      userId: '10000000-0000-0000-0000-000000000012',
+      username: 'hub_mgr_amata',
+      fullName: 'Lê Hoàng Nam (Trưởng Trụ Sở Amata)',
+      companyName: 'Trụ sở Amata - Biên Hòa',
+      role: 'HUB_MANAGER',
+      assignedHubCode: 'HUB-AMATA-BH',
+      assignedShipperCode: null,
+      permissions: ['CONTAINER_MANIFEST_INGEST', 'HUB_DISPATCH_AUTO', 'HUB_TASK_RANGE_ASSIGN']
+    };
+
+    render(
+      <MemoryRouter initialEntries={['/shipper']}>
+        <ShipperPortalPage />
+      </MemoryRouter>
+    );
+
+    expect(
+      await screen.findByText(/Trụ sở Giao nhận Khu vực Amata • Biên Hòa/i)
+    ).toBeInTheDocument();
+
+    // 1. Ingest manifest from Container TCKU-781920-4 to Hub HUB-AMATA-BH
+    fireEvent.click(screen.getByTestId('btn-ingest-manifest'));
+    await waitFor(() => {
+      expect(
+        screen.getAllByText(/Đã gửi dữ liệu sang Trụ sở \(Chờ chia Shipper\)/i).length
+      ).toBeGreaterThanOrEqual(3);
+    });
+
+    // 2. Run Geo-Proximity Auto-Dispatch across Hub Shippers
+    fireEvent.click(screen.getByTestId('btn-auto-dispatch-proximity'));
+    await waitFor(() => {
+      const card1 = screen.getByTestId('manifest-item-WB-AMATA-8192-01');
+      const card2 = screen.getByTestId('manifest-item-WB-AMATA-8192-02');
+      const card3 = screen.getByTestId('manifest-item-WB-AMATA-8192-03');
+
+      expect(within(card1).getAllByText(/Đặng Quốc Bảo \(SHP-BH-101\)/).length).toBeGreaterThan(0);
+      expect(within(card2).getAllByText(/Võ Minh Khang \(SHP-BH-102\)/).length).toBeGreaterThan(0);
+      expect(within(card3).getAllByText(/Huỳnh Gia Huy \(SHP-BH-103\)/).length).toBeGreaterThan(0);
+    });
+  });
+
+  it('enforces Hub & Shipper RBAC Isolation for HUB_SHIPPER (HUB-DINHBANG-BN / SHP-BN-001) and requires Photo POD', async () => {
+    mockAuthState.currentUser = {
+      userId: '10000000-0000-0000-0000-000000000006',
+      username: 'shipper',
+      fullName: 'Nguyễn Văn Toàn (Shipper Đình Bảng #1)',
+      companyName: 'Trụ sở Đình Bảng - Từ Sơn, Bắc Ninh',
+      role: 'HUB_SHIPPER',
+      assignedHubCode: 'HUB-DINHBANG-BN',
+      assignedShipperCode: 'SHP-BN-001',
+      permissions: ['HUB_WORKSPACE_READ', 'SHIPPER_POLICY_READ', 'POD_PHOTO_SUBMIT']
+    };
+
+    render(
+      <MemoryRouter initialEntries={['/shipper']}>
+        <ShipperPortalPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getAllByText(/Trụ sở Giao nhận Đình Bảng • Từ Sơn, Bắc Ninh/i).length
+      ).toBeGreaterThan(0);
+      expect(screen.queryByTestId('hub-pill-HUB-AMATA-BH')).not.toBeInTheDocument();
+      expect(screen.getByTestId('hub-pill-HUB-DINHBANG-BN')).toBeInTheDocument();
+      // HUB_SHIPPER cannot see manager ingest/dispatch CTA or IAM admin tab
+      expect(screen.queryByTestId('btn-ingest-manifest')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('btn-auto-dispatch-proximity')).not.toBeInTheDocument();
+    });
+
+    // Strict shipper-level scoping: sees SHP-BN-001's PKG-DB-0001..0003, NOT SHP-BN-002's PKG-DB-0004
+    const pkg1 = screen.getByTestId('manifest-item-PKG-DB-0001');
+    expect(within(pkg1).getByText(/Nhà máy Chế biến Thực phẩm CP Hải Dương/i)).toBeInTheDocument();
+    expect(within(pkg1).getByText(/Siêu thị Dabaco Từ Sơn - Chi nhánh Đình Bảng/i)).toBeInTheDocument();
+    expect(screen.queryByTestId('manifest-item-PKG-DB-0004')).not.toBeInTheDocument();
+
+    // Open Photo POD Modal for PKG-DB-0002 (OUT_FOR_DELIVERY) and submit Photo POD
+    fireEvent.click(screen.getByTestId('btn-open-pod-PKG-DB-0002'));
+    const podDialog = await screen.findByRole('dialog', {
+      name: /Xác thực Giao hàng & Ảnh POD - PKG-DB-0002/i
+    });
+    expect(within(podDialog).getByText(/Công ty Điện tử Hansol Tech Việt Nam/i)).toBeInTheDocument();
+    fireEvent.click(within(podDialog).getByTestId('btn-confirm-photo-pod'));
+
+    await waitFor(() => {
+      const pkg2 = screen.getByTestId('manifest-item-PKG-DB-0002');
+      expect(within(pkg2).getByText(/Đã có Ảnh POD/i)).toBeInTheDocument();
+    });
+
+    // Open Policy tab: HUB_SHIPPER sees policy & scope, CANNOT assign code range
+    fireEvent.click(screen.getByTestId('btn-open-policy-tab'));
+    expect(await screen.findByText(/CHÍNH SÁCH DÀNH RIÊNG CHO SHIPPER/i)).toBeInTheDocument();
+    expect(screen.queryByTestId('btn-assign-code-range')).not.toBeInTheDocument();
+    expect(screen.getByTestId('code-range-rbac-notice')).toBeInTheDocument();
+  });
+
+  it('allows HUB_MANAGER (@hub_mgr_dinhbang) to assign code range & manage hub_iam accounts, while HUB_AUDITOR is strictly Read-Only', async () => {
+    mockAuthState.currentUser = {
+      userId: '10000000-0000-0000-0000-000000000011',
+      username: 'hub_mgr_dinhbang',
+      fullName: 'Trần Minh Quang (Trưởng Trụ Sở Đình Bảng)',
+      role: 'HUB_MANAGER',
+      assignedHubCode: 'HUB-DINHBANG-BN',
+      assignedShipperCode: null,
+      permissions: ['HUB_TASK_RANGE_ASSIGN', 'HUB_ACCOUNT_MANAGE']
+    };
+
+    const { unmount } = render(
+      <MemoryRouter initialEntries={['/shipper']}>
+        <ShipperPortalPage />
+      </MemoryRouter>
+    );
+
+    // 1. HUB_MANAGER can see & assign code range PKG-DB-0001 -> PKG-DB-0003
+    fireEvent.click(await screen.findByTestId('btn-open-policy-tab'));
+    fireEvent.change(screen.getByTestId('select-range-from'), { target: { value: 'PKG-DB-0001' } });
+    fireEvent.change(screen.getByTestId('select-range-to'), { target: { value: 'PKG-DB-0003' } });
+    fireEvent.click(screen.getByTestId('btn-assign-code-range'));
+
+    await waitFor(() => {
+      expect(screen.getAllByText(/PKG-DB-0001 → PKG-DB-0003/i).length).toBeGreaterThan(0);
+    });
+
+    // 2. HUB_MANAGER can open Kho Tài khoản & Bảo mật IAM tab and view hub_iam directory + audit log
+    const iamButtons = screen.getAllByRole('button', { name: /Kho Tài khoản & Bảo mật IAM/i });
+    fireEvent.click(iamButtons[0]);
+    expect(await screen.findByTestId('hub-iam-row-shipper')).toBeInTheDocument();
+    expect(screen.getByTestId('hub-iam-row-hub_inspector_bn')).toBeInTheDocument();
+
+    unmount();
+
+    // 3. HUB_AUDITOR is strictly Read-Only
+    mockAuthState.currentUser = {
+      userId: '10000000-0000-0000-0000-000000000016',
+      username: 'hub_inspector_bn',
+      fullName: 'Vũ Thu Hà (Kiểm Tra Viên Ảnh POD & SLA)',
+      role: 'HUB_AUDITOR',
+      assignedHubCode: 'HUB-DINHBANG-BN',
+      assignedShipperCode: null,
+      permissions: ['HUB_AUDIT_READ', 'POD_PHOTO_VIEW']
+    };
+
+    render(
+      <MemoryRouter initialEntries={['/shipper']}>
+        <ShipperPortalPage />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByTestId('auditor-readonly-pill-PKG-DB-0002')).toBeInTheDocument();
+    expect(screen.queryByTestId('btn-open-pod-PKG-DB-0002')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Kho Tài khoản & Bảo mật IAM/i })).not.toBeInTheDocument();
   });
 });
