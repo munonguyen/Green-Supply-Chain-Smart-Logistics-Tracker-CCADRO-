@@ -45,7 +45,11 @@ public class CarbonBenchmarkService {
         List<EmissionCalculation> calcs = emissionCalculationRepository.findByTripId(tripId);
         EmissionCalculation activeCalc = calcs.stream()
                 .filter(c -> "CALCULATED".equalsIgnoreCase(c.getCalculationStatus()))
+                .filter(c -> !"PLANNING".equalsIgnoreCase(c.getCalculationType()))
                 .max(Comparator.comparingInt(c -> c.getVersionNumber() != null ? c.getVersionNumber() : 1))
+                .or(() -> calcs.stream()
+                        .filter(c -> "CALCULATED".equalsIgnoreCase(c.getCalculationStatus()))
+                        .max(Comparator.comparingInt(c -> c.getVersionNumber() != null ? c.getVersionNumber() : 1)))
                 .orElseThrow(() -> new AppException(ErrorCode.EMISSION_CALCULATION_FAILED,
                         "Chưa có kết quả kế toán phát thải hợp lệ cho chuyến đi: " + tripId));
 

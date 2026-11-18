@@ -172,19 +172,28 @@ public class EmissionAccountingService {
     }
 
     public Optional<EmissionFactor> resolveEmissionFactor(String fuelType, String euroStandard) {
-        if ("UNKNOWN".equalsIgnoreCase(fuelType) || "BLOCKED".equalsIgnoreCase(fuelType)) {
+        String cleanFuel = fuelType != null ? fuelType.trim() : "";
+        String cleanEuro = euroStandard != null ? euroStandard.trim() : "";
+        if ("UNKNOWN".equalsIgnoreCase(cleanFuel) || "BLOCKED".equalsIgnoreCase(cleanFuel)) {
             return Optional.empty();
         }
         List<EmissionFactor> allFactors = emissionFactorRepository.findAll();
-        Optional<EmissionFactor> exactMatch = allFactors.stream()
+        boolean hasFuelFilter = !cleanFuel.isEmpty();
+        boolean hasEuroFilter = !cleanEuro.isEmpty();
+
+        Optional<EmissionFactor> matched = allFactors.stream()
                 .filter(EmissionFactor::isActive)
-                .filter(f -> fuelType == null || fuelType.equalsIgnoreCase(f.getFuelType()))
-                .filter(f -> euroStandard == null || euroStandard.equalsIgnoreCase(f.getEuroStandard()))
+                .filter(f -> !hasFuelFilter || cleanFuel.equalsIgnoreCase(f.getFuelType()))
+                .filter(f -> !hasEuroFilter || cleanEuro.equalsIgnoreCase(f.getEuroStandard()))
                 .findFirst();
-        if (exactMatch.isPresent()) {
-            return exactMatch;
+        if (matched.isPresent()) {
+            return matched;
         }
-        return allFactors.stream().filter(EmissionFactor::isActive).findFirst();
+        // Only fall back to default active factor when caller did not constrain fuel/standard (BRULE-13)
+        if (!hasFuelFilter && !hasEuroFilter) {
+            return allFactors.stream().filter(EmissionFactor::isActive).findFirst();
+        }
+        return Optional.empty();
     }
 }
 

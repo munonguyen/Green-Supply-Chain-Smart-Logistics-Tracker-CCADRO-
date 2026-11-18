@@ -22,5 +22,7 @@ public class PodSubmissionRequest {
     String signatureUrl;
     String photoEvidenceUrl;
     BigDecimal actualDistanceKm;
+    BigDecimal cargoPayloadTons;
+    String fuelType;
+    String euroStandard;
 }
-
