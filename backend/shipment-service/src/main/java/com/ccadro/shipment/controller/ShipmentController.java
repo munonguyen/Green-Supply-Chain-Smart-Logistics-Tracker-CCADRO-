@@ -5,6 +5,8 @@ import com.ccadro.shipment.dto.request.DispatchOrderRequest;
 import com.ccadro.shipment.dto.request.ShipmentCreationRequest;
 import com.ccadro.shipment.dto.response.DispatchOrderResponse;
 import com.ccadro.shipment.dto.response.ShipmentResponse;
+import com.ccadro.shipment.exception.AppException;
+import com.ccadro.shipment.exception.ErrorCode;
 import com.ccadro.shipment.service.ShipmentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -27,15 +29,38 @@ public class ShipmentController {
     ShipmentService shipmentService;
 
     @GetMapping
-    @Operation(summary = "List all shipments (UC04)")
-    public ApiResponse<List<ShipmentResponse>> getAll() {
-        return ApiResponse.success(shipmentService.getAllShipmentResponses());
+    @Operation(summary = "List all shipments with Elastic search (?q=) and soft-delete filter (UC04)")
+    public ApiResponse<List<ShipmentResponse>> getAll(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false, defaultValue = "false") boolean includeDeleted,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
+        return ApiResponse.success(shipmentService.getAllShipmentResponses(q, includeDeleted, page, size));
     }
 
     @GetMapping("/customer/{customerId}")
-    @Operation(summary = "List shipments for a specific customer (BRULE-16 Customer Isolation)")
-    public ApiResponse<List<ShipmentResponse>> getByCustomer(@PathVariable String customerId) {
-        return ApiResponse.success(shipmentService.getShipmentsByCustomerId(customerId));
+    @Operation(summary = "List shipments for a specific customer with Elastic search (BRULE-16 Customer Isolation)")
+    public ApiResponse<List<ShipmentResponse>> getByCustomer(
+            @PathVariable String customerId,
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false, defaultValue = "false") boolean includeDeleted,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
+        return ApiResponse.success(shipmentService.getShipmentsByCustomerId(customerId, q, includeDeleted, page, size));
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Soft delete shipment")
+    public ApiResponse<ShipmentResponse> softDelete(
+            @PathVariable UUID id,
+            @RequestHeader(value = "X-Auth-Username", required = false) String callerUsername) {
+        return ApiResponse.success("Đã xóa mềm đơn vận tải", shipmentService.softDeleteShipment(id, callerUsername));
+    }
+
+    @PostMapping("/{id}/restore")
+    @Operation(summary = "Restore soft-deleted shipment")
+    public ApiResponse<ShipmentResponse> restore(@PathVariable UUID id) {
+        return ApiResponse.success("Đã khôi phục đơn vận tải", shipmentService.restoreShipment(id));
     }
 
     @GetMapping("/{id}")
@@ -46,7 +71,17 @@ public class ShipmentController {
 
     @PostMapping
     @Operation(summary = "Create a new shipment with PostGIS spatial points (UC04, BRULE-02)")
-    public ApiResponse<ShipmentResponse> create(@Valid @RequestBody ShipmentCreationRequest request) {
+    public ApiResponse<ShipmentResponse> create(
+            @Valid @RequestBody ShipmentCreationRequest request,
+            @RequestHeader(value = "X-Auth-Scope", required = false) String callerScope,
+            @RequestHeader(value = "X-Auth-Customer-Id", required = false) String authenticatedCustomerId) {
+        if (callerScope != null && java.util.Arrays.asList(callerScope.split("\\s+")).contains("ROLE_CUSTOMER")) {
+            if (authenticatedCustomerId == null || authenticatedCustomerId.isBlank()) {
+                throw new AppException(ErrorCode.INVALID_REQUEST_ARGUMENT,
+                        "Tài khoản khách hàng chưa được gắn mã doanh nghiệp.");
+            }
+            request.setCustomerId(authenticatedCustomerId);
+        }
         return ApiResponse.success("Tạo đơn vận tải thành công", shipmentService.createShipmentResponse(request));
     }
 

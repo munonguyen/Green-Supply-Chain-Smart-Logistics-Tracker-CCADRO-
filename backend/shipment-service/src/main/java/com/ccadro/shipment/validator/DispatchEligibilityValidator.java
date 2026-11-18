@@ -7,6 +7,7 @@ import com.ccadro.shipment.exception.ErrorCode;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
@@ -29,14 +30,21 @@ import java.util.UUID;
 public class DispatchEligibilityValidator {
 
     RestClient assetRestClient;
+    boolean strictRemoteValidation;
 
-    public DispatchEligibilityValidator(@Value("${services.asset.url:http://localhost:8081}") String assetServiceUrl) {
+    @Autowired
+    public DispatchEligibilityValidator(
+            @Value("${services.asset.url:http://localhost:8081}") String assetServiceUrl,
+            @Value("${ccadro.dispatch.strict-remote-validation:true}") boolean strictRemoteValidation) {
         this.assetRestClient = RestClient.builder().baseUrl(assetServiceUrl).build();
+        this.strictRemoteValidation = strictRemoteValidation;
     }
 
-    /**
-     * Xác thực điều kiện xuất bến của phương tiện và tài xế trước khi phát hành lệnh điều phối.
-     */
+    DispatchEligibilityValidator(RestClient assetRestClient, boolean strictRemoteValidation) {
+        this.assetRestClient = assetRestClient;
+        this.strictRemoteValidation = strictRemoteValidation;
+    }
+
     public void validateVehicleAndDriverEligibility(Shipment shipment, UUID vehicleId, UUID driverId) {
         validateVehicle(shipment, vehicleId);
         validateDriver(driverId);
@@ -77,7 +85,11 @@ public class DispatchEligibilityValidator {
         } catch (AppException e) {
             throw e;
         } catch (Exception e) {
-            log.warn("Không thể kết nối trực tiếp tới Asset Service để đối soát xe: {}", e.getMessage());
+            if (strictRemoteValidation) {
+                throw new AppException(ErrorCode.INVALID_REQUEST_ARGUMENT,
+                        "Không thể kết nối Asset Service để thẩm định phương tiện " + vehicleId + ": " + e.getMessage());
+            }
+            log.warn("Non-strict mode: Không thể kết nối trực tiếp tới Asset Service để đối soát xe: {}", e.getMessage());
         }
     }
 
@@ -101,12 +113,16 @@ public class DispatchEligibilityValidator {
         } catch (AppException e) {
             throw e;
         } catch (Exception e) {
-            log.warn("Không thể kết nối trực tiếp tới Asset Service để đối soát tài xế: {}", e.getMessage());
+            if (strictRemoteValidation) {
+                throw new AppException(ErrorCode.INVALID_REQUEST_ARGUMENT,
+                        "Không thể kết nối Asset Service để thẩm định tài xế " + driverId + ": " + e.getMessage());
+            }
+            log.warn("Non-strict mode: Không thể kết nối trực tiếp tới Asset Service để đối soát tài xế: {}", e.getMessage());
         }
     }
 
     /**
-     * Đồng bộ cập nhật trạng thái phương tiện -> IN_TRANSIT và tài xế -> ON_DUTY sau khi xuất bến thành công.
+     * Đồng bộ cập nhật trạng thái phương tiện -> IN_TRANSIT và tài xế -> ON_TRIP sau khi xuất bến thành công.
      */
     public void updateAssetStatusesOnDispatch(UUID vehicleId, UUID driverId) {
         try {
@@ -127,8 +143,11 @@ public class DispatchEligibilityValidator {
                     .toBodilessEntity();
             log.info("Cập nhật trạng thái thành công: Xe {} -> IN_TRANSIT, Tài xế {} -> ON_TRIP", vehicleId, driverId);
         } catch (Exception e) {
-            log.warn("Không thể cập nhật trạng thái xe/tài xế sang IN_TRANSIT/ON_DUTY: {}", e.getMessage());
+            if (strictRemoteValidation) {
+                throw new AppException(ErrorCode.INVALID_REQUEST_ARGUMENT,
+                        "Không thể khóa phương tiện/tài xế tại Asset Service: " + e.getMessage());
+            }
+            log.warn("Non-strict mode: Không thể cập nhật trạng thái xe/tài xế sang IN_TRANSIT/ON_TRIP: {}", e.getMessage());
         }
     }
 }
-

@@ -94,6 +94,15 @@ public class Shipment {
     @Builder.Default
     String distanceUnit = "KM";
 
+    @Column(name = "is_deleted", nullable = false)
+    @Builder.Default
+    Boolean isDeleted = false;
+
+    @Column(name = "deleted_at")
+    Instant deletedAt;
+
+    @Column(name = "deleted_by", length = 60)
+    String deletedBy;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     @Builder.Default
@@ -102,6 +111,4 @@ public class Shipment {
     @Column(name = "updated_at", nullable = false)
     @Builder.Default
     Instant updatedAt = Instant.now();
-
-
 }

@@ -31,7 +31,7 @@ public class DispatchOrderService {
     DispatchOrderMapper dispatchOrderMapper;
     TripDispatchSagaOrchestrator tripDispatchSagaOrchestrator;
 
-    @Transactional
+    @Transactional(noRollbackFor = AppException.class)
     public DispatchOrderResponse createDispatchOrder(DispatchOrderRequest request) {
         return tripDispatchSagaOrchestrator.executeDispatchSaga(request);
     }
