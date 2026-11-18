@@ -17,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/payments")
@@ -25,15 +26,51 @@ import java.util.List;
 public class PaymentController {
 
     private final PaymentService paymentService;
+    private final com.ccadro.payment.service.PaymentEvidenceService evidenceService;
+
+    @GetMapping("/{transactionCode}/evidence")
+    public ApiResponse<Map<String,Object>> evidence(@PathVariable String transactionCode,
+            @RequestHeader(value="X-Auth-Username",required=false) String username,
+            @RequestHeader(value="X-Auth-Scope",required=false) String scope) {
+        return ApiResponse.success(evidenceService.get(transactionCode,username,scope));
+    }
+    @PostMapping("/{transactionCode}/evidence/retry")
+    public ApiResponse<String> retryEvidence(@PathVariable String transactionCode,
+            @RequestHeader(value="X-Auth-Username",required=false) String username,
+            @RequestHeader(value="X-Auth-Scope",required=false) String scope) {
+        evidenceService.retry(transactionCode,username,scope);
+        return ApiResponse.success("Đã xếp hàng thử gửi lại");
+    }
+    private void requireAdmin(String scope) {
+        if(scope==null || !java.util.Arrays.asList(scope.split("\\s+")).contains("ROLE_ADMIN"))
+            throw new org.springframework.web.server.ResponseStatusException(HttpStatus.FORBIDDEN,"Chỉ ADMIN được đối soát thanh toán thủ công");
+    }
 
     @GetMapping
-    @Operation(summary = "Danh sách giao dịch thanh toán & hóa đơn B2B (lọc theo customerId / status / shipmentCode)")
+    @Operation(summary = "Danh sách giao dịch thanh toán & hóa đơn B2B (Elastic search ?q=, Xóa mềm & lọc)")
     public ApiResponse<List<PaymentTransactionResponse>> getPayments(
             @RequestParam(required = false) String customerId,
             @RequestParam(required = false) String status,
-            @RequestParam(required = false) String shipmentCode
+            @RequestParam(required = false) String shipmentCode,
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false, defaultValue = "false") boolean includeDeleted
     ) {
-        return ApiResponse.success(paymentService.getPayments(customerId, status, shipmentCode));
+        return ApiResponse.success(paymentService.getPayments(customerId, status, shipmentCode, q, includeDeleted));
+    }
+
+    @DeleteMapping("/{transactionCode}")
+    @Operation(summary = "Xóa mềm giao dịch/hóa đơn B2B")
+    public ApiResponse<PaymentTransactionResponse> softDeletePayment(
+            @PathVariable String transactionCode,
+            @RequestHeader(value = "X-Auth-Username", required = false) String callerUsername
+    ) {
+        return ApiResponse.success("Đã xóa mềm giao dịch thanh toán", paymentService.softDeletePayment(transactionCode, callerUsername));
+    }
+
+    @PostMapping("/{transactionCode}/restore")
+    @Operation(summary = "Khôi phục giao dịch thanh toán đã xóa mềm")
+    public ApiResponse<PaymentTransactionResponse> restorePayment(@PathVariable String transactionCode) {
+        return ApiResponse.success("Đã khôi phục giao dịch thanh toán", paymentService.restorePayment(transactionCode));
     }
 
     @GetMapping("/summary")
@@ -60,8 +97,15 @@ public class PaymentController {
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Khởi tạo yêu cầu thanh toán & sinh hóa đơn điện tử VAT")
     public ApiResponse<PaymentTransactionResponse> createPayment(
-            @Valid @RequestBody CreatePaymentRequest request
+            @Valid @RequestBody CreatePaymentRequest request,
+            @RequestHeader("X-Auth-Username") String username,
+            @RequestHeader("X-Auth-Email") String email,
+            @RequestHeader(value="X-Auth-Scope",required=false) String scope
     ) {
+        if (email.isBlank()) throw new org.springframework.web.server.ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,"Tài khoản cần có email nhận hồ sơ");
+        request.setCreatedByUsername(username);
+        request.setReceiptEmail(email);
+        if(Boolean.TRUE.equals(request.getInstantConfirm())) requireAdmin(scope);
         return ApiResponse.success(
                 "Đã khởi tạo hóa đơn & yêu cầu thanh toán thành công",
                 paymentService.createPayment(request)
@@ -72,8 +116,10 @@ public class PaymentController {
     @Operation(summary = "Xác nhận thanh toán thành công (VietQR / VNPay / MoMo / Thẻ)")
     public ApiResponse<PaymentTransactionResponse> confirmPayment(
             @PathVariable String transactionCode,
-            @RequestBody(required = false) ConfirmPaymentRequest request
+            @RequestBody(required = false) ConfirmPaymentRequest request,
+            @RequestHeader(value="X-Auth-Scope",required=false) String scope
     ) {
+        requireAdmin(scope);
         return ApiResponse.success(
                 "Xác nhận thanh toán thành công",
                 paymentService.confirmPayment(transactionCode, request)
@@ -84,11 +130,31 @@ public class PaymentController {
     @Operation(summary = "Hoàn tiền hoặc hủy giao dịch thanh toán")
     public ApiResponse<PaymentTransactionResponse> refundPayment(
             @PathVariable String transactionCode,
-            @RequestBody(required = false) RefundPaymentRequest request
+            @RequestBody(required = false) RefundPaymentRequest request,
+            @RequestHeader(value="X-Auth-Scope",required=false) String scope
     ) {
+        requireAdmin(scope);
         return ApiResponse.success(
                 "Đã xử lý hoàn tiền giao dịch",
                 paymentService.refundPayment(transactionCode, request)
+        );
+    }
+
+    @GetMapping("/gateway/status")
+    @Operation(summary = "Kiểm tra trạng thái kết nối cổng thanh toán bên thứ 3 (VNPay/PayOS vs SANDBOX)")
+    public ApiResponse<Map<String, Object>> getGatewayStatus() {
+        return ApiResponse.success(paymentService.getGatewayStatus());
+    }
+
+    @PostMapping("/{transactionCode}/checkout-session")
+    @Operation(summary = "Khởi tạo phiên chuyển hướng cổng thanh toán bên thứ 3 (VNPay HMAC-SHA512 / PayOS / Sandbox QR)")
+    public ApiResponse<Map<String, Object>> createCheckoutSession(
+            @PathVariable String transactionCode,
+            @RequestParam(defaultValue = "VNPAY") String provider
+    ) {
+        return ApiResponse.success(
+                "Đã khởi tạo phiên thanh toán",
+                paymentService.createCheckoutSession(transactionCode, provider)
         );
     }
 

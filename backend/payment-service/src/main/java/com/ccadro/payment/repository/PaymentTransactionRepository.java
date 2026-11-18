@@ -11,6 +11,7 @@ import java.util.UUID;
 @Repository
 public interface PaymentTransactionRepository extends JpaRepository<PaymentTransaction, UUID> {
 
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     Optional<PaymentTransaction> findByTransactionCode(String transactionCode);
 
     Optional<PaymentTransaction> findTopByShipmentCodeOrderByCreatedAtDesc(String shipmentCode);

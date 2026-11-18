@@ -41,6 +41,9 @@ public class B2bContractResponse {
     private Instant signedAt;
     private Instant settledAt;
     private String notes;
+    private Boolean isDeleted;
+    private Instant deletedAt;
+    private String deletedBy;
     private Instant createdAt;
     private Instant updatedAt;
 }

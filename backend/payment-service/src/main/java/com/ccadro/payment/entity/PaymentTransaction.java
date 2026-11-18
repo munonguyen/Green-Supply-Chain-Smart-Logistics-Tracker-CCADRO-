@@ -34,6 +34,11 @@ public class PaymentTransaction extends BaseEntity {
     @Column(name = "customer_name", length = 200)
     private String customerName;
 
+    @Column(name="receipt_email", length=254)
+    private String receiptEmail;
+    @Column(name="confirmation_source", length=32)
+    private String confirmationSource;
+
     @Column(name = "created_by_username", length = 100)
     private String createdByUsername;
 
@@ -111,5 +116,15 @@ public class PaymentTransaction extends BaseEntity {
 
     @Column(name = "due_at")
     private Instant dueAt;
+
+    @Column(name = "is_deleted", nullable = false)
+    @Builder.Default
+    private Boolean isDeleted = false;
+
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
+    @Column(name = "deleted_by", length = 60)
+    private String deletedBy;
 }
 

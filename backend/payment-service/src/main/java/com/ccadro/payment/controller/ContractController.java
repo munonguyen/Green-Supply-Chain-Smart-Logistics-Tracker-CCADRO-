@@ -26,14 +26,31 @@ public class ContractController {
     private final ContractService contractService;
 
     @GetMapping
-    @Operation(summary = "Danh sách hợp đồng B2B (lọc theo customerId / contractType / status / shipmentCode)")
+    @Operation(summary = "Danh sách hợp đồng B2B (Elastic search ?q=, Xóa mềm & lọc)")
     public ApiResponse<List<B2bContractResponse>> getContracts(
             @RequestParam(required = false) String customerId,
             @RequestParam(required = false) String contractType,
             @RequestParam(required = false) String status,
-            @RequestParam(required = false) String shipmentCode
+            @RequestParam(required = false) String shipmentCode,
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false, defaultValue = "false") boolean includeDeleted
     ) {
-        return ApiResponse.success(contractService.getContracts(customerId, contractType, status, shipmentCode));
+        return ApiResponse.success(contractService.getContracts(customerId, contractType, status, shipmentCode, q, includeDeleted));
+    }
+
+    @DeleteMapping("/{contractNumber}")
+    @Operation(summary = "Xóa mềm hợp đồng B2B")
+    public ApiResponse<B2bContractResponse> softDeleteContract(
+            @PathVariable String contractNumber,
+            @RequestHeader(value = "X-Auth-Username", required = false) String callerUsername
+    ) {
+        return ApiResponse.success("Đã xóa mềm hợp đồng B2B", contractService.softDeleteContract(contractNumber, callerUsername));
+    }
+
+    @PostMapping("/{contractNumber}/restore")
+    @Operation(summary = "Khôi phục hợp đồng B2B đã xóa mềm")
+    public ApiResponse<B2bContractResponse> restoreContract(@PathVariable String contractNumber) {
+        return ApiResponse.success("Đã khôi phục hợp đồng B2B", contractService.restoreContract(contractNumber));
     }
 
     @GetMapping("/{contractNumber}")

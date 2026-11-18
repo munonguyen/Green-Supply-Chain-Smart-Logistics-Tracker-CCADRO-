@@ -15,6 +15,9 @@ public class CreatePaymentRequest {
     private String customerId;
 
     private String customerName;
+
+    @jakarta.validation.constraints.Email
+    private String receiptEmail;
     private String createdByUsername;
     private String originName;
     private String destinationName;

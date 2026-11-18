@@ -15,6 +15,7 @@ public class PaymentTransactionResponse {
     private String shipmentCode;
     private String customerId;
     private String customerName;
+    private String receiptEmail;
     private String createdByUsername;
     private String originName;
     private String destinationName;
@@ -39,6 +40,9 @@ public class PaymentTransactionResponse {
     private String notes;
     private Instant paidAt;
     private Instant dueAt;
+    private Boolean isDeleted;
+    private Instant deletedAt;
+    private String deletedBy;
     private Instant createdAt;
     private Instant updatedAt;
 }

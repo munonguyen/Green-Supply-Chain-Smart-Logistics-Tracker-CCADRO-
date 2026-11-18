@@ -38,6 +38,7 @@ class PaymentServiceTest {
     @Mock
     private B2bContractRepository contractRepository;
 
+    @Mock private PaymentEvidenceService evidenceService;
     private PaymentService paymentService;
 
     @BeforeEach
@@ -47,7 +48,7 @@ class PaymentServiceTest {
         props.setEvGreenDiscountRate(0.05);
         props.setLngGreenDiscountRate(0.03);
         props.setWebhookSecret("ccadro-test-webhook-secret");
-        paymentService = new PaymentService(transactionRepository, auditLogRepository, contractRepository, props);
+        paymentService = new PaymentService(org.mapstruct.factory.Mappers.getMapper(com.ccadro.payment.mapper.PaymentMapper.class), transactionRepository, auditLogRepository, contractRepository, props, evidenceService);
     }
 
     @Test
@@ -101,6 +102,7 @@ class PaymentServiceTest {
         PaymentTransactionResponse paid = paymentService.confirmPayment("PAY-2026-TEST01", confirmReq);
         assertEquals("PAID", paid.getPaymentStatus());
         assertNotNull(paid.getPaidAt());
+        verify(evidenceService).capture(existing);
 
         assertThrows(AppException.class, () -> paymentService.confirmPayment("PAY-2026-TEST01", confirmReq));
 
@@ -152,15 +154,81 @@ class PaymentServiceTest {
 
         PaymentWebhookCallbackRequest badSig = new PaymentWebhookCallbackRequest();
         badSig.setTransactionCode("PAY-WH-01");
-        badSig.setSignature("wrong-secret");
+        badSig.setSignature("ccadro-test-webhook-secret"); // Raw static secret without HMAC must be rejected
         assertThrows(AppException.class, () -> paymentService.processWebhookCallback("VNPAY", badSig));
+
+        String validHmac = PaymentService.hmacHex("HmacSHA256", "ccadro-test-webhook-secret", "PAY-WH-01|1026000");
+
+        PaymentWebhookCallbackRequest tamperedAmount = new PaymentWebhookCallbackRequest();
+        tamperedAmount.setTransactionCode("PAY-WH-01");
+        tamperedAmount.setPaidAmountVnd(1L);
+        tamperedAmount.setSignature(PaymentService.hmacHex("HmacSHA256", "ccadro-test-webhook-secret", "PAY-WH-01|1"));
+        assertThrows(AppException.class, () -> paymentService.processWebhookCallback("VNPAY", tamperedAmount));
 
         PaymentWebhookCallbackRequest goodSig = new PaymentWebhookCallbackRequest();
         goodSig.setTransactionCode("PAY-WH-01");
-        goodSig.setSignature("ccadro-test-webhook-secret");
+        goodSig.setPaidAmountVnd(1_026_000L);
+        goodSig.setSignature(validHmac);
         goodSig.setGatewayReference("VNP-HOOK-7788");
         PaymentTransactionResponse settled = paymentService.processWebhookCallback("VNPAY", goodSig);
         assertEquals("PAID", settled.getPaymentStatus());
         assertEquals("VNP-HOOK-7788", settled.getGatewayReference());
+        paymentService.processWebhookCallback("VNPAY", goodSig);
+        verify(evidenceService, times(1)).capture(pendingTx);
+    }
+
+    @Test
+    void hmacSha256Webhook_andVnpayHmacSha512CheckoutSession_workEndToEnd() {
+        PaymentTransaction pendingTx = PaymentTransaction.builder()
+                .id(UUID.randomUUID())
+                .transactionCode("PAY-HMAC-01")
+                .invoiceNumber("INV-HMAC-01")
+                .shipmentCode("SHP-HMAC-01")
+                .customerId("DOANH_NGHIEP_B2B")
+                .paymentMethod("VNPAY_QR")
+                .baseFreightVnd(2_000_000L)
+                .greenEsgDiscountVnd(100_000L)
+                .vatAmountVnd(152_000L)
+                .totalAmountVnd(2_052_000L)
+                .qrPayload("VIETQR|BANK=VCB")
+                .paymentStatus("PENDING")
+                .build();
+
+        when(transactionRepository.findByTransactionCode("PAY-HMAC-01")).thenReturn(Optional.of(pendingTx));
+
+        // 1. Without VNPay keys -> SANDBOX checkout session
+        var sandboxSession = paymentService.createCheckoutSession("PAY-HMAC-01", "VNPAY");
+        assertEquals("SANDBOX", sandboxSession.get("mode"));
+        assertEquals("PAY-HMAC-01", sandboxSession.get("transactionCode"));
+
+        // 2. With VNPay keys -> signed HMAC-SHA512 checkout URL
+        PaymentProperties liveProps = new PaymentProperties();
+        liveProps.setWebhookSecret("ccadro-test-webhook-secret");
+        liveProps.setVnpayTmnCode("CCADRO01");
+        liveProps.setVnpayHashSecret("VNPAYSECRET123456");
+        liveProps.setVnpayPayUrl("https://sandbox.vnpayment.vn/paymentv2/vpcpay.html");
+        liveProps.setVnpayReturnUrl("http://localhost:5173/customer");
+
+        PaymentService liveService = new PaymentService(org.mapstruct.factory.Mappers.getMapper(com.ccadro.payment.mapper.PaymentMapper.class), transactionRepository, auditLogRepository, contractRepository, liveProps, evidenceService);
+        var liveSession = liveService.createCheckoutSession("PAY-HMAC-01", "VNPAY");
+        assertEquals("LIVE_SIGNED_URL", liveSession.get("mode"));
+        String checkoutUrl = String.valueOf(liveSession.get("checkoutUrl"));
+        assertTrue(checkoutUrl.contains("vnp_TmnCode=CCADRO01"));
+        assertTrue(checkoutUrl.contains("vnp_SecureHash="));
+
+        // 3. Cryptographic HMAC-SHA256 webhook verification
+        when(transactionRepository.save(any(PaymentTransaction.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(auditLogRepository.save(any(PaymentAuditLog.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        String expectedHmac = PaymentService.hmacHex("HmacSHA256", "ccadro-test-webhook-secret", "PAY-HMAC-01|2052000");
+        PaymentWebhookCallbackRequest hmacReq = new PaymentWebhookCallbackRequest();
+        hmacReq.setTransactionCode("PAY-HMAC-01");
+        hmacReq.setPaidAmountVnd(2_052_000L);
+        hmacReq.setSignature(expectedHmac);
+        hmacReq.setGatewayReference("VNPAY-LIVE-999");
+
+        PaymentTransactionResponse settled = liveService.processWebhookCallback("VNPAY", hmacReq);
+        assertEquals("PAID", settled.getPaymentStatus());
+        assertEquals("VNPAY-LIVE-999", settled.getGatewayReference());
     }
 }
