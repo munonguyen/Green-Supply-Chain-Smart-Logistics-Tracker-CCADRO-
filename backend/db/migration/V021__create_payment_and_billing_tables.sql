@@ -5,13 +5,13 @@
 -- =========================================================================
 
 -- 1. Bổ sung quyền thanh toán vào bảng permissions và gán cho CUSTOMER & ADMIN
-INSERT INTO permissions (permission_key, description, module) VALUES
-    ('PAYMENT_CREATE', 'Khởi tạo yêu cầu thanh toán & hóa đơn vận chuyển xanh', 'PAYMENT'),
-    ('PAYMENT_READ_OWN', 'Xem lịch sử giao dịch, hóa đơn VAT & công nợ của doanh nghiệp mình', 'PAYMENT'),
-    ('PAYMENT_MANAGE', 'Quản trị đối soát, xác nhận & hoàn tiền giao dịch toàn hệ thống', 'PAYMENT')
-ON CONFLICT (permission_key) DO NOTHING;
+INSERT INTO permissions (name, description) VALUES
+    ('PAYMENT_CREATE', 'Khởi tạo yêu cầu thanh toán & hóa đơn vận chuyển xanh'),
+    ('PAYMENT_READ_OWN', 'Xem lịch sử giao dịch, hóa đơn VAT & công nợ của doanh nghiệp mình'),
+    ('PAYMENT_MANAGE', 'Quản trị đối soát, xác nhận & hoàn tiền giao dịch toàn hệ thống')
+ON CONFLICT (name) DO NOTHING;
 
-INSERT INTO role_permissions (role_name, permission_key) VALUES
+INSERT INTO role_permissions (role_name, permission_name) VALUES
     ('ADMIN', 'PAYMENT_CREATE'),
     ('ADMIN', 'PAYMENT_READ_OWN'),
     ('ADMIN', 'PAYMENT_MANAGE'),

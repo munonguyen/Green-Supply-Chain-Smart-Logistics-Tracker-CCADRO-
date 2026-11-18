@@ -25,7 +25,13 @@ if lsof -i :5432 >/dev/null 2>&1 || nc -z localhost 5432 >/dev/null 2>&1; then
 fi
 
 # 2. Launch Docker infrastructure
-echo "==> Starting PostgreSQL/PostGIS and Redis via Docker Compose..."
+if [ -f .env ]; then
+  set -a
+  source .env
+  set +a
+fi
+source scripts/chat-env.sh
+echo "==> Starting PostgreSQL/PostGIS, Redis, Kafka and MongoDB via Docker Compose..."
 docker compose up -d
 
 # 3. Wait for PostgreSQL & Redis health

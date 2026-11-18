@@ -1,0 +1,17 @@
+{
+  "normalBrowser": true,
+  "checks": [
+    "normal browser login passed",
+    "backend-only account visible in directory",
+    "503 create rejected without local account",
+    "forged admin header HTTP 401",
+    "CUSTOMER /api/v1/users/username/admin HTTP 403",
+    "CUSTOMER /api/v1/roles HTTP 403"
+  ],
+  "errors": [],
+  "mobile": {
+    "left": 0,
+    "width": 390
+  },
+  "userCount": 14
+}

@@ -1,0 +1,37 @@
+{
+  "corsWorkaround": true,
+  "errors": [],
+  "failedChat": [
+    {
+      "url": "http://localhost:8888/api/v1/chat/conversations/dm-f9851b44158f45ba51d79bd28b185bd8d18ba5128168eb420655aa4ebc46e8d6/messages",
+      "status": 400,
+      "body": "{\"message\":\"Loại tin nhắn không hỗ trợ\"}"
+    },
+    {
+      "url": "http://localhost:8888/api/v1/chat/contacts",
+      "status": 503,
+      "body": "{\"message\":\"Kho chat tạm thời không khả dụng\"}"
+    },
+    {
+      "url": "http://localhost:8888/api/v1/chat/conversations",
+      "status": 503,
+      "body": "{\"message\":\"Kho chat tạm thời không khả dụng\"}"
+    },
+    {
+      "url": "http://localhost:8888/api/v1/chat/preferences",
+      "status": 503,
+      "body": "{\"message\":\"Kho chat tạm thời không khả dụng\"}"
+    }
+  ],
+  "actions": [
+    "Gửi text thành công",
+    "Tạo nhóm 3 thành viên thành công"
+  ],
+  "quickReply": "CCADRO Messenger\n● Mất kết nối Chat (:8888)\nĐANG HOẠT ĐỘNG\nTất cả\nChưa đọc\nNhóm\nTài xế\nĐiều phối\nKhách / Hub\nVN\nVan Nam Nguyen\nVừa xong\n2 thành viên\nBạn: [UI REVIEW] Xin chào, kiểm tra chat MongoDB.\nTL\nThi Kiem Toan Le\nBắt đầu cuộc trò chuyện...\nMB\nMinh Phu Seafood B2B\nBắt đầu cuộc trò chuyện...\nVT\nVan Test Tran\nBắt đầu cuộc trò chuyện...\nTB\nThanh Tra POD Trụ sở Đình Bảng\nBắt đầu cuộc trò chuyện...\nBA\nBiên Hòa Trưởng Trụ sở Amata\nBắt đầu cuộc trò chuyện...\nBB\nBắc Ninh Trưởng Trụ sở Đình Bảng\nBắt đầu cuộc trò chuyện...\nVP\nVan An Toan Pham\nBắt đầu cuộc trò chuyện...\nVB\nVăn Bắc Nguyễn (Shipper Đình Bảng)\nBắt đầu cuộc trò chuyện...\nQĐ\nQuốc Bảo Đặng\nBắt đầu cuộc trò chuyện...\nKH\nKinh Bắc Lê Hoàng\nBắt đầu cuộc trò chuyện...\nVN\nVan Nam Nguyen\nDISPATCHER\n● Đang hoạt động • 2 thành viên\nLoại tin nhắn không hỗ trợ\nThử lại\n[UI REVIEW] Xin chào, kiểm tra chat MongoDB.\n[UI REVIEW] Xin chào, kiểm tra chat MongoDB.\n08:30\nAnh tới đâu rồi ạ?\nGửi giúp tọa độ GPS hiện tại nhé\nNhớ giữ nhiệt độ cont -18°C ổn định\nTới cổng kho gọi số bảo vệ mở cổng nhé\nĐã xác nhận ePOD hoàn tất 🌿\nGhim Kho\nCHI TIẾT HỘI THOẠI\nVN\nVan Nam Nguyen\nNgoại tuyến\nDISPATCHER\nGhim chat\nTắt thông báo\nTìm trong cuộc trò chuyện\nTHÀNH VIÊN (2)\nThêm người\nSystem Admin\nVan Nam Nguyen\nHội thoại được đồng bộ đa tab & lưu vết phục vụ đối soát SLA / ePOD.",
+  "escapeCloses": true,
+  "mobile": {
+    "overflow": false,
+    "body": "UT\nUI REVIEW - nhóm kiểm thử\n3 thành viên\n● Đang hoạt động • 3 thành viên\nUT\nUI REVIEW - nhóm kiểm thử\nHãy gửi lời chào hoặc điều phối thông tin chuyến, tọa độ kho hay mời thêm người vào đoạn chat này.\nAnh tới đâu rồi ạ?\nGửi giúp tọa độ GPS hiện tại nhé\nNhớ giữ nhiệt độ cont -18°C ổn định\nTới cổng kho gọi số bảo vệ mở cổng nhé\nĐã xác nhận ePOD hoàn tất 🌿\nGhim Kho"
+  },
+  "unavailable": "CCADRO Messenger\n● Mất kết nối Chat (:8888)\nĐANG HOẠT ĐỘNG\nTất cả\nChưa đọc\nNhóm\nTài xế\nĐiều phối\nKhách / Hub\nUT\nUI REVIEW - nhóm kiểm thử\nNhóm • 3 thành viên\nBắt đầu cuộc trò chuyện...\nVN\nVan Nam Nguyen\nVừa xong\n2 thành viên\nBạn: [UI REVIEW] Xin chào, kiểm tra chat MongoDB.\nTL\nThi Kiem Toan Le\nBắt đầu cuộc trò chuyện...\nMB\nMinh Phu Seafood B2B\nBắt đầu cuộc trò chuyện...\nVT\nVan Test Tran\nBắt đầu cuộc trò chuyện...\nTB\nThanh Tra POD Trụ sở Đình Bảng\nBắt đầu cuộc trò chuyện...\nBA\nBiên Hòa Trưởng Trụ sở Amata\nBắt đầu cuộc trò chuyện...\nBB\nBắc Ninh Trưởng Trụ sở Đình Bảng\nBắt đầu cuộc trò chuyện...\nVP\nVan An Toan Pham\nBắt đầu cuộc trò chuyện...\nVB\nVăn Bắc Nguyễn (Shipper Đình Bảng)\nBắt đầu cuộc trò chuyện...\nQĐ\nQuốc Bảo Đặng\nBắt đầu cuộc trò chuyện...\nKH\nKinh Bắc Lê Hoàng\nBắt đầu cuộc trò chuyện...\nUT\nUI REVIEW - nhóm kiểm thử\n3 thành viên\n● Đang hoạt động • 3 thành viên\nKho chat tạm thời không khả dụng\nThử lại\nUT\nUI REVIEW - nhóm kiểm thử\nHãy gửi lời chào hoặc điều phối thông tin chuyến, tọa độ kho hay mời thêm người vào đoạn chat này.\nAnh tới đâu rồi ạ?\nGửi giúp tọa độ GPS hiện tại nhé\nNhớ giữ nhiệt độ cont -18°C ổn định\nTới cổng kho gọi số bảo vệ mở cổng nhé\nĐã xác nhận ePOD hoàn tất 🌿\nGhim Kho\nCHI TIẾT HỘI THOẠI\nUT\nUI REVIEW - nhóm kiểm thử\nNgoại tuyến\nNhóm chat\nGhim chat\nTắt thông báo\nTìm trong cuộc trò chuyện\nTHÀNH VIÊN (3)\nThêm người\nSystem Admin\nMinh Phu Seafood B2B\nVan Nam Nguyen\nHội thoại được đồng bộ đa tab & lưu vết phục vụ đối soát SLA / ePOD."
+}

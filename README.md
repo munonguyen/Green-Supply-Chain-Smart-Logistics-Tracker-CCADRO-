@@ -1,6 +1,13 @@
 # CCADRO - Smart Green Supply Chain Logistics Tracker
 
+Hạ tầng: [Eureka theo dõi từng service](docs/EUREKA_MONITORING.md). Quy ước backend: [MapStruct theo từng service](docs/MAPSTRUCT_BACKEND.md).
+
+
 CCADRO is an academic MVP implementing an end-to-end **Modular Monolith** for green logistics optimization, multi-criteria route planning, real-time GPS deviation alerting, dynamic incident rerouting, and authoritative GLEC v3 carbon accounting.
+
+## MongoDB Chat Service
+
+Chat mới dùng MongoDB qua Gateway, hỗ trợ DM/nhóm, lịch sử, read receipts, reactions và pin/mute. GPS và nghiệp vụ khác vẫn dùng PostgreSQL/PostGIS. Xem [hướng dẫn chạy, API và cutover chat cũ](docs/CHAT_SERVICE_MONGODB.md). Tài liệu monolith bên dưới là mô tả cũ; cấu hình khởi động hiện có trong `scripts/dev-start.sh`.
 
 ---
 

@@ -5,14 +5,14 @@
 -- =========================================================================
 
 -- 1. Phân quyền Hợp đồng điện tử cho CUSTOMER & ADMIN
-INSERT INTO permissions (permission_key, description, module) VALUES
-    ('CONTRACT_READ_OWN', 'Xem hợp đồng khung MSA, hợp đồng chuyến & biên bản SLA của doanh nghiệp mình', 'CONTRACT'),
-    ('CONTRACT_CREATE', 'Khởi tạo hợp đồng thuê vận tải xanh B2B', 'CONTRACT'),
-    ('CONTRACT_SIGN', 'Ký số xác nhận hợp đồng điện tử & nghiệm thu đối soát ePOD', 'CONTRACT'),
-    ('CONTRACT_MANAGE', 'Quản trị toàn bộ hợp đồng B2B, hạn mức Net-30 & điều khoản SLA', 'CONTRACT')
-ON CONFLICT (permission_key) DO NOTHING;
+INSERT INTO permissions (name, description) VALUES
+    ('CONTRACT_READ_OWN', 'Xem hợp đồng khung MSA, hợp đồng chuyến & biên bản SLA của doanh nghiệp mình'),
+    ('CONTRACT_CREATE', 'Khởi tạo hợp đồng thuê vận tải xanh B2B'),
+    ('CONTRACT_SIGN', 'Ký số xác nhận hợp đồng điện tử & nghiệm thu đối soát ePOD'),
+    ('CONTRACT_MANAGE', 'Quản trị toàn bộ hợp đồng B2B, hạn mức Net-30 & điều khoản SLA')
+ON CONFLICT (name) DO NOTHING;
 
-INSERT INTO role_permissions (role_name, permission_key) VALUES
+INSERT INTO role_permissions (role_name, permission_name) VALUES
     ('ADMIN', 'CONTRACT_READ_OWN'),
     ('ADMIN', 'CONTRACT_CREATE'),
     ('ADMIN', 'CONTRACT_SIGN'),

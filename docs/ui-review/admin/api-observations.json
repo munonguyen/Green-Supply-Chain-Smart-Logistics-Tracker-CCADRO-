@@ -1,0 +1,141 @@
+[
+  {
+    "actor": "ADMIN",
+    "path": "/api/v1/users?includeDeleted=true",
+    "httpStatus": 200,
+    "code": 1000,
+    "count": 14,
+    "usernames": [
+      "dispatcher_hcm",
+      "hub_mgr_amata",
+      "shipper_bn2",
+      "shipper_bn3",
+      "shipper_amata",
+      "hub_inspector_bn",
+      "dispatcher",
+      "driver",
+      "auditor",
+      "safety",
+      "customer",
+      "hub_mgr_dinhbang",
+      "shipper",
+      "admin"
+    ]
+  },
+  {
+    "actor": "ADMIN",
+    "path": "/api/v1/companies?includeDeleted=true",
+    "httpStatus": 200,
+    "code": 1000,
+    "count": 5
+  },
+  {
+    "actor": "ADMIN",
+    "path": "/api/v1/roles",
+    "httpStatus": 200,
+    "code": 1000,
+    "count": 10,
+    "roleNames": [
+      "ADMIN",
+      "DISPATCHER",
+      "DRIVER",
+      "ESG_AUDITOR",
+      "SAFETY_MANAGER",
+      "CUSTOMER",
+      "SHIPPER",
+      "HUB_MANAGER",
+      "HUB_SHIPPER",
+      "HUB_AUDITOR"
+    ]
+  },
+  {
+    "actor": "ADMIN",
+    "path": "/api/v1/permissions",
+    "httpStatus": 200,
+    "code": 1000,
+    "count": 56
+  },
+  {
+    "actor": "ADMIN",
+    "path": "/api/v1/assets/vehicles",
+    "httpStatus": 200,
+    "code": 1000,
+    "count": 2
+  },
+  {
+    "actor": "ADMIN",
+    "path": "/api/v1/assets/drivers",
+    "httpStatus": 200,
+    "code": 1000,
+    "count": 8
+  },
+  {
+    "actor": "ADMIN",
+    "path": "/api/v1/assets/containers",
+    "httpStatus": 200,
+    "code": 1000,
+    "count": 6
+  },
+  {
+    "actor": "ADMIN",
+    "path": "/api/v1/incidents",
+    "httpStatus": 200,
+    "code": 1000,
+    "count": 0
+  },
+  {
+    "actor": "ADMIN",
+    "path": "/api/v1/carbon/reports",
+    "httpStatus": 200,
+    "code": 1000,
+    "count": 0
+  },
+  {
+    "actor": "NO_TOKEN_WITH_FORGED_HEADER",
+    "path": "identity-direct/users",
+    "httpStatus": 200,
+    "count": 14
+  },
+  {
+    "actor": "CUSTOMER",
+    "path": "/api/v1/users",
+    "httpStatus": 403,
+    "code": 1003,
+    "resultType": "NoneType"
+  },
+  {
+    "actor": "CUSTOMER",
+    "path": "/api/v1/users/username/admin",
+    "httpStatus": 200,
+    "code": 1000,
+    "resultType": "dict"
+  },
+  {
+    "actor": "CUSTOMER",
+    "path": "/api/v1/roles",
+    "httpStatus": 200,
+    "code": 1000,
+    "resultType": "list"
+  },
+  {
+    "actor": "CUSTOMER",
+    "path": "/api/v1/assets/drivers",
+    "httpStatus": 200,
+    "code": 1000,
+    "resultType": "list"
+  },
+  {
+    "actor": "CUSTOMER",
+    "path": "/api/v1/incidents",
+    "httpStatus": 200,
+    "code": 1000,
+    "resultType": "list"
+  },
+  {
+    "actor": "CUSTOMER",
+    "path": "POST /roles invalid fixed role (no write)",
+    "httpStatus": 400,
+    "message": "Hệ thống khóa cứng 7 vai trò chuẩn: [ADMIN, ESG_AUDITOR, CUSTOMER, SAFETY_MANAGER, HUB_SHIPPER, DRIVER, SHIPPER, DISPATCHER, HUB_MANAGER, HUB_AUDITOR]",
+    "code": 1004
+  }
+]
