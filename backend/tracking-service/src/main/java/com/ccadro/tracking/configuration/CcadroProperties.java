@@ -7,6 +7,7 @@ public class CcadroProperties {
 
     private Routing routing = new Routing();
     private Deviation deviation = new Deviation();
+    private Reroute reroute = new Reroute();
     private Carbon carbon = new Carbon();
     private Demerit demerit = new Demerit();
     private Security security = new Security();
@@ -31,6 +32,7 @@ public class CcadroProperties {
         private double yellowMeters = 50.0;
         private double redMeters = 200.0;
         private int consecutivePointsRequired = 3;
+        private double maxValidSpeedKmh = 150.0;
 
         public double getYellowMeters() { return yellowMeters; }
         public void setYellowMeters(double yellowMeters) { this.yellowMeters = yellowMeters; }
@@ -38,6 +40,21 @@ public class CcadroProperties {
         public void setRedMeters(double redMeters) { this.redMeters = redMeters; }
         public int getConsecutivePointsRequired() { return consecutivePointsRequired; }
         public void setConsecutivePointsRequired(int consecutivePointsRequired) { this.consecutivePointsRequired = consecutivePointsRequired; }
+        public double getMaxValidSpeedKmh() { return maxValidSpeedKmh; }
+        public void setMaxValidSpeedKmh(double maxValidSpeedKmh) { this.maxValidSpeedKmh = maxValidSpeedKmh; }
+    }
+
+    public static class Reroute {
+        private long cooldownSeconds = 300L;
+        private double minimumBenefitRatio = 0.1000;
+        private double detourSavingsEstimateRatio = 0.82;
+
+        public long getCooldownSeconds() { return cooldownSeconds; }
+        public void setCooldownSeconds(long cooldownSeconds) { this.cooldownSeconds = cooldownSeconds; }
+        public double getMinimumBenefitRatio() { return minimumBenefitRatio; }
+        public void setMinimumBenefitRatio(double minimumBenefitRatio) { this.minimumBenefitRatio = minimumBenefitRatio; }
+        public double getDetourSavingsEstimateRatio() { return detourSavingsEstimateRatio; }
+        public void setDetourSavingsEstimateRatio(double detourSavingsEstimateRatio) { this.detourSavingsEstimateRatio = detourSavingsEstimateRatio; }
     }
 
     public static class Carbon {
@@ -67,7 +84,7 @@ public class CcadroProperties {
     }
 
     public static class Security {
-        private String jwtSecret = "404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970";
+        private String jwtSecret = "";
         private long jwtExpirationMs = 86400000;
 
         public String getJwtSecret() { return jwtSecret; }
@@ -80,6 +97,8 @@ public class CcadroProperties {
     public void setRouting(Routing routing) { this.routing = routing; }
     public Deviation getDeviation() { return deviation; }
     public void setDeviation(Deviation deviation) { this.deviation = deviation; }
+    public Reroute getReroute() { return reroute; }
+    public void setReroute(Reroute reroute) { this.reroute = reroute; }
     public Carbon getCarbon() { return carbon; }
     public void setCarbon(Carbon carbon) { this.carbon = carbon; }
     public Demerit getDemerit() { return demerit; }

@@ -2,8 +2,10 @@ package com.ccadro.tracking.controller;
 
 import com.ccadro.tracking.controller.dto.IngestTelemetryRequest;
 import com.ccadro.tracking.dto.ApiResponse;
+import com.ccadro.tracking.dto.request.CreateTripRequest;
 import com.ccadro.tracking.dto.request.RerouteApprovalRequest;
 import com.ccadro.tracking.dto.response.DeviationAlertResponse;
+import com.ccadro.tracking.dto.response.LiveFleetTelemetryResponse;
 import com.ccadro.tracking.dto.response.RerouteProposalResponse;
 import com.ccadro.tracking.dto.response.TelemetryResponse;
 import com.ccadro.tracking.entity.Trip;
@@ -15,7 +17,9 @@ import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 import java.util.UUID;
@@ -37,10 +41,52 @@ public class TrackingController {
                 trackingMapper.toTelemetryResponse(trackingService.ingestTelemetry(request)));
     }
 
+    @PostMapping("/trips")
+    @Operation(summary = "Create or initialize Trip from Dispatch Saga (UC06, UC07)")
+    public ApiResponse<Trip> createTrip(@Valid @RequestBody CreateTripRequest request) {
+        return ApiResponse.success("Khởi tạo chuyến xe theo dõi thành công", trackingService.createOrGetTrip(request));
+    }
+
     @GetMapping("/trips")
-    @Operation(summary = "List all trips (UC07)")
-    public ApiResponse<List<Trip>> getAllTrips() {
-        return ApiResponse.success(trackingService.getAllTrips());
+    @Operation(summary = "List all trips with Elastic search (?q=) and soft-delete filter (UC07)")
+    public ApiResponse<List<Trip>> getAllTrips(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false, defaultValue = "false") boolean includeDeleted) {
+        return ApiResponse.success(trackingService.getAllTrips(q, includeDeleted));
+    }
+
+    @DeleteMapping("/trips/{tripId}")
+    @Operation(summary = "Soft delete trip")
+    public ApiResponse<Trip> softDeleteTrip(
+            @PathVariable UUID tripId,
+            @RequestHeader(value = "X-Auth-Username", required = false) String callerUsername) {
+        return ApiResponse.success("Đã xóa mềm chuyến xe", trackingService.softDeleteTrip(tripId, callerUsername));
+    }
+
+    @PostMapping("/trips/{tripId}/restore")
+    @Operation(summary = "Restore soft-deleted trip")
+    public ApiResponse<Trip> restoreTrip(@PathVariable UUID tripId) {
+        return ApiResponse.success("Đã khôi phục chuyến xe", trackingService.restoreTrip(tripId));
+    }
+
+    @GetMapping("/fleet/live")
+    @Operation(summary = "Get real-time fleet GPS telemetry snapshot aggregated from Trip, TelemetryEvent, RouteVersion & Container IoT (UC08)")
+    public ApiResponse<List<LiveFleetTelemetryResponse>> getLiveFleetTelemetry(
+            @RequestParam(required = false) String customerId,
+            @RequestParam(required = false) String q) {
+        return ApiResponse.success(trackingService.getLiveFleetTelemetry(customerId, q));
+    }
+
+    @GetMapping("/trips/{tripId}/live")
+    @Operation(summary = "Get real-time telemetry state, ETA, progress & deviation for a single Trip")
+    public ApiResponse<LiveFleetTelemetryResponse> getLiveTripTelemetry(@PathVariable UUID tripId) {
+        return ApiResponse.success(trackingService.getLiveTripTelemetry(tripId));
+    }
+
+    @GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @Operation(summary = "Subscribe to Server-Sent Events (SSE) real-time fleet GPS stream")
+    public SseEmitter streamFleetTelemetry(@RequestParam(required = false) String customerId) {
+        return trackingService.subscribeFleetStream(customerId);
     }
 
     @GetMapping("/trips/{tripId}")
@@ -85,7 +131,15 @@ public class TrackingController {
     @Operation(summary = "Dispatcher approves or rejects a reroute proposal - Human-in-the-Loop (UC10, BRULE-09)")
     public ApiResponse<RerouteProposalResponse> decideRerouteProposal(
             @PathVariable UUID proposalId,
-            @Valid @RequestBody RerouteApprovalRequest request) {
+            @Valid @RequestBody RerouteApprovalRequest request,
+            @RequestHeader(value = "X-Auth-Scope", required = false) String callerScope) {
+        if (callerScope == null || callerScope.isBlank()
+                || (!callerScope.contains("ROLE_ADMIN")
+                && !callerScope.contains("ROLE_DISPATCHER"))) {
+            throw new com.ccadro.tracking.exception.AppException(
+                    com.ccadro.tracking.exception.ErrorCode.UNAUTHORIZED,
+                    "Chỉ Điều phối viên (DISPATCHER) hoặc ADMIN mới có quyền phê duyệt đổi tuyến (BRULE-09).");
+        }
         return ApiResponse.success("Đã ghi nhận quyết định phê duyệt đổi tuyến của Điều phối viên",
                 trackingService.decideRerouteProposal(proposalId, request));
     }

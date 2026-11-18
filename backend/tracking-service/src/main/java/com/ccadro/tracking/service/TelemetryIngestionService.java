@@ -8,9 +8,9 @@ import com.ccadro.tracking.mapper.TrackingMapper;
 import com.ccadro.tracking.repository.TelemetryEventRepository;
 import com.ccadro.tracking.repository.TripRepository;
 import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,13 +23,12 @@ import java.util.UUID;
 
 /**
  * Thu nhận và chuẩn hóa dữ liệu viễn thông GPS Telemetry (UC07, UC08 / SOP-10):
- * - GPS Quality Gate: Loại bỏ điểm nhảy vận tốc ảo (> 150 km/h).
+ * - GPS Quality Gate: Loại bỏ điểm nhảy vận tốc ảo (> maxValidSpeedKmh).
  * - Tự động cộng dồn cự ly Haversine thực tế vào Trip.actualDistanceMeters.
- * - Tính toán khoảng cách lệch hành lang (computeDeviationDistance).
+ * - Tính toán khoảng cách lệch hành lang (computeDeviationDistance) và đẩy SSE Real-time.
  */
 @Service
 @Transactional(readOnly = true)
-@RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
 public class TelemetryIngestionService {
@@ -40,6 +39,47 @@ public class TelemetryIngestionService {
     CcadroProperties ccadroProperties;
     DeviationDetectionService deviationDetectionService;
     RerouteProposalService rerouteProposalService;
+    FleetTelemetryService fleetTelemetryService;
+    FleetTelemetryStreamService fleetTelemetryStreamService;
+
+    public TelemetryIngestionService(
+            TelemetryEventRepository telemetryEventRepository,
+            TripRepository tripRepository,
+            TrackingMapper trackingMapper,
+            CcadroProperties ccadroProperties,
+            DeviationDetectionService deviationDetectionService,
+            RerouteProposalService rerouteProposalService) {
+        this(
+                telemetryEventRepository,
+                tripRepository,
+                trackingMapper,
+                ccadroProperties,
+                deviationDetectionService,
+                rerouteProposalService,
+                null,
+                null
+        );
+    }
+
+    @Autowired
+    public TelemetryIngestionService(
+            TelemetryEventRepository telemetryEventRepository,
+            TripRepository tripRepository,
+            TrackingMapper trackingMapper,
+            CcadroProperties ccadroProperties,
+            DeviationDetectionService deviationDetectionService,
+            RerouteProposalService rerouteProposalService,
+            FleetTelemetryService fleetTelemetryService,
+            FleetTelemetryStreamService fleetTelemetryStreamService) {
+        this.telemetryEventRepository = telemetryEventRepository;
+        this.tripRepository = tripRepository;
+        this.trackingMapper = trackingMapper;
+        this.ccadroProperties = ccadroProperties;
+        this.deviationDetectionService = deviationDetectionService;
+        this.rerouteProposalService = rerouteProposalService;
+        this.fleetTelemetryService = fleetTelemetryService;
+        this.fleetTelemetryStreamService = fleetTelemetryStreamService;
+    }
 
     public List<TelemetryEvent> getTelemetryHistory(UUID tripId) {
         return telemetryEventRepository.findByTripIdOrderByTimestampAsc(tripId);
@@ -49,8 +89,14 @@ public class TelemetryIngestionService {
     public TelemetryEvent ingestTelemetry(IngestTelemetryRequest req) {
         TelemetryEvent event = trackingMapper.toEntity(req);
 
-        // 1. SOP-10: GPS Quality Gate (chống nhiễu nhảy tọa độ / vượt quá 150 km/h)
-        boolean qualityPassed = req.getSpeedKmh() == null || req.getSpeedKmh().doubleValue() <= 150.0;
+        // 1. SOP-10: GPS Quality Gate (chống nhiễu nhảy tọa độ / tốc độ âm hoặc vượt ngưỡng maxValidSpeedKmh)
+        double maxSpeed = ccadroProperties.getDeviation().getMaxValidSpeedKmh();
+        boolean coordsValid = req.getLatitude() == null || req.getLongitude() == null
+                || (req.getLatitude() >= -90.0 && req.getLatitude() <= 90.0
+                && req.getLongitude() >= -180.0 && req.getLongitude() <= 180.0);
+        boolean speedValid = req.getSpeedKmh() == null
+                || (req.getSpeedKmh().doubleValue() >= 0.0 && req.getSpeedKmh().doubleValue() <= maxSpeed);
+        boolean qualityPassed = coordsValid && speedValid;
         event.setQualityPassed(qualityPassed);
 
         // 2. Cộng dồn quãng đường thực tế cho Trip nếu có điểm GPS hợp lệ trước đó
@@ -76,10 +122,14 @@ public class TelemetryIngestionService {
         // Hỗ trợ kịch bản mô phỏng smoke test (deviation_simulated) + State Machine 3 điểm liên tiếp (BRULE-10)
         if (req.getRawPayload() != null && req.getRawPayload().contains("deviation_simulated")) {
             deviationDetectionService.triggerOrUpdateAlert(req.getTripId(), savedEvent, "RED");
-            rerouteProposalService.evaluateDynamicReroute(req.getTripId(), "DEVIATION_RED",
-                    BigDecimal.valueOf(18500.0), BigDecimal.valueOf(15200.0));
+            rerouteProposalService.evaluateDynamicRerouteForTrip(req.getTripId(), "DEVIATION_RED");
         } else {
             deviationDetectionService.evaluateDeviationStateMachine(req.getTripId(), savedEvent, yellowThreshold, redThreshold);
+        }
+
+        if (fleetTelemetryService != null && fleetTelemetryStreamService != null && req.getTripId() != null) {
+            fleetTelemetryService.getLiveSnapshotForTrip(req.getTripId())
+                    .ifPresent(fleetTelemetryStreamService::broadcastUpdate);
         }
 
         return savedEvent;
@@ -91,6 +141,9 @@ public class TelemetryIngestionService {
             return;
         }
         Trip trip = tripOpt.get();
+        if (Boolean.TRUE.equals(trip.getIsDeleted()) || "COMPLETED".equalsIgnoreCase(trip.getStatus())) {
+            return;
+        }
 
         Optional<TelemetryEvent> lastPointOpt = telemetryEventRepository
                 .findFirstByTripIdAndQualityPassedTrueOrderByTimestampDesc(tripId);
@@ -116,7 +169,21 @@ public class TelemetryIngestionService {
         if (req.getRawPayload() != null && req.getRawPayload().contains("deviation_simulated")) {
             return BigDecimal.valueOf(redThreshold + 50.0).setScale(2, RoundingMode.HALF_UP);
         }
-        return BigDecimal.valueOf(15.5).setScale(2, RoundingMode.HALF_UP);
+        if (req.getTripId() != null && req.getLatitude() != null && req.getLongitude() != null) {
+            try {
+                Optional<Double> spatialMeters = tripRepository.findDistanceToActiveRouteMeters(
+                        req.getTripId(),
+                        req.getLatitude(),
+                        req.getLongitude()
+                );
+                if (spatialMeters != null && spatialMeters.isPresent() && spatialMeters.get() != null) {
+                    return BigDecimal.valueOf(spatialMeters.get()).setScale(2, RoundingMode.HALF_UP);
+                }
+            } catch (Exception ex) {
+                log.debug("PostGIS deviation query unavailable for trip {}: {}", req.getTripId(), ex.getMessage());
+            }
+        }
+        return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
     }
 
     private double calculateHaversineKm(double lat1, double lon1, double lat2, double lon2) {

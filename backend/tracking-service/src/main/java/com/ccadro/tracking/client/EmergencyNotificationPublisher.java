@@ -50,7 +50,10 @@ public class EmergencyNotificationPublisher {
             payload.put("targetRole", "DISPATCHER");
             payload.put("tripId", tripId);
             payload.put("referenceId", alertId);
-            payload.put("title", "[BÁO ĐỘNG ĐỎ UC09] Xe lệch hành lang " + Math.round(distanceMeters != null ? distanceMeters : 0) + "m (> 200m)");
+            boolean isRed = "RED".equalsIgnoreCase(severity);
+            String titlePrefix = isRed ? "[BÁO ĐỘNG ĐỎ UC09] Xe lệch hành lang " : "[CẢNH BÁO VÀNG UC09] Xe lệch hành lang ";
+            String thresholdLabel = isRed ? "m (> 200m)" : "m (> 50m)";
+            payload.put("title", titlePrefix + Math.round(distanceMeters != null ? distanceMeters : 0) + thresholdLabel);
             payload.put("message", "Phát hiện 3 điểm GPS hợp lệ liên tiếp vượt ngưỡng an toàn. Đã kích hoạt đánh giá đổi tuyến động (UC10).");
             payload.put("latitude", latitude);
             payload.put("longitude", longitude);
