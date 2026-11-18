@@ -12,12 +12,14 @@ import com.ccadro.payment.entity.ContractSlaEvent;
 import com.ccadro.payment.entity.PaymentAuditLog;
 import com.ccadro.payment.exception.AppException;
 import com.ccadro.payment.exception.ErrorCode;
+import com.ccadro.payment.mapper.ContractMapper;
 import com.ccadro.payment.repository.B2bContractRepository;
 import com.ccadro.payment.repository.ContractSlaEventRepository;
 import com.ccadro.payment.repository.PaymentAuditLogRepository;
 import com.ccadro.payment.repository.PaymentTransactionRepository;
-import lombok.RequiredArgsConstructor;
+import com.ccadro.payment.validate.FinancialGovernanceValidator;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,18 +33,57 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class ContractService {
 
+    private final ContractMapper contractMapper;
     private final B2bContractRepository contractRepository;
     private final ContractSlaEventRepository slaEventRepository;
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final PaymentAuditLogRepository paymentAuditLogRepository;
     private final PaymentProperties paymentProperties;
+    private final FinancialGovernanceValidator financialValidator;
+
+    public ContractService(ContractMapper contractMapper,
+                           B2bContractRepository contractRepository,
+                           ContractSlaEventRepository slaEventRepository,
+                           PaymentTransactionRepository paymentTransactionRepository,
+                           PaymentAuditLogRepository paymentAuditLogRepository,
+                           PaymentProperties paymentProperties) {
+        this(contractMapper, contractRepository, slaEventRepository, paymentTransactionRepository,
+                paymentAuditLogRepository, paymentProperties, new FinancialGovernanceValidator());
+    }
+
+    @Autowired
+    public ContractService(ContractMapper contractMapper,
+                           B2bContractRepository contractRepository,
+                           ContractSlaEventRepository slaEventRepository,
+                           PaymentTransactionRepository paymentTransactionRepository,
+                           PaymentAuditLogRepository paymentAuditLogRepository,
+                           PaymentProperties paymentProperties,
+                           FinancialGovernanceValidator financialValidator) {
+        this.contractMapper = contractMapper;
+        this.contractRepository = contractRepository;
+        this.slaEventRepository = slaEventRepository;
+        this.paymentTransactionRepository = paymentTransactionRepository;
+        this.paymentAuditLogRepository = paymentAuditLogRepository;
+        this.paymentProperties = paymentProperties;
+        this.financialValidator = financialValidator != null ? financialValidator : new FinancialGovernanceValidator();
+    }
 
     @Transactional(readOnly = true)
     public List<B2bContractResponse> getContracts(String customerId, String contractType, String status, String shipmentCode) {
+        return getContracts(customerId, contractType, status, shipmentCode, null, false);
+    }
+
+    @Transactional(readOnly = true)
+    public List<B2bContractResponse> getContracts(
+            String customerId,
+            String contractType,
+            String status,
+            String shipmentCode,
+            String q,
+            boolean includeDeleted) {
         List<B2bContract> list;
         if (shipmentCode != null && !shipmentCode.isBlank()) {
             list = contractRepository.findTopByShipmentCodeOrderByCreatedAtDesc(shipmentCode.trim())
@@ -62,12 +103,53 @@ public class ContractService {
             list = list.stream().filter(c -> typeNorm.equals(c.getContractType())).toList();
         }
 
-        return list.stream().map(this::toResponse).toList();
+        if (status != null && !status.isBlank()) {
+            String statusNorm = status.trim().toUpperCase();
+            list = list.stream().filter(c -> statusNorm.equals(c.getContractStatus())).toList();
+        }
+
+        List<B2bContract> active = list.stream()
+                .filter(c -> includeDeleted || !Boolean.TRUE.equals(c.getIsDeleted()))
+                .toList();
+
+        List<B2bContract> ranked = ElasticSearchSupport.filterAndRank(
+                active,
+                q,
+                c -> List.of(
+                        new ElasticSearchSupport.WeightedField(c.getContractNumber(), 5.0),
+                        new ElasticSearchSupport.WeightedField(c.getShipmentCode(), 4.5),
+                        new ElasticSearchSupport.WeightedField(c.getCustomerName(), 4.0),
+                        new ElasticSearchSupport.WeightedField(c.getCustomerId(), 3.5),
+                        new ElasticSearchSupport.WeightedField(c.getCorridorScope(), 3.0),
+                        new ElasticSearchSupport.WeightedField(c.getLicensePlate(), 2.5),
+                        new ElasticSearchSupport.WeightedField(c.getContractType(), 2.0),
+                        new ElasticSearchSupport.WeightedField(c.getContractStatus(), 1.5)
+                )
+        );
+        return ranked.stream().map(contractMapper::toResponse).toList();
+    }
+
+    @Transactional
+    public B2bContractResponse softDeleteContract(String contractNumber, String deletedBy) {
+        B2bContract contract = findOrThrow(contractNumber);
+        contract.setIsDeleted(true);
+        contract.setDeletedAt(Instant.now());
+        contract.setDeletedBy(deletedBy != null && !deletedBy.isBlank() ? deletedBy : "ADMIN");
+        return contractMapper.toResponse(contractRepository.save(contract));
+    }
+
+    @Transactional
+    public B2bContractResponse restoreContract(String contractNumber) {
+        B2bContract contract = findOrThrow(contractNumber);
+        contract.setIsDeleted(false);
+        contract.setDeletedAt(null);
+        contract.setDeletedBy(null);
+        return contractMapper.toResponse(contractRepository.save(contract));
     }
 
     @Transactional(readOnly = true)
     public B2bContractResponse getContract(String contractNumber) {
-        return toResponse(findOrThrow(contractNumber));
+        return contractMapper.toResponse(findOrThrow(contractNumber));
     }
 
     @Transactional(readOnly = true)
@@ -75,17 +157,7 @@ public class ContractService {
         findOrThrow(contractNumber);
         return slaEventRepository.findByContractNumberOrderByCreatedAtDesc(contractNumber)
                 .stream()
-                .map(ev -> ContractSlaEventResponse.builder()
-                        .id(ev.getId())
-                        .contractNumber(ev.getContractNumber())
-                        .shipmentCode(ev.getShipmentCode())
-                        .eventType(ev.getEventType())
-                        .severity(ev.getSeverity())
-                        .penaltyAmountVnd(ev.getPenaltyAmountVnd())
-                        .recordedBy(ev.getRecordedBy())
-                        .description(ev.getDescription())
-                        .createdAt(ev.getCreatedAt())
-                        .build())
+                .map(contractMapper::audit)
                 .toList();
     }
 
@@ -169,15 +241,13 @@ public class ContractService {
                 signer,
                 (autoSign ? "Khởi tạo & ký số hợp đồng " : "Khởi tạo dự thảo hợp đồng ") + saved.getContractNumber()
         );
-        return toResponse(saved);
+        return contractMapper.toResponse(saved);
     }
 
     @Transactional
     public B2bContractResponse signContract(String contractNumber, SignContractRequest request) {
         B2bContract contract = findOrThrow(contractNumber);
-        if ("CANCELLED".equals(contract.getContractStatus()) || "SETTLED".equals(contract.getContractStatus())) {
-            throw new AppException(ErrorCode.CONTRACT_INVALID_STATE);
-        }
+        financialValidator.requireContractDraftForSign(contract);
 
         Instant now = Instant.now();
         String signer = (request != null && request.getSignedByUsername() != null && !request.getSignedByUsername().isBlank())
@@ -203,15 +273,13 @@ public class ContractService {
                 signer,
                 "Ký số xác nhận hợp đồng (" + sigHash.substring(0, 22) + "...)"
         );
-        return toResponse(saved);
+        return contractMapper.toResponse(saved);
     }
 
     @Transactional
     public B2bContractResponse recordSlaEvent(String contractNumber, RecordSlaEventRequest request) {
         B2bContract contract = findOrThrow(contractNumber);
-        if ("SETTLED".equals(contract.getContractStatus()) || "CANCELLED".equals(contract.getContractStatus())) {
-            throw new AppException(ErrorCode.CONTRACT_INVALID_STATE, "Hợp đồng đã tất toán hoặc hủy, không thể ghi nhận SLA mới");
-        }
+        financialValidator.requireContractMutableForSla(contract);
 
         String eventType = request.getEventType().trim().toUpperCase();
         boolean isBreach = eventType.contains("BREACH") || eventType.contains("DEVIATION") || "BREACH".equalsIgnoreCase(request.getSeverity());
@@ -243,7 +311,7 @@ public class ContractService {
                 request.getDescription() != null ? request.getDescription()
                         : (isBreach ? "Vi phạm cam kết SLA — tự động giảm trừ " + penalty + " VND" : "Đạt chuẩn SLA hành trình")
         );
-        return toResponse(saved);
+        return contractMapper.toResponse(saved);
     }
 
     @Transactional
@@ -307,7 +375,7 @@ public class ContractService {
                     });
         }
 
-        return toResponse(saved);
+        return contractMapper.toResponse(saved);
     }
 
     private B2bContract findOrThrow(String contractNumber) {
@@ -344,47 +412,6 @@ public class ContractService {
         } catch (Exception ex) {
             return "SHA256:" + UUID.randomUUID().toString().replace("-", "");
         }
-    }
-
-    private B2bContractResponse toResponse(B2bContract c) {
-        long limit = c.getCreditLimitVnd() != null ? c.getCreditLimitVnd() : 0L;
-        long used = c.getUsedCreditVnd() != null ? c.getUsedCreditVnd() : 0L;
-        return B2bContractResponse.builder()
-                .id(c.getId())
-                .contractNumber(c.getContractNumber())
-                .contractType(c.getContractType())
-                .parentContractNumber(c.getParentContractNumber())
-                .shipmentCode(c.getShipmentCode())
-                .customerId(c.getCustomerId())
-                .customerName(c.getCustomerName())
-                .signedByCustomerUser(c.getSignedByCustomerUser())
-                .customerSignatureHash(c.getCustomerSignatureHash())
-                .providerName(c.getProviderName())
-                .corridorScope(c.getCorridorScope())
-                .containerCode(c.getContainerCode())
-                .eSealNumber(c.getESealNumber())
-                .vehicleType(c.getVehicleType())
-                .licensePlate(c.getLicensePlate())
-                .slaOnTimeRatePct(c.getSlaOnTimeRatePct())
-                .slaMaxTempDeviationC(c.getSlaMaxTempDeviationC())
-                .slaPenaltyPctPerBreach(c.getSlaPenaltyPctPerBreach())
-                .minCo2ReductionKg(c.getMinCo2ReductionKg())
-                .creditLimitVnd(limit)
-                .usedCreditVnd(used)
-                .availableCreditVnd(Math.max(0L, limit - used))
-                .contractValueVnd(c.getContractValueVnd())
-                .slaPenaltyDeductionVnd(c.getSlaPenaltyDeductionVnd())
-                .finalSettlementVnd(c.getFinalSettlementVnd())
-                .paymentTerms(c.getPaymentTerms())
-                .contractStatus(c.getContractStatus())
-                .effectiveFrom(c.getEffectiveFrom())
-                .effectiveTo(c.getEffectiveTo())
-                .signedAt(c.getSignedAt())
-                .settledAt(c.getSettledAt())
-                .notes(c.getNotes())
-                .createdAt(c.getCreatedAt())
-                .updatedAt(c.getUpdatedAt())
-                .build();
     }
 }
 

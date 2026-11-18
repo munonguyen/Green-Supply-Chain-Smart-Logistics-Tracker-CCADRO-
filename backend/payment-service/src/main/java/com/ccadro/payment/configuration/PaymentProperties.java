@@ -10,6 +10,7 @@ public class PaymentProperties {
     /**
      * Thuế giá trị gia tăng mặc định cho dịch vụ vận tải xanh (8%).
      */
+    private boolean allowInstantConfirm = false;
     private double vatRate = 0.08;
 
     /**
@@ -42,7 +43,18 @@ public class PaymentProperties {
     /**
      * Khóa bí mật xác thực Webhook từ cổng thanh toán (VietQR/VNPay/MoMo).
      */
-    private String webhookSecret = "ccadro-vnpay-vietqr-hmac-secret";
+    private String webhookSecret = "";
+
+    /**
+     * Cấu hình cổng thanh toán bên thứ 3 (VNPay / PayOS) qua biến môi trường.
+     */
+    private String vnpayTmnCode = "";
+    private String vnpayHashSecret = "";
+    private String vnpayPayUrl = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
+    private String vnpayReturnUrl = "http://localhost:5173/customer?payment=vnpay-return";
+    private String payosClientId = "";
+    private String payosApiKey = "";
+    private String payosChecksumKey = "";
 
     /**
      * Tham số mặc định Hợp đồng B2B & SLA.

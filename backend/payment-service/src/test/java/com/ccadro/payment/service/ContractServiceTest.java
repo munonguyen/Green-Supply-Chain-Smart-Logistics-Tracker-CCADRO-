@@ -48,7 +48,7 @@ class ContractServiceTest {
     void setUp() {
         PaymentProperties props = new PaymentProperties();
         props.setVatRate(0.08);
-        contractService = new ContractService(
+        contractService = new ContractService(org.mapstruct.factory.Mappers.getMapper(com.ccadro.payment.mapper.ContractMapper.class),
                 contractRepository,
                 slaEventRepository,
                 paymentTransactionRepository,
