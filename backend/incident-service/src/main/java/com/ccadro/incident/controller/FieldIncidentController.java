@@ -30,9 +30,25 @@ public class FieldIncidentController {
     FieldIncidentService fieldIncidentService;
 
     @GetMapping
-    @Operation(summary = "List all field incidents")
-    public ApiResponse<List<FieldIncidentResponse>> getAll() {
-        return ApiResponse.success(fieldIncidentService.getAllIncidents());
+    @Operation(summary = "List all field incidents with Elastic search (?q=) and soft-delete filter")
+    public ApiResponse<List<FieldIncidentResponse>> getAll(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false, defaultValue = "false") boolean includeDeleted) {
+        return ApiResponse.success(fieldIncidentService.getAllIncidents(q, includeDeleted));
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Soft delete field incident")
+    public ApiResponse<FieldIncidentResponse> softDelete(
+            @PathVariable UUID id,
+            @RequestHeader(value = "X-Auth-Username", required = false) String callerUsername) {
+        return ApiResponse.success("Đã xóa mềm báo cáo sự cố", fieldIncidentService.softDeleteIncident(id, callerUsername));
+    }
+
+    @PostMapping("/{id}/restore")
+    @Operation(summary = "Restore soft-deleted field incident")
+    public ApiResponse<FieldIncidentResponse> restore(@PathVariable UUID id) {
+        return ApiResponse.success("Đã khôi phục báo cáo sự cố", fieldIncidentService.restoreIncident(id));
     }
 
     @GetMapping("/{id}")

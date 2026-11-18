@@ -22,6 +22,9 @@ public class FieldIncidentResponse {
     Double longitude;
     String description;
     String status;
+    Boolean isDeleted;
+    Instant deletedAt;
+    String deletedBy;
     Instant reportedAt;
 }
 
