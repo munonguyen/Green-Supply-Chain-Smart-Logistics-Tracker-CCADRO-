@@ -35,6 +35,9 @@ public class ShipmentResponse {
     String distance;
     BigDecimal distanceKm;
     String distanceUnit;
+    Boolean isDeleted;
+    Instant deletedAt;
+    String deletedBy;
     Instant createdAt;
     Instant updatedAt;
 }
