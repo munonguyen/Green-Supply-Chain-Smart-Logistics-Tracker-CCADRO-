@@ -4,6 +4,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.util.Date;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -13,4 +14,13 @@ import java.util.Date;
 public class AuthenticationResponse {
     String token;
     Date expiryToken;
+    String refreshToken;
+    Date refreshExpiry;
+    String sessionId;
+    String username;
+    String role;
+    String assignedHubCode;
+    String assignedShipperCode;
+    List<String> permissions;
+    Boolean mustChangePassword;
 }

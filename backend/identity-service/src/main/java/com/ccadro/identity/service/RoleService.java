@@ -26,7 +26,8 @@ import java.util.Set;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class RoleService {
     public static final Set<String> SYSTEM_FIXED_ROLES = Set.of(
-            "ADMIN", "DISPATCHER", "SAFETY_MANAGER", "DRIVER", "ESG_AUDITOR", "CUSTOMER", "SHIPPER"
+            "ADMIN", "DISPATCHER", "SAFETY_MANAGER", "DRIVER", "ESG_AUDITOR",
+            "CUSTOMER", "SHIPPER", "HUB_MANAGER", "HUB_SHIPPER", "HUB_AUDITOR"
     );
 
     RoleRepository roleRepository;
