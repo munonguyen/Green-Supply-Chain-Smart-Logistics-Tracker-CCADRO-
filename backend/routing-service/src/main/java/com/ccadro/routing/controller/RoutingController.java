@@ -1,6 +1,7 @@
 package com.ccadro.routing.controller;
 
 import com.ccadro.routing.dto.ApiResponse;
+import com.ccadro.routing.dto.request.RerouteVersionRequest;
 import com.ccadro.routing.dto.request.RouteDecisionRequest;
 import com.ccadro.routing.dto.request.RoutePlanRequest;
 import com.ccadro.routing.dto.response.RouteCandidateResponse;
@@ -67,5 +68,12 @@ public class RoutingController {
     @Operation(summary = "Get route version history for shipment")
     public ApiResponse<List<RouteVersion>> getRouteVersions(@PathVariable UUID shipmentId) {
         return ApiResponse.success(routingService.getRouteVersions(shipmentId));
+    }
+
+    @PostMapping("/versions/reroute")
+    @Operation(summary = "Create and activate an incremented RouteVersion after UC10 dynamic reroute approval")
+    public ApiResponse<RouteVersion> createRerouteVersion(@Valid @RequestBody RerouteVersionRequest request) {
+        return ApiResponse.success("Đã tạo phiên bản lộ trình đổi tuyến mới",
+                routingService.createDynamicRerouteVersion(request));
     }
 }

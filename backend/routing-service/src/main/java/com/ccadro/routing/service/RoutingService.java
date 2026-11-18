@@ -1,5 +1,6 @@
 package com.ccadro.routing.service;
 
+import com.ccadro.routing.dto.request.RerouteVersionRequest;
 import com.ccadro.routing.dto.request.RouteDecisionRequest;
 import com.ccadro.routing.dto.request.RoutePlanRequest;
 import com.ccadro.routing.dto.response.RouteCandidateResponse;
@@ -61,5 +62,10 @@ public class RoutingService {
 
     public List<RouteVersion> getRouteVersions(UUID shipmentId) {
         return routeDecisionService.getRouteVersions(shipmentId);
+    }
+
+    @Transactional
+    public RouteVersion createDynamicRerouteVersion(RerouteVersionRequest request) {
+        return routeDecisionService.createDynamicRerouteVersion(request);
     }
 }
