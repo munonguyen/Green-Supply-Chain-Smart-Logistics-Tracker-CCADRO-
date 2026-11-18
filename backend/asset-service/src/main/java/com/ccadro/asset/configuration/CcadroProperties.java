@@ -68,7 +68,7 @@ public class CcadroProperties {
     }
 
     public static class Security {
-        private String jwtSecret = "404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970";
+        private String jwtSecret = "";
         private long jwtExpirationMs = 86400000;
 
         public String getJwtSecret() { return jwtSecret; }

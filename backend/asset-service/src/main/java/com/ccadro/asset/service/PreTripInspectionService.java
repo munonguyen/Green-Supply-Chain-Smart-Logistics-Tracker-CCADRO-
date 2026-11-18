@@ -12,11 +12,13 @@ import com.ccadro.asset.mapper.PreTripInspectionMapper;
 import com.ccadro.asset.repository.DriverRepository;
 import com.ccadro.asset.repository.PreTripInspectionRepository;
 import com.ccadro.asset.repository.VehicleRepository;
+import com.ccadro.asset.validate.AssetBusinessValidator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,7 +34,7 @@ import java.util.UUID;
  */
 @Service
 @Transactional(readOnly = true)
-@RequiredArgsConstructor
+@RequiredArgsConstructor(onConstructor_ = @Autowired)
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class PreTripInspectionService {
 
@@ -41,15 +43,12 @@ public class PreTripInspectionService {
     PreTripInspectionRepository preTripInspectionRepository;
     PreTripInspectionMapper preTripInspectionMapper;
     ObjectMapper objectMapper;
+    AssetBusinessValidator assetBusinessValidator;
 
     @Transactional(noRollbackFor = InspectionFailedException.class)
     public PreTripInspectionResponse submitPreTripInspection(PreTripInspectionRequest request) {
-        Vehicle vehicle = vehicleRepository.findById(request.getVehicleId())
-                .orElseThrow(() -> new AppException(ErrorCode.VEHICLE_NOT_FOUND));
-
-        if (!driverRepository.existsById(request.getDriverId())) {
-            throw new AppException(ErrorCode.DRIVER_NOT_FOUND);
-        }
+        Vehicle vehicle = assetBusinessValidator.requireVehicleForPreTrip(request.getVehicleId());
+        assetBusinessValidator.requireDriverExists(request.getDriverId());
 
         ChecklistEvaluation eval = ChecklistEvaluation.from(request);
 

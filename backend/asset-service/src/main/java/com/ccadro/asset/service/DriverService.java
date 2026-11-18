@@ -54,6 +54,14 @@ public class DriverService {
     CcadroProperties ccadroProperties;
 
     public List<DriverResponse> getAllDriversResponse(DriverStatus status, String licenseClass) {
+        return getAllDriversResponse(status, licenseClass, null, false);
+    }
+
+    public List<DriverResponse> getAllDriversResponse(
+            DriverStatus status,
+            String licenseClass,
+            String q,
+            boolean includeDeleted) {
         List<Driver> drivers;
         if (status != null && licenseClass != null && !licenseClass.isBlank()) {
             drivers = driverRepository.findByStatusAndLicenseClassIgnoreCase(status, licenseClass.trim());
@@ -64,7 +72,44 @@ public class DriverService {
         } else {
             drivers = driverRepository.findAll();
         }
-        return drivers.stream().map(this::enrichDriverResponse).toList();
+        List<Driver> active = drivers.stream()
+                .filter(d -> includeDeleted || !Boolean.TRUE.equals(d.getIsDeleted()))
+                .toList();
+        List<Driver> ranked = ElasticSearchSupport.filterAndRank(
+                active,
+                q,
+                d -> List.of(
+                        new ElasticSearchSupport.WeightedField(d.getDriverCode(), 5.0),
+                        new ElasticSearchSupport.WeightedField(d.getFullName(), 4.5),
+                        new ElasticSearchSupport.WeightedField(d.getPhone(), 3.5),
+                        new ElasticSearchSupport.WeightedField(d.getEmail(), 3.0),
+                        new ElasticSearchSupport.WeightedField(d.getLicenseNumber(), 3.0),
+                        new ElasticSearchSupport.WeightedField(d.getLicenseClass(), 2.5),
+                        new ElasticSearchSupport.WeightedField(d.getHometown(), 2.0),
+                        new ElasticSearchSupport.WeightedField(d.getStatus() != null ? d.getStatus().name() : "", 1.5)
+                )
+        );
+        return ranked.stream().map(this::enrichDriverResponse).toList();
+    }
+
+    @Transactional
+    public DriverResponse softDeleteDriver(UUID id, String deletedBy) {
+        Driver driver = driverRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.DRIVER_NOT_FOUND));
+        driver.setIsDeleted(true);
+        driver.setDeletedAt(Instant.now());
+        driver.setDeletedBy(deletedBy != null && !deletedBy.isBlank() ? deletedBy : "ADMIN");
+        return enrichDriverResponse(driverRepository.save(driver));
+    }
+
+    @Transactional
+    public DriverResponse restoreDriver(UUID id) {
+        Driver driver = driverRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.DRIVER_NOT_FOUND));
+        driver.setIsDeleted(false);
+        driver.setDeletedAt(null);
+        driver.setDeletedBy(null);
+        return enrichDriverResponse(driverRepository.save(driver));
     }
 
     public DriverResponse getDriverResponseById(UUID id) {

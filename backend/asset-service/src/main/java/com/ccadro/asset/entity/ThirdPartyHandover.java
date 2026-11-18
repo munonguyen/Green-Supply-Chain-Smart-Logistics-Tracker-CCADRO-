@@ -33,6 +33,24 @@ public class ThirdPartyHandover {
     @Column(name = "destination_hub", nullable = false, length = 200)
     String destinationHub;
 
+    @Column(name = "hub_code", length = 40)
+    String hubCode;
+
+    @Column(name = "manifest_parcel_count", nullable = false)
+    @Builder.Default
+    Integer manifestParcelCount = 0;
+
+    @Column(name = "manifest_total_weight_kg", nullable = false)
+    @Builder.Default
+    Double manifestTotalWeightKg = 0.0;
+
+    @Column(name = "manifest_ingested", nullable = false)
+    @Builder.Default
+    Boolean manifestIngested = false;
+
+    @Column(name = "manifest_ingested_at")
+    Instant manifestIngestedAt;
+
     @Column(name = "shipper_company", nullable = false, length = 200)
     String shipperCompany;
 

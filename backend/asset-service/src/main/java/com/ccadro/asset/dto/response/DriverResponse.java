@@ -59,6 +59,9 @@ public class DriverResponse {
     List<DriverReviewResponse> recentReviews;
     List<DriverDispatchMessageResponse> dispatchMessages;
 
+    Boolean isDeleted;
+    Instant deletedAt;
+    String deletedBy;
     Instant createdAt;
     Instant updatedAt;
 }

@@ -29,9 +29,25 @@ public class AssetController {
 
     // --- UC01: Vehicles ---
     @GetMapping("/vehicles")
-    @Operation(summary = "List all vehicles (UC01)")
-    public ApiResponse<List<VehicleResponse>> getVehicles() {
-        return ApiResponse.success(assetService.getAllVehiclesResponse());
+    @Operation(summary = "List all vehicles with Elastic search (?q=) and soft-delete filter (UC01)")
+    public ApiResponse<List<VehicleResponse>> getVehicles(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false, defaultValue = "false") boolean includeDeleted) {
+        return ApiResponse.success(assetService.getAllVehiclesResponse(q, includeDeleted));
+    }
+
+    @DeleteMapping("/vehicles/{id}")
+    @Operation(summary = "Soft delete vehicle")
+    public ApiResponse<VehicleResponse> softDeleteVehicle(
+            @PathVariable UUID id,
+            @RequestHeader(value = "X-Auth-Username", required = false) String callerUsername) {
+        return ApiResponse.success("Đã xóa mềm phương tiện", assetService.softDeleteVehicle(id, callerUsername));
+    }
+
+    @PostMapping("/vehicles/{id}/restore")
+    @Operation(summary = "Restore soft-deleted vehicle")
+    public ApiResponse<VehicleResponse> restoreVehicle(@PathVariable UUID id) {
+        return ApiResponse.success("Đã khôi phục phương tiện", assetService.restoreVehicle(id));
     }
 
     @GetMapping("/vehicles/{id}")
@@ -57,11 +73,27 @@ public class AssetController {
 
     // --- UC01: Drivers & Grab Driver Profile Operations ---
     @GetMapping("/drivers")
-    @Operation(summary = "List all drivers with optional status and licenseClass filters (UC01)")
+    @Operation(summary = "List all drivers with Elastic search (?q=), soft-delete, status and licenseClass filters (UC01)")
     public ApiResponse<List<DriverResponse>> getDrivers(
             @RequestParam(required = false) DriverStatus status,
-            @RequestParam(required = false) String licenseClass) {
-        return ApiResponse.success(assetService.getAllDriversResponse(status, licenseClass));
+            @RequestParam(required = false) String licenseClass,
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false, defaultValue = "false") boolean includeDeleted) {
+        return ApiResponse.success(assetService.getAllDriversResponse(status, licenseClass, q, includeDeleted));
+    }
+
+    @DeleteMapping("/drivers/{id}")
+    @Operation(summary = "Soft delete driver profile")
+    public ApiResponse<DriverResponse> softDeleteDriver(
+            @PathVariable UUID id,
+            @RequestHeader(value = "X-Auth-Username", required = false) String callerUsername) {
+        return ApiResponse.success("Đã xóa mềm hồ sơ tài xế", assetService.softDeleteDriver(id, callerUsername));
+    }
+
+    @PostMapping("/drivers/{id}/restore")
+    @Operation(summary = "Restore soft-deleted driver profile")
+    public ApiResponse<DriverResponse> restoreDriver(@PathVariable UUID id) {
+        return ApiResponse.success("Đã khôi phục hồ sơ tài xế", assetService.restoreDriver(id));
     }
 
     @GetMapping("/drivers/{id}")
@@ -134,11 +166,27 @@ public class AssetController {
 
     // --- UC01: Smart Containers & IoT Telematics ---
     @GetMapping("/containers")
-    @Operation(summary = "List all containers with optional status and driver filters (UC01)")
+    @Operation(summary = "List all containers with Elastic search (?q=), soft-delete, status and driver filters (UC01)")
     public ApiResponse<List<ContainerResponse>> getContainers(
             @RequestParam(required = false) ContainerStatus status,
-            @RequestParam(required = false) UUID driverId) {
-        return ApiResponse.success(assetService.getAllContainersResponse(status, driverId));
+            @RequestParam(required = false) UUID driverId,
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false, defaultValue = "false") boolean includeDeleted) {
+        return ApiResponse.success(assetService.getAllContainersResponse(status, driverId, q, includeDeleted));
+    }
+
+    @DeleteMapping("/containers/{containerCode}")
+    @Operation(summary = "Soft delete container by code")
+    public ApiResponse<ContainerResponse> softDeleteContainer(
+            @PathVariable String containerCode,
+            @RequestHeader(value = "X-Auth-Username", required = false) String callerUsername) {
+        return ApiResponse.success("Đã xóa mềm container", assetService.softDeleteContainer(containerCode, callerUsername));
+    }
+
+    @PostMapping("/containers/{containerCode}/restore")
+    @Operation(summary = "Restore soft-deleted container")
+    public ApiResponse<ContainerResponse> restoreContainer(@PathVariable String containerCode) {
+        return ApiResponse.success("Đã khôi phục container", assetService.restoreContainer(containerCode));
     }
 
     @GetMapping("/containers/{containerCode}")
@@ -247,5 +295,82 @@ public class AssetController {
     public ApiResponse<ThirdPartyHandoverResponse> syncShipperWebhook(@PathVariable String containerCode) {
         return ApiResponse.success("Đã đồng bộ dữ liệu sang hệ thống thứ 3 (3PL Webhook)",
                 assetService.syncShipperWebhook(containerCode));
+    }
+
+    // --- Local Distribution Hub & Geo-Proximity Last-Mile Shipper Dispatch ---
+    @GetMapping("/shipper-hubs")
+    @Operation(summary = "List regional distribution hubs (Trụ sở điều phối giao nhận khu vực)")
+    public ApiResponse<List<LocalDistributionHubResponse>> getDistributionHubs() {
+        return ApiResponse.success(assetService.getAllDistributionHubs());
+    }
+
+    @GetMapping("/shipper-hubs/shippers")
+    @Operation(summary = "List local shippers assigned to a hub with their assigned geo-positions")
+    public ApiResponse<List<HubLocalShipperResponse>> getHubLocalShippers(
+            @RequestParam(required = false) String hubCode) {
+        return ApiResponse.success(assetService.getHubLocalShippers(hubCode));
+    }
+
+    @GetMapping("/shipper-hubs/manifest-items")
+    @Operation(summary = "List cargo manifest items deconsolidated from containers at a hub with Elastic search (?q=) & soft-delete")
+    public ApiResponse<List<ContainerCargoManifestItemResponse>> getContainerManifestItems(
+            @RequestParam(required = false) String hubCode,
+            @RequestParam(required = false) String containerCode,
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false, defaultValue = "false") boolean includeDeleted) {
+        return ApiResponse.success(assetService.getContainerManifestItems(hubCode, containerCode, q, includeDeleted));
+    }
+
+    @DeleteMapping("/shipper-hubs/manifest-items/{itemCode}")
+    @Operation(summary = "Soft delete manifest cargo item")
+    public ApiResponse<ContainerCargoManifestItemResponse> softDeleteManifestItem(
+            @PathVariable String itemCode,
+            @RequestHeader(value = "X-Auth-Username", required = false) String callerUsername) {
+        return ApiResponse.success("Đã xóa mềm kiện hàng khỏi danh sách", assetService.softDeleteManifestItem(itemCode, callerUsername));
+    }
+
+    @PostMapping("/shipper-hubs/manifest-items/{itemCode}/restore")
+    @Operation(summary = "Restore soft-deleted manifest cargo item")
+    public ApiResponse<ContainerCargoManifestItemResponse> restoreManifestItem(@PathVariable String itemCode) {
+        return ApiResponse.success("Đã khôi phục kiện hàng", assetService.restoreManifestItem(itemCode));
+    }
+
+    @PostMapping("/shipper-hubs/containers/{containerCode}/ingest-manifest")
+    @Operation(summary = "Send container cargo manifest data to the destination hub system")
+    public ApiResponse<List<ContainerCargoManifestItemResponse>> ingestContainerManifest(
+            @PathVariable String containerCode) {
+        return ApiResponse.success(
+                "Đã truyền dữ liệu danh mục hàng hóa (Cargo Manifest) từ Container sang hệ thống Trụ sở",
+                assetService.ingestContainerManifestToHub(containerCode));
+    }
+
+    @PostMapping("/shipper-hubs/auto-dispatch")
+    @Operation(summary = "Auto-dispatch cargo manifest items to local shippers by nearest assigned geo-position")
+    public ApiResponse<List<ContainerCargoManifestItemResponse>> autoDispatchByProximity(
+            @RequestParam(required = false) String hubCode,
+            @RequestParam(required = false) String containerCode) {
+        return ApiResponse.success(
+                "Đã tự động phân công hàng hóa cho các Shipper có vị trí phân công gần điểm giao nhất",
+                assetService.autoDispatchManifestByProximity(hubCode, containerCode));
+    }
+
+    @PutMapping("/shipper-hubs/manifest-items/{itemCode}/assign")
+    @Operation(summary = "Assign or reassign a cargo item to a specific local shipper")
+    public ApiResponse<ContainerCargoManifestItemResponse> assignManifestItemToShipper(
+            @PathVariable String itemCode,
+            @RequestBody @Valid ManifestItemAssignRequest request) {
+        return ApiResponse.success(
+                "Đã cập nhật phân công Shipper theo tuyến phụ trách",
+                assetService.assignManifestItemToShipper(itemCode, request.getShipperCode()));
+    }
+
+    @PutMapping("/shipper-hubs/manifest-items/{itemCode}/status")
+    @Operation(summary = "Update last-mile delivery status of a cargo item by its assigned shipper")
+    public ApiResponse<ContainerCargoManifestItemResponse> updateManifestItemStatus(
+            @PathVariable String itemCode,
+            @RequestBody @Valid ManifestItemStatusUpdateRequest request) {
+        return ApiResponse.success(
+                "Đã cập nhật trạng thái giao hàng chặng cuối (Last-Mile)",
+                assetService.updateManifestItemStatus(itemCode, request));
     }
 }

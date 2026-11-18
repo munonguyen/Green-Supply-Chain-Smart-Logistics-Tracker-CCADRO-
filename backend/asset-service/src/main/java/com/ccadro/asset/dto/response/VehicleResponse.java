@@ -23,6 +23,9 @@ public class VehicleResponse {
     BigDecimal maxPayloadTons;
     BigDecimal emptyWeightTons;
     VehicleStatus status;
+    Boolean isDeleted;
+    Instant deletedAt;
+    String deletedBy;
     Instant createdAt;
     Instant updatedAt;
 }
