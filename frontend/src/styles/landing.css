@@ -335,7 +335,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
+  gap: 14px;
 }
 
 .lp-brand {
@@ -375,9 +375,9 @@
 }
 
 .lp-nav__link {
-  padding: 8px 13px;
+  padding: 7px 11px;
   border-radius: 999px;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 600;
   white-space: nowrap;
   opacity: 0.85;
