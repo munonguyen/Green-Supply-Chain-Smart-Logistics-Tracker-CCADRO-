@@ -40,6 +40,14 @@ public class ContainerService {
     ContainerMapper containerMapper;
 
     public List<ContainerResponse> getAllContainersResponse(ContainerStatus status, UUID driverId) {
+        return getAllContainersResponse(status, driverId, null, false);
+    }
+
+    public List<ContainerResponse> getAllContainersResponse(
+            ContainerStatus status,
+            UUID driverId,
+            String q,
+            boolean includeDeleted) {
         List<Container> containers;
         if (status != null && driverId != null) {
             containers = containerRepository.findByStatusAndAssignedDriverId(status, driverId);
@@ -50,7 +58,45 @@ public class ContainerService {
         } else {
             containers = containerRepository.findAll();
         }
-        return containerMapper.toResponseList(containers);
+        List<Container> active = containers.stream()
+                .filter(c -> includeDeleted || !Boolean.TRUE.equals(c.getIsDeleted()))
+                .toList();
+        List<Container> ranked = ElasticSearchSupport.filterAndRank(
+                active,
+                q,
+                c -> List.of(
+                        new ElasticSearchSupport.WeightedField(c.getContainerCode(), 5.0),
+                        new ElasticSearchSupport.WeightedField(c.getAssignedShipmentCode(), 4.5),
+                        new ElasticSearchSupport.WeightedField(c.getVehicleLicensePlate(), 3.5),
+                        new ElasticSearchSupport.WeightedField(c.getDriverName(), 3.5),
+                        new ElasticSearchSupport.WeightedField(c.getOriginName(), 2.5),
+                        new ElasticSearchSupport.WeightedField(c.getDestinationName(), 2.5),
+                        new ElasticSearchSupport.WeightedField(c.getOwnerName(), 2.5),
+                        new ElasticSearchSupport.WeightedField(c.getESealNumber(), 3.0),
+                        new ElasticSearchSupport.WeightedField(c.getStatus() != null ? c.getStatus().name() : "", 1.5)
+                )
+        );
+        return containerMapper.toResponseList(ranked);
+    }
+
+    @Transactional
+    public ContainerResponse softDeleteContainer(String containerCode, String deletedBy) {
+        Container container = containerRepository.findByContainerCode(containerCode)
+                .orElseThrow(() -> new AppException(ErrorCode.CONTAINER_NOT_FOUND, "Không tìm thấy container có mã: " + containerCode));
+        container.setIsDeleted(true);
+        container.setDeletedAt(Instant.now());
+        container.setDeletedBy(deletedBy != null && !deletedBy.isBlank() ? deletedBy : "ADMIN");
+        return containerMapper.toResponse(containerRepository.save(container));
+    }
+
+    @Transactional
+    public ContainerResponse restoreContainer(String containerCode) {
+        Container container = containerRepository.findByContainerCode(containerCode)
+                .orElseThrow(() -> new AppException(ErrorCode.CONTAINER_NOT_FOUND, "Không tìm thấy container có mã: " + containerCode));
+        container.setIsDeleted(false);
+        container.setDeletedAt(null);
+        container.setDeletedBy(null);
+        return containerMapper.toResponse(containerRepository.save(container));
     }
 
     public ContainerResponse getContainerByCode(String containerCode) {

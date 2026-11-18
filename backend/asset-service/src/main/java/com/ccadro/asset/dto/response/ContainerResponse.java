@@ -65,6 +65,9 @@ public class ContainerResponse {
     String epodRecipient;
     String epodSignature;
 
+    Boolean isDeleted;
+    Instant deletedAt;
+    String deletedBy;
     Instant createdAt;
     Instant updatedAt;
 }

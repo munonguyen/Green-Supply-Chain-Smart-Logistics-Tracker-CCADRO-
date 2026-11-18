@@ -16,6 +16,11 @@ public class ThirdPartyHandoverResponse {
     String containerCode;
     String shipmentCode;
     String destinationHub;
+    String hubCode;
+    Integer manifestParcelCount;
+    Double manifestTotalWeightKg;
+    Boolean manifestIngested;
+    Instant manifestIngestedAt;
     String shipperCompany;
     String externalSystemName;
     String externalTrackingRef;

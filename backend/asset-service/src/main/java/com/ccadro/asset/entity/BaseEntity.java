@@ -29,4 +29,13 @@ public abstract class BaseEntity implements Serializable {
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
     Instant updatedAt = Instant.now();
+
+    @Column(name = "is_deleted", nullable = false)
+    Boolean isDeleted = false;
+
+    @Column(name = "deleted_at")
+    Instant deletedAt;
+
+    @Column(name = "deleted_by", length = 60)
+    String deletedBy;
 }

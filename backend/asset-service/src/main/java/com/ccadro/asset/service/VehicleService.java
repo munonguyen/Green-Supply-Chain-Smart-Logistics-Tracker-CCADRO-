@@ -33,7 +33,43 @@ public class VehicleService {
     VehicleMapper vehicleMapper;
 
     public List<VehicleResponse> getAllVehiclesResponse() {
-        return vehicleMapper.toResponseList(vehicleRepository.findAll());
+        return getAllVehiclesResponse(null, false);
+    }
+
+    public List<VehicleResponse> getAllVehiclesResponse(String q, boolean includeDeleted) {
+        List<Vehicle> filtered = vehicleRepository.findAll().stream()
+                .filter(v -> includeDeleted || !Boolean.TRUE.equals(v.getIsDeleted()))
+                .toList();
+        List<Vehicle> ranked = ElasticSearchSupport.filterAndRank(
+                filtered,
+                q,
+                v -> List.of(
+                        new ElasticSearchSupport.WeightedField(v.getVehicleCode(), 5.0),
+                        new ElasticSearchSupport.WeightedField(v.getPlateNumber(), 5.0),
+                        new ElasticSearchSupport.WeightedField(v.getFuelType(), 2.5),
+                        new ElasticSearchSupport.WeightedField(v.getEuroStandard(), 2.0),
+                        new ElasticSearchSupport.WeightedField(v.getStatus() != null ? v.getStatus().name() : "", 1.5)
+                )
+        );
+        return vehicleMapper.toResponseList(ranked);
+    }
+
+    @Transactional
+    public VehicleResponse softDeleteVehicle(UUID id, String deletedBy) {
+        Vehicle vehicle = findVehicleOrThrow(id);
+        vehicle.setIsDeleted(true);
+        vehicle.setDeletedAt(java.time.Instant.now());
+        vehicle.setDeletedBy(deletedBy != null && !deletedBy.isBlank() ? deletedBy : "ADMIN");
+        return vehicleMapper.toResponse(vehicleRepository.save(vehicle));
+    }
+
+    @Transactional
+    public VehicleResponse restoreVehicle(UUID id) {
+        Vehicle vehicle = findVehicleOrThrow(id);
+        vehicle.setIsDeleted(false);
+        vehicle.setDeletedAt(null);
+        vehicle.setDeletedBy(null);
+        return vehicleMapper.toResponse(vehicleRepository.save(vehicle));
     }
 
     public VehicleResponse getVehicleResponseById(UUID id) {

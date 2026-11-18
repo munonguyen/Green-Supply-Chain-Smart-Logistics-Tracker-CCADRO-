@@ -6,6 +6,7 @@ import com.ccadro.asset.entity.*;
 import com.ccadro.asset.entity.enums.ContainerStatus;
 import com.ccadro.asset.entity.enums.DriverStatus;
 import com.ccadro.asset.entity.enums.VehicleStatus;
+import com.ccadro.asset.exception.InspectionFailedException;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -43,6 +44,20 @@ public class AssetService {
         return vehicleService.getAllVehiclesResponse();
     }
 
+    public List<VehicleResponse> getAllVehiclesResponse(String q, boolean includeDeleted) {
+        return vehicleService.getAllVehiclesResponse(q, includeDeleted);
+    }
+
+    @Transactional
+    public VehicleResponse softDeleteVehicle(UUID id, String deletedBy) {
+        return vehicleService.softDeleteVehicle(id, deletedBy);
+    }
+
+    @Transactional
+    public VehicleResponse restoreVehicle(UUID id) {
+        return vehicleService.restoreVehicle(id);
+    }
+
     public VehicleResponse getVehicleResponseById(UUID id) {
         return vehicleService.getVehicleResponseById(id);
     }
@@ -68,6 +83,20 @@ public class AssetService {
     // --- Driver APIs ---
     public List<DriverResponse> getAllDriversResponse(DriverStatus status, String licenseClass) {
         return driverService.getAllDriversResponse(status, licenseClass);
+    }
+
+    public List<DriverResponse> getAllDriversResponse(DriverStatus status, String licenseClass, String q, boolean includeDeleted) {
+        return driverService.getAllDriversResponse(status, licenseClass, q, includeDeleted);
+    }
+
+    @Transactional
+    public DriverResponse softDeleteDriver(UUID id, String deletedBy) {
+        return driverService.softDeleteDriver(id, deletedBy);
+    }
+
+    @Transactional
+    public DriverResponse restoreDriver(UUID id) {
+        return driverService.restoreDriver(id);
     }
 
     public List<DriverResponse> getAllDriversResponse() {
@@ -133,6 +162,20 @@ public class AssetService {
         return containerService.getAllContainersResponse(status, driverId);
     }
 
+    public List<ContainerResponse> getAllContainersResponse(ContainerStatus status, UUID driverId, String q, boolean includeDeleted) {
+        return containerService.getAllContainersResponse(status, driverId, q, includeDeleted);
+    }
+
+    @Transactional
+    public ContainerResponse softDeleteContainer(String containerCode, String deletedBy) {
+        return containerService.softDeleteContainer(containerCode, deletedBy);
+    }
+
+    @Transactional
+    public ContainerResponse restoreContainer(String containerCode) {
+        return containerService.restoreContainer(containerCode);
+    }
+
     public ContainerResponse getContainerByCode(String containerCode) {
         return containerService.getContainerByCode(containerCode);
     }
@@ -178,7 +221,7 @@ public class AssetService {
     }
 
     // --- Pre-Trip Inspection APIs ---
-    @Transactional
+    @Transactional(noRollbackFor = InspectionFailedException.class)
     public PreTripInspectionResponse submitPreTripInspection(PreTripInspectionRequest request) {
         return preTripInspectionService.submitPreTripInspection(request);
     }
@@ -201,5 +244,53 @@ public class AssetService {
     @Transactional
     public ThirdPartyHandoverResponse syncShipperWebhook(String containerCode) {
         return thirdPartyHandoverService.syncWebhook(containerCode);
+    }
+
+    public List<LocalDistributionHubResponse> getAllDistributionHubs() {
+        return thirdPartyHandoverService.getAllHubs();
+    }
+
+    public List<HubLocalShipperResponse> getHubLocalShippers(String hubCode) {
+        return thirdPartyHandoverService.getShippersByHub(hubCode);
+    }
+
+    public List<ContainerCargoManifestItemResponse> getContainerManifestItems(String hubCode, String containerCode) {
+        return thirdPartyHandoverService.getManifestItems(hubCode, containerCode);
+    }
+
+    public List<ContainerCargoManifestItemResponse> getContainerManifestItems(
+            String hubCode, String containerCode, String q, boolean includeDeleted) {
+        return thirdPartyHandoverService.getManifestItems(hubCode, containerCode, q, includeDeleted);
+    }
+
+    @Transactional
+    public ContainerCargoManifestItemResponse softDeleteManifestItem(String itemCode, String deletedBy) {
+        return thirdPartyHandoverService.softDeleteManifestItem(itemCode, deletedBy);
+    }
+
+    @Transactional
+    public ContainerCargoManifestItemResponse restoreManifestItem(String itemCode) {
+        return thirdPartyHandoverService.restoreManifestItem(itemCode);
+    }
+
+    @Transactional
+    public List<ContainerCargoManifestItemResponse> ingestContainerManifestToHub(String containerCode) {
+        return thirdPartyHandoverService.ingestContainerManifestToHub(containerCode);
+    }
+
+    @Transactional
+    public List<ContainerCargoManifestItemResponse> autoDispatchManifestByProximity(String hubCode, String containerCode) {
+        return thirdPartyHandoverService.autoDispatchManifestByProximity(hubCode, containerCode);
+    }
+
+    @Transactional
+    public ContainerCargoManifestItemResponse assignManifestItemToShipper(String itemCode, String shipperCode) {
+        return thirdPartyHandoverService.assignManifestItemToShipper(itemCode, shipperCode);
+    }
+
+    @Transactional
+    public ContainerCargoManifestItemResponse updateManifestItemStatus(
+            String itemCode, ManifestItemStatusUpdateRequest request) {
+        return thirdPartyHandoverService.updateManifestItemStatus(itemCode, request);
     }
 }
