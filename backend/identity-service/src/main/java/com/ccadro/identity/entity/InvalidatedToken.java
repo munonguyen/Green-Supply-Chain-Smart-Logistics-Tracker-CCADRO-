@@ -25,8 +25,13 @@ public class InvalidatedToken {
     @Column(name = "expiry_time", nullable = false)
     Instant expiryTime;
 
+    @Column(name = "username", length = 50)
+    String username;
+
+    @Column(name = "reason", length = 80)
+    String reason;
+
     @Builder.Default
     @Column(name = "created_at", nullable = false, updatable = false)
     Instant createdAt = Instant.now();
 }
-

@@ -7,6 +7,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.util.Set;
+import java.util.UUID;
 
 @Data
 @NoArgsConstructor
@@ -19,7 +20,7 @@ public class UserCreationRequest {
     String username;
 
     @NotBlank(message = "Password không được để trống")
-    @Size(min = 6, message = "Password phải từ 6 ký tự trở lên")
+    @Size(min = 3, message = "Password phải từ 3 ký tự trở lên")
     String password;
 
     @NotBlank(message = "Email không được để trống")
@@ -28,6 +29,17 @@ public class UserCreationRequest {
 
     String firstName;
     String lastName;
+    String phoneNumber;
+    String jobTitle;
+    String department;
+    String nationalId;
+    String workAddress;
+    UUID companyId;
+    String customerId;
+    String companyName;
+    String taxCode;
+    String assignedHubCode;
+    String assignedShipperCode;
+    String notes;
     Set<String> roles;
 }
-

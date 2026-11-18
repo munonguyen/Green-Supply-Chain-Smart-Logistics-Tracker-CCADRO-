@@ -19,7 +19,27 @@ public class UserResponse {
     String firstName;
     String lastName;
     String status;
+    String assignedHubCode;
+    String assignedShipperCode;
+    String phoneNumber;
+    String jobTitle;
+    String department;
+    String nationalId;
+    String workAddress;
+    UUID companyId;
+    String customerId;
+    String companyName;
+    String taxCode;
+    String kycStatus;
+    String notes;
+    int failedLoginAttempts;
+    Instant lockedUntil;
+    Instant lastLoginAt;
+    Instant passwordChangedAt;
     Set<RoleResponse> roles;
+    Boolean isDeleted;
+    Instant deletedAt;
+    String deletedBy;
     Instant createdAt;
 }
 

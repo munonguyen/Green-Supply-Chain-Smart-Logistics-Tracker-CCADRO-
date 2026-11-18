@@ -40,6 +40,64 @@ public class User {
     @Builder.Default
     String status = "ACTIVE";
 
+    @Column(name = "assigned_hub_code", length = 40)
+    String assignedHubCode;
+
+    @Column(name = "assigned_shipper_code", length = 40)
+    String assignedShipperCode;
+
+    @Column(name = "phone_number", length = 30)
+    String phoneNumber;
+
+    @Column(name = "job_title", length = 100)
+    String jobTitle;
+
+    @Column(name = "department", length = 150)
+    String department;
+
+    @Column(name = "national_id", length = 40)
+    String nationalId;
+
+    @Column(name = "work_address", columnDefinition = "TEXT")
+    String workAddress;
+
+    @Column(name = "company_id")
+    UUID companyId;
+
+    @Column(name = "customer_id", length = 60)
+    String customerId;
+
+    @Column(name = "company_name", length = 200)
+    String companyName;
+
+    @Column(name = "tax_code", length = 40)
+    String taxCode;
+
+    @Builder.Default
+    @Column(name = "kyc_status", length = 30)
+    String kycStatus = "VERIFIED";
+
+    @Column(name = "notes", columnDefinition = "TEXT")
+    String notes;
+
+    @Column(name = "failed_login_attempts", nullable = false)
+    @Builder.Default
+    int failedLoginAttempts = 0;
+
+    @Column(name = "locked_until")
+    Instant lockedUntil;
+
+    @Column(name = "last_login_at")
+    Instant lastLoginAt;
+
+    @Builder.Default
+    @Column(name = "password_changed_at", nullable = false)
+    Instant passwordChangedAt = Instant.now();
+
+    @Builder.Default
+    @Column(name = "must_change_password", nullable = false)
+    Boolean mustChangePassword = false;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",
@@ -47,6 +105,16 @@ public class User {
             inverseJoinColumns = @JoinColumn(name = "role_name")
     )
     Set<Role> roles;
+
+    @Builder.Default
+    @Column(name = "is_deleted", nullable = false)
+    Boolean isDeleted = false;
+
+    @Column(name = "deleted_at")
+    Instant deletedAt;
+
+    @Column(name = "deleted_by", length = 60)
+    String deletedBy;
 
     @Builder.Default
     @Column(name = "created_at", nullable = false, updatable = false)
