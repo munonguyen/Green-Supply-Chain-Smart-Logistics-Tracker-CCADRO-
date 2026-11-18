@@ -13,7 +13,6 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -66,8 +65,7 @@ public class DeviationDetectionService {
 
         if (allAboveRed) {
             triggerOrUpdateAlert(tripId, latestEvent, "RED");
-            rerouteProposalService.evaluateDynamicReroute(tripId, "DEVIATION_RED",
-                    BigDecimal.valueOf(18500.0), BigDecimal.valueOf(15200.0));
+            rerouteProposalService.evaluateDynamicRerouteForTrip(tripId, "DEVIATION_RED");
             return;
         }
 

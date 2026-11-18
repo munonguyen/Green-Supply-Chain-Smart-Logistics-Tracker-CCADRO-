@@ -1,7 +1,9 @@
 package com.ccadro.tracking.service;
 
 import com.ccadro.tracking.controller.dto.IngestTelemetryRequest;
+import com.ccadro.tracking.dto.request.CreateTripRequest;
 import com.ccadro.tracking.dto.request.RerouteApprovalRequest;
+import com.ccadro.tracking.dto.response.LiveFleetTelemetryResponse;
 import com.ccadro.tracking.dto.response.RerouteProposalResponse;
 import com.ccadro.tracking.entity.DeviationAlert;
 import com.ccadro.tracking.entity.RerouteProposal;
@@ -12,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -36,10 +39,31 @@ public class TrackingService {
     TelemetryIngestionService telemetryIngestionService;
     DeviationDetectionService deviationDetectionService;
     RerouteProposalService rerouteProposalService;
+    FleetTelemetryService fleetTelemetryService;
+    FleetTelemetryStreamService fleetTelemetryStreamService;
 
-    // --- 1. Trip Lifecycle APIs (UC07, UC08) ---
+    // --- 1. Trip Lifecycle APIs (UC06, UC07, UC08) ---
+    @Transactional
+    public Trip createOrGetTrip(CreateTripRequest request) {
+        return tripService.createOrGetTrip(request);
+    }
+
     public List<Trip> getAllTrips() {
         return tripService.getAllTrips();
+    }
+
+    public List<Trip> getAllTrips(String q, boolean includeDeleted) {
+        return tripService.getAllTrips(q, includeDeleted);
+    }
+
+    @Transactional
+    public Trip softDeleteTrip(UUID tripId, String deletedBy) {
+        return tripService.softDeleteTrip(tripId, deletedBy);
+    }
+
+    @Transactional
+    public Trip restoreTrip(UUID tripId) {
+        return tripService.restoreTrip(tripId);
     }
 
     public Trip getTripById(UUID tripId) {
@@ -64,6 +88,20 @@ public class TrackingService {
     @Transactional
     public TelemetryEvent ingestTelemetry(IngestTelemetryRequest req) {
         return telemetryIngestionService.ingestTelemetry(req);
+    }
+
+    // --- 2b. Real-Time Live Fleet Telemetry & SSE Stream ---
+    public List<LiveFleetTelemetryResponse> getLiveFleetTelemetry(String customerId, String q) {
+        return fleetTelemetryService.getLiveFleetTelemetry(customerId, q);
+    }
+
+    public LiveFleetTelemetryResponse getLiveTripTelemetry(UUID tripId) {
+        return fleetTelemetryService.getLiveSnapshotForTrip(tripId)
+                .orElseGet(() -> LiveFleetTelemetryResponse.builder().tripId(tripId).build());
+    }
+
+    public SseEmitter subscribeFleetStream(String customerId) {
+        return fleetTelemetryStreamService.subscribe(fleetTelemetryService.getLiveFleetTelemetry(customerId, null));
     }
 
     // --- 3. Deviation Detection & Alerting (UC09) ---
