@@ -1,5 +1,6 @@
 server:
   port: 8085
+  address: ${SERVER_ADDRESS:0.0.0.0}
 
 spring:
   application:
@@ -49,7 +50,7 @@ ccadro:
     warningThreshold: ${CCADRO_DEMERIT_WARNING_THRESHOLD:10}
     reviewRequiredThreshold: ${CCADRO_DEMERIT_REVIEW_THRESHOLD:20}
   security:
-    jwtSecret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+    jwtSecret: ${JWT_SECRET:}
     jwtExpirationMs: ${JWT_EXPIRATION_MS:86400000}
 
 # Springdoc OpenAPI Swagger
@@ -62,3 +63,21 @@ springdoc:
     enabled: true
     operationsSorter: method
     tagsSorter: alpha
+
+# Infrastructure registry is separate from business UI. dev-start enables registration.
+eureka:
+  client:
+    enabled: ${EUREKA_CLIENT_ENABLED:false}
+    register-with-eureka: true
+    fetch-registry: false
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://127.0.0.1:8761/eureka/}
+    healthcheck:
+      enabled: true
+  instance:
+    hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
+    instance-id: ${spring.application.name}:${EUREKA_INSTANCE_ID:${server.port}}
+    lease-renewal-interval-in-seconds: 30
+    lease-expiration-duration-in-seconds: 90
+    status-page-url-path: /actuator/info
+    health-check-url-path: /actuator/health
