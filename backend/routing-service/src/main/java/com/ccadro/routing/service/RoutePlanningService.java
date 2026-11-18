@@ -10,6 +10,10 @@ import com.ccadro.routing.entity.RouteCandidate;
 import com.ccadro.routing.entity.RouteCandidateData;
 import com.ccadro.routing.entity.RouteRequest;
 import com.ccadro.routing.entity.RoutingProvider;
+import com.ccadro.routing.entity.TrafficCondition;
+import com.ccadro.routing.entity.TrafficProvider;
+import com.ccadro.routing.entity.WeatherCondition;
+import com.ccadro.routing.entity.WeatherProvider;
 import com.ccadro.routing.exception.AppException;
 import com.ccadro.routing.exception.ErrorCode;
 import com.ccadro.routing.mapper.RoutingMapper;
@@ -33,6 +37,7 @@ import java.util.UUID;
 /**
  * Service tính toán và tối ưu lộ trình xanh đa tiêu chí (UC05, BRULE-03, BRULE-04, BRULE-05):
  * - Tích hợp OpenStreetMap / OSRM / GraphHopper / Mock Routing Providers.
+ * - Kết hợp TrafficProvider & WeatherProvider để điều chỉnh thời gian và rủi ro phát thải.
  * - Chuẩn hóa Min-Max trên tập ứng viên (CO2, Thời gian, Quãng đường).
  * - Tính toán điểm phạt tổng hợp (Composite Penalty Score) theo trọng số động.
  */
@@ -48,6 +53,8 @@ public class RoutePlanningService {
     CcadroProperties ccadroProperties;
     ApplicationContext applicationContext;
     RoutingMapper routingMapper;
+    TrafficProvider trafficProvider;
+    WeatherProvider weatherProvider;
 
     public RoutingProvider getActiveRoutingProvider() {
         String configuredProvider = ccadroProperties.getRouting().getProvider();
@@ -97,7 +104,7 @@ public class RoutePlanningService {
             throw new AppException(ErrorCode.ROUTING_PROVIDER_FAILED);
         }
 
-        generateAndScoreCandidates(shipmentId, 0.50, 0.30, 0.20);
+        scoreAndPersistCandidates(shipmentId, shipment, candidates, 0.50, 0.30, 0.20);
         return candidates;
     }
 
@@ -116,23 +123,74 @@ public class RoutePlanningService {
             throw new AppException(ErrorCode.ROUTING_PROVIDER_FAILED);
         }
 
+        return scoreAndPersistCandidates(shipmentId, shipment, rawCandidates, wCo2, wTime, wDist);
+    }
+
+    private List<RouteCandidate> scoreAndPersistCandidates(
+            UUID shipmentId,
+            ShipmentDto shipment,
+            List<RouteCandidateData> rawCandidates,
+            double wCo2,
+            double wTime,
+            double wDist) {
         BigDecimal payloadTons = shipment.getCargoWeightTons() != null
                 ? shipment.getCargoWeightTons()
                 : BigDecimal.valueOf(14.20);
+        BigDecimal daf = BigDecimal.valueOf(ccadroProperties.getCarbon().getDistanceAdjustmentFactor());
         BigDecimal tonneKmFactor = BigDecimal.valueOf(ccadroProperties.getCarbon().getDefaultTonneKmFactor());
+
+        Location originLoc = new Location(
+                shipment.getOriginLatitude() != null ? shipment.getOriginLatitude() : 10.762622,
+                shipment.getOriginLongitude() != null ? shipment.getOriginLongitude() : 106.795677,
+                shipment.getOriginName()
+        );
+        TrafficCondition trafficCondition = trafficProvider != null
+                ? trafficProvider.getTrafficForLocation(originLoc)
+                : TrafficCondition.NORMAL;
+        WeatherCondition weatherCondition = weatherProvider != null
+                ? weatherProvider.getWeather(originLoc)
+                : WeatherCondition.CLEAR;
+
+        double trafficDurationFactor = switch (trafficCondition) {
+            case MEDIUM -> 1.25;
+            case HEAVY -> 1.60;
+            case ROAD_CLOSED -> 3.00;
+            default -> 1.00;
+        };
+        double weatherDurationFactor = switch (weatherCondition) {
+            case RAINY -> 1.12;
+            case HEAVY_STORM -> 1.35;
+            case FLOODING -> 1.75;
+            default -> 1.00;
+        };
+        double combinedTimeMultiplier = trafficDurationFactor * weatherDurationFactor;
+        double congestionCo2Multiplier = 1.0 + Math.max(0.0, (combinedTimeMultiplier - 1.0) * 0.25);
 
         List<RouteCandidate> entities = rawCandidates.stream()
                 .map(data -> {
                     RouteCandidate entity = routingMapper.toEntity(data);
                     entity.setShipmentId(shipmentId);
-                    // Tính lại phát thải ước tính theo tải trọng thực tế của đơn hàng (Planning Carbon)
-                    BigDecimal distKm = entity.getDistanceMeters()
-                            .divide(BigDecimal.valueOf(1000), 3, RoundingMode.HALF_UP);
-                    BigDecimal dynamicCo2 = distKm.multiply(payloadTons).multiply(tonneKmFactor)
-                            .setScale(2, RoundingMode.HALF_UP);
-                    if (entity.getEstimatedCo2Kg() == null || entity.getEstimatedCo2Kg().compareTo(BigDecimal.ZERO) <= 0) {
-                        entity.setEstimatedCo2Kg(dynamicCo2);
+                    if (entity.getDurationSeconds() != null) {
+                        entity.setDurationSeconds(
+                                entity.getDurationSeconds()
+                                        .multiply(BigDecimal.valueOf(combinedTimeMultiplier))
+                                        .setScale(2, RoundingMode.HALF_UP)
+                        );
                     }
+                    // Planning Carbon: Distance * DAF * PayloadTons * TonneKmFactor * congestionMultiplier
+                    BigDecimal distKm = entity.getDistanceMeters()
+                            .multiply(daf)
+                            .divide(BigDecimal.valueOf(1000), 3, RoundingMode.HALF_UP);
+                    BigDecimal dynamicCo2 = distKm.multiply(payloadTons)
+                            .multiply(tonneKmFactor)
+                            .multiply(BigDecimal.valueOf(congestionCo2Multiplier))
+                            .setScale(2, RoundingMode.HALF_UP);
+                    entity.setEstimatedCo2Kg(dynamicCo2);
+                    entity.setRiskScore(BigDecimal.valueOf(
+                            trafficCondition == TrafficCondition.ROAD_CLOSED ? 0.90
+                                    : (weatherCondition == WeatherCondition.FLOODING ? 0.75
+                                    : (combinedTimeMultiplier > 1.25 ? 0.35 : 0.05)))
+                            .setScale(4, RoundingMode.HALF_UP));
                     return entity;
                 })
                 .toList();
@@ -157,8 +215,8 @@ public class RoutePlanningService {
             BigDecimal compositeScore = BigDecimal.valueOf(penaltyScore).setScale(4, RoundingMode.HALF_UP);
             c.setCompositeScore(compositeScore);
             c.setMetricsBreakdownJson(String.format(Locale.ROOT,
-                    "{\"normCo2\":%.4f,\"normTime\":%.4f,\"normDist\":%.4f,\"wCo2\":%.2f,\"wTime\":%.2f,\"wDist\":%.2f}",
-                    normCo2, normTime, normDist, wCo2, wTime, wDist));
+                    "{\"normCo2\":%.4f,\"normTime\":%.4f,\"normDist\":%.4f,\"wCo2\":%.2f,\"wTime\":%.2f,\"wDist\":%.2f,\"traffic\":\"%s\",\"weather\":\"%s\"}",
+                    normCo2, normTime, normDist, wCo2, wTime, wDist, trafficCondition.name(), weatherCondition.name()));
             c.setSelected(false);
 
             if (compositeScore.compareTo(lowestPenaltyScore) < 0) {
@@ -191,20 +249,13 @@ public class RoutePlanningService {
             log.warn("Không thể gọi ShipmentClient cho shipmentId {}, sử dụng tọa độ mặc định Cát Lái -> VSIP 1: {}",
                     shipmentId, e.getMessage());
         }
-        return ShipmentDto.builder()
-                .id(shipmentId)
-                .originName("Cảng Cát Lái TP.HCM")
-                .originLatitude(10.762622)
-                .originLongitude(106.795677)
-                .destinationName("KCN VSIP 1 Bình Dương")
-                .destinationLatitude(10.931215)
-                .destinationLongitude(106.697426)
-                .cargoWeightTons(BigDecimal.valueOf(14.20))
-                .build();
+        throw new AppException(ErrorCode.ROUTING_PROVIDER_FAILED,"Không thể lấy dữ liệu vận đơn; không sử dụng tọa độ demo thay thế");
     }
 
     private RouteRequest buildProviderRouteRequest(UUID shipmentId, ShipmentDto shipment) {
-        double oLat = shipment.getOriginLatitude() != null ? shipment.getOriginLatitude() : 10.762622;
+        if(shipment.getOriginLatitude()==null || shipment.getOriginLongitude()==null || shipment.getDestinationLatitude()==null || shipment.getDestinationLongitude()==null || shipment.getCargoWeightTons()==null || shipment.getCargoWeightTons().signum()<=0)
+            throw new AppException(ErrorCode.ROUTING_PROVIDER_FAILED,"Vận đơn thiếu tọa độ hoặc tải trọng hợp lệ");
+        double oLat = shipment.getOriginLatitude();
         double oLon = shipment.getOriginLongitude() != null ? shipment.getOriginLongitude() : 106.795677;
         double dLat = shipment.getDestinationLatitude() != null ? shipment.getDestinationLatitude() : 10.931215;
         double dLon = shipment.getDestinationLongitude() != null ? shipment.getDestinationLongitude() : 106.697426;
