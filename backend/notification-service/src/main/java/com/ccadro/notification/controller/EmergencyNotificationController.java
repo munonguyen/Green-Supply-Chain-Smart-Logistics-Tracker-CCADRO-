@@ -3,9 +3,12 @@ package com.ccadro.notification.controller;
 import com.ccadro.notification.dto.ApiResponse;
 import com.ccadro.notification.dto.request.ManualBroadcastRequest;
 import com.ccadro.notification.dto.request.NotificationAcknowledgeRequest;
+import com.ccadro.notification.dto.request.SendEmailRequest;
+import com.ccadro.notification.dto.response.EmailDispatchResponse;
 import com.ccadro.notification.dto.response.EmergencyNotificationResponse;
 import com.ccadro.notification.event.EmergencyNotificationEvent;
 import com.ccadro.notification.service.EmergencyNotificationService;
+import com.ccadro.notification.service.TransactionalEmailService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -29,6 +32,28 @@ import java.util.UUID;
 public class EmergencyNotificationController {
 
     EmergencyNotificationService notificationService;
+    TransactionalEmailService transactionalEmailService;
+
+    @GetMapping("/email/status")
+    @Operation(summary = "Kiểm tra trạng thái kết nối nhà cung cấp gửi Email bên thứ 3 (Brevo LIVE vs SANDBOX)")
+    public ApiResponse<Map<String, Object>> getEmailProviderStatus() {
+        return ApiResponse.<Map<String, Object>>builder()
+                .result(transactionalEmailService.getProviderStatus())
+                .build();
+    }
+
+    @PostMapping("/email")
+    @Operation(summary = "Gửi Email giao dịch (xác nhận tài khoản, hóa đơn VAT, biên bản ePOD) qua cổng Email bên thứ 3")
+    public ApiResponse<EmailDispatchResponse> sendTransactionalEmail(
+            @Valid @RequestBody SendEmailRequest request,
+            @RequestHeader(value="X-Auth-Scope",required=false) String scope) {
+        if(scope==null || !java.util.Arrays.asList(scope.split("\\s+")).contains("ROLE_ADMIN"))
+            throw new org.springframework.web.server.ResponseStatusException(HttpStatus.FORBIDDEN,"Chỉ ADMIN được gửi email thủ công");
+        return ApiResponse.<EmailDispatchResponse>builder()
+                .message("Đã xử lý yêu cầu gửi email")
+                .result(transactionalEmailService.sendEmail(request))
+                .build();
+    }
 
     @GetMapping
     @Operation(summary = "Lấy danh sách thông báo sự cố khẩn cấp (lọc theo status, targetRole, tripId, broadcastType)")

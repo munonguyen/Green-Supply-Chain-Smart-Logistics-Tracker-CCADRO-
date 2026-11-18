@@ -1,5 +1,6 @@
 server:
   port: 8087
+  address: ${SERVER_ADDRESS:0.0.0.0}
 
 spring:
   application:
@@ -27,6 +28,11 @@ spring:
       auto-offset-reset: latest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      acks: all
+      retries: 3
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
 
 management:
   endpoints:
@@ -43,6 +49,9 @@ ccadro:
     sseTimeoutMs: ${CCADRO_NOTIFICATION_SSE_TIMEOUT_MS:1800000}
   kafka:
     emergency-topic: ${CCADRO_KAFKA_EMERGENCY_TOPIC:ccadro.emergency.notifications}
+    payment-evidence-topic: ${CCADRO_KAFKA_PAYMENT_EVIDENCE_TOPIC:ccadro.payment.evidence.v1}
+    payment-evidence-dlq-topic: ${CCADRO_KAFKA_PAYMENT_EVIDENCE_DLQ_TOPIC:ccadro.payment.evidence.dlq}
+    payment-email-status-topic: ${CCADRO_KAFKA_PAYMENT_EMAIL_STATUS_TOPIC:ccadro.payment.email.status.v1}
 
 springdoc:
   api-docs:
@@ -56,6 +65,33 @@ springdoc:
 
 notification:
   email:
-    brevo-url: https://api.brevo.com
-    brevo-apikey: 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
+    mode: ${CCADRO_EMAIL_MODE:AUTO}
+    brevo-url: ${CCADRO_BREVO_URL:https://api.brevo.com}
+    brevo-apikey: ${CCADRO_BREVO_API_KEY:}
+    sender-email: ${CCADRO_EMAIL_SENDER:noreply@ccadro.com}
+    sender-name: ${CCADRO_EMAIL_SENDER_NAME:CCADRO Green Logistics}
 
+
+ccadro.internal-token: ${CCADRO_INTERNAL_TOKEN:}
+ccadro.payment-email.max-attempts: ${CCADRO_EVIDENCE_MAX_ATTEMPTS:10}
+ccadro.payment-email.retry-seconds: ${CCADRO_EVIDENCE_RETRY_SECONDS:60}
+
+notification.email.reply-to-email: ${CCADRO_LEGAL_SUPPORT_EMAIL:}
+
+# Infrastructure registry is separate from business UI. dev-start enables registration.
+eureka:
+  client:
+    enabled: ${EUREKA_CLIENT_ENABLED:false}
+    register-with-eureka: true
+    fetch-registry: false
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://127.0.0.1:8761/eureka/}
+    healthcheck:
+      enabled: true
+  instance:
+    hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
+    instance-id: ${spring.application.name}:${EUREKA_INSTANCE_ID:${server.port}}
+    lease-renewal-interval-in-seconds: 30
+    lease-expiration-duration-in-seconds: 90
+    status-page-url-path: /actuator/info
+    health-check-url-path: /actuator/health
