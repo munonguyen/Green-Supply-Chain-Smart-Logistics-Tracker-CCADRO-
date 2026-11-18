@@ -1,0 +1,50 @@
+server:
+  port: ${CHAT_PORT:8090}
+  address: ${CHAT_BIND_ADDRESS:127.0.0.1}
+spring:
+  application:
+    name: chat-service
+  data:
+    mongodb:
+      uri: ${CHAT_MONGODB_URI:mongodb://localhost:27017/ccadro_chat}
+      auto-index-creation: true
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+ccadro:
+  identity-url: ${IDENTITY_SERVICE_URL:http://localhost:8080}
+  socket:
+    host: ${CHAT_SOCKET_BIND_ADDRESS:127.0.0.1}
+    port: ${CHAT_SOCKET_PORT:8091}
+    allowed-origins: ${CCADRO_CHAT_SOCKET_ORIGINS:http://localhost:5173,http://127.0.0.1:5173}
+    heartbeat-ms: 25000
+
+# Avoid request body / token logging even when other modules enable application DEBUG.
+logging:
+  level:
+    org.springframework.web: INFO
+    org.springframework.boot.autoconfigure: INFO
+    org.mongodb.driver: WARN
+
+# Infrastructure registry is separate from business UI. dev-start enables registration.
+eureka:
+  client:
+    enabled: ${EUREKA_CLIENT_ENABLED:false}
+    register-with-eureka: true
+    fetch-registry: false
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://127.0.0.1:8761/eureka/}
+    healthcheck:
+      enabled: true
+  instance:
+    hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
+    instance-id: ${spring.application.name}:${EUREKA_INSTANCE_ID:${server.port}}
+    lease-renewal-interval-in-seconds: 30
+    lease-expiration-duration-in-seconds: 90
+    status-page-url-path: /actuator/info
+    health-check-url-path: /actuator/health
