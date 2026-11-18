@@ -46,3 +46,11 @@ eureka:
     lease-expiration-duration-in-seconds: 90
     status-page-url-path: /actuator/info
     health-check-url-path: /actuator/health
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
