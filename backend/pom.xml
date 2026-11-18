@@ -11,7 +11,17 @@
     <name>ccadro-backend-aggregator</name>
     <description>CCADRO Green Logistics Tracker - Microservices Aggregator (BookShop Pattern)</description>
 
+    <properties>
+        <POSTGRES_HOST>localhost</POSTGRES_HOST>
+        <POSTGRES_PORT>5433</POSTGRES_PORT>
+        <POSTGRES_DB>ccadro</POSTGRES_DB>
+        <POSTGRES_USER>ccadro</POSTGRES_USER>
+        <POSTGRES_PASSWORD>ccadro_dev_secret</POSTGRES_PASSWORD>
+        <flyway.version>10.10.0</flyway.version>
+    </properties>
+
     <modules>
+        <module>eureka-server</module>
         <module>api-gateway</module>
         <module>identity-service</module>
         <module>asset-service</module>
@@ -21,44 +31,40 @@
         <module>carbon-service</module>
         <module>incident-service</module>
         <module>notification-service</module>
+        <module>payment-service</module>
+        <module>hub-shipper-service</module>
+        <module>chat-service</module>
     </modules>
 
     <build>
-        <pluginManagement>
-            <plugins>
-                <!-- Spotless: Clean Code Code Style & Unused Imports Formatter -->
-                <plugin>
-                    <groupId>com.diffplug.spotless</groupId>
-                    <artifactId>spotless-maven-plugin</artifactId>
-                    <version>2.43.0</version>
-                    <configuration>
-                        <java>
-                            <removeUnusedImports />
-                        </java>
-                    </configuration>
-                </plugin>
-
-                <!-- JaCoCo: Test Coverage & Clean Code Quality Metric -->
-                <plugin>
-                    <groupId>org.jacoco</groupId>
-                    <artifactId>jacoco-maven-plugin</artifactId>
-                    <version>0.8.12</version>
-                    <executions>
-                        <execution>
-                            <goals>
-                                <goal>prepare-agent</goal>
-                            </goals>
-                        </execution>
-                        <execution>
-                            <id>report</id>
-                            <phase>test</phase>
-                            <goals>
-                                <goal>report</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
-            </plugins>
-        </pluginManagement>
+        <plugins>
+            <plugin>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-maven-plugin</artifactId>
+                <version>${flyway.version}</version>
+                <inherited>false</inherited>
+                <configuration>
+                    <url>jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}</url>
+                    <user>${POSTGRES_USER}</user>
+                    <password>${POSTGRES_PASSWORD}</password>
+                    <locations>
+                        <location>filesystem:db/migration</location>
+                    </locations>
+                    <baselineOnMigrate>true</baselineOnMigrate>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.flywaydb</groupId>
+                        <artifactId>flyway-database-postgresql</artifactId>
+                        <version>${flyway.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.postgresql</groupId>
+                        <artifactId>postgresql</artifactId>
+                        <version>42.7.4</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+        </plugins>
     </build>
 </project>

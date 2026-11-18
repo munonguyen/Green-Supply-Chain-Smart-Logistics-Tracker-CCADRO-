@@ -1,0 +1,20 @@
+{
+  "errors": [],
+  "responses": [],
+  "browserOnlyCorsWorkaround": true,
+  "auth": "JWT",
+  "initial": "CCADRO Messenger\n● 0 người trực tuyến\nĐANG HOẠT ĐỘNG\nTất cả\nChưa đọc\nNhóm\nTài xế\nĐiều phối\nKhách / Hub\nChưa có cuộc trò chuyện nào phù hợp.\nBật Chat Nội Bộ Cục Bộ\nKhông gian Hội thoại CCADRO\nChọn một cuộc trò chuyện để bắt đầu\nChọn nhân sự điều phối, tài xế, chủ hàng B2B ở thanh bên trái hoặc bấm nút tạo nhóm mới để bắt đầu trao đổi tức thì.\nThử kết nối lại :8888\nMở Chat Nội Bộ Cục Bộ",
+  "geometry": {
+    "rect": {
+      "x": 0,
+      "y": 0,
+      "width": 1440,
+      "height": 1000,
+      "top": 0,
+      "right": 1440,
+      "bottom": 1000,
+      "left": 0
+    },
+    "parents": []
+  }
+}

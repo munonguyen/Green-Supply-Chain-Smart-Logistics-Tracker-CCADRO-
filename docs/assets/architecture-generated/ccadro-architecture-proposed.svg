@@ -1,0 +1,284 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="3200" height="2280" viewBox="0 0 3200 2280">
+<title>CCADRO Target architecture proposal</title>
+<defs><marker id="a172538" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L9 5 L0 10 Z" fill="#172538"/></marker><marker id="a1772b4" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L9 5 L0 10 Z" fill="#1772b4"/></marker><marker id="a238449" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L9 5 L0 10 Z" fill="#238449"/></marker><marker id="a7850ad" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L9 5 L0 10 Z" fill="#7850ad"/></marker><marker id="abb7012" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L9 5 L0 10 Z" fill="#bb7012"/></marker><marker id="abc4247" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L9 5 L0 10 Z" fill="#bc4247"/></marker></defs>
+<rect width="3200" height="2280" fill="white"/>
+<text x="1600" y="64" font-family="Arial, sans-serif" font-size="48" fill="#172538" font-weight="700" text-anchor="middle">CCADRO  |  KIẾN TRÚC ĐỀ XUẤT KHẮC PHỤC</text>
+<text x="1600" y="108" font-family="Arial, sans-serif" font-size="25" fill="#56677b" font-weight="400" text-anchor="middle">Green Supply Chain &amp; Smart Logistics Tracker  •  Java 17 / Spring Boot 3.3.4 + Spring Cloud Gateway</text>
+<rect x="1340" y="130" width="520" height="36" rx="10" fill="#2384490c" stroke="#238449" stroke-width="1"/>
+<text x="1600.0" y="155" font-family="Arial, sans-serif" font-size="19" fill="#238449" font-weight="700" text-anchor="middle">TO-BE • ĐỀ XUẤT, CHƯA TRIỂN KHAI</text>
+<rect x="60" y="195" width="710" height="255" rx="16" fill="#f6fbff" stroke="#1772b4" stroke-width="2"/>
+<text x="415" y="230" font-family="Arial, sans-serif" font-size="28" fill="#1772b4" font-weight="700" text-anchor="middle">CLIENTS</text>
+<g transform="translate(90 255) scale(1)" fill="none" stroke="#1772b4" stroke-width="3.3" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="51" height="43" rx="4"/><path d="M2 16h51M9 10h3M17 10h3M25 10h3M15 29l-6 5 6 5M40 29l6 5-6 5M31 25l-7 18"/></g>
+<text x="163" y="273" font-family="Arial, sans-serif" font-size="22" fill="#172538" font-weight="400" text-anchor="start">WEB PORTAL • React 18 + Vite :5173</text>
+<text x="163" y="306" font-family="Arial, sans-serif" font-size="22" fill="#172538" font-weight="400" text-anchor="start">Leaflet • Admin / Dispatcher / Customer</text>
+<text x="163" y="339" font-family="Arial, sans-serif" font-size="22" fill="#172538" font-weight="400" text-anchor="start">Driver / Hub Shipper là giao diện trên web</text>
+<g transform="translate(92 374) scale(0.8)" fill="none" stroke="#238449" stroke-width="3.3" stroke-linecap="round" stroke-linejoin="round"><path d="M27 53S8 33 8 22a19 19 0 0138 0C46 33 27 53 27 53Z"/><circle cx="27" cy="22" r="7"/></g>
+<text x="163" y="389" font-family="Arial, sans-serif" font-size="21" fill="#172538" font-weight="400" text-anchor="start">GPS Simulator (Python) → telemetry API</text>
+<text x="163" y="419" font-family="Arial, sans-serif" font-size="21" fill="#172538" font-weight="400" text-anchor="start">Một React frontend phục vụ các vai trò</text>
+<rect x="860" y="195" width="1300" height="255" rx="16" fill="#fbf8ff" stroke="#7850ad" stroke-width="2"/>
+<g transform="translate(890 230) scale(1.1)" fill="none" stroke="#7850ad" stroke-width="3.3" stroke-linecap="round" stroke-linejoin="round"><path d="M27 3L49 11v17c0 14-22 25-22 25S5 42 5 28V11ZM16 28l8 8 15-18"/></g>
+<text x="1510" y="242" font-family="Arial, sans-serif" font-size="35" fill="#7850ad" font-weight="700" text-anchor="middle">API GATEWAY :8888</text>
+<text x="1510" y="281" font-family="Arial, sans-serif" font-size="24" fill="#172538" font-weight="400" text-anchor="middle">Spring Cloud Gateway • JWT introspection → Identity :8080</text>
+<rect x="1028.0" y="306" width="180" height="36" rx="10" fill="#7850ad0c" stroke="#7850ad" stroke-width="1"/>
+<text x="1118.0" y="331" font-family="Arial, sans-serif" font-size="19" fill="#7850ad" font-weight="700" text-anchor="middle">Routing</text>
+<rect x="1224.0" y="306" width="180" height="36" rx="10" fill="#7850ad0c" stroke="#7850ad" stroke-width="1"/>
+<text x="1314.0" y="331" font-family="Arial, sans-serif" font-size="19" fill="#7850ad" font-weight="700" text-anchor="middle">CORS</text>
+<rect x="1420.0" y="306" width="180" height="36" rx="10" fill="#7850ad0c" stroke="#7850ad" stroke-width="1"/>
+<text x="1510.0" y="331" font-family="Arial, sans-serif" font-size="19" fill="#7850ad" font-weight="700" text-anchor="middle">Swagger Hub</text>
+<rect x="1616.0" y="306" width="180" height="36" rx="10" fill="#7850ad0c" stroke="#7850ad" stroke-width="1"/>
+<text x="1706.0" y="331" font-family="Arial, sans-serif" font-size="19" fill="#7850ad" font-weight="700" text-anchor="middle">Rate limit</text>
+<rect x="1812.0" y="306" width="180" height="36" rx="10" fill="#7850ad0c" stroke="#7850ad" stroke-width="1"/>
+<text x="1902.0" y="331" font-family="Arial, sans-serif" font-size="19" fill="#7850ad" font-weight="700" text-anchor="middle">Timeout / CB</text>
+<text x="1510" y="389" font-family="Arial, sans-serif" font-size="23" fill="#172538" font-weight="400" text-anchor="middle">HTTPS / private ingress • JWT tại từng service • DNS nội bộ</text>
+<text x="1510" y="424" font-family="Arial, sans-serif" font-size="21" fill="#56677b" font-weight="400" text-anchor="middle">Bảo vệ API nội bộ bằng service identity, không tin header từ client</text>
+<path d="M770,306 L850,306" fill="none" stroke="#172538" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#a172538)"/>
+<rect x="2250" y="195" width="890" height="255" rx="16" fill="#f7fcfa" stroke="#238449" stroke-width="2"/>
+<g transform="translate(2280 226) scale(0.9)" fill="none" stroke="#238449" stroke-width="3.3" stroke-linecap="round" stroke-linejoin="round"><path d="M14 44C-3 44-1 23 13 23c-3-25 31-27 33-5 22-1 23 26 3 26Z"/></g>
+<text x="2350" y="248" font-family="Arial, sans-serif" font-size="27" fill="#238449" font-weight="700" text-anchor="start">TRIỂN KHAI / VẬN HÀNH</text>
+<text x="2280" y="298" font-family="Arial, sans-serif" font-size="23" fill="#172538" font-weight="400" text-anchor="start">Container từng service • Compose + DNS cho MVP</text>
+<text x="2280" y="335" font-family="Arial, sans-serif" font-size="23" fill="#172538" font-weight="400" text-anchor="start">Secrets ngoài source • health / metrics / traces</text>
+<text x="2280" y="372" font-family="Arial, sans-serif" font-size="23" fill="#172538" font-weight="400" text-anchor="start">CI: test → build image → deploy có kiểm soát</text>
+<text x="2280" y="409" font-family="Arial, sans-serif" font-size="23" fill="#172538" font-weight="400" text-anchor="start">HA / replicas khi có yêu cầu vận hành thực tế</text>
+<rect x="60" y="485" width="52" height="36" rx="10" fill="#7850ad0c" stroke="#7850ad" stroke-width="1"/>
+<text x="86.0" y="510" font-family="Arial, sans-serif" font-size="19" fill="#7850ad" font-weight="700" text-anchor="middle">01</text>
+<text x="130" y="510" font-family="Arial, sans-serif" font-size="28" fill="#172538" font-weight="700" text-anchor="start">10 DOMAIN SERVICES</text>
+<text x="3140" y="510" font-family="Arial, sans-serif" font-size="21" fill="#56677b" font-weight="400" text-anchor="end">Database / schema riêng có owner + credentials riêng</text>
+<rect x="60" y="537" width="3080" height="535" rx="16" fill="#ffffff" stroke="#aab7c5" stroke-width="2" stroke-dasharray="9 7"/>
+<path d="M1510,450 L1510,540" fill="none" stroke="#7850ad" stroke-width="2.5" stroke-linejoin="round"/>
+<path d="M223,540 L2977,540" fill="none" stroke="#7850ad" stroke-width="2.5" stroke-linejoin="round"/>
+<path d="M223,540 L223,556" fill="none" stroke="#7850ad" stroke-width="1.5" stroke-linejoin="round" marker-end="url(#a7850ad)"/>
+<rect x="80" y="558" width="286" height="488" rx="16" fill="#23844906" stroke="#238449" stroke-width="2"/>
+<g transform="translate(197 580) scale(0.95)" fill="none" stroke="#238449" stroke-width="3.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="17" cy="17" r="11"/><path d="M25 25L45 45M34 34L41 27M40 40L47 33"/></g>
+<text x="223" y="677" font-family="Arial, sans-serif" font-size="25" fill="#238449" font-weight="700" text-anchor="middle">IDENTITY</text>
+<text x="223" y="714" font-family="Arial, sans-serif" font-size="21" fill="#56677b" font-weight="400" text-anchor="middle">:8080  •  Spring Boot</text>
+<path d="M96,738 L350,738" fill="none" stroke="#238449" stroke-width="1" stroke-linejoin="round"/>
+<text x="99" y="779" font-family="Arial, sans-serif" font-size="21" fill="#172538" font-weight="400" text-anchor="start">JWT • RBAC</text>
+<text x="99" y="815" font-family="Arial, sans-serif" font-size="21" fill="#172538" font-weight="400" text-anchor="start">User • Company</text>
+<text x="99" y="851" font-family="Arial, sans-serif" font-size="21" fill="#172538" font-weight="400" text-anchor="start">Hub IAM • Audit</text>
+<rect x="92" y="900" width="262" height="126" rx="12" fill="#ffffff" stroke="#238449" stroke-width="1.6"/>
+<g transform="translate(106,919)" fill="#23844922" stroke="#238449" stroke-width="2"><path d="M0 9v33c0 12 38 12 38 0V9"/><ellipse cx="19" cy="9" rx="19" ry="8"/><path d="M0 24c0 11 38 11 38 0M0 35c0 11 38 11 38 0"/></g>
+<text x="158" y="934" font-family="Arial, sans-serif" font-size="20" fill="#238449" font-weight="700" text-anchor="start">identity_db</text>
+<text x="158" y="962" font-family="Arial, sans-serif" font-size="20" fill="#238449" font-weight="700" text-anchor="start">PostgreSQL</text>
+<path d="M529,540 L529,556" fill="none" stroke="#7850ad" stroke-width="1.5" stroke-linejoin="round" marker-end="url(#a7850ad)"/>
+<rect x="386" y="558" width="286" height="488" rx="16" fill="#1772b406" stroke="#1772b4" stroke-width="2"/>
+<g transform="translate(503 580) scale(0.95)" fill="none" stroke="#1772b4" stroke-width="3.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12" width="29" height="25" rx="3"/><path d="M32 22h11l9 10v8H32M43 22v12h9"/><circle cx="14" cy="42" r="6"/><circle cx="42" cy="42" r="6"/></g>
+<text x="529" y="677" font-family="Arial, sans-serif" font-size="25" fill="#1772b4" font-weight="700" text-anchor="middle">ASSET</text>
+<text x="529" y="714" font-family="Arial, sans-serif" font-size="21" fill="#56677b" font-weight="400" text-anchor="middle">:8081  •  Spring Boot</text>
+<path d="M402,738 L656,738" fill="none" stroke="#1772b4" stroke-width="1" stroke-linejoin="round"/>
+<text x="405" y="779" font-family="Arial, sans-serif" font-size="21" fill="#172538" font-weight="400" text-anchor="start">Xe • Tài xế</text>
+<text x="405" y="815" font-family="Arial, sans-serif" font-size="21" fill="#172538" font-weight="400" text-anchor="start">Container • Pre-trip</text>
+<text x="405" y="851" font-family="Arial, sans-serif" font-size="21" fill="#172538" font-weight="400" text-anchor="start">Bàn giao • Hub assets</text>
+<rect x="398" y="900" width="262" height="126" rx="12" fill="#ffffff" stroke="#1772b4" stroke-width="1.6"/>
+<g transform="translate(412,919)" fill="#1772b422" stroke="#1772b4" stroke-width="2"><path d="M0 9v33c0 12 38 12 38 0V9"/><ellipse cx="19" cy="9" rx="19" ry="8"/><path d="M0 24c0 11 38 11 38 0M0 35c0 11 38 11 38 0"/></g>
+<text x="464" y="934" font-family="Arial, sans-serif" font-size="20" fill="#1772b4" font-weight="700" text-anchor="start">asset_db</text>
+<text x="464" y="962" font-family="Arial, sans-serif" font-size="20" fill="#1772b4" font-weight="700" text-anchor="start">PostgreSQL</text>
+<path d="M835,540 L835,556" fill="none" stroke="#7850ad" stroke-width="1.5" stroke-linejoin="round" marker-end="url(#a7850ad)"/>
+<rect x="692" y="558" width="286" height="488" rx="16" fill="#bb701206" stroke="#bb7012" stroke-width="2"/>
+<g transform="translate(809 580) scale(0.95)" fill="none" stroke="#bb7012" stroke-width="3.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 15L27 3l23 12v27L27 54 5 42ZM5 15l22 13 23-13M27 28v26M16 9l23 13"/></g>
+<text x="835" y="677" font-family="Arial, sans-serif" font-size="25" fill="#bb7012" font-weight="700" text-anchor="middle">SHIPMENT</text>
+<text x="835" y="714" font-family="Arial, sans-serif" font-size="21" fill="#56677b" font-weight="400" text-anchor="middle">:8082  •  Spring Boot</text>
+<path d="M708,738 L962,738" fill="none" stroke="#bb7012" stroke-width="1" stroke-linejoin="round"/>
+<text x="711" y="779" font-family="Arial, sans-serif" font-size="21" fill="#172538" font-weight="400" text-anchor="start">Đơn hàng • Dispatch</text>
+<text x="711" y="815" font-family="Arial, sans-serif" font-size="21" fill="#172538" font-weight="400" text-anchor="start">Saga điều phối</text>
+<text x="711" y="851" font-family="Arial, sans-serif" font-size="21" fill="#172538" font-weight="400" text-anchor="start">Outbox + Saga log</text>
+<rect x="704" y="900" width="262" height="126" rx="12" fill="#ffffff" stroke="#bb7012" stroke-width="1.6"/>
+<g transform="translate(718,919)" fill="#bb701222" stroke="#bb7012" stroke-width="2"><path d="M0 9v33c0 12 38 12 38 0V9"/><ellipse cx="19" cy="9" rx="19" ry="8"/><path d="M0 24c0 11 38 11 38 0M0 35c0 11 38 11 38 0"/></g>
+<text x="770" y="934" font-family="Arial, sans-serif" font-size="20" fill="#bb7012" font-weight="700" text-anchor="start">shipment_db</text>
+<text x="770" y="962" font-family="Arial, sans-serif" font-size="20" fill="#bb7012" font-weight="700" text-anchor="start">PostGIS</text>
+<path d="M1141,540 L1141,556" fill="none" stroke="#7850ad" stroke-width="1.5" stroke-linejoin="round" marker-end="url(#a7850ad)"/>
+<rect x="998" y="558" width="286" height="488" rx="16" fill="#15919a06" stroke="#15919a" stroke-width="2"/>
+<g transform="translate(1115 580) scale(0.95)" fill="none" stroke="#15919a" stroke-width="3.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="45" r="5"/><circle cx="46" cy="8" r="5"/><path d="M13 45h26c17 0 17-19 0-19H18C1 26 1 8 18 8h21"/></g>
+<text x="1141" y="677" font-family="Arial, sans-serif" font-size="25" fill="#15919a" font-weight="700" text-anchor="middle">ROUTING</text>
+<text x="1141" y="714" font-family="Arial, sans-serif" font-size="21" fill="#56677b" font-weight="400" text-anchor="middle">:8083  •  Spring Boot</text>
+<path d="M1014,738 L1268,738" fill="none" stroke="#15919a" stroke-width="1" stroke-linejoin="round"/>
+<text x="1017" y="779" font-family="Arial, sans-serif" font-size="21" fill="#172538" font-weight="400" text-anchor="start">Tuyến xanh đa tiêu chí</text>
+<text x="1017" y="815" font-family="Arial, sans-serif" font-size="21" fill="#172538" font-weight="400" text-anchor="start">RouteVersion</text>
+<text x="1017" y="851" font-family="Arial, sans-serif" font-size="21" fill="#172538" font-weight="400" text-anchor="start">OSRM / mock fallback</text>
+<rect x="1010" y="900" width="262" height="126" rx="12" fill="#ffffff" stroke="#15919a" stroke-width="1.6"/>
+<g transform="translate(1024,919)" fill="#15919a22" stroke="#15919a" stroke-width="2"><path d="M0 9v33c0 12 38 12 38 0V9"/><ellipse cx="19" cy="9" rx="19" ry="8"/><path d="M0 24c0 11 38 11 38 0M0 35c0 11 38 11 38 0"/></g>
+<text x="1076" y="934" font-family="Arial, sans-serif" font-size="20" fill="#15919a" font-weight="700" text-anchor="start">routing_db</text>
+<text x="1076" y="962" font-family="Arial, sans-serif" font-size="20" fill="#15919a" font-weight="700" text-anchor="start">PostGIS</text>
+<path d="M1447,540 L1447,556" fill="none" stroke="#7850ad" stroke-width="1.5" stroke-linejoin="round" marker-end="url(#a7850ad)"/>
+<rect x="1304" y="558" width="286" height="488" rx="16" fill="#cf4c7206" stroke="#cf4c72" stroke-width="2"/>
+<g transform="translate(1421 580) scale(0.95)" fill="none" stroke="#cf4c72" stroke-width="3.3" stroke-linecap="round" stroke-linejoin="round"><path d="M27 53S8 33 8 22a19 19 0 0138 0C46 33 27 53 27 53Z"/><circle cx="27" cy="22" r="7"/></g>
+<text x="1447" y="677" font-family="Arial, sans-serif" font-size="25" fill="#cf4c72" font-weight="700" text-anchor="middle">TRACKING</text>
+<text x="1447" y="714" font-family="Arial, sans-serif" font-size="21" fill="#56677b" font-weight="400" text-anchor="middle">:8084  •  Spring Boot</text>
+<path d="M1320,738 L1574,738" fill="none" stroke="#cf4c72" stroke-width="1" stroke-linejoin="round"/>
+<text x="1323" y="779" font-family="Arial, sans-serif" font-size="21" fill="#172538" font-weight="400" text-anchor="start">GPS • Trip • Lệch tuyến</text>
+<text x="1323" y="815" font-family="Arial, sans-serif" font-size="21" fill="#172538" font-weight="400" text-anchor="start">Đề xuất đổi tuyến</text>
+<text x="1323" y="851" font-family="Arial, sans-serif" font-size="21" fill="#172538" font-weight="400" text-anchor="start">Fleet telemetry SSE</text>
+<rect x="1316" y="900" width="262" height="126" rx="12" fill="#ffffff" stroke="#cf4c72" stroke-width="1.6"/>
+<g transform="translate(1330,919)" fill="#cf4c7222" stroke="#cf4c72" stroke-width="2"><path d="M0 9v33c0 12 38 12 38 0V9"/><ellipse cx="19" cy="9" rx="19" ry="8"/><path d="M0 24c0 11 38 11 38 0M0 35c0 11 38 11 38 0"/></g>
+<text x="1382" y="934" font-family="Arial, sans-serif" font-size="20" fill="#cf4c72" font-weight="700" text-anchor="start">tracking_db</text>
+<text x="1382" y="962" font-family="Arial, sans-serif" font-size="20" fill="#cf4c72" font-weight="700" text-anchor="start">PostGIS</text>
+<path d="M1753,540 L1753,556" fill="none" stroke="#7850ad" stroke-width="1.5" stroke-linejoin="round" marker-end="url(#a7850ad)"/>
+<rect x="1610" y="558" width="286" height="488" rx="16" fill="#23844906" stroke="#238449" stroke-width="2"/>
+<g transform="translate(1727 580) scale(0.95)" fill="none" stroke="#238449" stroke-width="3.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 46C0 19 18 6 49 6c0 30-10 49-33 39M6 53L37 19M19 40V26M28 30h13"/></g>
+<text x="1753" y="677" font-family="Arial, sans-serif" font-size="25" fill="#238449" font-weight="700" text-anchor="middle">CARBON</text>
+<text x="1753" y="714" font-family="Arial, sans-serif" font-size="21" fill="#56677b" font-weight="400" text-anchor="middle">:8085  •  Spring Boot</text>
+<path d="M1626,738 L1880,738" fill="none" stroke="#238449" stroke-width="1" stroke-linejoin="round"/>
+<text x="1629" y="779" font-family="Arial, sans-serif" font-size="21" fill="#172538" font-weight="400" text-anchor="start">ePOD • Nhiên liệu</text>
+<text x="1629" y="815" font-family="Arial, sans-serif" font-size="21" fill="#172538" font-weight="400" text-anchor="start">WTW • TTW • WTT</text>
+<text x="1629" y="851" font-family="Arial, sans-serif" font-size="21" fill="#172538" font-weight="400" text-anchor="start">Benchmark • Báo cáo</text>
+<rect x="1622" y="900" width="262" height="126" rx="12" fill="#ffffff" stroke="#238449" stroke-width="1.6"/>
+<g transform="translate(1636,919)" fill="#23844922" stroke="#238449" stroke-width="2"><path d="M0 9v33c0 12 38 12 38 0V9"/><ellipse cx="19" cy="9" rx="19" ry="8"/><path d="M0 24c0 11 38 11 38 0M0 35c0 11 38 11 38 0"/></g>
+<text x="1688" y="934" font-family="Arial, sans-serif" font-size="20" fill="#238449" font-weight="700" text-anchor="start">carbon_db</text>
+<text x="1688" y="962" font-family="Arial, sans-serif" font-size="20" fill="#238449" font-weight="700" text-anchor="start">PostgreSQL</text>
+<path d="M2059,540 L2059,556" fill="none" stroke="#7850ad" stroke-width="1.5" stroke-linejoin="round" marker-end="url(#a7850ad)"/>
+<rect x="1916" y="558" width="286" height="488" rx="16" fill="#c5742106" stroke="#c57421" stroke-width="2"/>
+<g transform="translate(2033 580) scale(0.95)" fill="none" stroke="#c57421" stroke-width="3.3" stroke-linecap="round" stroke-linejoin="round"><path d="M27 4L53 49H2Z"/><path d="M27 18v16M27 40v2"/></g>
+<text x="2059" y="677" font-family="Arial, sans-serif" font-size="25" fill="#c57421" font-weight="700" text-anchor="middle">INCIDENT</text>
+<text x="2059" y="714" font-family="Arial, sans-serif" font-size="21" fill="#56677b" font-weight="400" text-anchor="middle">:8086  •  Spring Boot</text>
+<path d="M1932,738 L2186,738" fill="none" stroke="#c57421" stroke-width="1" stroke-linejoin="round"/>
+<text x="1935" y="779" font-family="Arial, sans-serif" font-size="21" fill="#172538" font-weight="400" text-anchor="start">Sự cố hiện trường</text>
+<text x="1935" y="815" font-family="Arial, sans-serif" font-size="21" fill="#172538" font-weight="400" text-anchor="start">Giải trình • Điểm trừ</text>
+<text x="1935" y="851" font-family="Arial, sans-serif" font-size="21" fill="#172538" font-weight="400" text-anchor="start">Cảnh báo khẩn cấp</text>
+<rect x="1928" y="900" width="262" height="126" rx="12" fill="#ffffff" stroke="#c57421" stroke-width="1.6"/>
+<g transform="translate(1942,919)" fill="#c5742122" stroke="#c57421" stroke-width="2"><path d="M0 9v33c0 12 38 12 38 0V9"/><ellipse cx="19" cy="9" rx="19" ry="8"/><path d="M0 24c0 11 38 11 38 0M0 35c0 11 38 11 38 0"/></g>
+<text x="1994" y="934" font-family="Arial, sans-serif" font-size="20" fill="#c57421" font-weight="700" text-anchor="start">incident_db</text>
+<text x="1994" y="962" font-family="Arial, sans-serif" font-size="20" fill="#c57421" font-weight="700" text-anchor="start">PostGIS</text>
+<path d="M2365,540 L2365,556" fill="none" stroke="#7850ad" stroke-width="1.5" stroke-linejoin="round" marker-end="url(#a7850ad)"/>
+<rect x="2222" y="558" width="286" height="488" rx="16" fill="#b5830c06" stroke="#b5830c" stroke-width="2"/>
+<g transform="translate(2339 580) scale(0.95)" fill="none" stroke="#b5830c" stroke-width="3.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 37V23c0-21 30-21 30 0v14l6 7H6ZM21 49c3 6 9 6 12 0M27 4V1"/></g>
+<text x="2365" y="677" font-family="Arial, sans-serif" font-size="25" fill="#b5830c" font-weight="700" text-anchor="middle">NOTIFICATION</text>
+<text x="2365" y="714" font-family="Arial, sans-serif" font-size="21" fill="#56677b" font-weight="400" text-anchor="middle">:8087  •  Spring Boot</text>
+<path d="M2238,738 L2492,738" fill="none" stroke="#b5830c" stroke-width="1" stroke-linejoin="round"/>
+<text x="2241" y="779" font-family="Arial, sans-serif" font-size="21" fill="#172538" font-weight="400" text-anchor="start">Kafka consumer</text>
+<text x="2241" y="815" font-family="Arial, sans-serif" font-size="21" fill="#172538" font-weight="400" text-anchor="start">Thông báo • SSE • ACK</text>
+<text x="2241" y="851" font-family="Arial, sans-serif" font-size="21" fill="#172538" font-weight="400" text-anchor="start">Email inbox + worker</text>
+<rect x="2234" y="900" width="262" height="126" rx="12" fill="#ffffff" stroke="#b5830c" stroke-width="1.6"/>
+<g transform="translate(2248,919)" fill="#b5830c22" stroke="#b5830c" stroke-width="2"><path d="M0 9v33c0 12 38 12 38 0V9"/><ellipse cx="19" cy="9" rx="19" ry="8"/><path d="M0 24c0 11 38 11 38 0M0 35c0 11 38 11 38 0"/></g>
+<text x="2300" y="934" font-family="Arial, sans-serif" font-size="20" fill="#b5830c" font-weight="700" text-anchor="start">notification_db</text>
+<text x="2300" y="962" font-family="Arial, sans-serif" font-size="20" fill="#b5830c" font-weight="700" text-anchor="start">PostgreSQL</text>
+<path d="M2671,540 L2671,556" fill="none" stroke="#7850ad" stroke-width="1.5" stroke-linejoin="round" marker-end="url(#a7850ad)"/>
+<rect x="2528" y="558" width="286" height="488" rx="16" fill="#3674b806" stroke="#3674b8" stroke-width="2"/>
+<g transform="translate(2645 580) scale(0.95)" fill="none" stroke="#3674b8" stroke-width="3.3" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="9" width="51" height="36" rx="5"/><path d="M2 20h51M10 34h13M35 34h9"/></g>
+<text x="2671" y="677" font-family="Arial, sans-serif" font-size="25" fill="#3674b8" font-weight="700" text-anchor="middle">PAYMENT</text>
+<text x="2671" y="714" font-family="Arial, sans-serif" font-size="21" fill="#56677b" font-weight="400" text-anchor="middle">:8088  •  Spring Boot</text>
+<path d="M2544,738 L2798,738" fill="none" stroke="#3674b8" stroke-width="1" stroke-linejoin="round"/>
+<text x="2547" y="779" font-family="Arial, sans-serif" font-size="21" fill="#172538" font-weight="400" text-anchor="start">Thanh toán • Hợp đồng</text>
+<text x="2547" y="815" font-family="Arial, sans-serif" font-size="21" fill="#172538" font-weight="400" text-anchor="start">SLA • Evidence SHA-256</text>
+<text x="2547" y="851" font-family="Arial, sans-serif" font-size="21" fill="#172538" font-weight="400" text-anchor="start">Relay hồ sơ qua REST</text>
+<rect x="2540" y="900" width="262" height="126" rx="12" fill="#ffffff" stroke="#3674b8" stroke-width="1.6"/>
+<g transform="translate(2554,919)" fill="#3674b822" stroke="#3674b8" stroke-width="2"><path d="M0 9v33c0 12 38 12 38 0V9"/><ellipse cx="19" cy="9" rx="19" ry="8"/><path d="M0 24c0 11 38 11 38 0M0 35c0 11 38 11 38 0"/></g>
+<text x="2606" y="934" font-family="Arial, sans-serif" font-size="20" fill="#3674b8" font-weight="700" text-anchor="start">payment_db</text>
+<text x="2606" y="962" font-family="Arial, sans-serif" font-size="20" fill="#3674b8" font-weight="700" text-anchor="start">PostgreSQL</text>
+<path d="M2977,540 L2977,556" fill="none" stroke="#7850ad" stroke-width="1.5" stroke-linejoin="round" marker-end="url(#a7850ad)"/>
+<rect x="2834" y="558" width="286" height="488" rx="16" fill="#7850ad06" stroke="#7850ad" stroke-width="2"/>
+<g transform="translate(2951 580) scale(0.95)" fill="none" stroke="#7850ad" stroke-width="3.3" stroke-linecap="round" stroke-linejoin="round"><path d="M2 22L27 4l26 18M8 20v30h38V20M21 50V32h13v18M15 22h5M35 22h5"/></g>
+<text x="2977" y="677" font-family="Arial, sans-serif" font-size="25" fill="#7850ad" font-weight="700" text-anchor="middle">HUB SHIPPER</text>
+<text x="2977" y="714" font-family="Arial, sans-serif" font-size="21" fill="#56677b" font-weight="400" text-anchor="middle">:8089  •  Spring Boot</text>
+<path d="M2850,738 L3104,738" fill="none" stroke="#7850ad" stroke-width="1" stroke-linejoin="round"/>
+<text x="2853" y="779" font-family="Arial, sans-serif" font-size="21" fill="#172538" font-weight="400" text-anchor="start">Phân quyền theo Hub</text>
+<text x="2853" y="815" font-family="Arial, sans-serif" font-size="21" fill="#172538" font-weight="400" text-anchor="start">Manifest • Dải nhiệm vụ</text>
+<text x="2853" y="851" font-family="Arial, sans-serif" font-size="21" fill="#172538" font-weight="400" text-anchor="start">Photo POD (URL)</text>
+<rect x="2846" y="900" width="262" height="126" rx="12" fill="#ffffff" stroke="#7850ad" stroke-width="1.6"/>
+<g transform="translate(2860,919)" fill="#7850ad22" stroke="#7850ad" stroke-width="2"><path d="M0 9v33c0 12 38 12 38 0V9"/><ellipse cx="19" cy="9" rx="19" ry="8"/><path d="M0 24c0 11 38 11 38 0M0 35c0 11 38 11 38 0"/></g>
+<text x="2912" y="934" font-family="Arial, sans-serif" font-size="20" fill="#7850ad" font-weight="700" text-anchor="start">hub_shipper_db</text>
+<text x="2912" y="962" font-family="Arial, sans-serif" font-size="20" fill="#7850ad" font-weight="700" text-anchor="start">PostgreSQL</text>
+<rect x="60" y="1145" width="1940" height="150" rx="16" fill="#f5fcf7" stroke="#238449" stroke-width="2"/>
+<g transform="translate(86 1182) scale(0.95)" fill="none" stroke="#238449" stroke-width="3.3" stroke-linecap="round" stroke-linejoin="round"><path d="M27 3L49 11v17c0 14-22 25-22 25S5 42 5 28V11ZM16 28l8 8 15-18"/></g>
+<text x="163" y="1190" font-family="Arial, sans-serif" font-size="27" fill="#238449" font-weight="700" text-anchor="start">F1 → OWNER DỮ LIỆU RÕ RÀNG</text>
+<text x="163" y="1231" font-family="Arial, sans-serif" font-size="24" fill="#172538" font-weight="400" text-anchor="start">MVP: schema riêng + DB role riêng trong một PostgreSQL; tách instance khi cần.</text>
+<text x="163" y="1266" font-family="Arial, sans-serif" font-size="24" fill="#172538" font-weight="400" text-anchor="start">Bỏ JOIN xuyên domain; Tracking giữ route snapshot / read model đồng bộ qua event.</text>
+<rect x="2040" y="1145" width="1100" height="150" rx="16" fill="#f6fcf8" stroke="#238449" stroke-width="2"/>
+<text x="2070" y="1187" font-family="Arial, sans-serif" font-size="26" fill="#238449" font-weight="700" text-anchor="start">REDIS 7 :6379  → ĐƯỜNG DỮ LIỆU CỤ THỂ</text>
+<text x="2070" y="1227" font-family="Arial, sans-serif" font-size="23" fill="#172538" font-weight="400" text-anchor="start">Tracking → latest position / TTL / cooldown.</text>
+<text x="2070" y="1262" font-family="Arial, sans-serif" font-size="23" fill="#172538" font-weight="400" text-anchor="start">SSE nhiều replica: fan-out qua Redis Pub/Sub; snapshot từ DB.</text>
+<rect x="60" y="1320" width="52" height="36" rx="10" fill="#7850ad0c" stroke="#7850ad" stroke-width="1"/>
+<text x="86.0" y="1345" font-family="Arial, sans-serif" font-size="19" fill="#7850ad" font-weight="700" text-anchor="middle">02</text>
+<text x="130" y="1345" font-family="Arial, sans-serif" font-size="28" fill="#172538" font-weight="700" text-anchor="start">LUỒNG GIAO TIẾP &amp; TÍCH HỢP</text>
+<text x="3140" y="1345" font-family="Arial, sans-serif" font-size="21" fill="#56677b" font-weight="400" text-anchor="end">Kế thừa domain hiện có • bổ sung độ bền và khả năng phục hồi</text>
+<rect x="60" y="1372" width="1000" height="370" rx="16" fill="#fffcf7" stroke="#bb7012" stroke-width="2"/>
+<text x="90" y="1418" font-family="Arial, sans-serif" font-size="26" fill="#bb7012" font-weight="700" text-anchor="start">ĐIỀU PHỐI ĐỒNG BỘ • REST / FEIGN</text>
+<rect x="90" y="1480" width="215" height="36" rx="10" fill="#bb70120c" stroke="#bb7012" stroke-width="1"/>
+<text x="197.5" y="1505" font-family="Arial, sans-serif" font-size="19" fill="#bb7012" font-weight="700" text-anchor="middle">Shipment</text>
+<rect x="370" y="1480" width="180" height="36" rx="10" fill="#bb70120c" stroke="#bb7012" stroke-width="1"/>
+<text x="460.0" y="1505" font-family="Arial, sans-serif" font-size="19" fill="#bb7012" font-weight="700" text-anchor="middle">Asset</text>
+<rect x="615" y="1480" width="180" height="36" rx="10" fill="#bb70120c" stroke="#bb7012" stroke-width="1"/>
+<text x="705.0" y="1505" font-family="Arial, sans-serif" font-size="19" fill="#bb7012" font-weight="700" text-anchor="middle">Routing</text>
+<rect x="860" y="1480" width="170" height="36" rx="10" fill="#bb70120c" stroke="#bb7012" stroke-width="1"/>
+<text x="945.0" y="1505" font-family="Arial, sans-serif" font-size="19" fill="#bb7012" font-weight="700" text-anchor="middle">Tracking</text>
+<path d="M305,1498 L338,1498 L338,1468 L945,1468" fill="none" stroke="#bb7012" stroke-width="2.5" stroke-linejoin="round"/>
+<path d="M460,1468 L460,1478" fill="none" stroke="#bb7012" stroke-width="1.5" stroke-linejoin="round" marker-end="url(#abb7012)"/>
+<path d="M705,1468 L705,1478" fill="none" stroke="#bb7012" stroke-width="1.5" stroke-linejoin="round" marker-end="url(#abb7012)"/>
+<path d="M945,1468 L945,1478" fill="none" stroke="#bb7012" stroke-width="1.5" stroke-linejoin="round" marker-end="url(#abb7012)"/>
+<text x="90" y="1562" font-family="Arial, sans-serif" font-size="23" fill="#172538" font-weight="400" text-anchor="start">Trình tự UC06: kiểm tra/khóa xe → xác minh tuyến → tạo Trip.</text>
+<text x="90" y="1610" font-family="Arial, sans-serif" font-size="23" fill="#172538" font-weight="400" text-anchor="start">F3 → Bổ sung reservation nguyên tử + idempotency key.</text>
+<text x="90" y="1648" font-family="Arial, sans-serif" font-size="23" fill="#172538" font-weight="400" text-anchor="start">Lưu từng bước Saga; worker tiếp tục sau crash.</text>
+<text x="90" y="1686" font-family="Arial, sans-serif" font-size="23" fill="#172538" font-weight="400" text-anchor="start">Bù trừ retry đến khi xong; không đánh dấu xong nếu còn lỗi.</text>
+<rect x="1100" y="1372" width="1040" height="370" rx="16" fill="#fcf9ff" stroke="#7850ad" stroke-width="2"/>
+<g transform="translate(1128 1390) scale(0.8)" fill="none" stroke="#7850ad" stroke-width="3.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="28" r="7"/><circle cx="18" cy="7" r="5"/><circle cx="18" cy="49" r="5"/><circle cx="43" cy="15" r="5"/><circle cx="43" cy="41" r="5"/><path d="M18 12v9M18 35v9M24 24l15-7M24 32l15 7"/></g>
+<text x="1195" y="1418" font-family="Arial, sans-serif" font-size="28" fill="#7850ad" font-weight="700" text-anchor="start">APACHE KAFKA :9092</text>
+<text x="1128" y="1460" font-family="Arial, sans-serif" font-size="23" fill="#172538" font-weight="400" text-anchor="start">F2 → Outbox nguyên tử → relay có ACK → Kafka</text>
+<rect x="1128" y="1491" width="260" height="36" rx="10" fill="#7850ad0c" stroke="#7850ad" stroke-width="1"/>
+<text x="1258.0" y="1516" font-family="Arial, sans-serif" font-size="19" fill="#7850ad" font-weight="700" text-anchor="middle">Outbox producers</text>
+<rect x="1475" y="1491" width="195" height="36" rx="10" fill="#7850ad0c" stroke="#7850ad" stroke-width="1"/>
+<text x="1572.5" y="1516" font-family="Arial, sans-serif" font-size="19" fill="#7850ad" font-weight="700" text-anchor="middle">Kafka</text>
+<rect x="1758" y="1491" width="350" height="36" rx="10" fill="#7850ad0c" stroke="#7850ad" stroke-width="1"/>
+<text x="1933.0" y="1516" font-family="Arial, sans-serif" font-size="19" fill="#7850ad" font-weight="700" text-anchor="middle">Notification / Carbon</text>
+<path d="M1388,1509 L1465,1509" fill="none" stroke="#7850ad" stroke-width="2.5" stroke-linejoin="round" stroke-dasharray="10 7" marker-end="url(#a7850ad)"/>
+<path d="M1670,1509 L1748,1509" fill="none" stroke="#7850ad" stroke-width="2.5" stroke-linejoin="round" stroke-dasharray="10 7" marker-end="url(#a7850ad)"/>
+<text x="1128" y="1570" font-family="Arial, sans-serif" font-size="23" fill="#172538" font-weight="400" text-anchor="start">Event ID • consumer inbox / dedup bền vững.</text>
+<text x="1128" y="1609" font-family="Arial, sans-serif" font-size="23" fill="#172538" font-weight="400" text-anchor="start">Retry / backoff • DLQ + replay; commit sau xử lý.</text>
+<text x="1128" y="1648" font-family="Arial, sans-serif" font-size="23" fill="#172538" font-weight="400" text-anchor="start">GPS thô tách khỏi outbox nghiệp vụ; giới hạn theo tải.</text>
+<text x="1128" y="1687" font-family="Arial, sans-serif" font-size="23" fill="#172538" font-weight="400" text-anchor="start">Production cần HA: 3 broker, RF=3; MVP giữ 1 broker.</text>
+<rect x="2180" y="1372" width="960" height="370" rx="16" fill="#f7fbff" stroke="#1772b4" stroke-width="2"/>
+<text x="2210" y="1418" font-family="Arial, sans-serif" font-size="26" fill="#1772b4" font-weight="700" text-anchor="start">EXTERNAL / CLIENT STATE</text>
+<text x="2210" y="1464" font-family="Arial, sans-serif" font-size="23" fill="#172538" font-weight="400" text-anchor="start">OSRM có timeout; ghi rõ chất lượng dữ liệu / mock.</text>
+<text x="2210" y="1503" font-family="Arial, sans-serif" font-size="23" fill="#172538" font-weight="400" text-anchor="start">VNPay webhook có chữ ký + idempotency / đối soát.</text>
+<text x="2210" y="1542" font-family="Arial, sans-serif" font-size="23" fill="#172538" font-weight="400" text-anchor="start">Brevo: giữ durable inbox + evidence SHA-256.</text>
+<text x="2210" y="1581" font-family="Arial, sans-serif" font-size="23" fill="#172538" font-weight="400" text-anchor="start">F4 → Object storage cho ảnh POD / chứng từ.</text>
+<text x="2210" y="1620" font-family="Arial, sans-serif" font-size="23" fill="#172538" font-weight="400" text-anchor="start">Hub Shipper / Carbon / Payment → signed upload.</text>
+<text x="2210" y="1659" font-family="Arial, sans-serif" font-size="23" fill="#172538" font-weight="400" text-anchor="start">F5 → Auth, chat, payment lấy backend làm nguồn thật.</text>
+<text x="2210" y="1698" font-family="Arial, sans-serif" font-size="23" fill="#172538" font-weight="400" text-anchor="start">Local storage chỉ cache; demo/offline có nhãn riêng.</text>
+<rect x="60" y="1770" width="52" height="36" rx="10" fill="#7850ad0c" stroke="#7850ad" stroke-width="1"/>
+<text x="86.0" y="1795" font-family="Arial, sans-serif" font-size="19" fill="#7850ad" font-weight="700" text-anchor="middle">03</text>
+<text x="130" y="1795" font-family="Arial, sans-serif" font-size="28" fill="#172538" font-weight="700" text-anchor="start">ƯU TIÊN KHẮC PHỤC TỪ REVIEW</text>
+<text x="3140" y="1795" font-family="Arial, sans-serif" font-size="21" fill="#56677b" font-weight="400" text-anchor="end">Các ô F1–F6 tương ứng trực tiếp giữa hai sơ đồ</text>
+<rect x="60" y="1822" width="1000" height="125" rx="12" fill="#f7fcf8" stroke="#238449" stroke-width="1.5"/>
+<rect x="76" y="1837" width="50" height="36" rx="10" fill="#2384490c" stroke="#238449" stroke-width="1"/>
+<text x="101.0" y="1862" font-family="Arial, sans-serif" font-size="19" fill="#238449" font-weight="700" text-anchor="middle">F1</text>
+<text x="142" y="1862" font-family="Arial, sans-serif" font-size="25" fill="#238449" font-weight="700" text-anchor="start">TÁCH QUYỀN SỞ HỮU DỮ LIỆU</text>
+<text x="80" y="1899" font-family="Arial, sans-serif" font-size="22" fill="#172538" font-weight="400" text-anchor="start">Schema/role riêng → loại JOIN xuyên domain.</text>
+<text x="80" y="1931" font-family="Arial, sans-serif" font-size="22" fill="#172538" font-weight="400" text-anchor="start">Hub/manifest có một owner; service khác dùng API/event.</text>
+<rect x="1100" y="1822" width="1000" height="125" rx="12" fill="#f7fcf8" stroke="#238449" stroke-width="1.5"/>
+<rect x="1116" y="1837" width="50" height="36" rx="10" fill="#2384490c" stroke="#238449" stroke-width="1"/>
+<text x="1141.0" y="1862" font-family="Arial, sans-serif" font-size="19" fill="#238449" font-weight="700" text-anchor="middle">F2</text>
+<text x="1182" y="1862" font-family="Arial, sans-serif" font-size="25" fill="#238449" font-weight="700" text-anchor="start">BẢO ĐẢM SỰ KIỆN</text>
+<text x="1120" y="1899" font-family="Arial, sans-serif" font-size="22" fill="#172538" font-weight="400" text-anchor="start">Outbox cùng transaction nghiệp vụ; consumer inbox.</text>
+<text x="1120" y="1931" font-family="Arial, sans-serif" font-size="22" fill="#172538" font-weight="400" text-anchor="start">ACK, retry, DLQ/replay; không nuốt exception xử lý.</text>
+<rect x="2140" y="1822" width="1000" height="125" rx="12" fill="#f7fcf8" stroke="#238449" stroke-width="1.5"/>
+<rect x="2156" y="1837" width="50" height="36" rx="10" fill="#2384490c" stroke="#238449" stroke-width="1"/>
+<text x="2181.0" y="1862" font-family="Arial, sans-serif" font-size="19" fill="#238449" font-weight="700" text-anchor="middle">F3</text>
+<text x="2222" y="1862" font-family="Arial, sans-serif" font-size="25" fill="#238449" font-weight="700" text-anchor="start">PHỤC HỒI SAGA</text>
+<text x="2160" y="1899" font-family="Arial, sans-serif" font-size="22" fill="#172538" font-weight="400" text-anchor="start">Reserve tài nguyên nguyên tử, key chống lặp.</text>
+<text x="2160" y="1931" font-family="Arial, sans-serif" font-size="22" fill="#172538" font-weight="400" text-anchor="start">Step log, retry bù trừ, reconcile sau crash.</text>
+<rect x="60" y="1967" width="1000" height="125" rx="12" fill="#f7fcf8" stroke="#238449" stroke-width="1.5"/>
+<rect x="76" y="1982" width="50" height="36" rx="10" fill="#2384490c" stroke="#238449" stroke-width="1"/>
+<text x="101.0" y="2007" font-family="Arial, sans-serif" font-size="19" fill="#238449" font-weight="700" text-anchor="middle">F4</text>
+<text x="142" y="2007" font-family="Arial, sans-serif" font-size="25" fill="#238449" font-weight="700" text-anchor="start">LƯU TRỮ POD TẬP TRUNG</text>
+<text x="80" y="2044" font-family="Arial, sans-serif" font-size="22" fill="#172538" font-weight="400" text-anchor="start">S3-compatible + signed URL + access control.</text>
+<text x="80" y="2076" font-family="Arial, sans-serif" font-size="22" fill="#172538" font-weight="400" text-anchor="start">Metadata + checksum ở DB; retention / versioning.</text>
+<rect x="1100" y="1967" width="1000" height="125" rx="12" fill="#f7fcf8" stroke="#238449" stroke-width="1.5"/>
+<rect x="1116" y="1982" width="50" height="36" rx="10" fill="#2384490c" stroke="#238449" stroke-width="1"/>
+<text x="1141.0" y="2007" font-family="Arial, sans-serif" font-size="19" fill="#238449" font-weight="700" text-anchor="middle">F5</text>
+<text x="1182" y="2007" font-family="Arial, sans-serif" font-size="25" fill="#238449" font-weight="700" text-anchor="start">NGUỒN DỮ LIỆU THỐNG NHẤT</text>
+<text x="1120" y="2044" font-family="Arial, sans-serif" font-size="22" fill="#172538" font-weight="400" text-anchor="start">Backend quản lý auth, chat, payment nghiệp vụ.</text>
+<text x="1120" y="2076" font-family="Arial, sans-serif" font-size="22" fill="#172538" font-weight="400" text-anchor="start">Offline/demo tách riêng; không coi token giả là JWT.</text>
+<rect x="2140" y="1967" width="1000" height="125" rx="12" fill="#f7fcf8" stroke="#238449" stroke-width="1.5"/>
+<rect x="2156" y="1982" width="50" height="36" rx="10" fill="#2384490c" stroke="#238449" stroke-width="1"/>
+<text x="2181.0" y="2007" font-family="Arial, sans-serif" font-size="19" fill="#238449" font-weight="700" text-anchor="middle">F6</text>
+<text x="2222" y="2007" font-family="Arial, sans-serif" font-size="25" fill="#238449" font-weight="700" text-anchor="start">BẢO MẬT &amp; VẬN HÀNH</text>
+<text x="2160" y="2044" font-family="Arial, sans-serif" font-size="22" fill="#172538" font-weight="400" text-anchor="start">DNS nội bộ, JWT/service identity, secret manager.</text>
+<text x="2160" y="2076" font-family="Arial, sans-serif" font-size="22" fill="#172538" font-weight="400" text-anchor="start">OTel / metrics / logs; giám sát Saga, lag và outbox.</text>
+<rect x="60" y="2140" width="3080" height="89" rx="10" fill="#fbfcfe" stroke="#bdc8d4" stroke-width="1"/>
+<path d="M88,2170 L150,2170" fill="none" stroke="#172538" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#a172538)"/>
+<text x="170" y="2177" font-family="Arial, sans-serif" font-size="21" fill="#172538" font-weight="400" text-anchor="start">REST / Feign đồng bộ</text>
+<path d="M520,2170 L582,2170" fill="none" stroke="#7850ad" stroke-width="2.5" stroke-linejoin="round" stroke-dasharray="10 7" marker-end="url(#a7850ad)"/>
+<text x="602" y="2177" font-family="Arial, sans-serif" font-size="21" fill="#172538" font-weight="400" text-anchor="start">Kafka bất đồng bộ</text>
+<text x="980" y="2177" font-family="Arial, sans-serif" font-size="21" fill="#238449" font-weight="700" text-anchor="start">F1–F6: review / hướng khắc phục</text>
+<text x="3098" y="2177" font-family="Arial, sans-serif" font-size="21" fill="#56677b" font-weight="400" text-anchor="end">TO-BE: thiết kế đề xuất • không phải trạng thái đã triển khai</text>
+<text x="88" y="2211" font-family="Arial, sans-serif" font-size="19" fill="#56677b" font-weight="400" text-anchor="start">Căn cứ: backend/pom.xml • application.yaml • TripRepository • Saga / relay / Kafka listener • frontend state • docker-compose.yml • dev-start.sh</text>
+<text x="3140" y="2260" font-family="Arial, sans-serif" font-size="18" fill="#56677b" font-weight="700" text-anchor="end">CCADRO  /  ARCHITECTURE REVIEW</text>
+</svg>

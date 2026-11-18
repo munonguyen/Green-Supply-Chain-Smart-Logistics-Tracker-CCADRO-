@@ -1,0 +1,4282 @@
+{
+  "reviewedAt": "2026-11-17T13:26:20.648Z",
+  "diagnosticCorsBypass": true,
+  "reason": "Normal browser login fails CORS credentials include + wildcard origin; see login-baseline-observations.json",
+  "routes": [
+    {
+      "name": "01-dashboard",
+      "path": "/portal",
+      "title": "CCADRO | Hệ Thống Quản Trị Chuỗi Cung Ứng & Vận Tải Xanh",
+      "headings": [
+        "CCADRO",
+        "Trung Tâm Giám Sát & Điều Hành NOC",
+        "Trung Tâm Giám Sát Toàn Hệ Thống • Quản Trị Viên Hệ Thống (Root Admin)",
+        "Dashboard Đánh Giá Hiệu Suất Chuỗi Cung Ứng Xanh CCADRO",
+        "Bản Đồ Vệ Tinh 3D Giám Sát Toàn Đội Xe Thời Gian Thực (Google Hybrid 3D)",
+        "Bảng Điều Hành & Giám Sát Toàn Hệ Thống (Admin Control Center)"
+      ],
+      "buttons": [
+        {
+          "text": "",
+          "title": "Thu gọn thanh bên"
+        },
+        {
+          "text": "QA\nQuản Trị Viên Hệ Thống (Root Admin)\nADMIN\n• @admin",
+          "title": "Xem hồ sơ & cài đặt tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Cài đặt tài khoản & hệ thống"
+        },
+        {
+          "text": "",
+          "title": "Đăng xuất"
+        },
+        {
+          "text": "",
+          "title": "Thu gọn thanh bên"
+        },
+        {
+          "text": "Phát Cảnh Báo",
+          "title": "Phát cảnh báo khẩn cấp tới đội xe & trung tâm điều phối"
+        },
+        {
+          "text": "Messenger",
+          "title": "Mở CCADRO Messenger (Chat đa người & nhóm)"
+        },
+        {
+          "text": "Khẩn Cấp\n2",
+          "title": "Trung tâm thông báo & cảnh báo khẩn cấp"
+        },
+        {
+          "text": "",
+          "title": "Chuyển sang giao diện Sáng"
+        },
+        {
+          "text": "",
+          "title": "Cài đặt tài khoản & nghiệp vụ theo vai trò"
+        },
+        {
+          "text": "QA",
+          "title": ""
+        },
+        {
+          "text": "Làm Mới Real-time",
+          "title": ""
+        },
+        {
+          "text": "Quản Lý User & Công Ty",
+          "title": ""
+        },
+        {
+          "text": "Tạo Vận Đơn Mới",
+          "title": ""
+        },
+        {
+          "text": "Tổng Quan & Chẩn Đoán",
+          "title": ""
+        },
+        {
+          "text": "Vận Hành & Đội Xe",
+          "title": ""
+        },
+        {
+          "text": "Carbon GLEC v3",
+          "title": ""
+        },
+        {
+          "text": "Tài Chính Net-30 & IAM",
+          "title": ""
+        },
+        {
+          "text": "Xem Định mức Carbon UC13",
+          "title": ""
+        },
+        {
+          "text": "Đang đồng bộ GPS...",
+          "title": ""
+        },
+        {
+          "text": "Bám theo xe V001",
+          "title": ""
+        },
+        {
+          "text": "Vệ Tinh 3D",
+          "title": ""
+        },
+        {
+          "text": "Google Maps",
+          "title": ""
+        },
+        {
+          "text": "Địa Hình 3D",
+          "title": ""
+        },
+        {
+          "text": "Radar Đêm",
+          "title": ""
+        },
+        {
+          "text": "Chế độ 3D: BẬT",
+          "title": "Chuyển đổi góc nhìn 3D / 2D"
+        },
+        {
+          "text": "Góc nghiêng 38°",
+          "title": "Thay đổi độ nghiêng 3D (Pitch)"
+        },
+        {
+          "text": "↺ Xoay trái",
+          "title": "Xoay trái góc nhìn 3D"
+        },
+        {
+          "text": "↻ Xoay phải",
+          "title": "Xoay phải góc nhìn 3D"
+        },
+        {
+          "text": "Đặt lại",
+          "title": "Đặt lại trung tâm bản đồ"
+        },
+        {
+          "text": "Mở rộng",
+          "title": "Mở rộng bản đồ"
+        },
+        {
+          "text": "Vận Đơn (5)",
+          "title": ""
+        },
+        {
+          "text": "Đội Xe & Telemetry (0)",
+          "title": ""
+        },
+        {
+          "text": "Công Ty & Net-30 (5)",
+          "title": ""
+        },
+        {
+          "text": "Cảnh Báo & Sự Cố (0)",
+          "title": ""
+        },
+        {
+          "text": "IAM & Bảo Mật (13)",
+          "title": ""
+        },
+        {
+          "text": "Lập Tuyến",
+          "title": ""
+        },
+        {
+          "text": "Lập Tuyến",
+          "title": ""
+        },
+        {
+          "text": "Lập Tuyến",
+          "title": ""
+        },
+        {
+          "text": "Lập Tuyến",
+          "title": ""
+        },
+        {
+          "text": "Lập Tuyến",
+          "title": ""
+        },
+        {
+          "text": "Đi tới Trung tâm Kiểm định An toàn & Sự cố (UC01 / UC16)",
+          "title": ""
+        }
+      ],
+      "nav": [
+        {
+          "text": "Trang Chủ Website",
+          "href": "/"
+        },
+        {
+          "text": "Trung Tâm Giám Sát",
+          "href": "/portal"
+        },
+        {
+          "text": "Quản Lý Vận Đơn",
+          "href": "/shipments"
+        },
+        {
+          "text": "Tạo Đơn Hàng Mới",
+          "href": "/shipments/new"
+        },
+        {
+          "text": "Điều Phối & Xuất Bến",
+          "href": "/dispatch/c0000000-0000-0000-0000-000000000001"
+        },
+        {
+          "text": "Giám Sát GPS & Lệch Tuyến",
+          "href": "/trips/f0000000-0000-0000-0000-000000000001"
+        },
+        {
+          "text": "Đa Mục Tiêu Pareto (UC05)",
+          "href": "/planning/c0000000-0000-0000-0000-000000000001"
+        },
+        {
+          "text": "Kiểm Toán GLEC v3 (UC12)",
+          "href": "/trips/f0000000-0000-0000-0000-000000000001/carbon"
+        },
+        {
+          "text": "Định Mức Hành Lang (UC13)",
+          "href": "/analytics/benchmark"
+        },
+        {
+          "text": "Quản Lý User & Công Ty",
+          "href": "/admin/users"
+        },
+        {
+          "text": "Quản Trị IAM & An Toàn",
+          "href": "/governance"
+        },
+        {
+          "text": "Cổng Xác Thực IAM",
+          "href": "/login"
+        }
+      ],
+      "mainText": "QUẢN TRỊ HỆ THỐNG • ROOT ADMIN\nTrung Tâm Giám Sát & Điều Hành NOC\nTrực tuyến\nKhông gian 3D\nPhát Cảnh Báo\nMessenger\nKhẩn Cấp\n2\nQA\nADMIN\nVị trí đội xe: Cập nhật định kỳ\nCảnh báo khẩn: Cập nhật định kỳ\nĐồng bộ lúc: 20:26:23\nTrung Tâm Giám Sát Toàn Hệ Thống • Quản Trị Viên Hệ Thống (Root Admin)\n\nTheo dõi vận đơn, đội xe, an toàn hành trình, phát thải carbon, công nợ và hoạt động giao nhận.\n\nLàm Mới Real-time\nQuản Lý User & Công Ty\nTạo Vận Đơn Mới\nVẬN ĐƠN HOÀN TẤT\n2\nTrong tổng số 5 vận đơn\nVẬN ĐƠN & CHUYẾN THỰC TẾ\n5\n0 xe đang phát GPS • 0 chuyến vận chuyển\nHẠM ĐỘI & SMART CONTAINER\n0 Xe\n0 Cont IoT • 0 kiện Hub 3PL\nCẢNH BÁO, SỰ CỐ & IAM KHÓA\n0\nCảnh báo\n0 sự cố UC16 • 0 tài khoản khóa\nHỆ THỐNG CHẤM ĐIỂM & ĐÁNH GIÁ NGHIỆP VỤ REAL-TIME\nDashboard Đánh Giá Hiệu Suất Chuỗi Cung Ứng Xanh CCADRO\n\nTổng hợp trực tiếp từ Vận đơn, Đội xe, Telemetry GPS, Carbon GLEC v3, Công nợ B2B Net-30 & Hồ sơ Công ty / IAM\n\nTổng Quan & Chẩn Đoán\nVận Hành & Đội Xe\nCarbon GLEC v3\nTài Chính Net-30 & IAM\n83\nCCADRO Index\nAA • VẬN HÀNH TỐT\nChỉ Số Sẵn Sàng Hệ Thống\nChuẩn mục tiêu doanh nghiệp: ≥ 85 / 100 (Đường nét đứt xanh lam)\nVận hành (47)\nAn toàn (100)\nCarbon GLEC (83)\nTài chính (90)\nHub & IAM (95)\nChấm Điểm 5 Trụ Cột Nghiệp Vụ Cốt Lõi\nĐiều Phối & SLA Vận Đơn\n47/100\n3 đang chạy • 2 hoàn tất • 0 chờ xuất bến\nAn Toàn Hành Lang & Pre-Trip\n100/100\n0 lệch đỏ (>200m) • 0 cảnh báo chờ ACK\nXanh Hóa & Carbon GLEC v3\n83/100\nCắt giảm ~110.7 kg CO2e • 0/1 xe EV\nTín Dụng Net-30 & Pháp Lý KYC\n90/100\n5/5 công ty VERIFIED • 78% thu hồi\nBảo Mật IAM & e-Seal 3PL\n0/100\n13/13 user hoạt động • 0/1 Seal khóa\nChẩn Đoán Điểm Nghẽn & Hành Động\nToàn bộ 5 trụ cột nghiệp vụ đạt ngưỡng ổn định — Không phát hiện điểm nghẽn tồn đọng.\nXem Định mức Carbon UC13\nĐỊNH VỊ VỆ TINH GPS & GÓC NHÌN 3D TRỰC TUYẾN\nCHỜ KẾT NỐI TRACKING SERVICE (:8084)\nBản Đồ Vệ Tinh 3D Giám Sát Toàn Đội Xe Thời Gian Thực (Google Hybrid 3D)\nĐang đồng bộ GPS...\nBám theo xe V001\nV001 (51C-888.99) • SHP-2026-0001\nCảng Cát Lái, TP.HCM → KCN VSIP 1, Bình Dương • Còn 16.8 km\nLớp bản đồ:\nVệ Tinh 3D\nGoogle Maps\nĐịa Hình 3D\nRadar Đêm\nChế độ 3D: BẬT\nGóc nghiêng 38°\n↺ Xoay trái\n↻ Xoay phải\nĐặt lại\nMở rộng\nĐIỂM ĐI: Cảng Cát Lái, TP.HCM\nĐIỂM ĐẾN: KCN VSIP 1, Bình Dương\nV001 • 54 km/h\nV002 • 62 km/h\nV003 • 50 km/h\n+\n−\n Leaflet | © Google Maps Satellite Hybrid\nPHƯƠNG TIỆN ĐANG DI CHUYỂN (3)\nV001 • 51C-888.99\n54 km/h\nCảng Cát Lái, TP.HCM → KCN VSIP 1, Bình Dương\nTiến độ: 42%\nETA: Khoảng 19 phút\nV002 • 51D-686.88\n62 km/h\nICD Sóng Thần, Bình Dương → Cảng Cái Mép - Thị Vải\nTiến độ: 58%\nETA: Khoảng 28 phút\nV003 • 61C-339.79\n50 km/h\nICD Sóng Thần, Bình Dương → Cảng Hiệp Phước, Nhà Bè\nTiến độ: 76%\nETA: Khoảng 10 phút\nThông số Telemetry: V001\nTài xế phụ trách\nNguyễn Văn Tài\nNhiệt độ thùng hàng\n-18.2°C\nTọa độ GPS\n10.8233, 106.7139\nCO2e cắt giảm\n-14.8 kg\nĐịnh Mức Phát Thải Hành Lang GLEC v3 (UC13)\nTính toán chuẩn GLEC v3 từ danh sách Vận đơn hiện hành\nThực Tế (kgCO2e)\nĐịnh Mức Diesel\n0 kg\n30 kg\n60 kg\n90 kg\n120 kg\nCảng Cát Lái → ICD Sóng Thần\n18.6 km\nCảng Cát Lái → Cụm Cảng Cái Mép – Thị Vải\n67.4 km\nKCN Tân Bình → KCN VSIP 1\n24.2 km\nCảng Container Hiệp Phước → KCN Nhơn Trạch\n39.8 km\nTrung bình 4 hành lang: Cắt giảm -32.1% CO2e (Chuẩn GLEC v3)\n-32.1%\nPhân Bổ Hạm Đội & Kiểm Soát Tải Trọng (BRULE-01)\nTrạng thái trực ban hạm đội, chuẩn khí thải Euro 5 và Van điện EV\n100% Đạt Chuẩn Pre-Trip\n0\nTỔNG ĐỘI XE\nĐang Lưu Thông (In-Transit)\n0 Phương tiện • 0%\nSẵn Sàng Xuất Bến (Available)\n0 Phương tiện • 0%\nBảo Dưỡng & Khám Xe (UC01)\n0 Phương tiện • 0%\nHiệu Suất Vận Hành & Rủi Ro Hành Lang (UC10)\nTổng hợp theo danh sách Vận đơn (chờ Telemetry GPS thực từ :8888)\nChờ GPS DB\nCảng Cát Lái → ICD Sóng Thần• Đang khai thác trên hành lang\nTốc độ: --\nEco: 0/100\nCảng Cát Lái → Cụm Cảng Cái Mép – Thị Vải• Đang khai thác trên hành lang\nTốc độ: --\nEco: 0/100\nKCN Tân Bình → KCN VSIP 1• Đang khai thác trên hành lang\nTốc độ: --\nEco: 0/100\nCảng Container Hiệp Phước → KCN Nhơn Trạch• Hoàn tất bàn giao ePOD\nTốc độ: --\nEco: 0/100\nGiám Sát Độ Lệch Tuyến & Sự Cố (UC09 / UC10)\nTổng hợp từ vị trí đội xe, sự cố và cảnh báo hành trình\nChờ Telemetry\nChưa có bản ghi độ lệch hành lang hoặc sự cố nào từ Tracking / Incident Service.\nBảng Điều Hành & Giám Sát Toàn Hệ Thống (Admin Control Center)\n\nTheo dõi và quản lý dữ liệu vận hành mới nhất\n\nVận Đơn (5)\nĐội Xe & Telemetry (0)\nCông Ty & Net-30 (5)\nCảnh Báo & Sự Cố (0)\nIAM & Bảo Mật (13)\nMÃ VẬN ĐƠN\tCHỦ HÀNG (B2B)\tĐIỂM XUẤT PHÁT\tĐIỂM ĐẾN\tTẢI TRỌNG\tTRẠNG THÁI\tGIÁM SÁT\nSHP-2026-8192\tDOANH_NGHIEP_B2B\tCảng Cát Lái, TP. Thủ Đức\tICD Sóng Thần, Dĩ An, Bình Dương\t18.5 tấn\tIN_TRANSIT\t\nLập Tuyến\n\nSHP-2026-4920\tDOANH_NGHIEP_B2B\tCảng Cát Lái, TP. Thủ Đức\tCụm Cảng Cái Mép – Thị Vải, BR-VT\t14 tấn\tIN_TRANSIT\t\nLập Tuyến\n\nSHP-2026-8219\tDOANH_NGHIEP_B2B\tKCN Tân Bình, Q. Tân Phú\tKCN VSIP 1, Thuận An, Bình Dương\t20 tấn\tIN_TRANSIT\t\nLập Tuyến\n\nSHP-2026-6192\tDOANH_NGHIEP_B2B\tCảng Container Hiệp Phước, Nhà Bè\tKCN Nhơn Trạch, Đồng Nai\t22 tấn\tCOMPLETED\t\nLập Tuyến\n\nSHP-2026-3301\tDOANH_NGHIEP_B2B\tCụm Cảng Cái Mép – Thị Vải\tKCN VSIP 2 & TP. Mới Bình Dương\t25 tấn\tCOMPLETED\t\nLập Tuyến\nĐi tới Trung tâm Kiểm định An toàn & Sự cố (UC01 / UC16)",
+      "viewport": {
+        "width": 1440,
+        "documentWidth": 1440
+      },
+      "inputs": [],
+      "selects": []
+    },
+    {
+      "name": "02-users",
+      "path": "/admin/users",
+      "title": "CCADRO | Hệ Thống Quản Trị Chuỗi Cung Ứng & Vận Tải Xanh",
+      "headings": [
+        "CCADRO",
+        "Quản Lý User, Hồ Sơ Chi Tiết & Phân Quyền IAM",
+        "Hệ Thống Quản Trị Tài Khoản, Phân Quyền (IAM) & An Toàn Đội Xe",
+        "Danh Sách Tài Khoản Hệ Thống (13)",
+        "Khởi Tạo Tài Khoản Nội Bộ & Phân Quyền (Dành Cho ADMIN)"
+      ],
+      "buttons": [
+        {
+          "text": "",
+          "title": "Thu gọn thanh bên"
+        },
+        {
+          "text": "QA\nQuản Trị Viên Hệ Thống (Root Admin)\nADMIN\n• @admin",
+          "title": "Xem hồ sơ & cài đặt tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Cài đặt tài khoản & hệ thống"
+        },
+        {
+          "text": "",
+          "title": "Đăng xuất"
+        },
+        {
+          "text": "",
+          "title": "Thu gọn thanh bên"
+        },
+        {
+          "text": "Phát Cảnh Báo",
+          "title": "Phát cảnh báo khẩn cấp tới đội xe & trung tâm điều phối"
+        },
+        {
+          "text": "Messenger",
+          "title": "Mở CCADRO Messenger (Chat đa người & nhóm)"
+        },
+        {
+          "text": "Khẩn Cấp\n4",
+          "title": "Trung tâm thông báo & cảnh báo khẩn cấp"
+        },
+        {
+          "text": "",
+          "title": "Chuyển sang giao diện Sáng"
+        },
+        {
+          "text": "",
+          "title": "Cài đặt tài khoản & nghiệp vụ theo vai trò"
+        },
+        {
+          "text": "QA",
+          "title": ""
+        },
+        {
+          "text": "🔐 Quản Lý Tài Khoản & Phân Quyền (Admin IAM)",
+          "title": ""
+        },
+        {
+          "text": "🛠️ Kiểm Tra An Toàn 6 Hạng Mục (UC01)",
+          "title": ""
+        },
+        {
+          "text": "🚨 Báo Cáo Sự Cố & Điểm Phạt (UC16-18)",
+          "title": ""
+        },
+        {
+          "text": "Quản Lý User & Hồ Sơ Chi Tiết (13)",
+          "title": ""
+        },
+        {
+          "text": "Quản Lý Công Ty & Đối Tác B2B (5)",
+          "title": ""
+        },
+        {
+          "text": "Tất cả (13)",
+          "title": ""
+        },
+        {
+          "text": "Nội bộ (5)",
+          "title": ""
+        },
+        {
+          "text": "Khách hàng (1)",
+          "title": ""
+        },
+        {
+          "text": "Shipper 3PL (7)",
+          "title": ""
+        },
+        {
+          "text": "Đã xóa mềm (0)",
+          "title": "Xem các mục đã xóa mềm & khôi phục"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "48/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "11/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "6/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "4/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "8/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "10/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "9/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "12/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "12/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "9/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "9/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "9/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "6/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Khởi Tạo Tài Khoản & Áp Dụng Phân Quyền",
+          "title": ""
+        }
+      ],
+      "nav": [
+        {
+          "text": "Trang Chủ Website",
+          "href": "/"
+        },
+        {
+          "text": "Trung Tâm Giám Sát",
+          "href": "/portal"
+        },
+        {
+          "text": "Quản Lý Vận Đơn",
+          "href": "/shipments"
+        },
+        {
+          "text": "Tạo Đơn Hàng Mới",
+          "href": "/shipments/new"
+        },
+        {
+          "text": "Điều Phối & Xuất Bến",
+          "href": "/dispatch/c0000000-0000-0000-0000-000000000001"
+        },
+        {
+          "text": "Giám Sát GPS & Lệch Tuyến",
+          "href": "/trips/f0000000-0000-0000-0000-000000000001"
+        },
+        {
+          "text": "Đa Mục Tiêu Pareto (UC05)",
+          "href": "/planning/c0000000-0000-0000-0000-000000000001"
+        },
+        {
+          "text": "Kiểm Toán GLEC v3 (UC12)",
+          "href": "/trips/f0000000-0000-0000-0000-000000000001/carbon"
+        },
+        {
+          "text": "Định Mức Hành Lang (UC13)",
+          "href": "/analytics/benchmark"
+        },
+        {
+          "text": "Quản Lý User & Công Ty",
+          "href": "/admin/users"
+        },
+        {
+          "text": "Quản Trị IAM & An Toàn",
+          "href": "/governance"
+        },
+        {
+          "text": "Cổng Xác Thực IAM",
+          "href": "/login"
+        }
+      ],
+      "mainText": "QUẢN TRỊ HỆ THỐNG • ROOT ADMIN\nQuản Lý User, Hồ Sơ Chi Tiết & Phân Quyền IAM\nTrực tuyến\nKhông gian 3D\nPhát Cảnh Báo\nMessenger\nKhẩn Cấp\n4\nQA\nHệ Thống Quản Trị Tài Khoản, Phân Quyền (IAM) & An Toàn Đội Xe\n\nQuản lý danh sách tài khoản toàn hệ thống, khởi tạo tài khoản cho các Role nội bộ, gán quyền RBAC chi tiết & giám sát an toàn kỹ thuật (UC01 / UC16)\n\n🔐 Quản Lý Tài Khoản & Phân Quyền (Admin IAM)\n🛠️ Kiểm Tra An Toàn 6 Hạng Mục (UC01)\n🚨 Báo Cáo Sự Cố & Điểm Phạt (UC16-18)\nTỔNG TÀI KHOẢN HỆ THỐNG\n13\nĐịnh danh tập trung IAM\nNHÂN SỰ NỘI BỘ (ADMIN CẤP)\n5\nKhởi tạo & phân quyền bởi ADMIN\nTÀI KHOẢN KHÁCH HÀNG (USER)\n1\nTự đăng ký (/register) hoặc Admin cấp\nDOANH NGHIỆP & ĐỐI TÁC\n5\nHồ sơ B2B • MST • Hạn mức Net-30\nQuản Lý User & Hồ Sơ Chi Tiết (13)\nQuản Lý Công Ty & Đối Tác B2B (5)\nDanh Sách Tài Khoản Hệ Thống (13)\n\nQuản trị viên có thể đổi Vai trò (Role), tùy chỉnh quyền chi tiết hoặc khóa/xóa tài khoản trực tiếp tại bảng này.\n\nTất cả (13)\nNội bộ (5)\nKhách hàng (1)\nShipper 3PL (7)\nElastic\nĐã xóa mềm (0)\nTÀI KHOẢN & LIÊN HỆ\tNGƯỜI DÙNG & CÔNG TY (MST)\tVAI TRÒ (PHÂN QUYỀN ROLE)\tQUYỀN & HỒ SƠ\tTRẠNG THÁI & QUẢN LÝ\n@admin\nadmin@ccadro.com\n📞 028 3888 9999\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tQuản Trị Viên Hệ Thống (Root Admin)\n🏢 CCADRO Green Logistics Corporation\nMã: CCADRO_CORE\n\tROOT ADMIN\t\nChi tiết User / Công ty\n48/48 quyền\n\t\nACTIVE\n\n@dispatcher\ndispatcher@ccadro.com\n📞 028 3888 8802\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tNguyễn Văn Nam (Điều Phối Trưởng)\n🏢 CCADRO Green Logistics Corporation\nMã: CCADRO_CORE\n\tDISPATCHER (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n11/48 quyền\n\t\nACTIVE\n\n@driver\ndriver@ccadro.com\n📞 0903 812 456\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tTrần Văn Tài (Tài Xế Trưởng)\n🏢 CCADRO Green Logistics Corporation\nMã: CCADRO_FLEET\n\tDRIVER (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n6/48 quyền\n\t\nACTIVE\n\n@auditor\nauditor@ccadro.com\n📞 028 3888 8804\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tLê Thị Kiểm Toán (GLEC v3 Auditor)\n🏢 CCADRO Green Logistics Corporation\nMã: CCADRO_AUDIT\n\tESG_AUDITOR (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n4/48 quyền\n\t\nACTIVE\n\n@safety\nsafety@ccadro.com\n📞 028 3888 8805\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tPhạm Văn An Toàn (Safety Manager)\n🏢 CCADRO Green Logistics Corporation\nMã: CCADRO_SAFETY\n\tSAFETY_MANAGER (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n8/48 quyền\n\t\nACTIVE\n\n@customer\ncustomer@ccadro.com\n📞 028 5415 5555\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tMinh Phú & Vinamilk B2B (Chủ Hàng)\nTrưởng nhóm Điều vận B2B\n🏢 CTCP Sữa Việt Nam (Vinamilk Logistics)\nMã: DOANH_NGHIEP_B2B • MST: 0300588569\n\tCUSTOMER (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n10/48 quyền\n\t\nACTIVE\n\n@shipper\nshipper-bn1@ccadro.com\n📞 0912 345 101\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tNguyễn Văn Toàn (Shipper Đình Bảng #1)\n🏢 Trụ sở Đình Bảng - Từ Sơn, Bắc Ninh\nMã: HUB_DINHBANG_BN\n\tHUB_SHIPPER (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n9/48 quyền\n\t\nACTIVE\n\n@hub_mgr_dinhbang\nhub-mgr-dinhbang@ccadro.com\n📞 0222 3841 999\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tTrần Minh Quang (Trưởng Trụ Sở Đình Bảng)\n🏢 Trụ sở Đình Bảng - Từ Sơn, Bắc Ninh\nMã: HUB_DINHBANG_BN\n\tHUB_MANAGER (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n12/48 quyền\n\t\nACTIVE\n\n@hub_mgr_amata\nhub-mgr-amata@ccadro.com\n📞 0251 3992 888\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tLê Hoàng Nam (Trưởng Trụ Sở Amata)\n🏢 Trụ sở Amata - Biên Hòa, Đồng Nai\nMã: HUB_AMATA_BH\n\tHUB_MANAGER (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n12/48 quyền\n\t\nACTIVE\n\n@shipper_bn2\nshipper-bn2@ccadro.com\n📞 0912 345 102\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tPhạm Thị Lan Anh (Shipper Đình Bảng #2)\n🏢 Trụ sở Đình Bảng - Từ Sơn, Bắc Ninh\nMã: HUB_DINHBANG_BN\n\tHUB_SHIPPER (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n9/48 quyền\n\t\nACTIVE\n\n@shipper_bn3\nshipper-bn3@ccadro.com\n📞 0912 345 103\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tNgô Đức Hải (Shipper Đình Bảng #3)\n🏢 Trụ sở Đình Bảng - Từ Sơn, Bắc Ninh\nMã: HUB_DINHBANG_BN\n\tHUB_SHIPPER (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n9/48 quyền\n\t\nACTIVE\n\n@shipper_amata\nshipper-amata@ccadro.com\n📞 0902 418 229\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tĐặng Quốc Bảo (Shipper Amata #101)\n🏢 Trụ sở Amata - Biên Hòa, Đồng Nai\nMã: HUB_AMATA_BH\n\tHUB_SHIPPER (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n9/48 quyền\n\t\nACTIVE\n\n@hub_inspector_bn\ninspector-bn@ccadro.com\n📞 0918 776 301\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tVũ Thu Hà (Kiểm Tra Viên Ảnh POD & SLA)\n🏢 Trụ sở Đình Bảng - Từ Sơn, Bắc Ninh\nMã: HUB_DINHBANG_BN\n\tHUB_AUDITOR (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n6/48 quyền\n\t\nACTIVE\nKhởi Tạo Tài Khoản Nội Bộ & Phân Quyền (Dành Cho ADMIN)\n\nHệ thống khóa cứng 7 vai trò hạt nhân (ADMIN, DISPATCHER, SAFETY_MANAGER, DRIVER, ESG_AUDITOR, CUSTOMER, SHIPPER) kèm 7 tài khoản gốc tương ứng. CUSTOMER đặt xe tại /customer, còn SHIPPER là đối tác kho/giao nhận điểm đích 3PL tại /shipper.\n\nTên đăng nhập (Username) *\nMật khẩu khởi tạo (≥ 3 ký tự) *\nHọ và tên nhân sự *\nEmail công vụ *\nGán Vai trò (Role Nội bộ / Hệ thống) *\nDISPATCHER — Điều phối viên NOC\nSAFETY_MANAGER — Trưởng ban An toàn\nDRIVER — Tài xế Vận tải\nESG_AUDITOR — Kiểm toán viên Carbon\nADMIN — Quản trị viên hệ thống\nCUSTOMER — Khách hàng / Chủ hàng B2B\nSHIPPER — Đối tác Điểm đích / Kho 3PL (Bên thứ 3)\nPhòng ban / Đơn vị trực thuộc\nSố điện thoại & Chức vụ\nGắn Công Ty / Đối Tác B2B\n-- Mặc định theo vai trò --\nCCADRO_INT — CCADRO Green Logistics Corporation\nVINAMILK — CTCP Sữa Việt Nam (Vinamilk Logistics)\nSAMSUNG_VN — Công ty TNHH Samsung Electronics Việt Nam\nHUB_DINHBANG_BN — Trung Tâm Phân Phối Đình Bảng - VSIP Bắc Ninh\nDHL_3PL — DHL Supply Chain Việt Nam (Đối tác 3PL)\nPhân quyền chi tiết cho tài khoản (11/48 quyền được cấp):\nLập lộ trình đa tiêu chí (UC05), phát lệnh điều xe (UC06), theo dõi GPS (UC09) & duyệt đổi tuyến động (UC10).\nUSER_MANAGE\nQuản lý & cấp phát tài khoản\nROLE_MANAGE\nPhân quyền vai trò (RBAC)\nVEHICLE_READ\nXem danh sách phương tiện\nVEHICLE_WRITE\nThêm / cập nhật phương tiện\nMAINTENANCE_MANAGE\nQuản lý bảo dưỡng phương tiện\nINSPECTION_SUBMIT\nGửi biên bản kiểm tra Pre-trip\nINSPECTION_REVIEW\nPhê duyệt kiểm định an toàn\nSHIPMENT_CREATE\nKhởi tạo vận đơn mới\nSHIPMENT_READ\nXem toàn bộ vận đơn hệ thống\nSHIPMENT_READ_OWN\nXem vận đơn của riêng doanh nghiệp (Customer)\nSHIPMENT_READ_INBOUND\nXem hàng/container giao tới bãi điểm đích (3PL Shipper)\nEXTERNAL_3PL_SYNC\nĐồng bộ trạng thái & Webhook qua hệ thống thứ 3 (WMS/3PL)\nSHIPMENT_WRITE\nCập nhật thông tin vận đơn\nSHIPMENT_DISPATCH\nPhát lệnh điều xe xuất bến\nROUTE_PLAN\nLập lộ trình đa mục tiêu Pareto\nROUTE_SELECT\nChọn phương án lộ trình\nREROUTE_APPROVE\nPhê duyệt tái định tuyến động\nTRACKING_LIVE\nGiám sát bản đồ GPS thời gian thực\nTELEMETRY_SEND\nPhát tín hiệu tọa độ GPS từ xe\nALERT_ACK\nTiếp nhận & xử lý cảnh báo lệch tuyến\nINCIDENT_REPORT\nBáo cáo sự cố hiện trường\nEXCEPTION_RESOLVE\nThẩm định ngoại lệ vận hành\nDEMERIT_MANAGE\nQuản trị điểm phạt tài xế\nPOD_SUBMIT\nKý xác nhận bàn giao hàng (ePOD)\nPOD_VIEW_OWN\nTải chứng từ ePOD doanh nghiệp\nCARBON_READ\nTra cứu sổ cái phát thải CO2e\nCARBON_CALCULATE\nQuyết toán phát thải GLEC v3\nBENCHMARK_READ\nXem định mức carbon hành lang\nREPORT_EXPORT\nXuất chứng nhận ISO 14083\nDRIVER_CHAT\nNhắn tin trực tiếp 2 chiều Customer ↔ Tài xế\nPAYMENT_CREATE\nKhởi tạo yêu cầu thanh toán & hóa đơn VAT\nPAYMENT_READ_OWN\nXem lịch sử thanh toán & công nợ Net-30\nPAYMENT_MANAGE\nQuản trị đối soát & hoàn tiền giao dịch\nCONTRACT_READ_OWN\nXem hợp đồng khung MSA, hợp đồng chuyến & SLA\nCONTRACT_CREATE\nKhởi tạo hợp đồng điện tử B2B\nCONTRACT_SIGN\nKý số xác nhận hợp đồng & nghiệm thu ePOD\nCONTRACT_MANAGE\nQuản trị hạn mức công nợ & đối soát SLA\nHUB_WORKSPACE_READ\nTruy cập không gian làm việc Trụ sở được phân công\nCONTAINER_MANIFEST_INGEST\nNhận dữ liệu Manifest từ Container vào Trụ sở\nHUB_DISPATCH_AUTO\nChia đơn tự động theo khoảng cách GPS trong Trụ sở\nHUB_TASK_RANGE_ASSIGN\nGiao nhiệm vụ cho Shipper theo Dải mã số\nSHIPPER_POLICY_READ\nXem Chính sách vận hành dành riêng cho Shipper\nSHIPPER_OWN_SCOPE_READ\nXem phạm vi địa bàn giao hôm nay của bản thân\nSHIPPER_ITEM_STATUS_UPDATE\nCập nhật trạng thái đang đi giao hàng\nPOD_PHOTO_SUBMIT\nChụp & nộp Ảnh xác thực giao hàng (Photo POD)\nPOD_PHOTO_VIEW\nXem và đối soát Ảnh bằng chứng POD\nHUB_AUDIT_READ\nKiểm toán chất lượng POD & tuân thủ SLA (Chỉ đọc)\nHUB_ACCOUNT_MANAGE\nCấp phát & khóa/mở khóa tài khoản nội bộ Trụ sở\nKhởi Tạo Tài Khoản & Áp Dụng Phân Quyền",
+      "viewport": {
+        "width": 1440,
+        "documentWidth": 1440
+      },
+      "inputs": [
+        {
+          "type": "text",
+          "placeholder": "Elastic search: username, họ tên không dấu, vai trò, phòng ban, hub...",
+          "required": false
+        },
+        {
+          "type": "text",
+          "placeholder": "VD: dispatcher01, safety01...",
+          "required": true
+        },
+        {
+          "type": "text",
+          "placeholder": "VD: 123",
+          "required": true
+        },
+        {
+          "type": "text",
+          "placeholder": "VD: Lê Minh Khoa",
+          "required": true
+        },
+        {
+          "type": "email",
+          "placeholder": "VD: khoa.lm@ccadro.com",
+          "required": true
+        },
+        {
+          "type": "text",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "text",
+          "placeholder": "VD: 0903 812 456",
+          "required": false
+        },
+        {
+          "type": "text",
+          "placeholder": "Chức vụ (VD: Điều phối viên)",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        }
+      ],
+      "selects": [
+        [
+          {
+            "text": "DISPATCHER — Điều phối viên NOC",
+            "value": "DISPATCHER"
+          },
+          {
+            "text": "SAFETY_MANAGER — Trưởng ban An toàn",
+            "value": "SAFETY_MANAGER"
+          },
+          {
+            "text": "DRIVER — Tài xế Vận tải",
+            "value": "DRIVER"
+          },
+          {
+            "text": "ESG_AUDITOR — Kiểm toán viên Carbon",
+            "value": "ESG_AUDITOR"
+          },
+          {
+            "text": "ADMIN — Quản trị viên hệ thống",
+            "value": "ADMIN"
+          },
+          {
+            "text": "CUSTOMER — Khách hàng / Chủ hàng B2B",
+            "value": "CUSTOMER"
+          },
+          {
+            "text": "SHIPPER — Đối tác Điểm đích / Kho 3PL (Bên thứ 3)",
+            "value": "SHIPPER"
+          }
+        ],
+        [
+          {
+            "text": "-- Mặc định theo vai trò --",
+            "value": ""
+          },
+          {
+            "text": "CCADRO_INT — CCADRO Green Logistics Corporation",
+            "value": "90000000-0000-0000-0000-000000000001"
+          },
+          {
+            "text": "VINAMILK — CTCP Sữa Việt Nam (Vinamilk Logistics)",
+            "value": "90000000-0000-0000-0000-000000000002"
+          },
+          {
+            "text": "SAMSUNG_VN — Công ty TNHH Samsung Electronics Việt Nam",
+            "value": "90000000-0000-0000-0000-000000000003"
+          },
+          {
+            "text": "HUB_DINHBANG_BN — Trung Tâm Phân Phối Đình Bảng - VSIP Bắc Ninh",
+            "value": "90000000-0000-0000-0000-000000000004"
+          },
+          {
+            "text": "DHL_3PL — DHL Supply Chain Việt Nam (Đối tác 3PL)",
+            "value": "90000000-0000-0000-0000-000000000005"
+          }
+        ]
+      ]
+    },
+    {
+      "name": "03-companies",
+      "path": "/admin/companies",
+      "title": "CCADRO | Hệ Thống Quản Trị Chuỗi Cung Ứng & Vận Tải Xanh",
+      "headings": [
+        "CCADRO",
+        "Quản Lý Công Ty, Pháp Lý B2B & Đối Tác Vận Tải",
+        "Hệ Thống Quản Trị Tài Khoản, Phân Quyền (IAM) & An Toàn Đội Xe",
+        "Danh Mục Công Ty & Hồ Sơ Pháp Lý B2B (5)",
+        "Thêm Mới Doanh Nghiệp / Đối Tác"
+      ],
+      "buttons": [
+        {
+          "text": "",
+          "title": "Thu gọn thanh bên"
+        },
+        {
+          "text": "QA\nQuản Trị Viên Hệ Thống (Root Admin)\nADMIN\n• @admin",
+          "title": "Xem hồ sơ & cài đặt tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Cài đặt tài khoản & hệ thống"
+        },
+        {
+          "text": "",
+          "title": "Đăng xuất"
+        },
+        {
+          "text": "",
+          "title": "Thu gọn thanh bên"
+        },
+        {
+          "text": "Phát Cảnh Báo",
+          "title": "Phát cảnh báo khẩn cấp tới đội xe & trung tâm điều phối"
+        },
+        {
+          "text": "Messenger",
+          "title": "Mở CCADRO Messenger (Chat đa người & nhóm)"
+        },
+        {
+          "text": "Khẩn Cấp\n2",
+          "title": "Trung tâm thông báo & cảnh báo khẩn cấp"
+        },
+        {
+          "text": "",
+          "title": "Chuyển sang giao diện Sáng"
+        },
+        {
+          "text": "",
+          "title": "Cài đặt tài khoản & nghiệp vụ theo vai trò"
+        },
+        {
+          "text": "QA",
+          "title": ""
+        },
+        {
+          "text": "🔐 Quản Lý Tài Khoản & Phân Quyền (Admin IAM)",
+          "title": ""
+        },
+        {
+          "text": "🛠️ Kiểm Tra An Toàn 6 Hạng Mục (UC01)",
+          "title": ""
+        },
+        {
+          "text": "🚨 Báo Cáo Sự Cố & Điểm Phạt (UC16-18)",
+          "title": ""
+        },
+        {
+          "text": "Quản Lý User & Hồ Sơ Chi Tiết (13)",
+          "title": ""
+        },
+        {
+          "text": "Quản Lý Công Ty & Đối Tác B2B (5)",
+          "title": ""
+        },
+        {
+          "text": "Đã xóa mềm (0)",
+          "title": "Xem các mục đã xóa mềm & khôi phục"
+        },
+        {
+          "text": "0 user",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Chỉnh sửa thông tin công ty"
+        },
+        {
+          "text": "1 user",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Chỉnh sửa thông tin công ty"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm công ty"
+        },
+        {
+          "text": "0 user",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Chỉnh sửa thông tin công ty"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm công ty"
+        },
+        {
+          "text": "5 user",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Chỉnh sửa thông tin công ty"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm công ty"
+        },
+        {
+          "text": "0 user",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Chỉnh sửa thông tin công ty"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm công ty"
+        },
+        {
+          "text": "Tạo Mới Hồ Sơ Công Ty",
+          "title": ""
+        }
+      ],
+      "nav": [
+        {
+          "text": "Trang Chủ Website",
+          "href": "/"
+        },
+        {
+          "text": "Trung Tâm Giám Sát",
+          "href": "/portal"
+        },
+        {
+          "text": "Quản Lý Vận Đơn",
+          "href": "/shipments"
+        },
+        {
+          "text": "Tạo Đơn Hàng Mới",
+          "href": "/shipments/new"
+        },
+        {
+          "text": "Điều Phối & Xuất Bến",
+          "href": "/dispatch/c0000000-0000-0000-0000-000000000001"
+        },
+        {
+          "text": "Giám Sát GPS & Lệch Tuyến",
+          "href": "/trips/f0000000-0000-0000-0000-000000000001"
+        },
+        {
+          "text": "Đa Mục Tiêu Pareto (UC05)",
+          "href": "/planning/c0000000-0000-0000-0000-000000000001"
+        },
+        {
+          "text": "Kiểm Toán GLEC v3 (UC12)",
+          "href": "/trips/f0000000-0000-0000-0000-000000000001/carbon"
+        },
+        {
+          "text": "Định Mức Hành Lang (UC13)",
+          "href": "/analytics/benchmark"
+        },
+        {
+          "text": "Quản Lý User & Công Ty",
+          "href": "/admin/users"
+        },
+        {
+          "text": "Quản Trị IAM & An Toàn",
+          "href": "/governance"
+        },
+        {
+          "text": "Cổng Xác Thực IAM",
+          "href": "/login"
+        }
+      ],
+      "mainText": "QUẢN TRỊ HỆ THỐNG • ROOT ADMIN\nQuản Lý Công Ty, Pháp Lý B2B & Đối Tác Vận Tải\nTrực tuyến\nKhông gian 3D\nPhát Cảnh Báo\nMessenger\nKhẩn Cấp\n2\nQA\nHệ Thống Quản Trị Tài Khoản, Phân Quyền (IAM) & An Toàn Đội Xe\n\nQuản lý danh sách tài khoản toàn hệ thống, khởi tạo tài khoản cho các Role nội bộ, gán quyền RBAC chi tiết & giám sát an toàn kỹ thuật (UC01 / UC16)\n\n🔐 Quản Lý Tài Khoản & Phân Quyền (Admin IAM)\n🛠️ Kiểm Tra An Toàn 6 Hạng Mục (UC01)\n🚨 Báo Cáo Sự Cố & Điểm Phạt (UC16-18)\nTỔNG TÀI KHOẢN HỆ THỐNG\n13\nĐịnh danh tập trung IAM\nNHÂN SỰ NỘI BỘ (ADMIN CẤP)\n5\nKhởi tạo & phân quyền bởi ADMIN\nTÀI KHOẢN KHÁCH HÀNG (USER)\n1\nTự đăng ký (/register) hoặc Admin cấp\nDOANH NGHIỆP & ĐỐI TÁC\n5\nHồ sơ B2B • MST • Hạn mức Net-30\nQuản Lý User & Hồ Sơ Chi Tiết (13)\nQuản Lý Công Ty & Đối Tác B2B (5)\nDOANH NGHIỆP & ĐỐI TÁC HOẠT ĐỘNG\n5\nChủ hàng B2B, Kho 3PL & Đơn vị nội bộ\nĐÃ XÁC MINH PHÁP LÝ KYC\n5/5\nĐủ điều kiện ký MSA & xuất hóa đơn VAT\nTỔNG HẠN MỨC CÔNG NỢ NET-30\n1.050 Tr ₫\nTổng trần tín dụng B2B đang cấp phép\nDanh Mục Công Ty & Hồ Sơ Pháp Lý B2B (5)\n\nQuản lý mã số thuế, hạn mức tín dụng Net-30, người đại diện và nhân sự thuộc từng doanh nghiệp.\n\nElastic\nĐã xóa mềm (0)\nCÔNG TY & MST\tLOẠI HÌNH & ĐẠI DIỆN\tTÍN DỤNG NET-30 & KYC\tUSER TRỰC THUỘC\tTHAO TÁC\nCCADRO_INT\nCCADRO Green Logistics Corporation\nMST: 0316889901 • GP-KDVT-2026-0001\n\tINTERNAL_CORP\nTrần Minh Quản Trị\n028 3888 8801\n\tKYC: VERIFIED\nENTERPRISE_MSA\n0 ₫\n\t\n0 user\t\n\nVINAMILK\nCTCP Sữa Việt Nam (Vinamilk Logistics)\nMST: 0300588569 • GP-B2B-2025-8821\n\tB2B_CUSTOMER\nNguyễn Thị Lan Anh\n028 5415 5555\n\tKYC: VERIFIED\nENTERPRISE_MSA\n500.000.000 ₫\n\t\n1 user\t\n\nSAMSUNG_VN\nCông ty TNHH Samsung Electronics Việt Nam\nMST: 2300325764 • GP-B2B-2025-4410\n\tB2B_CUSTOMER\nPhạm Minh Đức\n0222 369 6666\n\tKYC: VERIFIED\nGOLD_NET30\n350.000.000 ₫\n\t\n0 user\t\n\nHUB_DINHBANG_BN\nTrung Tâm Phân Phối Đình Bảng - VSIP Bắc Ninh\nMST: 2301122334 • GP-HUB-2026-0112\n\tHUB_OPERATOR\nTrần Minh Quang\n0222 374 8899\n\tKYC: VERIFIED\nSTANDARD\n0 ₫\n\t\n5 user\t\n\nDHL_3PL\nDHL Supply Chain Việt Nam (Đối tác 3PL)\nMST: 0309911223 • GP-3PL-2025-9902\n\tPARTNER_3PL\nLê Quốc Bảo\n028 3844 6203\n\tKYC: VERIFIED\nGOLD_NET30\n200.000.000 ₫\n\t\n0 user\t\nThêm Mới Doanh Nghiệp / Đối Tác\nMã Công Ty *\nTên Pháp Lý Công Ty *\nMã Số Thuế (MST)\nSố ĐKKD / GP Vận Tải\nLoại Hình Đối Tác\nKhách hàng Chủ hàng B2B\nĐối tác Kho bãi / 3PL\nTrụ sở Hub Phân phối\nĐơn vị Nội bộ CCADRO\nNgành Nghề Vận Tải\nNgười Đại Diện Pháp Luật\nEmail & Hotline Công Ty\nĐịa Chỉ Trụ Sở Xuất Hóa Đơn VAT\nHạng Tín Dụng\nSTANDARD\nGOLD_NET30\nENTERPRISE_MSA\nHạn Mức Net-30 (₫)\nTrạng Thái KYC\nVERIFIED\nPENDING\nREJECTED\nTạo Mới Hồ Sơ Công Ty",
+      "viewport": {
+        "width": 1440,
+        "documentWidth": 1440
+      },
+      "inputs": [
+        {
+          "type": "text",
+          "placeholder": "Tìm mã công ty, tên công ty, MST, người đại diện...",
+          "required": false
+        },
+        {
+          "type": "text",
+          "placeholder": "VD: MASAN_LOG",
+          "required": true
+        },
+        {
+          "type": "text",
+          "placeholder": "VD: CTCP Hàng Tiêu Dùng Masan",
+          "required": true
+        },
+        {
+          "type": "text",
+          "placeholder": "0309998888",
+          "required": false
+        },
+        {
+          "type": "text",
+          "placeholder": "GP-B2B-2026-...",
+          "required": false
+        },
+        {
+          "type": "text",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "text",
+          "placeholder": "Họ và tên",
+          "required": false
+        },
+        {
+          "type": "text",
+          "placeholder": "028... hoặc email@company.vn",
+          "required": false
+        },
+        {
+          "type": "text",
+          "placeholder": "Số nhà, đường, quận/huyện, tỉnh/thành phố...",
+          "required": false
+        },
+        {
+          "type": "number",
+          "placeholder": "",
+          "required": false
+        }
+      ],
+      "selects": [
+        [
+          {
+            "text": "Khách hàng Chủ hàng B2B",
+            "value": "B2B_CUSTOMER"
+          },
+          {
+            "text": "Đối tác Kho bãi / 3PL",
+            "value": "PARTNER_3PL"
+          },
+          {
+            "text": "Trụ sở Hub Phân phối",
+            "value": "HUB_OPERATOR"
+          },
+          {
+            "text": "Đơn vị Nội bộ CCADRO",
+            "value": "INTERNAL_CORP"
+          }
+        ],
+        [
+          {
+            "text": "STANDARD",
+            "value": "STANDARD"
+          },
+          {
+            "text": "GOLD_NET30",
+            "value": "GOLD_NET30"
+          },
+          {
+            "text": "ENTERPRISE_MSA",
+            "value": "ENTERPRISE_MSA"
+          }
+        ],
+        [
+          {
+            "text": "VERIFIED",
+            "value": "VERIFIED"
+          },
+          {
+            "text": "PENDING",
+            "value": "PENDING"
+          },
+          {
+            "text": "REJECTED",
+            "value": "REJECTED"
+          }
+        ]
+      ]
+    },
+    {
+      "name": "04-governance",
+      "path": "/governance",
+      "title": "CCADRO | Hệ Thống Quản Trị Chuỗi Cung Ứng & Vận Tải Xanh",
+      "headings": [
+        "CCADRO",
+        "Quản Trị Tài Khoản IAM & An Toàn Đội Xe (UC01 / UC16)",
+        "Hệ Thống Quản Trị Tài Khoản, Phân Quyền (IAM) & An Toàn Đội Xe",
+        "Danh Sách Tài Khoản Hệ Thống (13)",
+        "Khởi Tạo Tài Khoản Nội Bộ & Phân Quyền (Dành Cho ADMIN)"
+      ],
+      "buttons": [
+        {
+          "text": "",
+          "title": "Thu gọn thanh bên"
+        },
+        {
+          "text": "QA\nQuản Trị Viên Hệ Thống (Root Admin)\nADMIN\n• @admin",
+          "title": "Xem hồ sơ & cài đặt tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Cài đặt tài khoản & hệ thống"
+        },
+        {
+          "text": "",
+          "title": "Đăng xuất"
+        },
+        {
+          "text": "",
+          "title": "Thu gọn thanh bên"
+        },
+        {
+          "text": "Phát Cảnh Báo",
+          "title": "Phát cảnh báo khẩn cấp tới đội xe & trung tâm điều phối"
+        },
+        {
+          "text": "Messenger",
+          "title": "Mở CCADRO Messenger (Chat đa người & nhóm)"
+        },
+        {
+          "text": "Khẩn Cấp\n2",
+          "title": "Trung tâm thông báo & cảnh báo khẩn cấp"
+        },
+        {
+          "text": "",
+          "title": "Chuyển sang giao diện Sáng"
+        },
+        {
+          "text": "",
+          "title": "Cài đặt tài khoản & nghiệp vụ theo vai trò"
+        },
+        {
+          "text": "QA",
+          "title": ""
+        },
+        {
+          "text": "🔐 Quản Lý Tài Khoản & Phân Quyền (Admin IAM)",
+          "title": ""
+        },
+        {
+          "text": "🛠️ Kiểm Tra An Toàn 6 Hạng Mục (UC01)",
+          "title": ""
+        },
+        {
+          "text": "🚨 Báo Cáo Sự Cố & Điểm Phạt (UC16-18)",
+          "title": ""
+        },
+        {
+          "text": "Quản Lý User & Hồ Sơ Chi Tiết (13)",
+          "title": ""
+        },
+        {
+          "text": "Quản Lý Công Ty & Đối Tác B2B (5)",
+          "title": ""
+        },
+        {
+          "text": "Tất cả (13)",
+          "title": ""
+        },
+        {
+          "text": "Nội bộ (5)",
+          "title": ""
+        },
+        {
+          "text": "Khách hàng (1)",
+          "title": ""
+        },
+        {
+          "text": "Shipper 3PL (7)",
+          "title": ""
+        },
+        {
+          "text": "Đã xóa mềm (0)",
+          "title": "Xem các mục đã xóa mềm & khôi phục"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "48/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "11/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "6/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "4/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "8/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "10/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "9/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "12/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "12/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "9/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "9/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "9/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "6/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Khởi Tạo Tài Khoản & Áp Dụng Phân Quyền",
+          "title": ""
+        }
+      ],
+      "nav": [
+        {
+          "text": "Trang Chủ Website",
+          "href": "/"
+        },
+        {
+          "text": "Trung Tâm Giám Sát",
+          "href": "/portal"
+        },
+        {
+          "text": "Quản Lý Vận Đơn",
+          "href": "/shipments"
+        },
+        {
+          "text": "Tạo Đơn Hàng Mới",
+          "href": "/shipments/new"
+        },
+        {
+          "text": "Điều Phối & Xuất Bến",
+          "href": "/dispatch/c0000000-0000-0000-0000-000000000001"
+        },
+        {
+          "text": "Giám Sát GPS & Lệch Tuyến",
+          "href": "/trips/f0000000-0000-0000-0000-000000000001"
+        },
+        {
+          "text": "Đa Mục Tiêu Pareto (UC05)",
+          "href": "/planning/c0000000-0000-0000-0000-000000000001"
+        },
+        {
+          "text": "Kiểm Toán GLEC v3 (UC12)",
+          "href": "/trips/f0000000-0000-0000-0000-000000000001/carbon"
+        },
+        {
+          "text": "Định Mức Hành Lang (UC13)",
+          "href": "/analytics/benchmark"
+        },
+        {
+          "text": "Quản Lý User & Công Ty",
+          "href": "/admin/users"
+        },
+        {
+          "text": "Quản Trị IAM & An Toàn",
+          "href": "/governance"
+        },
+        {
+          "text": "Cổng Xác Thực IAM",
+          "href": "/login"
+        }
+      ],
+      "mainText": "QUẢN TRỊ HỆ THỐNG • ROOT ADMIN\nQuản Trị Tài Khoản IAM & An Toàn Đội Xe (UC01 / UC16)\nTrực tuyến\nKhông gian 3D\nPhát Cảnh Báo\nMessenger\nKhẩn Cấp\n2\nQA\nHệ Thống Quản Trị Tài Khoản, Phân Quyền (IAM) & An Toàn Đội Xe\n\nQuản lý danh sách tài khoản toàn hệ thống, khởi tạo tài khoản cho các Role nội bộ, gán quyền RBAC chi tiết & giám sát an toàn kỹ thuật (UC01 / UC16)\n\n🔐 Quản Lý Tài Khoản & Phân Quyền (Admin IAM)\n🛠️ Kiểm Tra An Toàn 6 Hạng Mục (UC01)\n🚨 Báo Cáo Sự Cố & Điểm Phạt (UC16-18)\nTỔNG TÀI KHOẢN HỆ THỐNG\n13\nĐịnh danh tập trung IAM\nNHÂN SỰ NỘI BỘ (ADMIN CẤP)\n5\nKhởi tạo & phân quyền bởi ADMIN\nTÀI KHOẢN KHÁCH HÀNG (USER)\n1\nTự đăng ký (/register) hoặc Admin cấp\nDOANH NGHIỆP & ĐỐI TÁC\n5\nHồ sơ B2B • MST • Hạn mức Net-30\nQuản Lý User & Hồ Sơ Chi Tiết (13)\nQuản Lý Công Ty & Đối Tác B2B (5)\nDanh Sách Tài Khoản Hệ Thống (13)\n\nQuản trị viên có thể đổi Vai trò (Role), tùy chỉnh quyền chi tiết hoặc khóa/xóa tài khoản trực tiếp tại bảng này.\n\nTất cả (13)\nNội bộ (5)\nKhách hàng (1)\nShipper 3PL (7)\nElastic\nĐã xóa mềm (0)\nTÀI KHOẢN & LIÊN HỆ\tNGƯỜI DÙNG & CÔNG TY (MST)\tVAI TRÒ (PHÂN QUYỀN ROLE)\tQUYỀN & HỒ SƠ\tTRẠNG THÁI & QUẢN LÝ\n@admin\nadmin@ccadro.com\n📞 028 3888 9999\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tQuản Trị Viên Hệ Thống (Root Admin)\n🏢 CCADRO Green Logistics Corporation\nMã: CCADRO_CORE\n\tROOT ADMIN\t\nChi tiết User / Công ty\n48/48 quyền\n\t\nACTIVE\n\n@dispatcher\ndispatcher@ccadro.com\n📞 028 3888 8802\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tNguyễn Văn Nam (Điều Phối Trưởng)\n🏢 CCADRO Green Logistics Corporation\nMã: CCADRO_CORE\n\tDISPATCHER (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n11/48 quyền\n\t\nACTIVE\n\n@driver\ndriver@ccadro.com\n📞 0903 812 456\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tTrần Văn Tài (Tài Xế Trưởng)\n🏢 CCADRO Green Logistics Corporation\nMã: CCADRO_FLEET\n\tDRIVER (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n6/48 quyền\n\t\nACTIVE\n\n@auditor\nauditor@ccadro.com\n📞 028 3888 8804\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tLê Thị Kiểm Toán (GLEC v3 Auditor)\n🏢 CCADRO Green Logistics Corporation\nMã: CCADRO_AUDIT\n\tESG_AUDITOR (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n4/48 quyền\n\t\nACTIVE\n\n@safety\nsafety@ccadro.com\n📞 028 3888 8805\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tPhạm Văn An Toàn (Safety Manager)\n🏢 CCADRO Green Logistics Corporation\nMã: CCADRO_SAFETY\n\tSAFETY_MANAGER (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n8/48 quyền\n\t\nACTIVE\n\n@customer\ncustomer@ccadro.com\n📞 028 5415 5555\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tMinh Phú & Vinamilk B2B (Chủ Hàng)\nTrưởng nhóm Điều vận B2B\n🏢 CTCP Sữa Việt Nam (Vinamilk Logistics)\nMã: DOANH_NGHIEP_B2B • MST: 0300588569\n\tCUSTOMER (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n10/48 quyền\n\t\nACTIVE\n\n@shipper\nshipper-bn1@ccadro.com\n📞 0912 345 101\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tNguyễn Văn Toàn (Shipper Đình Bảng #1)\n🏢 Trụ sở Đình Bảng - Từ Sơn, Bắc Ninh\nMã: HUB_DINHBANG_BN\n\tHUB_SHIPPER (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n9/48 quyền\n\t\nACTIVE\n\n@hub_mgr_dinhbang\nhub-mgr-dinhbang@ccadro.com\n📞 0222 3841 999\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tTrần Minh Quang (Trưởng Trụ Sở Đình Bảng)\n🏢 Trụ sở Đình Bảng - Từ Sơn, Bắc Ninh\nMã: HUB_DINHBANG_BN\n\tHUB_MANAGER (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n12/48 quyền\n\t\nACTIVE\n\n@hub_mgr_amata\nhub-mgr-amata@ccadro.com\n📞 0251 3992 888\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tLê Hoàng Nam (Trưởng Trụ Sở Amata)\n🏢 Trụ sở Amata - Biên Hòa, Đồng Nai\nMã: HUB_AMATA_BH\n\tHUB_MANAGER (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n12/48 quyền\n\t\nACTIVE\n\n@shipper_bn2\nshipper-bn2@ccadro.com\n📞 0912 345 102\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tPhạm Thị Lan Anh (Shipper Đình Bảng #2)\n🏢 Trụ sở Đình Bảng - Từ Sơn, Bắc Ninh\nMã: HUB_DINHBANG_BN\n\tHUB_SHIPPER (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n9/48 quyền\n\t\nACTIVE\n\n@shipper_bn3\nshipper-bn3@ccadro.com\n📞 0912 345 103\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tNgô Đức Hải (Shipper Đình Bảng #3)\n🏢 Trụ sở Đình Bảng - Từ Sơn, Bắc Ninh\nMã: HUB_DINHBANG_BN\n\tHUB_SHIPPER (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n9/48 quyền\n\t\nACTIVE\n\n@shipper_amata\nshipper-amata@ccadro.com\n📞 0902 418 229\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tĐặng Quốc Bảo (Shipper Amata #101)\n🏢 Trụ sở Amata - Biên Hòa, Đồng Nai\nMã: HUB_AMATA_BH\n\tHUB_SHIPPER (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n9/48 quyền\n\t\nACTIVE\n\n@hub_inspector_bn\ninspector-bn@ccadro.com\n📞 0918 776 301\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tVũ Thu Hà (Kiểm Tra Viên Ảnh POD & SLA)\n🏢 Trụ sở Đình Bảng - Từ Sơn, Bắc Ninh\nMã: HUB_DINHBANG_BN\n\tHUB_AUDITOR (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n6/48 quyền\n\t\nACTIVE\nKhởi Tạo Tài Khoản Nội Bộ & Phân Quyền (Dành Cho ADMIN)\n\nHệ thống khóa cứng 7 vai trò hạt nhân (ADMIN, DISPATCHER, SAFETY_MANAGER, DRIVER, ESG_AUDITOR, CUSTOMER, SHIPPER) kèm 7 tài khoản gốc tương ứng. CUSTOMER đặt xe tại /customer, còn SHIPPER là đối tác kho/giao nhận điểm đích 3PL tại /shipper.\n\nTên đăng nhập (Username) *\nMật khẩu khởi tạo (≥ 3 ký tự) *\nHọ và tên nhân sự *\nEmail công vụ *\nGán Vai trò (Role Nội bộ / Hệ thống) *\nDISPATCHER — Điều phối viên NOC\nSAFETY_MANAGER — Trưởng ban An toàn\nDRIVER — Tài xế Vận tải\nESG_AUDITOR — Kiểm toán viên Carbon\nADMIN — Quản trị viên hệ thống\nCUSTOMER — Khách hàng / Chủ hàng B2B\nSHIPPER — Đối tác Điểm đích / Kho 3PL (Bên thứ 3)\nPhòng ban / Đơn vị trực thuộc\nSố điện thoại & Chức vụ\nGắn Công Ty / Đối Tác B2B\n-- Mặc định theo vai trò --\nCCADRO_INT — CCADRO Green Logistics Corporation\nVINAMILK — CTCP Sữa Việt Nam (Vinamilk Logistics)\nSAMSUNG_VN — Công ty TNHH Samsung Electronics Việt Nam\nHUB_DINHBANG_BN — Trung Tâm Phân Phối Đình Bảng - VSIP Bắc Ninh\nDHL_3PL — DHL Supply Chain Việt Nam (Đối tác 3PL)\nPhân quyền chi tiết cho tài khoản (11/48 quyền được cấp):\nLập lộ trình đa tiêu chí (UC05), phát lệnh điều xe (UC06), theo dõi GPS (UC09) & duyệt đổi tuyến động (UC10).\nUSER_MANAGE\nQuản lý & cấp phát tài khoản\nROLE_MANAGE\nPhân quyền vai trò (RBAC)\nVEHICLE_READ\nXem danh sách phương tiện\nVEHICLE_WRITE\nThêm / cập nhật phương tiện\nMAINTENANCE_MANAGE\nQuản lý bảo dưỡng phương tiện\nINSPECTION_SUBMIT\nGửi biên bản kiểm tra Pre-trip\nINSPECTION_REVIEW\nPhê duyệt kiểm định an toàn\nSHIPMENT_CREATE\nKhởi tạo vận đơn mới\nSHIPMENT_READ\nXem toàn bộ vận đơn hệ thống\nSHIPMENT_READ_OWN\nXem vận đơn của riêng doanh nghiệp (Customer)\nSHIPMENT_READ_INBOUND\nXem hàng/container giao tới bãi điểm đích (3PL Shipper)\nEXTERNAL_3PL_SYNC\nĐồng bộ trạng thái & Webhook qua hệ thống thứ 3 (WMS/3PL)\nSHIPMENT_WRITE\nCập nhật thông tin vận đơn\nSHIPMENT_DISPATCH\nPhát lệnh điều xe xuất bến\nROUTE_PLAN\nLập lộ trình đa mục tiêu Pareto\nROUTE_SELECT\nChọn phương án lộ trình\nREROUTE_APPROVE\nPhê duyệt tái định tuyến động\nTRACKING_LIVE\nGiám sát bản đồ GPS thời gian thực\nTELEMETRY_SEND\nPhát tín hiệu tọa độ GPS từ xe\nALERT_ACK\nTiếp nhận & xử lý cảnh báo lệch tuyến\nINCIDENT_REPORT\nBáo cáo sự cố hiện trường\nEXCEPTION_RESOLVE\nThẩm định ngoại lệ vận hành\nDEMERIT_MANAGE\nQuản trị điểm phạt tài xế\nPOD_SUBMIT\nKý xác nhận bàn giao hàng (ePOD)\nPOD_VIEW_OWN\nTải chứng từ ePOD doanh nghiệp\nCARBON_READ\nTra cứu sổ cái phát thải CO2e\nCARBON_CALCULATE\nQuyết toán phát thải GLEC v3\nBENCHMARK_READ\nXem định mức carbon hành lang\nREPORT_EXPORT\nXuất chứng nhận ISO 14083\nDRIVER_CHAT\nNhắn tin trực tiếp 2 chiều Customer ↔ Tài xế\nPAYMENT_CREATE\nKhởi tạo yêu cầu thanh toán & hóa đơn VAT\nPAYMENT_READ_OWN\nXem lịch sử thanh toán & công nợ Net-30\nPAYMENT_MANAGE\nQuản trị đối soát & hoàn tiền giao dịch\nCONTRACT_READ_OWN\nXem hợp đồng khung MSA, hợp đồng chuyến & SLA\nCONTRACT_CREATE\nKhởi tạo hợp đồng điện tử B2B\nCONTRACT_SIGN\nKý số xác nhận hợp đồng & nghiệm thu ePOD\nCONTRACT_MANAGE\nQuản trị hạn mức công nợ & đối soát SLA\nHUB_WORKSPACE_READ\nTruy cập không gian làm việc Trụ sở được phân công\nCONTAINER_MANIFEST_INGEST\nNhận dữ liệu Manifest từ Container vào Trụ sở\nHUB_DISPATCH_AUTO\nChia đơn tự động theo khoảng cách GPS trong Trụ sở\nHUB_TASK_RANGE_ASSIGN\nGiao nhiệm vụ cho Shipper theo Dải mã số\nSHIPPER_POLICY_READ\nXem Chính sách vận hành dành riêng cho Shipper\nSHIPPER_OWN_SCOPE_READ\nXem phạm vi địa bàn giao hôm nay của bản thân\nSHIPPER_ITEM_STATUS_UPDATE\nCập nhật trạng thái đang đi giao hàng\nPOD_PHOTO_SUBMIT\nChụp & nộp Ảnh xác thực giao hàng (Photo POD)\nPOD_PHOTO_VIEW\nXem và đối soát Ảnh bằng chứng POD\nHUB_AUDIT_READ\nKiểm toán chất lượng POD & tuân thủ SLA (Chỉ đọc)\nHUB_ACCOUNT_MANAGE\nCấp phát & khóa/mở khóa tài khoản nội bộ Trụ sở\nKhởi Tạo Tài Khoản & Áp Dụng Phân Quyền",
+      "viewport": {
+        "width": 1440,
+        "documentWidth": 1440
+      },
+      "inputs": [
+        {
+          "type": "text",
+          "placeholder": "Elastic search: username, họ tên không dấu, vai trò, phòng ban, hub...",
+          "required": false
+        },
+        {
+          "type": "text",
+          "placeholder": "VD: dispatcher01, safety01...",
+          "required": true
+        },
+        {
+          "type": "text",
+          "placeholder": "VD: 123",
+          "required": true
+        },
+        {
+          "type": "text",
+          "placeholder": "VD: Lê Minh Khoa",
+          "required": true
+        },
+        {
+          "type": "email",
+          "placeholder": "VD: khoa.lm@ccadro.com",
+          "required": true
+        },
+        {
+          "type": "text",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "text",
+          "placeholder": "VD: 0903 812 456",
+          "required": false
+        },
+        {
+          "type": "text",
+          "placeholder": "Chức vụ (VD: Điều phối viên)",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        }
+      ],
+      "selects": [
+        [
+          {
+            "text": "DISPATCHER — Điều phối viên NOC",
+            "value": "DISPATCHER"
+          },
+          {
+            "text": "SAFETY_MANAGER — Trưởng ban An toàn",
+            "value": "SAFETY_MANAGER"
+          },
+          {
+            "text": "DRIVER — Tài xế Vận tải",
+            "value": "DRIVER"
+          },
+          {
+            "text": "ESG_AUDITOR — Kiểm toán viên Carbon",
+            "value": "ESG_AUDITOR"
+          },
+          {
+            "text": "ADMIN — Quản trị viên hệ thống",
+            "value": "ADMIN"
+          },
+          {
+            "text": "CUSTOMER — Khách hàng / Chủ hàng B2B",
+            "value": "CUSTOMER"
+          },
+          {
+            "text": "SHIPPER — Đối tác Điểm đích / Kho 3PL (Bên thứ 3)",
+            "value": "SHIPPER"
+          }
+        ],
+        [
+          {
+            "text": "-- Mặc định theo vai trò --",
+            "value": ""
+          },
+          {
+            "text": "CCADRO_INT — CCADRO Green Logistics Corporation",
+            "value": "90000000-0000-0000-0000-000000000001"
+          },
+          {
+            "text": "VINAMILK — CTCP Sữa Việt Nam (Vinamilk Logistics)",
+            "value": "90000000-0000-0000-0000-000000000002"
+          },
+          {
+            "text": "SAMSUNG_VN — Công ty TNHH Samsung Electronics Việt Nam",
+            "value": "90000000-0000-0000-0000-000000000003"
+          },
+          {
+            "text": "HUB_DINHBANG_BN — Trung Tâm Phân Phối Đình Bảng - VSIP Bắc Ninh",
+            "value": "90000000-0000-0000-0000-000000000004"
+          },
+          {
+            "text": "DHL_3PL — DHL Supply Chain Việt Nam (Đối tác 3PL)",
+            "value": "90000000-0000-0000-0000-000000000005"
+          }
+        ]
+      ]
+    },
+    {
+      "name": "05-shipments",
+      "path": "/shipments",
+      "title": "CCADRO | Hệ Thống Quản Trị Chuỗi Cung Ứng & Vận Tải Xanh",
+      "headings": [
+        "CCADRO",
+        "Quản Lý Vận Đơn & Điều Phối Hàng Hóa",
+        "Danh Sách Vận Đơn Toàn Hệ Thống"
+      ],
+      "buttons": [
+        {
+          "text": "",
+          "title": "Thu gọn thanh bên"
+        },
+        {
+          "text": "QA\nQuản Trị Viên Hệ Thống (Root Admin)\nADMIN\n• @admin",
+          "title": "Xem hồ sơ & cài đặt tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Cài đặt tài khoản & hệ thống"
+        },
+        {
+          "text": "",
+          "title": "Đăng xuất"
+        },
+        {
+          "text": "",
+          "title": "Thu gọn thanh bên"
+        },
+        {
+          "text": "Phát Cảnh Báo",
+          "title": "Phát cảnh báo khẩn cấp tới đội xe & trung tâm điều phối"
+        },
+        {
+          "text": "Messenger",
+          "title": "Mở CCADRO Messenger (Chat đa người & nhóm)"
+        },
+        {
+          "text": "Khẩn Cấp\n4",
+          "title": "Trung tâm thông báo & cảnh báo khẩn cấp"
+        },
+        {
+          "text": "",
+          "title": "Chuyển sang giao diện Sáng"
+        },
+        {
+          "text": "",
+          "title": "Cài đặt tài khoản & nghiệp vụ theo vai trò"
+        },
+        {
+          "text": "QA",
+          "title": ""
+        },
+        {
+          "text": "Đã xóa mềm (0)",
+          "title": "Xem các mục đã xóa mềm & khôi phục"
+        },
+        {
+          "text": "Tất cả vận đơn",
+          "title": ""
+        },
+        {
+          "text": "Đang lưu thông",
+          "title": ""
+        },
+        {
+          "text": "Lệch hành lang",
+          "title": ""
+        },
+        {
+          "text": "Chờ điều phối",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm vận đơn (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm vận đơn (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm vận đơn (chuyển vào Thùng rác)"
+        }
+      ],
+      "nav": [
+        {
+          "text": "Trang Chủ Website",
+          "href": "/"
+        },
+        {
+          "text": "Trung Tâm Giám Sát",
+          "href": "/portal"
+        },
+        {
+          "text": "Quản Lý Vận Đơn",
+          "href": "/shipments"
+        },
+        {
+          "text": "Tạo Đơn Hàng Mới",
+          "href": "/shipments/new"
+        },
+        {
+          "text": "Điều Phối & Xuất Bến",
+          "href": "/dispatch/c0000000-0000-0000-0000-000000000001"
+        },
+        {
+          "text": "Giám Sát GPS & Lệch Tuyến",
+          "href": "/trips/f0000000-0000-0000-0000-000000000001"
+        },
+        {
+          "text": "Đa Mục Tiêu Pareto (UC05)",
+          "href": "/planning/c0000000-0000-0000-0000-000000000001"
+        },
+        {
+          "text": "Kiểm Toán GLEC v3 (UC12)",
+          "href": "/trips/f0000000-0000-0000-0000-000000000001/carbon"
+        },
+        {
+          "text": "Định Mức Hành Lang (UC13)",
+          "href": "/analytics/benchmark"
+        },
+        {
+          "text": "Quản Lý User & Công Ty",
+          "href": "/admin/users"
+        },
+        {
+          "text": "Quản Trị IAM & An Toàn",
+          "href": "/governance"
+        },
+        {
+          "text": "Cổng Xác Thực IAM",
+          "href": "/login"
+        }
+      ],
+      "mainText": "QUẢN TRỊ HỆ THỐNG • ROOT ADMIN\nQuản Lý Vận Đơn & Điều Phối Hàng Hóa\nTrực tuyến\nKhông gian 3D\nPhát Cảnh Báo\nMessenger\nKhẩn Cấp\n4\nQA\nQUẢN LÝ VẬN ĐƠN & ĐIỀU PHỐI HÀNH LANG XANH\nDanh Sách Vận Đơn Toàn Hệ Thống\n\nQuản lý lô hàng B2B, tối ưu lộ trình 3D Pareto (UC05), phân công xe và giám sát GPS thời gian thực (UC09)\n\nMở Radar 3D Live\nTạo Vận Đơn Mới\nTỔNG VẬN ĐƠN\n3\nĐANG LƯU THÔNG\n0\nCẢNH BÁO LỆCH TUYẾN\n0\nCO2E ĐÃ TIẾT KIỆM\n-89.4 kg\nElastic\nĐã xóa mềm (0)\nTất cả vận đơn\nĐang lưu thông\nLệch hành lang\nChờ điều phối\nMÃ VẬN ĐƠN\tCHỦ HÀNG B2B\tĐIỂM ĐI (ORIGIN)\tĐIỂM ĐẾN (DESTINATION)\tTẢI TRỌNG\tTRẠNG THÁI\tTHAO TÁC ĐIỀU HÀNH 3D\nSH001\tCUST-LOGIX-01\tCang Cat Lai (Cat Lai Port)\tVSIP 1 Binh Duong\t15 tấn\t◐ Chờ Điều Phối\t\nLập Tuyến 3D\nĐiều Phối\nGiám Sát GPS\n\nSHIP-HCM-BD-TEST-999\tVINAMILK\tCảng Cát Lái, TP.HCM\tKCN VSIP 1, Bình Dương\t14.2 tấn\t◐ Chờ Điều Phối\t\nLập Tuyến 3D\nĐiều Phối\nGiám Sát GPS\n\nSHIP-HCM-BD-001\tVINAMILK\tCảng Cát Lái, TP.HCM\tKCN VSIP 1, Bình Dương\t14.2 tấn\t◐ Chờ Điều Phối\t\nLập Tuyến 3D\nĐiều Phối\nGiám Sát GPS",
+      "viewport": {
+        "width": 1440,
+        "documentWidth": 1440
+      },
+      "inputs": [
+        {
+          "type": "text",
+          "placeholder": "Elastic search: mã vận đơn, đối tác VINAMILK/SAMSUNG, cảng đi/đến không dấu...",
+          "required": false
+        }
+      ],
+      "selects": []
+    },
+    {
+      "name": "06-demo-dispatch",
+      "path": "/dispatch/c0000000-0000-0000-0000-000000000001",
+      "title": "CCADRO | Hệ Thống Quản Trị Chuỗi Cung Ứng & Vận Tải Xanh",
+      "headings": [
+        "CCADRO",
+        "Điều Phối & Xuất Bến Hạm Đội (UC07)",
+        "Điều Phối Phương Tiện & Khóa Phiên Bản Lộ Trình 3D",
+        "Phân Công Phương Tiện & Tài Xế Đủ Điều Kiện",
+        "Bản Đồ 3D Hành Lang Xuất Bến Đã Khóa (Cát Lái → VSIP 1)"
+      ],
+      "buttons": [
+        {
+          "text": "",
+          "title": "Thu gọn thanh bên"
+        },
+        {
+          "text": "QA\nQuản Trị Viên Hệ Thống (Root Admin)\nADMIN\n• @admin",
+          "title": "Xem hồ sơ & cài đặt tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Cài đặt tài khoản & hệ thống"
+        },
+        {
+          "text": "",
+          "title": "Đăng xuất"
+        },
+        {
+          "text": "",
+          "title": "Thu gọn thanh bên"
+        },
+        {
+          "text": "Phát Cảnh Báo",
+          "title": "Phát cảnh báo khẩn cấp tới đội xe & trung tâm điều phối"
+        },
+        {
+          "text": "Messenger",
+          "title": "Mở CCADRO Messenger (Chat đa người & nhóm)"
+        },
+        {
+          "text": "Khẩn Cấp\n4",
+          "title": "Trung tâm thông báo & cảnh báo khẩn cấp"
+        },
+        {
+          "text": "",
+          "title": "Chuyển sang giao diện Sáng"
+        },
+        {
+          "text": "",
+          "title": "Cài đặt tài khoản & nghiệp vụ theo vai trò"
+        },
+        {
+          "text": "QA",
+          "title": ""
+        },
+        {
+          "text": "Khóa Lệnh Điều Phối & Kích Hoạt Giám Sát 3D (UC07 → UC09)",
+          "title": ""
+        },
+        {
+          "text": "Vệ Tinh 3D",
+          "title": ""
+        },
+        {
+          "text": "Google Maps",
+          "title": ""
+        },
+        {
+          "text": "Địa Hình 3D",
+          "title": ""
+        },
+        {
+          "text": "Radar Đêm",
+          "title": ""
+        },
+        {
+          "text": "Chế độ 3D: BẬT",
+          "title": "Chuyển đổi góc nhìn 3D / 2D"
+        },
+        {
+          "text": "Góc nghiêng 38°",
+          "title": "Thay đổi độ nghiêng 3D (Pitch)"
+        },
+        {
+          "text": "↺ Xoay trái",
+          "title": "Xoay trái góc nhìn 3D"
+        },
+        {
+          "text": "↻ Xoay phải",
+          "title": "Xoay phải góc nhìn 3D"
+        },
+        {
+          "text": "Đặt lại",
+          "title": "Đặt lại trung tâm bản đồ"
+        },
+        {
+          "text": "Mở rộng",
+          "title": "Mở rộng bản đồ"
+        }
+      ],
+      "nav": [
+        {
+          "text": "Trang Chủ Website",
+          "href": "/"
+        },
+        {
+          "text": "Trung Tâm Giám Sát",
+          "href": "/portal"
+        },
+        {
+          "text": "Quản Lý Vận Đơn",
+          "href": "/shipments"
+        },
+        {
+          "text": "Tạo Đơn Hàng Mới",
+          "href": "/shipments/new"
+        },
+        {
+          "text": "Điều Phối & Xuất Bến",
+          "href": "/dispatch/c0000000-0000-0000-0000-000000000001"
+        },
+        {
+          "text": "Giám Sát GPS & Lệch Tuyến",
+          "href": "/trips/f0000000-0000-0000-0000-000000000001"
+        },
+        {
+          "text": "Đa Mục Tiêu Pareto (UC05)",
+          "href": "/planning/c0000000-0000-0000-0000-000000000001"
+        },
+        {
+          "text": "Kiểm Toán GLEC v3 (UC12)",
+          "href": "/trips/f0000000-0000-0000-0000-000000000001/carbon"
+        },
+        {
+          "text": "Định Mức Hành Lang (UC13)",
+          "href": "/analytics/benchmark"
+        },
+        {
+          "text": "Quản Lý User & Công Ty",
+          "href": "/admin/users"
+        },
+        {
+          "text": "Quản Trị IAM & An Toàn",
+          "href": "/governance"
+        },
+        {
+          "text": "Cổng Xác Thực IAM",
+          "href": "/login"
+        }
+      ],
+      "mainText": "QUẢN TRỊ HỆ THỐNG • ROOT ADMIN\nĐiều Phối & Xuất Bến Hạm Đội (UC07)\nTrực tuyến\nKhông gian 3D\nPhát Cảnh Báo\nMessenger\nKhẩn Cấp\n4\nQA\nPHÊ DUYỆT XUẤT BẾN & GÁN TÀI SẢN ĐỘI XE XANH (UC07)\nĐiều Phối Phương Tiện & Khóa Phiên Bản Lộ Trình 3D\n\nGán xe đầu kéo đạt chuẩn kiểm định Pre-trip và tài xế đủ điều kiện vào lộ trình xanh đã tối ưu (Mã vận đơn: c0000000-000)\n\nQuay Lại Lập Tuyến 3D (UC05)\nPhân Công Phương Tiện & Tài Xế Đủ Điều Kiện\nV001 • 51C-888.99\nV001 (51C-888.99) — AVAILABLE\nV002 (51D-777.55) — AVAILABLE\n• Loại phương tiện: Xe đầu kéo điện (EV) / Euro 5\n• Tải trọng tối đa: 20 tấn (Đạt chuẩn GLEC v3)\n• Kiểm định Pre-trip (UC01): ĐẠT 6/6 HẠNG MỤC AN TOÀN\nTài xế D001 • Nguyễn Văn Tài\nD001 — Nguyễn Văn Tài\nD002 — Trần Minh Quân\n• Hạng bằng lái: FC (Container & Chuỗi lạnh)\n• Điện thoại liên lạc NOC: 0901 234 567\n• Điểm lái xe sinh thái (Eco-Driving): 98/100 điểm\nĐã khóa Phiên bản Lộ trình Xanh v1 (PostGIS Buffer 50m / 200m)\nThiết bị định vị GPS trên xe V001 đã đồng bộ tọa độ với trung tâm chỉ huy NOC. Sẵn sàng kích hoạt luồng giám sát thời gian thực.\nKhóa Lệnh Điều Phối & Kích Hoạt Giám Sát 3D (UC07 → UC09)\nBản Đồ 3D Hành Lang Xuất Bến Đã Khóa (Cát Lái → VSIP 1)\nCự ly: 27.3 km • Dự toán phát thải: 21.84 kg CO2e (-14.7%)\nSẴN SÀNG XUẤT BẾN\nPhiên bản tuyến v1 • Xe V001 sẵn sàng xuất bến\nGóc nhìn 3D (38° nghiêng • 0° hướng) • Vệ Tinh 3D\nLớp bản đồ:\nVệ Tinh 3D\nGoogle Maps\nĐịa Hình 3D\nRadar Đêm\nChế độ 3D: BẬT\nGóc nghiêng 38°\n↺ Xoay trái\n↻ Xoay phải\nĐặt lại\nMở rộng\nĐIỂM ĐI: Điểm xuất bến: Cảng Cát Lái\nĐIỂM ĐẾN: Điểm giao hàng: KCN VSIP 1 Bình Dương\nV001 • 0 km/h\n+\n−\n Leaflet | © Google Maps Satellite Hybrid",
+      "viewport": {
+        "width": 1440,
+        "documentWidth": 1440
+      },
+      "inputs": [],
+      "selects": [
+        [
+          {
+            "text": "V001 (51C-888.99) — AVAILABLE",
+            "value": "a0000000-0000-0000-0000-000000000001"
+          },
+          {
+            "text": "V002 (51D-777.55) — AVAILABLE",
+            "value": "a0000000-0000-0000-0000-000000000002"
+          }
+        ],
+        [
+          {
+            "text": "D001 — Nguyễn Văn Tài",
+            "value": "b0000000-0000-0000-0000-000000000001"
+          },
+          {
+            "text": "D002 — Trần Minh Quân",
+            "value": "b0000000-0000-0000-0000-000000000002"
+          }
+        ]
+      ]
+    },
+    {
+      "name": "07-demo-gps",
+      "path": "/trips/f0000000-0000-0000-0000-000000000001",
+      "title": "CCADRO | Hệ Thống Quản Trị Chuỗi Cung Ứng & Vận Tải Xanh",
+      "headings": [
+        "CCADRO",
+        "Chi Tiết Chuyến Vận Tải & Đề Xuất Tuyến",
+        "Giám Sát GPS Thời Gian Thực & Cảnh Báo Lệch Tuyến",
+        "Thông Số Telemetry Thực Tế (DB)",
+        "Quy Tắc Giám Sát Hành Lang"
+      ],
+      "buttons": [
+        {
+          "text": "",
+          "title": "Thu gọn thanh bên"
+        },
+        {
+          "text": "QA\nQuản Trị Viên Hệ Thống (Root Admin)\nADMIN\n• @admin",
+          "title": "Xem hồ sơ & cài đặt tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Cài đặt tài khoản & hệ thống"
+        },
+        {
+          "text": "",
+          "title": "Đăng xuất"
+        },
+        {
+          "text": "",
+          "title": "Thu gọn thanh bên"
+        },
+        {
+          "text": "Phát Cảnh Báo",
+          "title": "Phát cảnh báo khẩn cấp tới đội xe & trung tâm điều phối"
+        },
+        {
+          "text": "Messenger",
+          "title": "Mở CCADRO Messenger (Chat đa người & nhóm)"
+        },
+        {
+          "text": "Khẩn Cấp\n2",
+          "title": "Trung tâm thông báo & cảnh báo khẩn cấp"
+        },
+        {
+          "text": "",
+          "title": "Chuyển sang giao diện Sáng"
+        },
+        {
+          "text": "",
+          "title": "Cài đặt tài khoản & nghiệp vụ theo vai trò"
+        },
+        {
+          "text": "QA",
+          "title": ""
+        },
+        {
+          "text": "Đang tải...",
+          "title": ""
+        },
+        {
+          "text": "Gửi GPS Thiết Bị Thực",
+          "title": ""
+        },
+        {
+          "text": "Vệ Tinh 3D",
+          "title": ""
+        },
+        {
+          "text": "Google Maps",
+          "title": ""
+        },
+        {
+          "text": "Địa Hình 3D",
+          "title": ""
+        },
+        {
+          "text": "Radar Đêm",
+          "title": ""
+        },
+        {
+          "text": "Chế độ 3D: BẬT",
+          "title": "Chuyển đổi góc nhìn 3D / 2D"
+        },
+        {
+          "text": "Góc nghiêng 38°",
+          "title": "Thay đổi độ nghiêng 3D (Pitch)"
+        },
+        {
+          "text": "↺ Xoay trái",
+          "title": "Xoay trái góc nhìn 3D"
+        },
+        {
+          "text": "↻ Xoay phải",
+          "title": "Xoay phải góc nhìn 3D"
+        },
+        {
+          "text": "Đặt lại",
+          "title": "Đặt lại trung tâm bản đồ"
+        },
+        {
+          "text": "Mở rộng",
+          "title": "Mở rộng bản đồ"
+        }
+      ],
+      "nav": [
+        {
+          "text": "Trang Chủ Website",
+          "href": "/"
+        },
+        {
+          "text": "Trung Tâm Giám Sát",
+          "href": "/portal"
+        },
+        {
+          "text": "Quản Lý Vận Đơn",
+          "href": "/shipments"
+        },
+        {
+          "text": "Tạo Đơn Hàng Mới",
+          "href": "/shipments/new"
+        },
+        {
+          "text": "Điều Phối & Xuất Bến",
+          "href": "/dispatch/c0000000-0000-0000-0000-000000000001"
+        },
+        {
+          "text": "Giám Sát GPS & Lệch Tuyến",
+          "href": "/trips/f0000000-0000-0000-0000-000000000001"
+        },
+        {
+          "text": "Đa Mục Tiêu Pareto (UC05)",
+          "href": "/planning/c0000000-0000-0000-0000-000000000001"
+        },
+        {
+          "text": "Kiểm Toán GLEC v3 (UC12)",
+          "href": "/trips/f0000000-0000-0000-0000-000000000001/carbon"
+        },
+        {
+          "text": "Định Mức Hành Lang (UC13)",
+          "href": "/analytics/benchmark"
+        },
+        {
+          "text": "Quản Lý User & Công Ty",
+          "href": "/admin/users"
+        },
+        {
+          "text": "Quản Trị IAM & An Toàn",
+          "href": "/governance"
+        },
+        {
+          "text": "Cổng Xác Thực IAM",
+          "href": "/login"
+        }
+      ],
+      "mainText": "QUẢN TRỊ HỆ THỐNG • ROOT ADMIN\nChi Tiết Chuyến Vận Tải & Đề Xuất Tuyến\nTrực tuyến\nKhông gian 3D\nPhát Cảnh Báo\nMessenger\nKhẩn Cấp\n2\nQA\nCHẾ ĐỘ CHỜ BACKEND — KHÔNG TỰ SINH GPS ẢO\nGiám Sát GPS Thời Gian Thực & Cảnh Báo Lệch Tuyến\n\nMã chuyến: f0000000-0000-0000-0000-000000000001 • Chưa có dữ liệu xe từ DB • Trạng thái: CHỜ ĐỒNG BỘ\n\nĐang tải...\nGửi GPS Thiết Bị Thực\nKiểm Toán Phát Thải\n🚩 Hành lang: Cảng Cát Lái ➔ KCN VSIP 1\nTổng cự ly: 29 km\nĐã đi: Chưa có GPS\nETA: Chờ tốc độ thực\nMẫu GPS ghi nhận: 0\nChưa có dữ liệu xe từ DB • Dữ liệu thực PostgreSQL + SSE\nChưa có tọa độ GPS thực từ TelemetryEvent — hiển thị điểm đầu/cuối hành lang\nLớp bản đồ:\nVệ Tinh 3D\nGoogle Maps\nĐịa Hình 3D\nRadar Đêm\nChế độ 3D: BẬT\nGóc nghiêng 38°\n↺ Xoay trái\n↻ Xoay phải\nĐặt lại\nMở rộng\nĐIỂM ĐI: Cảng Cát Lái\nĐIỂM ĐẾN: KCN VSIP 1\n+\n−\n Leaflet | © Google Maps Satellite Hybrid\nThông Số Telemetry Thực Tế (DB)\nPhương tiện & Biển số\nChưa có dữ liệu xe từ DB\nTài xế phụ trách\nChưa gán trên DB\nVận tốc đo được\nChờ tín hiệu GPS\nHướng di chuyển (Bearing)\n--\nĐộ lệch khỏi tâm tuyến\nChờ tính ST_Distance\nContainer ISO 6346\nChưa gắn Container\nKhóa Seal GPS Hải Quan\nChưa đồng bộ\nGia tốc kế 3 trục (Shock)\nChưa có cảm biến\nNhiệt độ chuỗi lạnh\nChưa có cảm biến\nCO2e cắt giảm (GLEC v3)\n--\nTọa độ GPS hiện tại\nChưa nhận GPS thực\nQuy Tắc Giám Sát Hành Lang\nVùng an toàn (< 50m)\nBám sát tuyến hành lang đã duyệt trên PostgreSQL/PostGIS.\nCảnh báo vàng (50m – 200m)\nGửi nhắc nhở Cabin OS cho tài xế.\nBáo động đỏ (> 200m)\nSau 3 điểm liên tiếp vượt ngưỡng, hệ thống gửi đề xuất đổi tuyến chờ Điều phối viên phê duyệt.\nCập nhật lần cuối: Chưa có",
+      "viewport": {
+        "width": 1440,
+        "documentWidth": 1440
+      },
+      "inputs": [],
+      "selects": []
+    },
+    {
+      "name": "11-mobile-users",
+      "path": "/admin/users",
+      "title": "CCADRO | Hệ Thống Quản Trị Chuỗi Cung Ứng & Vận Tải Xanh",
+      "headings": [
+        "CCADRO",
+        "Quản Lý User, Hồ Sơ Chi Tiết & Phân Quyền IAM",
+        "Hệ Thống Quản Trị Tài Khoản, Phân Quyền (IAM) & An Toàn Đội Xe",
+        "Danh Sách Tài Khoản Hệ Thống (14)",
+        "Khởi Tạo Tài Khoản Nội Bộ & Phân Quyền (Dành Cho ADMIN)"
+      ],
+      "buttons": [
+        {
+          "text": "",
+          "title": "Thu gọn thanh bên"
+        },
+        {
+          "text": "QA\nQuản Trị Viên Hệ Thống (Root Admin)\nADMIN\n• @admin",
+          "title": "Xem hồ sơ & cài đặt tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Cài đặt tài khoản & hệ thống"
+        },
+        {
+          "text": "",
+          "title": "Đăng xuất"
+        },
+        {
+          "text": "",
+          "title": "Thu gọn thanh bên"
+        },
+        {
+          "text": "",
+          "title": "Phát cảnh báo khẩn cấp tới đội xe & trung tâm điều phối"
+        },
+        {
+          "text": "",
+          "title": "Mở CCADRO Messenger (Chat đa người & nhóm)"
+        },
+        {
+          "text": "2",
+          "title": "Trung tâm thông báo & cảnh báo khẩn cấp"
+        },
+        {
+          "text": "",
+          "title": "Chuyển sang giao diện Sáng"
+        },
+        {
+          "text": "",
+          "title": "Cài đặt tài khoản & nghiệp vụ theo vai trò"
+        },
+        {
+          "text": "QA",
+          "title": ""
+        },
+        {
+          "text": "🔐 Quản Lý Tài Khoản & Phân Quyền (Admin IAM)",
+          "title": ""
+        },
+        {
+          "text": "🛠️ Kiểm Tra An Toàn 6 Hạng Mục (UC01)",
+          "title": ""
+        },
+        {
+          "text": "🚨 Báo Cáo Sự Cố & Điểm Phạt (UC16-18)",
+          "title": ""
+        },
+        {
+          "text": "Quản Lý User & Hồ Sơ Chi Tiết (14)",
+          "title": ""
+        },
+        {
+          "text": "Quản Lý Công Ty & Đối Tác B2B (5)",
+          "title": ""
+        },
+        {
+          "text": "Tất cả (14)",
+          "title": ""
+        },
+        {
+          "text": "Nội bộ (6)",
+          "title": ""
+        },
+        {
+          "text": "Khách hàng (1)",
+          "title": ""
+        },
+        {
+          "text": "Shipper 3PL (7)",
+          "title": ""
+        },
+        {
+          "text": "Đã xóa mềm (0)",
+          "title": "Xem các mục đã xóa mềm & khôi phục"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "48/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "11/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "6/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "4/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "8/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "10/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "9/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "12/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "12/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "9/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "9/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "9/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "6/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "11/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Khởi Tạo Tài Khoản & Áp Dụng Phân Quyền",
+          "title": ""
+        }
+      ],
+      "nav": [
+        {
+          "text": "Trang Chủ Website",
+          "href": "/"
+        },
+        {
+          "text": "Trung Tâm Giám Sát",
+          "href": "/portal"
+        },
+        {
+          "text": "Quản Lý Vận Đơn",
+          "href": "/shipments"
+        },
+        {
+          "text": "Tạo Đơn Hàng Mới",
+          "href": "/shipments/new"
+        },
+        {
+          "text": "Điều Phối & Xuất Bến",
+          "href": "/dispatch/c0000000-0000-0000-0000-000000000001"
+        },
+        {
+          "text": "Giám Sát GPS & Lệch Tuyến",
+          "href": "/trips/f0000000-0000-0000-0000-000000000001"
+        },
+        {
+          "text": "Đa Mục Tiêu Pareto (UC05)",
+          "href": "/planning/c0000000-0000-0000-0000-000000000001"
+        },
+        {
+          "text": "Kiểm Toán GLEC v3 (UC12)",
+          "href": "/trips/f0000000-0000-0000-0000-000000000001/carbon"
+        },
+        {
+          "text": "Định Mức Hành Lang (UC13)",
+          "href": "/analytics/benchmark"
+        },
+        {
+          "text": "Quản Lý User & Công Ty",
+          "href": "/admin/users"
+        },
+        {
+          "text": "Quản Trị IAM & An Toàn",
+          "href": "/governance"
+        },
+        {
+          "text": "Cổng Xác Thực IAM",
+          "href": "/login"
+        }
+      ],
+      "mainText": "QUẢN TRỊ HỆ THỐNG • ROOT ADMIN\nQuản Lý User, Hồ Sơ Chi Tiết & Phân Quyền IAM\n2\nQA\nHệ Thống Quản Trị Tài Khoản, Phân Quyền (IAM) & An Toàn Đội Xe\n\nQuản lý danh sách tài khoản toàn hệ thống, khởi tạo tài khoản cho các Role nội bộ, gán quyền RBAC chi tiết & giám sát an toàn kỹ thuật (UC01 / UC16)\n\n🔐 Quản Lý Tài Khoản & Phân Quyền (Admin IAM)\n🛠️ Kiểm Tra An Toàn 6 Hạng Mục (UC01)\n🚨 Báo Cáo Sự Cố & Điểm Phạt (UC16-18)\nTỔNG TÀI KHOẢN HỆ THỐNG\n14\nĐịnh danh tập trung IAM\nNHÂN SỰ NỘI BỘ (ADMIN CẤP)\n6\nKhởi tạo & phân quyền bởi ADMIN\nTÀI KHOẢN KHÁCH HÀNG (USER)\n1\nTự đăng ký (/register) hoặc Admin cấp\nDOANH NGHIỆP & ĐỐI TÁC\n5\nHồ sơ B2B • MST • Hạn mức Net-30\nQuản Lý User & Hồ Sơ Chi Tiết (14)\nQuản Lý Công Ty & Đối Tác B2B (5)\nDanh Sách Tài Khoản Hệ Thống (14)\n\nQuản trị viên có thể đổi Vai trò (Role), tùy chỉnh quyền chi tiết hoặc khóa/xóa tài khoản trực tiếp tại bảng này.\n\nTất cả (14)\nNội bộ (6)\nKhách hàng (1)\nShipper 3PL (7)\nElastic\nĐã xóa mềm (0)\nTÀI KHOẢN & LIÊN HỆ\tNGƯỜI DÙNG & CÔNG TY (MST)\tVAI TRÒ (PHÂN QUYỀN ROLE)\tQUYỀN & HỒ SƠ\tTRẠNG THÁI & QUẢN LÝ\n@admin\nadmin@ccadro.com\n📞 028 3888 9999\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tQuản Trị Viên Hệ Thống (Root Admin)\n🏢 CCADRO Green Logistics Corporation\nMã: CCADRO_CORE\n\tROOT ADMIN\t\nChi tiết User / Công ty\n48/48 quyền\n\t\nACTIVE\n\n@dispatcher\ndispatcher@ccadro.com\n📞 028 3888 8802\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tNguyễn Văn Nam (Điều Phối Trưởng)\n🏢 CCADRO Green Logistics Corporation\nMã: CCADRO_CORE\n\tDISPATCHER (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n11/48 quyền\n\t\nACTIVE\n\n@driver\ndriver@ccadro.com\n📞 0903 812 456\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tTrần Văn Tài (Tài Xế Trưởng)\n🏢 CCADRO Green Logistics Corporation\nMã: CCADRO_FLEET\n\tDRIVER (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n6/48 quyền\n\t\nACTIVE\n\n@auditor\nauditor@ccadro.com\n📞 028 3888 8804\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tLê Thị Kiểm Toán (GLEC v3 Auditor)\n🏢 CCADRO Green Logistics Corporation\nMã: CCADRO_AUDIT\n\tESG_AUDITOR (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n4/48 quyền\n\t\nACTIVE\n\n@safety\nsafety@ccadro.com\n📞 028 3888 8805\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tPhạm Văn An Toàn (Safety Manager)\n🏢 CCADRO Green Logistics Corporation\nMã: CCADRO_SAFETY\n\tSAFETY_MANAGER (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n8/48 quyền\n\t\nACTIVE\n\n@customer\ncustomer@ccadro.com\n📞 028 5415 5555\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tMinh Phú & Vinamilk B2B (Chủ Hàng)\nTrưởng nhóm Điều vận B2B\n🏢 CTCP Sữa Việt Nam (Vinamilk Logistics)\nMã: DOANH_NGHIEP_B2B • MST: 0300588569\n\tCUSTOMER (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n10/48 quyền\n\t\nACTIVE\n\n@shipper\nshipper-bn1@ccadro.com\n📞 0912 345 101\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tNguyễn Văn Toàn (Shipper Đình Bảng #1)\n🏢 Trụ sở Đình Bảng - Từ Sơn, Bắc Ninh\nMã: HUB_DINHBANG_BN\n\tHUB_SHIPPER (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n9/48 quyền\n\t\nACTIVE\n\n@hub_mgr_dinhbang\nhub-mgr-dinhbang@ccadro.com\n📞 0222 3841 999\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tTrần Minh Quang (Trưởng Trụ Sở Đình Bảng)\n🏢 Trụ sở Đình Bảng - Từ Sơn, Bắc Ninh\nMã: HUB_DINHBANG_BN\n\tHUB_MANAGER (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n12/48 quyền\n\t\nACTIVE\n\n@hub_mgr_amata\nhub-mgr-amata@ccadro.com\n📞 0251 3992 888\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tLê Hoàng Nam (Trưởng Trụ Sở Amata)\n🏢 Trụ sở Amata - Biên Hòa, Đồng Nai\nMã: HUB_AMATA_BH\n\tHUB_MANAGER (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n12/48 quyền\n\t\nACTIVE\n\n@shipper_bn2\nshipper-bn2@ccadro.com\n📞 0912 345 102\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tPhạm Thị Lan Anh (Shipper Đình Bảng #2)\n🏢 Trụ sở Đình Bảng - Từ Sơn, Bắc Ninh\nMã: HUB_DINHBANG_BN\n\tHUB_SHIPPER (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n9/48 quyền\n\t\nACTIVE\n\n@shipper_bn3\nshipper-bn3@ccadro.com\n📞 0912 345 103\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tNgô Đức Hải (Shipper Đình Bảng #3)\n🏢 Trụ sở Đình Bảng - Từ Sơn, Bắc Ninh\nMã: HUB_DINHBANG_BN\n\tHUB_SHIPPER (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n9/48 quyền\n\t\nACTIVE\n\n@shipper_amata\nshipper-amata@ccadro.com\n📞 0902 418 229\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tĐặng Quốc Bảo (Shipper Amata #101)\n🏢 Trụ sở Amata - Biên Hòa, Đồng Nai\nMã: HUB_AMATA_BH\n\tHUB_SHIPPER (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n9/48 quyền\n\t\nACTIVE\n\n@hub_inspector_bn\ninspector-bn@ccadro.com\n📞 0918 776 301\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tVũ Thu Hà (Kiểm Tra Viên Ảnh POD & SLA)\n🏢 Trụ sở Đình Bảng - Từ Sơn, Bắc Ninh\nMã: HUB_DINHBANG_BN\n\tHUB_AUDITOR (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n6/48 quyền\n\t\nACTIVE\n\n@audit_local_only_20261117\naudit-local-only@example.invalid\n📞 028 3888 9999\nNguồn: Cấp bởi admin\n\tAudit Local Only\nĐiều Phối Viên Trung Tâm (NOC)\n🏢 CCADRO Green Logistics Corporation\nMã: CCADRO_INTERNAL\n\t\nADMIN\nDISPATCHER\nSAFETY_MANAGER\nDRIVER\nESG_AUDITOR\nCUSTOMER\nSHIPPER\nHUB_MANAGER\nHUB_SHIPPER\nHUB_AUDITOR\n\t\nChi tiết User / Công ty\n11/48 quyền\n\t\nACTIVE\nKhởi Tạo Tài Khoản Nội Bộ & Phân Quyền (Dành Cho ADMIN)\n\nHệ thống khóa cứng 7 vai trò hạt nhân (ADMIN, DISPATCHER, SAFETY_MANAGER, DRIVER, ESG_AUDITOR, CUSTOMER, SHIPPER) kèm 7 tài khoản gốc tương ứng. CUSTOMER đặt xe tại /customer, còn SHIPPER là đối tác kho/giao nhận điểm đích 3PL tại /shipper.\n\nTên đăng nhập (Username) *\nMật khẩu khởi tạo (≥ 3 ký tự) *\nHọ và tên nhân sự *\nEmail công vụ *\nGán Vai trò (Role Nội bộ / Hệ thống) *\nDISPATCHER — Điều phối viên NOC\nSAFETY_MANAGER — Trưởng ban An toàn\nDRIVER — Tài xế Vận tải\nESG_AUDITOR — Kiểm toán viên Carbon\nADMIN — Quản trị viên hệ thống\nCUSTOMER — Khách hàng / Chủ hàng B2B\nSHIPPER — Đối tác Điểm đích / Kho 3PL (Bên thứ 3)\nPhòng ban / Đơn vị trực thuộc\nSố điện thoại & Chức vụ\nGắn Công Ty / Đối Tác B2B\n-- Mặc định theo vai trò --\nCCADRO_INT — CCADRO Green Logistics Corporation\nVINAMILK — CTCP Sữa Việt Nam (Vinamilk Logistics)\nSAMSUNG_VN — Công ty TNHH Samsung Electronics Việt Nam\nHUB_DINHBANG_BN — Trung Tâm Phân Phối Đình Bảng - VSIP Bắc Ninh\nDHL_3PL — DHL Supply Chain Việt Nam (Đối tác 3PL)\nPhân quyền chi tiết cho tài khoản (11/48 quyền được cấp):\nLập lộ trình đa tiêu chí (UC05), phát lệnh điều xe (UC06), theo dõi GPS (UC09) & duyệt đổi tuyến động (UC10).\nUSER_MANAGE\nQuản lý & cấp phát tài khoản\nROLE_MANAGE\nPhân quyền vai trò (RBAC)\nVEHICLE_READ\nXem danh sách phương tiện\nVEHICLE_WRITE\nThêm / cập nhật phương tiện\nMAINTENANCE_MANAGE\nQuản lý bảo dưỡng phương tiện\nINSPECTION_SUBMIT\nGửi biên bản kiểm tra Pre-trip\nINSPECTION_REVIEW\nPhê duyệt kiểm định an toàn\nSHIPMENT_CREATE\nKhởi tạo vận đơn mới\nSHIPMENT_READ\nXem toàn bộ vận đơn hệ thống\nSHIPMENT_READ_OWN\nXem vận đơn của riêng doanh nghiệp (Customer)\nSHIPMENT_READ_INBOUND\nXem hàng/container giao tới bãi điểm đích (3PL Shipper)\nEXTERNAL_3PL_SYNC\nĐồng bộ trạng thái & Webhook qua hệ thống thứ 3 (WMS/3PL)\nSHIPMENT_WRITE\nCập nhật thông tin vận đơn\nSHIPMENT_DISPATCH\nPhát lệnh điều xe xuất bến\nROUTE_PLAN\nLập lộ trình đa mục tiêu Pareto\nROUTE_SELECT\nChọn phương án lộ trình\nREROUTE_APPROVE\nPhê duyệt tái định tuyến động\nTRACKING_LIVE\nGiám sát bản đồ GPS thời gian thực\nTELEMETRY_SEND\nPhát tín hiệu tọa độ GPS từ xe\nALERT_ACK\nTiếp nhận & xử lý cảnh báo lệch tuyến\nINCIDENT_REPORT\nBáo cáo sự cố hiện trường\nEXCEPTION_RESOLVE\nThẩm định ngoại lệ vận hành\nDEMERIT_MANAGE\nQuản trị điểm phạt tài xế\nPOD_SUBMIT\nKý xác nhận bàn giao hàng (ePOD)\nPOD_VIEW_OWN\nTải chứng từ ePOD doanh nghiệp\nCARBON_READ\nTra cứu sổ cái phát thải CO2e\nCARBON_CALCULATE\nQuyết toán phát thải GLEC v3\nBENCHMARK_READ\nXem định mức carbon hành lang\nREPORT_EXPORT\nXuất chứng nhận ISO 14083\nDRIVER_CHAT\nNhắn tin trực tiếp 2 chiều Customer ↔ Tài xế\nPAYMENT_CREATE\nKhởi tạo yêu cầu thanh toán & hóa đơn VAT\nPAYMENT_READ_OWN\nXem lịch sử thanh toán & công nợ Net-30\nPAYMENT_MANAGE\nQuản trị đối soát & hoàn tiền giao dịch\nCONTRACT_READ_OWN\nXem hợp đồng khung MSA, hợp đồng chuyến & SLA\nCONTRACT_CREATE\nKhởi tạo hợp đồng điện tử B2B\nCONTRACT_SIGN\nKý số xác nhận hợp đồng & nghiệm thu ePOD\nCONTRACT_MANAGE\nQuản trị hạn mức công nợ & đối soát SLA\nHUB_WORKSPACE_READ\nTruy cập không gian làm việc Trụ sở được phân công\nCONTAINER_MANIFEST_INGEST\nNhận dữ liệu Manifest từ Container vào Trụ sở\nHUB_DISPATCH_AUTO\nChia đơn tự động theo khoảng cách GPS trong Trụ sở\nHUB_TASK_RANGE_ASSIGN\nGiao nhiệm vụ cho Shipper theo Dải mã số\nSHIPPER_POLICY_READ\nXem Chính sách vận hành dành riêng cho Shipper\nSHIPPER_OWN_SCOPE_READ\nXem phạm vi địa bàn giao hôm nay của bản thân\nSHIPPER_ITEM_STATUS_UPDATE\nCập nhật trạng thái đang đi giao hàng\nPOD_PHOTO_SUBMIT\nChụp & nộp Ảnh xác thực giao hàng (Photo POD)\nPOD_PHOTO_VIEW\nXem và đối soát Ảnh bằng chứng POD\nHUB_AUDIT_READ\nKiểm toán chất lượng POD & tuân thủ SLA (Chỉ đọc)\nHUB_ACCOUNT_MANAGE\nCấp phát & khóa/mở khóa tài khoản nội bộ Trụ sở\nKhởi Tạo Tài Khoản & Áp Dụng Phân Quyền",
+      "viewport": {
+        "width": 390,
+        "documentWidth": 390
+      },
+      "inputs": [
+        {
+          "type": "text",
+          "placeholder": "Elastic search: username, họ tên không dấu, vai trò, phòng ban, hub...",
+          "required": false
+        },
+        {
+          "type": "text",
+          "placeholder": "VD: dispatcher01, safety01...",
+          "required": true
+        },
+        {
+          "type": "text",
+          "placeholder": "VD: 123",
+          "required": true
+        },
+        {
+          "type": "text",
+          "placeholder": "VD: Lê Minh Khoa",
+          "required": true
+        },
+        {
+          "type": "email",
+          "placeholder": "VD: khoa.lm@ccadro.com",
+          "required": true
+        },
+        {
+          "type": "text",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "text",
+          "placeholder": "VD: 0903 812 456",
+          "required": false
+        },
+        {
+          "type": "text",
+          "placeholder": "Chức vụ (VD: Điều phối viên)",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        }
+      ],
+      "selects": [
+        [
+          {
+            "text": "ADMIN",
+            "value": "ADMIN"
+          },
+          {
+            "text": "DISPATCHER",
+            "value": "DISPATCHER"
+          },
+          {
+            "text": "SAFETY_MANAGER",
+            "value": "SAFETY_MANAGER"
+          },
+          {
+            "text": "DRIVER",
+            "value": "DRIVER"
+          },
+          {
+            "text": "ESG_AUDITOR",
+            "value": "ESG_AUDITOR"
+          },
+          {
+            "text": "CUSTOMER",
+            "value": "CUSTOMER"
+          },
+          {
+            "text": "SHIPPER",
+            "value": "SHIPPER"
+          },
+          {
+            "text": "HUB_MANAGER",
+            "value": "HUB_MANAGER"
+          },
+          {
+            "text": "HUB_SHIPPER",
+            "value": "HUB_SHIPPER"
+          },
+          {
+            "text": "HUB_AUDITOR",
+            "value": "HUB_AUDITOR"
+          }
+        ],
+        [
+          {
+            "text": "DISPATCHER — Điều phối viên NOC",
+            "value": "DISPATCHER"
+          },
+          {
+            "text": "SAFETY_MANAGER — Trưởng ban An toàn",
+            "value": "SAFETY_MANAGER"
+          },
+          {
+            "text": "DRIVER — Tài xế Vận tải",
+            "value": "DRIVER"
+          },
+          {
+            "text": "ESG_AUDITOR — Kiểm toán viên Carbon",
+            "value": "ESG_AUDITOR"
+          },
+          {
+            "text": "ADMIN — Quản trị viên hệ thống",
+            "value": "ADMIN"
+          },
+          {
+            "text": "CUSTOMER — Khách hàng / Chủ hàng B2B",
+            "value": "CUSTOMER"
+          },
+          {
+            "text": "SHIPPER — Đối tác Điểm đích / Kho 3PL (Bên thứ 3)",
+            "value": "SHIPPER"
+          }
+        ],
+        [
+          {
+            "text": "-- Mặc định theo vai trò --",
+            "value": ""
+          },
+          {
+            "text": "CCADRO_INT — CCADRO Green Logistics Corporation",
+            "value": "90000000-0000-0000-0000-000000000001"
+          },
+          {
+            "text": "VINAMILK — CTCP Sữa Việt Nam (Vinamilk Logistics)",
+            "value": "90000000-0000-0000-0000-000000000002"
+          },
+          {
+            "text": "SAMSUNG_VN — Công ty TNHH Samsung Electronics Việt Nam",
+            "value": "90000000-0000-0000-0000-000000000003"
+          },
+          {
+            "text": "HUB_DINHBANG_BN — Trung Tâm Phân Phối Đình Bảng - VSIP Bắc Ninh",
+            "value": "90000000-0000-0000-0000-000000000004"
+          },
+          {
+            "text": "DHL_3PL — DHL Supply Chain Việt Nam (Đối tác 3PL)",
+            "value": "90000000-0000-0000-0000-000000000005"
+          }
+        ]
+      ]
+    }
+  ],
+  "faults": [
+    {
+      "test": "pretrip-503",
+      "path": "/governance",
+      "title": "CCADRO | Hệ Thống Quản Trị Chuỗi Cung Ứng & Vận Tải Xanh",
+      "headings": [
+        "CCADRO",
+        "Quản Trị Tài Khoản IAM & An Toàn Đội Xe (UC01 / UC16)",
+        "Hệ Thống Quản Trị Tài Khoản, Phân Quyền (IAM) & An Toàn Đội Xe",
+        "Biên Bản Kiểm Tra An Toàn Kỹ Thuật 6 Hạng Mục Trước Chuyến (UC01 / BRULE-01)"
+      ],
+      "buttons": [
+        {
+          "text": "",
+          "title": "Thu gọn thanh bên"
+        },
+        {
+          "text": "QA\nQuản Trị Viên Hệ Thống (Root Admin)\nADMIN\n• @admin",
+          "title": "Xem hồ sơ & cài đặt tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Cài đặt tài khoản & hệ thống"
+        },
+        {
+          "text": "",
+          "title": "Đăng xuất"
+        },
+        {
+          "text": "",
+          "title": "Thu gọn thanh bên"
+        },
+        {
+          "text": "Phát Cảnh Báo",
+          "title": "Phát cảnh báo khẩn cấp tới đội xe & trung tâm điều phối"
+        },
+        {
+          "text": "Messenger",
+          "title": "Mở CCADRO Messenger (Chat đa người & nhóm)"
+        },
+        {
+          "text": "Khẩn Cấp\n2",
+          "title": "Trung tâm thông báo & cảnh báo khẩn cấp"
+        },
+        {
+          "text": "",
+          "title": "Chuyển sang giao diện Sáng"
+        },
+        {
+          "text": "",
+          "title": "Cài đặt tài khoản & nghiệp vụ theo vai trò"
+        },
+        {
+          "text": "QA",
+          "title": ""
+        },
+        {
+          "text": "🔐 Quản Lý Tài Khoản & Phân Quyền (Admin IAM)",
+          "title": ""
+        },
+        {
+          "text": "🛠️ Kiểm Tra An Toàn 6 Hạng Mục (UC01)",
+          "title": ""
+        },
+        {
+          "text": "🚨 Báo Cáo Sự Cố & Điểm Phạt (UC16-18)",
+          "title": ""
+        },
+        {
+          "text": "Xác Nhận Biên Bản Kiểm Tra Trước Chuyến (UC01)",
+          "title": ""
+        }
+      ],
+      "nav": [
+        {
+          "text": "Trang Chủ Website",
+          "href": "/"
+        },
+        {
+          "text": "Trung Tâm Giám Sát",
+          "href": "/portal"
+        },
+        {
+          "text": "Quản Lý Vận Đơn",
+          "href": "/shipments"
+        },
+        {
+          "text": "Tạo Đơn Hàng Mới",
+          "href": "/shipments/new"
+        },
+        {
+          "text": "Điều Phối & Xuất Bến",
+          "href": "/dispatch/c0000000-0000-0000-0000-000000000001"
+        },
+        {
+          "text": "Giám Sát GPS & Lệch Tuyến",
+          "href": "/trips/f0000000-0000-0000-0000-000000000001"
+        },
+        {
+          "text": "Đa Mục Tiêu Pareto (UC05)",
+          "href": "/planning/c0000000-0000-0000-0000-000000000001"
+        },
+        {
+          "text": "Kiểm Toán GLEC v3 (UC12)",
+          "href": "/trips/f0000000-0000-0000-0000-000000000001/carbon"
+        },
+        {
+          "text": "Định Mức Hành Lang (UC13)",
+          "href": "/analytics/benchmark"
+        },
+        {
+          "text": "Quản Lý User & Công Ty",
+          "href": "/admin/users"
+        },
+        {
+          "text": "Quản Trị IAM & An Toàn",
+          "href": "/governance"
+        },
+        {
+          "text": "Cổng Xác Thực IAM",
+          "href": "/login"
+        }
+      ],
+      "mainText": "QUẢN TRỊ HỆ THỐNG • ROOT ADMIN\nQuản Trị Tài Khoản IAM & An Toàn Đội Xe (UC01 / UC16)\nTrực tuyến\nKhông gian 3D\nPhát Cảnh Báo\nMessenger\nKhẩn Cấp\n2\nQA\nHệ Thống Quản Trị Tài Khoản, Phân Quyền (IAM) & An Toàn Đội Xe\n\nQuản lý danh sách tài khoản toàn hệ thống, khởi tạo tài khoản cho các Role nội bộ, gán quyền RBAC chi tiết & giám sát an toàn kỹ thuật (UC01 / UC16)\n\n🔐 Quản Lý Tài Khoản & Phân Quyền (Admin IAM)\n🛠️ Kiểm Tra An Toàn 6 Hạng Mục (UC01)\n🚨 Báo Cáo Sự Cố & Điểm Phạt (UC16-18)\nBiên Bản Kiểm Tra An Toàn Kỹ Thuật 6 Hạng Mục Trước Chuyến (UC01 / BRULE-01)\n\nQuy tắc bất biến BRULE-01: Nếu bất kỳ hạng mục nào trong 6 hạng mục dưới đây không đạt (false), phương tiện lập tức bị khóa sang trạng thái MAINTENANCE và chặn xuất bến.\n\nĐã xác nhận đạt 6/6 hạng mục an toàn kỹ thuật (Sẵn sàng xuất bến).\n1. Hệ thống Phanh hơi & Phanh tay (Brakes)\n2. Áp suất & Độ mòn Lốp container (Tires)\n3. Hệ thống Đèn pha, Xi-nhan & Cảnh báo (Lights)\n4. Thước lái & Trợ lực thủy lực (Steering)\n5. Còi hơi & Gương chiếu hậu góc rộng (Mirrors)\n6. Bình chữa cháy, Cam hành trình & GPS (Safety)\nXác Nhận Biên Bản Kiểm Tra Trước Chuyến (UC01)",
+      "viewport": {
+        "width": 1440,
+        "documentWidth": 1440
+      },
+      "inputs": [
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        }
+      ],
+      "selects": []
+    },
+    {
+      "test": "incident-503",
+      "path": "/governance",
+      "title": "CCADRO | Hệ Thống Quản Trị Chuỗi Cung Ứng & Vận Tải Xanh",
+      "headings": [
+        "CCADRO",
+        "Quản Trị Tài Khoản IAM & An Toàn Đội Xe (UC01 / UC16)",
+        "Hệ Thống Quản Trị Tài Khoản, Phân Quyền (IAM) & An Toàn Đội Xe",
+        "Báo Cáo Sự Cố Hiện Trường (UC16 & BRULE-17)",
+        "Quản Trị Điểm Phạt Tài Xế (UC18 / BRULE-18)"
+      ],
+      "buttons": [
+        {
+          "text": "",
+          "title": "Thu gọn thanh bên"
+        },
+        {
+          "text": "QA\nQuản Trị Viên Hệ Thống (Root Admin)\nADMIN\n• @admin",
+          "title": "Xem hồ sơ & cài đặt tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Cài đặt tài khoản & hệ thống"
+        },
+        {
+          "text": "",
+          "title": "Đăng xuất"
+        },
+        {
+          "text": "",
+          "title": "Thu gọn thanh bên"
+        },
+        {
+          "text": "Phát Cảnh Báo",
+          "title": "Phát cảnh báo khẩn cấp tới đội xe & trung tâm điều phối"
+        },
+        {
+          "text": "Messenger",
+          "title": "Mở CCADRO Messenger (Chat đa người & nhóm)"
+        },
+        {
+          "text": "Khẩn Cấp\n4",
+          "title": "Trung tâm thông báo & cảnh báo khẩn cấp"
+        },
+        {
+          "text": "",
+          "title": "Chuyển sang giao diện Sáng"
+        },
+        {
+          "text": "",
+          "title": "Cài đặt tài khoản & nghiệp vụ theo vai trò"
+        },
+        {
+          "text": "QA",
+          "title": ""
+        },
+        {
+          "text": "🔐 Quản Lý Tài Khoản & Phân Quyền (Admin IAM)",
+          "title": ""
+        },
+        {
+          "text": "🛠️ Kiểm Tra An Toàn 6 Hạng Mục (UC01)",
+          "title": ""
+        },
+        {
+          "text": "🚨 Báo Cáo Sự Cố & Điểm Phạt (UC16-18)",
+          "title": ""
+        },
+        {
+          "text": "Gửi Báo Cáo Sự Cố & Phát Cảnh Báo Khẩn Cấp",
+          "title": ""
+        }
+      ],
+      "nav": [
+        {
+          "text": "Trang Chủ Website",
+          "href": "/"
+        },
+        {
+          "text": "Trung Tâm Giám Sát",
+          "href": "/portal"
+        },
+        {
+          "text": "Quản Lý Vận Đơn",
+          "href": "/shipments"
+        },
+        {
+          "text": "Tạo Đơn Hàng Mới",
+          "href": "/shipments/new"
+        },
+        {
+          "text": "Điều Phối & Xuất Bến",
+          "href": "/dispatch/c0000000-0000-0000-0000-000000000001"
+        },
+        {
+          "text": "Giám Sát GPS & Lệch Tuyến",
+          "href": "/trips/f0000000-0000-0000-0000-000000000001"
+        },
+        {
+          "text": "Đa Mục Tiêu Pareto (UC05)",
+          "href": "/planning/c0000000-0000-0000-0000-000000000001"
+        },
+        {
+          "text": "Kiểm Toán GLEC v3 (UC12)",
+          "href": "/trips/f0000000-0000-0000-0000-000000000001/carbon"
+        },
+        {
+          "text": "Định Mức Hành Lang (UC13)",
+          "href": "/analytics/benchmark"
+        },
+        {
+          "text": "Quản Lý User & Công Ty",
+          "href": "/admin/users"
+        },
+        {
+          "text": "Quản Trị IAM & An Toàn",
+          "href": "/governance"
+        },
+        {
+          "text": "Cổng Xác Thực IAM",
+          "href": "/login"
+        }
+      ],
+      "mainText": "QUẢN TRỊ HỆ THỐNG • ROOT ADMIN\nQuản Trị Tài Khoản IAM & An Toàn Đội Xe (UC01 / UC16)\nTrực tuyến\nKhông gian 3D\nPhát Cảnh Báo\nMessenger\nKhẩn Cấp\n4\nQA\nHệ Thống Quản Trị Tài Khoản, Phân Quyền (IAM) & An Toàn Đội Xe\n\nQuản lý danh sách tài khoản toàn hệ thống, khởi tạo tài khoản cho các Role nội bộ, gán quyền RBAC chi tiết & giám sát an toàn kỹ thuật (UC01 / UC16)\n\n🔐 Quản Lý Tài Khoản & Phân Quyền (Admin IAM)\n🛠️ Kiểm Tra An Toàn 6 Hạng Mục (UC01)\n🚨 Báo Cáo Sự Cố & Điểm Phạt (UC16-18)\nBáo Cáo Sự Cố Hiện Trường (UC16 & BRULE-17)\n\nKhi gửi báo cáo sự cố, hệ thống lập tức phát bản tin khẩn cấp tới Trung tâm Điều phối. Theo BRULE-17, báo cáo sự cố không bao giờ tự động trừ điểm tài xế.\n\nĐã ghi nhận báo cáo sự cố hiện trường INC-009314 (BRULE-17: Không tự động trừ điểm tài xế khi chưa thẩm định).\nLoại sự cố hiện trường\nPhong tỏa giao thông / Tai nạn liên hoàn\nSự cố kỹ thuật phương tiện (Nổ lốp / Quá nhiệt)\nNgập lụt / Sạt lở thiên tai\nCảnh báo an toàn hàng hóa\nMô tả hiện trường & Kiến nghị đổi lộ trình\nGửi Báo Cáo Sự Cố & Phát Cảnh Báo Khẩn Cấp\nQuản Trị Điểm Phạt Tài Xế (UC18 / BRULE-18)\n\nNgưỡng cảnh báo tự động: 10 điểm = Cảnh cáo an toàn (WARNING_ISSUED) • 20 điểm = Chuyển Hội đồng Nhân sự xem xét kỷ luật nhưng không tự động khóa tài khoản (BRULE-18).\n\nHồ sơ An toàn Đội xe\n0 Điểm phạt • Hồ sơ Xanh\n• Số sự cố khách quan được miễn trừ (Excused Force Majeure): 2 vụ\n• Số vi phạm chủ quan (Unexcused): 0 vụ\n• Trạng thái đội xe: ACTIVE (Đủ điều kiện điều phối)",
+      "viewport": {
+        "width": 1440,
+        "documentWidth": 1440
+      },
+      "inputs": [],
+      "selects": [
+        [
+          {
+            "text": "Phong tỏa giao thông / Tai nạn liên hoàn",
+            "value": "TRAFFIC_BLOCKADE"
+          },
+          {
+            "text": "Sự cố kỹ thuật phương tiện (Nổ lốp / Quá nhiệt)",
+            "value": "VEHICLE_BREAKDOWN"
+          },
+          {
+            "text": "Ngập lụt / Sạt lở thiên tai",
+            "value": "SEVERE_WEATHER"
+          },
+          {
+            "text": "Cảnh báo an toàn hàng hóa",
+            "value": "CARGO_HAZARD"
+          }
+        ]
+      ]
+    },
+    {
+      "test": "create-user-503",
+      "path": "/admin/users",
+      "title": "CCADRO | Hệ Thống Quản Trị Chuỗi Cung Ứng & Vận Tải Xanh",
+      "headings": [
+        "CCADRO",
+        "Quản Lý User, Hồ Sơ Chi Tiết & Phân Quyền IAM",
+        "Hệ Thống Quản Trị Tài Khoản, Phân Quyền (IAM) & An Toàn Đội Xe",
+        "Danh Sách Tài Khoản Hệ Thống (14)",
+        "Khởi Tạo Tài Khoản Nội Bộ & Phân Quyền (Dành Cho ADMIN)"
+      ],
+      "buttons": [
+        {
+          "text": "",
+          "title": "Thu gọn thanh bên"
+        },
+        {
+          "text": "QA\nQuản Trị Viên Hệ Thống (Root Admin)\nADMIN\n• @admin",
+          "title": "Xem hồ sơ & cài đặt tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Cài đặt tài khoản & hệ thống"
+        },
+        {
+          "text": "",
+          "title": "Đăng xuất"
+        },
+        {
+          "text": "",
+          "title": "Thu gọn thanh bên"
+        },
+        {
+          "text": "Phát Cảnh Báo",
+          "title": "Phát cảnh báo khẩn cấp tới đội xe & trung tâm điều phối"
+        },
+        {
+          "text": "Messenger",
+          "title": "Mở CCADRO Messenger (Chat đa người & nhóm)"
+        },
+        {
+          "text": "Khẩn Cấp\n2",
+          "title": "Trung tâm thông báo & cảnh báo khẩn cấp"
+        },
+        {
+          "text": "",
+          "title": "Chuyển sang giao diện Sáng"
+        },
+        {
+          "text": "",
+          "title": "Cài đặt tài khoản & nghiệp vụ theo vai trò"
+        },
+        {
+          "text": "QA",
+          "title": ""
+        },
+        {
+          "text": "🔐 Quản Lý Tài Khoản & Phân Quyền (Admin IAM)",
+          "title": ""
+        },
+        {
+          "text": "🛠️ Kiểm Tra An Toàn 6 Hạng Mục (UC01)",
+          "title": ""
+        },
+        {
+          "text": "🚨 Báo Cáo Sự Cố & Điểm Phạt (UC16-18)",
+          "title": ""
+        },
+        {
+          "text": "Quản Lý User & Hồ Sơ Chi Tiết (14)",
+          "title": ""
+        },
+        {
+          "text": "Quản Lý Công Ty & Đối Tác B2B (5)",
+          "title": ""
+        },
+        {
+          "text": "✕",
+          "title": ""
+        },
+        {
+          "text": "Tất cả (14)",
+          "title": ""
+        },
+        {
+          "text": "Nội bộ (6)",
+          "title": ""
+        },
+        {
+          "text": "Khách hàng (1)",
+          "title": ""
+        },
+        {
+          "text": "Shipper 3PL (7)",
+          "title": ""
+        },
+        {
+          "text": "Đã xóa mềm (0)",
+          "title": "Xem các mục đã xóa mềm & khôi phục"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "48/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "11/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "6/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "4/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "8/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "10/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "9/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "12/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "12/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "9/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "9/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "9/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "6/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Chi tiết User / Công ty",
+          "title": ""
+        },
+        {
+          "text": "11/48 quyền",
+          "title": ""
+        },
+        {
+          "text": "",
+          "title": "Khóa tài khoản"
+        },
+        {
+          "text": "",
+          "title": "Xóa mềm tài khoản (chuyển vào Thùng rác)"
+        },
+        {
+          "text": "Khởi Tạo Tài Khoản & Áp Dụng Phân Quyền",
+          "title": ""
+        }
+      ],
+      "nav": [
+        {
+          "text": "Trang Chủ Website",
+          "href": "/"
+        },
+        {
+          "text": "Trung Tâm Giám Sát",
+          "href": "/portal"
+        },
+        {
+          "text": "Quản Lý Vận Đơn",
+          "href": "/shipments"
+        },
+        {
+          "text": "Tạo Đơn Hàng Mới",
+          "href": "/shipments/new"
+        },
+        {
+          "text": "Điều Phối & Xuất Bến",
+          "href": "/dispatch/c0000000-0000-0000-0000-000000000001"
+        },
+        {
+          "text": "Giám Sát GPS & Lệch Tuyến",
+          "href": "/trips/f0000000-0000-0000-0000-000000000001"
+        },
+        {
+          "text": "Đa Mục Tiêu Pareto (UC05)",
+          "href": "/planning/c0000000-0000-0000-0000-000000000001"
+        },
+        {
+          "text": "Kiểm Toán GLEC v3 (UC12)",
+          "href": "/trips/f0000000-0000-0000-0000-000000000001/carbon"
+        },
+        {
+          "text": "Định Mức Hành Lang (UC13)",
+          "href": "/analytics/benchmark"
+        },
+        {
+          "text": "Quản Lý User & Công Ty",
+          "href": "/admin/users"
+        },
+        {
+          "text": "Quản Trị IAM & An Toàn",
+          "href": "/governance"
+        },
+        {
+          "text": "Cổng Xác Thực IAM",
+          "href": "/login"
+        }
+      ],
+      "mainText": "QUẢN TRỊ HỆ THỐNG • ROOT ADMIN\nQuản Lý User, Hồ Sơ Chi Tiết & Phân Quyền IAM\nTrực tuyến\nKhông gian 3D\nPhát Cảnh Báo\nMessenger\nKhẩn Cấp\n2\nQA\nHệ Thống Quản Trị Tài Khoản, Phân Quyền (IAM) & An Toàn Đội Xe\n\nQuản lý danh sách tài khoản toàn hệ thống, khởi tạo tài khoản cho các Role nội bộ, gán quyền RBAC chi tiết & giám sát an toàn kỹ thuật (UC01 / UC16)\n\n🔐 Quản Lý Tài Khoản & Phân Quyền (Admin IAM)\n🛠️ Kiểm Tra An Toàn 6 Hạng Mục (UC01)\n🚨 Báo Cáo Sự Cố & Điểm Phạt (UC16-18)\nTỔNG TÀI KHOẢN HỆ THỐNG\n14\nĐịnh danh tập trung IAM\nNHÂN SỰ NỘI BỘ (ADMIN CẤP)\n6\nKhởi tạo & phân quyền bởi ADMIN\nTÀI KHOẢN KHÁCH HÀNG (USER)\n1\nTự đăng ký (/register) hoặc Admin cấp\nDOANH NGHIỆP & ĐỐI TÁC\n5\nHồ sơ B2B • MST • Hạn mức Net-30\nQuản Lý User & Hồ Sơ Chi Tiết (14)\nQuản Lý Công Ty & Đối Tác B2B (5)\nĐã khởi tạo thành công tài khoản \"@audit_local_only_20261117\" với vai trò DISPATCHER (11 quyền)! Nhân sự này có thể đăng nhập ngay tại trang /login.\n✕\nDanh Sách Tài Khoản Hệ Thống (14)\n\nQuản trị viên có thể đổi Vai trò (Role), tùy chỉnh quyền chi tiết hoặc khóa/xóa tài khoản trực tiếp tại bảng này.\n\nTất cả (14)\nNội bộ (6)\nKhách hàng (1)\nShipper 3PL (7)\nElastic\nĐã xóa mềm (0)\nTÀI KHOẢN & LIÊN HỆ\tNGƯỜI DÙNG & CÔNG TY (MST)\tVAI TRÒ (PHÂN QUYỀN ROLE)\tQUYỀN & HỒ SƠ\tTRẠNG THÁI & QUẢN LÝ\n@admin\nadmin@ccadro.com\n📞 028 3888 9999\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tQuản Trị Viên Hệ Thống (Root Admin)\n🏢 CCADRO Green Logistics Corporation\nMã: CCADRO_CORE\n\tROOT ADMIN\t\nChi tiết User / Công ty\n48/48 quyền\n\t\nACTIVE\n\n@dispatcher\ndispatcher@ccadro.com\n📞 028 3888 8802\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tNguyễn Văn Nam (Điều Phối Trưởng)\n🏢 CCADRO Green Logistics Corporation\nMã: CCADRO_CORE\n\tDISPATCHER (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n11/48 quyền\n\t\nACTIVE\n\n@driver\ndriver@ccadro.com\n📞 0903 812 456\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tTrần Văn Tài (Tài Xế Trưởng)\n🏢 CCADRO Green Logistics Corporation\nMã: CCADRO_FLEET\n\tDRIVER (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n6/48 quyền\n\t\nACTIVE\n\n@auditor\nauditor@ccadro.com\n📞 028 3888 8804\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tLê Thị Kiểm Toán (GLEC v3 Auditor)\n🏢 CCADRO Green Logistics Corporation\nMã: CCADRO_AUDIT\n\tESG_AUDITOR (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n4/48 quyền\n\t\nACTIVE\n\n@safety\nsafety@ccadro.com\n📞 028 3888 8805\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tPhạm Văn An Toàn (Safety Manager)\n🏢 CCADRO Green Logistics Corporation\nMã: CCADRO_SAFETY\n\tSAFETY_MANAGER (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n8/48 quyền\n\t\nACTIVE\n\n@customer\ncustomer@ccadro.com\n📞 028 5415 5555\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tMinh Phú & Vinamilk B2B (Chủ Hàng)\nTrưởng nhóm Điều vận B2B\n🏢 CTCP Sữa Việt Nam (Vinamilk Logistics)\nMã: DOANH_NGHIEP_B2B • MST: 0300588569\n\tCUSTOMER (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n10/48 quyền\n\t\nACTIVE\n\n@shipper\nshipper-bn1@ccadro.com\n📞 0912 345 101\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tNguyễn Văn Toàn (Shipper Đình Bảng #1)\n🏢 Trụ sở Đình Bảng - Từ Sơn, Bắc Ninh\nMã: HUB_DINHBANG_BN\n\tHUB_SHIPPER (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n9/48 quyền\n\t\nACTIVE\n\n@hub_mgr_dinhbang\nhub-mgr-dinhbang@ccadro.com\n📞 0222 3841 999\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tTrần Minh Quang (Trưởng Trụ Sở Đình Bảng)\n🏢 Trụ sở Đình Bảng - Từ Sơn, Bắc Ninh\nMã: HUB_DINHBANG_BN\n\tHUB_MANAGER (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n12/48 quyền\n\t\nACTIVE\n\n@hub_mgr_amata\nhub-mgr-amata@ccadro.com\n📞 0251 3992 888\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tLê Hoàng Nam (Trưởng Trụ Sở Amata)\n🏢 Trụ sở Amata - Biên Hòa, Đồng Nai\nMã: HUB_AMATA_BH\n\tHUB_MANAGER (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n12/48 quyền\n\t\nACTIVE\n\n@shipper_bn2\nshipper-bn2@ccadro.com\n📞 0912 345 102\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tPhạm Thị Lan Anh (Shipper Đình Bảng #2)\n🏢 Trụ sở Đình Bảng - Từ Sơn, Bắc Ninh\nMã: HUB_DINHBANG_BN\n\tHUB_SHIPPER (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n9/48 quyền\n\t\nACTIVE\n\n@shipper_bn3\nshipper-bn3@ccadro.com\n📞 0912 345 103\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tNgô Đức Hải (Shipper Đình Bảng #3)\n🏢 Trụ sở Đình Bảng - Từ Sơn, Bắc Ninh\nMã: HUB_DINHBANG_BN\n\tHUB_SHIPPER (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n9/48 quyền\n\t\nACTIVE\n\n@shipper_amata\nshipper-amata@ccadro.com\n📞 0902 418 229\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tĐặng Quốc Bảo (Shipper Amata #101)\n🏢 Trụ sở Amata - Biên Hòa, Đồng Nai\nMã: HUB_AMATA_BH\n\tHUB_SHIPPER (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n9/48 quyền\n\t\nACTIVE\n\n@hub_inspector_bn\ninspector-bn@ccadro.com\n📞 0918 776 301\nNguồn: Cấp bởi SYSTEM_BOOTSTRAP\n\tVũ Thu Hà (Kiểm Tra Viên Ảnh POD & SLA)\n🏢 Trụ sở Đình Bảng - Từ Sơn, Bắc Ninh\nMã: HUB_DINHBANG_BN\n\tHUB_AUDITOR (CỐ ĐỊNH)\t\nChi tiết User / Công ty\n6/48 quyền\n\t\nACTIVE\n\n@audit_local_only_20261117\naudit-local-only@example.invalid\n📞 028 3888 9999\nNguồn: Cấp bởi admin\n\tAudit Local Only\nĐiều Phối Viên Trung Tâm (NOC)\n🏢 CCADRO Green Logistics Corporation\nMã: CCADRO_INTERNAL\n\t\nADMIN\nDISPATCHER\nSAFETY_MANAGER\nDRIVER\nESG_AUDITOR\nCUSTOMER\nSHIPPER\nHUB_MANAGER\nHUB_SHIPPER\nHUB_AUDITOR\n\t\nChi tiết User / Công ty\n11/48 quyền\n\t\nACTIVE\nKhởi Tạo Tài Khoản Nội Bộ & Phân Quyền (Dành Cho ADMIN)\n\nHệ thống khóa cứng 7 vai trò hạt nhân (ADMIN, DISPATCHER, SAFETY_MANAGER, DRIVER, ESG_AUDITOR, CUSTOMER, SHIPPER) kèm 7 tài khoản gốc tương ứng. CUSTOMER đặt xe tại /customer, còn SHIPPER là đối tác kho/giao nhận điểm đích 3PL tại /shipper.\n\nTên đăng nhập (Username) *\nMật khẩu khởi tạo (≥ 3 ký tự) *\nHọ và tên nhân sự *\nEmail công vụ *\nGán Vai trò (Role Nội bộ / Hệ thống) *\nDISPATCHER — Điều phối viên NOC\nSAFETY_MANAGER — Trưởng ban An toàn\nDRIVER — Tài xế Vận tải\nESG_AUDITOR — Kiểm toán viên Carbon\nADMIN — Quản trị viên hệ thống\nCUSTOMER — Khách hàng / Chủ hàng B2B\nSHIPPER — Đối tác Điểm đích / Kho 3PL (Bên thứ 3)\nPhòng ban / Đơn vị trực thuộc\nSố điện thoại & Chức vụ\nGắn Công Ty / Đối Tác B2B\n-- Mặc định theo vai trò --\nCCADRO_INT — CCADRO Green Logistics Corporation\nVINAMILK — CTCP Sữa Việt Nam (Vinamilk Logistics)\nSAMSUNG_VN — Công ty TNHH Samsung Electronics Việt Nam\nHUB_DINHBANG_BN — Trung Tâm Phân Phối Đình Bảng - VSIP Bắc Ninh\nDHL_3PL — DHL Supply Chain Việt Nam (Đối tác 3PL)\nPhân quyền chi tiết cho tài khoản (11/48 quyền được cấp):\nLập lộ trình đa tiêu chí (UC05), phát lệnh điều xe (UC06), theo dõi GPS (UC09) & duyệt đổi tuyến động (UC10).\nUSER_MANAGE\nQuản lý & cấp phát tài khoản\nROLE_MANAGE\nPhân quyền vai trò (RBAC)\nVEHICLE_READ\nXem danh sách phương tiện\nVEHICLE_WRITE\nThêm / cập nhật phương tiện\nMAINTENANCE_MANAGE\nQuản lý bảo dưỡng phương tiện\nINSPECTION_SUBMIT\nGửi biên bản kiểm tra Pre-trip\nINSPECTION_REVIEW\nPhê duyệt kiểm định an toàn\nSHIPMENT_CREATE\nKhởi tạo vận đơn mới\nSHIPMENT_READ\nXem toàn bộ vận đơn hệ thống\nSHIPMENT_READ_OWN\nXem vận đơn của riêng doanh nghiệp (Customer)\nSHIPMENT_READ_INBOUND\nXem hàng/container giao tới bãi điểm đích (3PL Shipper)\nEXTERNAL_3PL_SYNC\nĐồng bộ trạng thái & Webhook qua hệ thống thứ 3 (WMS/3PL)\nSHIPMENT_WRITE\nCập nhật thông tin vận đơn\nSHIPMENT_DISPATCH\nPhát lệnh điều xe xuất bến\nROUTE_PLAN\nLập lộ trình đa mục tiêu Pareto\nROUTE_SELECT\nChọn phương án lộ trình\nREROUTE_APPROVE\nPhê duyệt tái định tuyến động\nTRACKING_LIVE\nGiám sát bản đồ GPS thời gian thực\nTELEMETRY_SEND\nPhát tín hiệu tọa độ GPS từ xe\nALERT_ACK\nTiếp nhận & xử lý cảnh báo lệch tuyến\nINCIDENT_REPORT\nBáo cáo sự cố hiện trường\nEXCEPTION_RESOLVE\nThẩm định ngoại lệ vận hành\nDEMERIT_MANAGE\nQuản trị điểm phạt tài xế\nPOD_SUBMIT\nKý xác nhận bàn giao hàng (ePOD)\nPOD_VIEW_OWN\nTải chứng từ ePOD doanh nghiệp\nCARBON_READ\nTra cứu sổ cái phát thải CO2e\nCARBON_CALCULATE\nQuyết toán phát thải GLEC v3\nBENCHMARK_READ\nXem định mức carbon hành lang\nREPORT_EXPORT\nXuất chứng nhận ISO 14083\nDRIVER_CHAT\nNhắn tin trực tiếp 2 chiều Customer ↔ Tài xế\nPAYMENT_CREATE\nKhởi tạo yêu cầu thanh toán & hóa đơn VAT\nPAYMENT_READ_OWN\nXem lịch sử thanh toán & công nợ Net-30\nPAYMENT_MANAGE\nQuản trị đối soát & hoàn tiền giao dịch\nCONTRACT_READ_OWN\nXem hợp đồng khung MSA, hợp đồng chuyến & SLA\nCONTRACT_CREATE\nKhởi tạo hợp đồng điện tử B2B\nCONTRACT_SIGN\nKý số xác nhận hợp đồng & nghiệm thu ePOD\nCONTRACT_MANAGE\nQuản trị hạn mức công nợ & đối soát SLA\nHUB_WORKSPACE_READ\nTruy cập không gian làm việc Trụ sở được phân công\nCONTAINER_MANIFEST_INGEST\nNhận dữ liệu Manifest từ Container vào Trụ sở\nHUB_DISPATCH_AUTO\nChia đơn tự động theo khoảng cách GPS trong Trụ sở\nHUB_TASK_RANGE_ASSIGN\nGiao nhiệm vụ cho Shipper theo Dải mã số\nSHIPPER_POLICY_READ\nXem Chính sách vận hành dành riêng cho Shipper\nSHIPPER_OWN_SCOPE_READ\nXem phạm vi địa bàn giao hôm nay của bản thân\nSHIPPER_ITEM_STATUS_UPDATE\nCập nhật trạng thái đang đi giao hàng\nPOD_PHOTO_SUBMIT\nChụp & nộp Ảnh xác thực giao hàng (Photo POD)\nPOD_PHOTO_VIEW\nXem và đối soát Ảnh bằng chứng POD\nHUB_AUDIT_READ\nKiểm toán chất lượng POD & tuân thủ SLA (Chỉ đọc)\nHUB_ACCOUNT_MANAGE\nCấp phát & khóa/mở khóa tài khoản nội bộ Trụ sở\nKhởi Tạo Tài Khoản & Áp Dụng Phân Quyền",
+      "viewport": {
+        "width": 1440,
+        "documentWidth": 1440
+      },
+      "inputs": [
+        {
+          "type": "text",
+          "placeholder": "Elastic search: username, họ tên không dấu, vai trò, phòng ban, hub...",
+          "required": false
+        },
+        {
+          "type": "text",
+          "placeholder": "VD: dispatcher01, safety01...",
+          "required": true
+        },
+        {
+          "type": "text",
+          "placeholder": "VD: 123",
+          "required": true
+        },
+        {
+          "type": "text",
+          "placeholder": "VD: Lê Minh Khoa",
+          "required": true
+        },
+        {
+          "type": "email",
+          "placeholder": "VD: khoa.lm@ccadro.com",
+          "required": true
+        },
+        {
+          "type": "text",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "text",
+          "placeholder": "VD: 0903 812 456",
+          "required": false
+        },
+        {
+          "type": "text",
+          "placeholder": "Chức vụ (VD: Điều phối viên)",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "type": "checkbox",
+          "placeholder": "",
+          "required": false
+        }
+      ],
+      "selects": [
+        [
+          {
+            "text": "ADMIN",
+            "value": "ADMIN"
+          },
+          {
+            "text": "DISPATCHER",
+            "value": "DISPATCHER"
+          },
+          {
+            "text": "SAFETY_MANAGER",
+            "value": "SAFETY_MANAGER"
+          },
+          {
+            "text": "DRIVER",
+            "value": "DRIVER"
+          },
+          {
+            "text": "ESG_AUDITOR",
+            "value": "ESG_AUDITOR"
+          },
+          {
+            "text": "CUSTOMER",
+            "value": "CUSTOMER"
+          },
+          {
+            "text": "SHIPPER",
+            "value": "SHIPPER"
+          },
+          {
+            "text": "HUB_MANAGER",
+            "value": "HUB_MANAGER"
+          },
+          {
+            "text": "HUB_SHIPPER",
+            "value": "HUB_SHIPPER"
+          },
+          {
+            "text": "HUB_AUDITOR",
+            "value": "HUB_AUDITOR"
+          }
+        ],
+        [
+          {
+            "text": "DISPATCHER — Điều phối viên NOC",
+            "value": "DISPATCHER"
+          },
+          {
+            "text": "SAFETY_MANAGER — Trưởng ban An toàn",
+            "value": "SAFETY_MANAGER"
+          },
+          {
+            "text": "DRIVER — Tài xế Vận tải",
+            "value": "DRIVER"
+          },
+          {
+            "text": "ESG_AUDITOR — Kiểm toán viên Carbon",
+            "value": "ESG_AUDITOR"
+          },
+          {
+            "text": "ADMIN — Quản trị viên hệ thống",
+            "value": "ADMIN"
+          },
+          {
+            "text": "CUSTOMER — Khách hàng / Chủ hàng B2B",
+            "value": "CUSTOMER"
+          },
+          {
+            "text": "SHIPPER — Đối tác Điểm đích / Kho 3PL (Bên thứ 3)",
+            "value": "SHIPPER"
+          }
+        ],
+        [
+          {
+            "text": "-- Mặc định theo vai trò --",
+            "value": ""
+          },
+          {
+            "text": "CCADRO_INT — CCADRO Green Logistics Corporation",
+            "value": "90000000-0000-0000-0000-000000000001"
+          },
+          {
+            "text": "VINAMILK — CTCP Sữa Việt Nam (Vinamilk Logistics)",
+            "value": "90000000-0000-0000-0000-000000000002"
+          },
+          {
+            "text": "SAMSUNG_VN — Công ty TNHH Samsung Electronics Việt Nam",
+            "value": "90000000-0000-0000-0000-000000000003"
+          },
+          {
+            "text": "HUB_DINHBANG_BN — Trung Tâm Phân Phối Đình Bảng - VSIP Bắc Ninh",
+            "value": "90000000-0000-0000-0000-000000000004"
+          },
+          {
+            "text": "DHL_3PL — DHL Supply Chain Việt Nam (Đối tác 3PL)",
+            "value": "90000000-0000-0000-0000-000000000005"
+          }
+        ]
+      ]
+    }
+  ],
+  "httpErrors": [
+    {
+      "status": 401,
+      "path": "/api/v1/tracking/stream",
+      "hasToken": false
+    },
+    {
+      "status": 503,
+      "path": "/api/v1/assets/inspections/pre-trip",
+      "hasToken": false
+    },
+    {
+      "status": 503,
+      "path": "/api/v1/incidents",
+      "hasToken": false
+    },
+    {
+      "status": 503,
+      "path": "/api/v1/users",
+      "hasToken": false
+    }
+  ],
+  "pageErrors": []
+}

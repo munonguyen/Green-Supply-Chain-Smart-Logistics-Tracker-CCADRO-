@@ -26,6 +26,16 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
+      mongodb:
+        image: mongo:7.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'quit(db.adminCommand({ping:1}).ok ? 0 : 1)'"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
       redis:
         image: redis:7-alpine
         ports:
@@ -48,6 +58,8 @@ jobs:
           cache: 'maven'
 
       - name: Build and Test Spring Boot Backend
+        env:
+          CHAT_TEST_MONGODB_URI: mongodb://localhost:27017/ccadro_chat_ci
         run: |
           cd backend
           mvn -B test -DPOSTGRES_PORT=5432

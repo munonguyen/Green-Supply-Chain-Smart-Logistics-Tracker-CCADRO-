@@ -1,0 +1,9 @@
+{
+  "status": 200,
+  "requestOrigin": "http://localhost:5173",
+  "response": {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "POST",
+    "Access-Control-Allow-Headers": "content-type"
+  }
+}

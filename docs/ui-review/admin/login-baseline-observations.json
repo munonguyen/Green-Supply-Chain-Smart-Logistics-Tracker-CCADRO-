@@ -1,0 +1,44 @@
+{
+  "reviewedAt": "2026-11-17T13:22:47.076Z",
+  "routes": [],
+  "faults": [],
+  "httpErrors": [],
+  "pageErrors": [],
+  "runError": "page.waitForURL: Timeout 60000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation to \"**/portal\" until \"domcontentloaded\"\n============================================================",
+  "failurePage": {
+    "path": "/login",
+    "title": "CCADRO | Hệ Thống Quản Trị Chuỗi Cung Ứng & Vận Tải Xanh",
+    "headings": [
+      "Đăng Nhập"
+    ],
+    "buttons": [
+      {
+        "text": "",
+        "title": ""
+      },
+      {
+        "text": "Đăng Nhập",
+        "title": ""
+      }
+    ],
+    "nav": [],
+    "mainText": "Đăng Nhập\n\nNhập thông tin tài khoản của bạn để tiếp tục\n\nTên đăng nhập hoặc Email\nMật khẩu\n\nĐăng nhập với máy chủ để khôi phục chat trực tuyến. Phiên cục bộ không thể gửi tin đến người khác.\n\nFailed to fetch\nĐăng Nhập\nBạn chưa có tài khoản? Đăng ký ngay",
+    "viewport": {
+      "width": 1440,
+      "documentWidth": 1440
+    },
+    "inputs": [
+      {
+        "type": "text",
+        "placeholder": "Nhập tên đăng nhập hoặc email...",
+        "required": true
+      },
+      {
+        "type": "password",
+        "placeholder": "Nhập mật khẩu của bạn...",
+        "required": true
+      }
+    ],
+    "selects": []
+  }
+}

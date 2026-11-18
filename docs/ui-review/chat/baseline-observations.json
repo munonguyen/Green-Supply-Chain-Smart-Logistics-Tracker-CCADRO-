@@ -1,0 +1,51 @@
+{
+  "errors": [],
+  "responses": [
+    {
+      "url": "http://localhost:8888/api/v1/chat/contacts",
+      "status": 401
+    },
+    {
+      "url": "http://localhost:8888/api/v1/chat/conversations",
+      "status": 401
+    },
+    {
+      "url": "http://localhost:8888/api/v1/chat/preferences",
+      "status": 401
+    },
+    {
+      "url": "http://localhost:8888/api/v1/chat/preferences",
+      "status": 401
+    },
+    {
+      "url": "http://localhost:8888/api/v1/chat/conversations",
+      "status": 401
+    },
+    {
+      "url": "http://localhost:8888/api/v1/chat/contacts",
+      "status": 401
+    }
+  ],
+  "auth": "offline",
+  "initial": "CCADRO Messenger\n● 0 người trực tuyến\nĐANG HOẠT ĐỘNG\nTất cả\nChưa đọc\nNhóm\nTài xế\nĐiều phối\nKhách / Hub\nKhông tìm thấy cuộc trò chuyện phù hợp.\nChọn một cuộc trò chuyện hoặc tạo nhóm mới để bắt đầu.\nUnauthenticated",
+  "geometry": {
+    "rect": {
+      "x": 264,
+      "y": 0,
+      "width": 1176,
+      "height": 67,
+      "top": 0,
+      "right": 1440,
+      "bottom": 67,
+      "left": 264
+    },
+    "parents": [
+      {
+        "tag": "HEADER",
+        "cls": "topbar",
+        "transform": "none",
+        "backdrop": "blur(14px)"
+      }
+    ]
+  }
+}

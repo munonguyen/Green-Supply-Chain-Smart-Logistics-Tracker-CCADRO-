@@ -1,0 +1,78 @@
+{
+  "errors": [],
+  "socketFrames": [
+    {
+      "event": "open",
+      "path": "/api/v1/chat/ws"
+    },
+    {
+      "direction": "received",
+      "type": "ready"
+    },
+    {
+      "event": "open",
+      "path": "/api/v1/chat/ws"
+    },
+    {
+      "direction": "received",
+      "type": "ready"
+    },
+    {
+      "direction": "sent",
+      "type": "message.send"
+    },
+    {
+      "direction": "received",
+      "type": "changed"
+    },
+    {
+      "direction": "received",
+      "type": "ack"
+    },
+    {
+      "direction": "received",
+      "type": "changed"
+    },
+    {
+      "direction": "sent",
+      "type": "message.send"
+    },
+    {
+      "direction": "received",
+      "type": "changed"
+    },
+    {
+      "direction": "received",
+      "type": "ack"
+    },
+    {
+      "event": "open",
+      "path": "/api/v1/chat/ws"
+    },
+    {
+      "direction": "received",
+      "type": "ready"
+    },
+    {
+      "direction": "sent",
+      "type": "message.send"
+    },
+    {
+      "direction": "received",
+      "type": "changed"
+    },
+    {
+      "direction": "received",
+      "type": "changed"
+    },
+    {
+      "direction": "received",
+      "type": "ack"
+    }
+  ],
+  "corsWorkaround": false,
+  "twoWindowsInstant": true,
+  "reconnectCatchup": true,
+  "reopenedSocket": true,
+  "quickReplyNo400": true
+}

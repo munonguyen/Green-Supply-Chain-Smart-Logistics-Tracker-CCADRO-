@@ -60,7 +60,8 @@ fi
 # 3. Seed data verification
 echo -n "==> [4/8] Verifying Database Seed Entities (SH001, V001, EF001)... "
 SEED_COUNT=$(docker compose exec -T postgres psql -U ${POSTGRES_USER:-ccadro} -d ${POSTGRES_DB:-ccadro} -t -c "SELECT count(*) FROM shipment WHERE shipment_code='SH001';" 2>/dev/null | tr -d '[:space:]')
-if [ "$SEED_COUNT" -ge 1 ]; then
+SEED_COUNT=${SEED_COUNT:-0}
+if [[ "$SEED_COUNT" =~ ^[0-9]+$ ]] && [ "$SEED_COUNT" -ge 1 ]; then
   echo "✓ [PASS] (Seed entities verified)"
 else
   echo "✗ [FAIL] (Missing seed data)"
@@ -68,17 +69,21 @@ else
 fi
 
 # 4. Backend Health Endpoint
-echo -n "==> [5/8] Verifying Backend Actuator / System Health... "
-if curl -s http://localhost:8080/actuator/health | grep '"status":"UP"' >/dev/null 2>&1; then
-  echo "✓ [PASS] (Actuator status UP)"
+echo -n "==> [5/8] Verifying API Gateway & Actuator Health... "
+if curl -sf http://localhost:8888/api/v1/health | grep '"status":"UP"' >/dev/null 2>&1; then
+  echo "✓ [PASS] (Gateway & Identity UP)"
 else
-  echo "⚠️ [WARN] (Backend not running on :8080, run 'make start' to test live REST API)"
+  echo "⚠️ [WARN] (Backend Gateway not running on :8888, run 'make start' to test live REST API)"
 fi
 
-# 5. Routing Calculation API
-echo -n "==> [6/8] Verifying Route Candidate Generation (UC05)... "
-if curl -s -X POST http://localhost:8080/api/v1/routing/calculate/c0000000-0000-0000-0000-000000000001 | grep 'Eco-Green' >/dev/null 2>&1; then
-  echo "✓ [PASS] (3 ranked candidates returned with CO2 scores)"
+# 5. Gateway Auth Fail-Closed & Routing Calculation API (UC05)
+echo -n "==> [6/8] Verifying Gateway Security, Auth JWT & Route Candidate Generation (UC05)... "
+UNAUTH_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8888/api/v1/shipments 2>/dev/null || echo "000")
+TOKEN=$(curl -sf -X POST http://localhost:8888/api/v1/auth/token \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"123"}' 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin)['result']['token'])" 2>/dev/null || true)
+if [ "$UNAUTH_CODE" = "401" ] && [ -n "$TOKEN" ] && curl -sf -X POST -H "Authorization: Bearer $TOKEN" http://localhost:8888/api/v1/routing/calculate/c0000000-0000-0000-0000-000000000001 | grep 'Eco-Green' >/dev/null 2>&1; then
+  echo "✓ [PASS] (401 on anon, JWT + 3 ranked candidates returned)"
 else
   echo "⚠️ [INFO] (Live endpoint skipped if server offline)"
 fi
