@@ -39,6 +39,15 @@ public class Container extends BaseEntity {
     @Builder.Default
     String ownerName = "Tân Cảng Sài Gòn (SNP Logistics)";
 
+    @Column(name = "responsible_company_id")
+    UUID responsibleCompanyId;
+
+    @Column(name = "responsible_company_code", length = 50)
+    String responsibleCompanyCode;
+
+    @Column(name = "responsible_company_name", length = 200)
+    String responsibleCompanyName;
+
     @Column(name = "tare_weight_tons", nullable = false, precision = 10, scale = 2)
     BigDecimal tareWeightTons;
 
@@ -161,6 +170,9 @@ public class Container extends BaseEntity {
     @Column(name = "epod_recipient", length = 100)
     String epodRecipient;
 
-    @Column(name = "epod_signature", length = 255)
+    @Column(name = "epod_signature", columnDefinition = "text")
     String epodSignature;
+
+    @Column(name = "epod_notes", columnDefinition = "text")
+    String epodNotes;
 }

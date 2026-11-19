@@ -48,6 +48,35 @@ public class DispatchEligibilityValidator {
     public void validateVehicleAndDriverEligibility(Shipment shipment, UUID vehicleId, UUID driverId) {
         validateVehicle(shipment, vehicleId);
         validateDriver(driverId);
+        validateLatestPreTripInspection(vehicleId, driverId);
+    }
+
+    private void validateLatestPreTripInspection(UUID vehicleId, UUID driverId) {
+        try {
+            ApiResponse<Map<String, Object>> inspectionResp = assetRestClient.get()
+                    .uri("/api/v1/assets/vehicles/{id}/inspections/latest", vehicleId)
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<>() {});
+
+            Map<String, Object> inspection = inspectionResp == null ? null : inspectionResp.getResult();
+            if (inspection == null
+                    || !Boolean.TRUE.equals(inspection.get("isPassed"))
+                    || !driverId.toString().equalsIgnoreCase(String.valueOf(inspection.get("driverId")))) {
+                throw new AppException(ErrorCode.INVALID_REQUEST_ARGUMENT,
+                        "Cần biên bản Pre-trip đạt, gắn với đúng xe và tài xế trước khi điều phối");
+            }
+        } catch (HttpClientErrorException.NotFound e) {
+            throw new AppException(ErrorCode.INVALID_REQUEST_ARGUMENT,
+                    "Phương tiện chưa có biên bản Pre-trip hợp lệ trước khi điều phối");
+        } catch (AppException e) {
+            throw e;
+        } catch (Exception e) {
+            if (strictRemoteValidation) {
+                throw new AppException(ErrorCode.INVALID_REQUEST_ARGUMENT,
+                        "Không thể xác minh biên bản Pre-trip cho phương tiện " + vehicleId + ": " + e.getMessage());
+            }
+            log.warn("Non-strict mode: Không thể xác minh Pre-trip xe {}: {}", vehicleId, e.getMessage());
+        }
     }
 
     private void validateVehicle(Shipment shipment, UUID vehicleId) {

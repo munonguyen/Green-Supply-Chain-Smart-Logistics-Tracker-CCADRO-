@@ -18,6 +18,7 @@ public class DriverResponse {
 
     UUID id;
     String driverCode;
+    String accountUsername;
     String fullName;
     String phone;
     String email;

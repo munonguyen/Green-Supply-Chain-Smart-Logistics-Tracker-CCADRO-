@@ -1,6 +1,6 @@
 server:
   port: 8083
-  address: ${SERVER_ADDRESS:0.0.0.0}
+  address: ${SERVER_ADDRESS:127.0.0.1}
 
 spring:
   application:
@@ -28,15 +28,15 @@ management:
         include: health,info,metrics
   endpoint:
     health:
-      show-details: always
+      show-details: never
 
 # CCADRO Business Configurations
 ccadro:
   routing:
-    provider: ${ROUTING_PROVIDER:mock}
+    provider: ${ROUTING_PROVIDER:osrm}
     baseUrl: ${ROUTING_BASE_URL:http://router.project-osrm.org}
-    connectTimeoutMs: 5000
-    readTimeoutMs: 10000
+    connectTimeoutMs: 3000
+    readTimeoutMs: 6000
   deviation:
     yellowMeters: ${CCADRO_DEVIATION_YELLOW_METERS:50}
     redMeters: ${CCADRO_DEVIATION_RED_METERS:200}
@@ -57,10 +57,10 @@ ccadro:
 springdoc:
   api-docs:
     path: /v3/api-docs
-    enabled: true
+    enabled: ${API_DOCS_ENABLED:false}
   swagger-ui:
     path: /swagger-ui.html
-    enabled: true
+    enabled: ${API_DOCS_ENABLED:false}
     operationsSorter: method
     tagsSorter: alpha
 

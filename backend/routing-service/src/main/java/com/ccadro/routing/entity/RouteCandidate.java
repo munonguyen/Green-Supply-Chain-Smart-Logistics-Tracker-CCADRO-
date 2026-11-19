@@ -39,7 +39,6 @@ public class RouteCandidate {
     @Column(name = "composite_score", precision = 6, scale = 4)
     private BigDecimal compositeScore;
 
-    @com.fasterxml.jackson.annotation.JsonIgnore
     @Column(name = "route_geometry", columnDefinition = "geometry(LineString, 4326)")
     private LineString routeGeometry;
 

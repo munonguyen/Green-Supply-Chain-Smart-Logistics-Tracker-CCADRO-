@@ -35,7 +35,6 @@ public class Shipment {
     @Column(name = "origin_address", columnDefinition = "TEXT")
     String originAddress;
 
-    @com.fasterxml.jackson.annotation.JsonIgnore
     @Column(name = "origin_geom", nullable = false, columnDefinition = "geometry(Point, 4326)")
     Point originGeom;
 
@@ -45,7 +44,6 @@ public class Shipment {
     @Column(name = "destination_address", columnDefinition = "TEXT")
     String destinationAddress;
 
-    @com.fasterxml.jackson.annotation.JsonIgnore
     @Column(name = "destination_geom", nullable = false, columnDefinition = "geometry(Point, 4326)")
     Point destinationGeom;
 

@@ -23,5 +23,9 @@ public class TelemetryResponse {
     BigDecimal headingDegrees;
     BigDecimal distanceFromRouteMeters;
     Instant timestamp;
+
+    Double distanceToDestinationMeters;
+    Boolean arrivedAtDestination;
+    String arrivalStatus;
 }
 

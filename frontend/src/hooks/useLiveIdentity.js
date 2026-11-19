@@ -76,8 +76,25 @@ export function useLiveIdentity({ user, token, setUser, setToken, setAuthMode, t
     return { success: true, user: profile, token: auth.token };
   }
   async function authenticate(username, password) {
+    let prevToken = null;
+    let prevRefreshToken = null;
+    try {
+      prevToken = window.localStorage.getItem('ccadro_token');
+      prevRefreshToken = window.localStorage.getItem('ccadro_refresh_token');
+    } catch (_) {
+      // ignore storage errors
+    }
     const auth = unwrap(await api.login(username.trim(), password));
     if (!auth.token) throw new Error('Máy chủ chưa cấp phiên đăng nhập.');
+    if (
+      prevToken &&
+      prevToken !== auth.token &&
+      !prevToken.startsWith('iam-jwt-') &&
+      !prevToken.startsWith('customer-jwt-') &&
+      !prevToken.startsWith('test-token-')
+    ) {
+      await api.logout(prevToken, prevRefreshToken).catch(() => {});
+    }
     const profile = unwrap(await api.getOwnProfile(auth.token));
     return saveSession(identityProfile(profile, templates), auth);
   }

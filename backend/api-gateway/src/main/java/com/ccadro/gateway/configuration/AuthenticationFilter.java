@@ -64,15 +64,10 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
     String[] publicEndpoints = {
             "/auth/token",
             "/auth/refresh",
-            "/auth/introspect",
             "/auth/logout",
             "/auth/register",
             "/careers/apply",
-            "/careers/status",
-            "/careers/openings",
-            "/payments/webhook/.*",
-            "/health.*",
-            "/actuator/.*"
+            "/payments/webhook/[^/]+"
     };
 
     @Value("${app.api-prefix:/api/v1}")
@@ -86,13 +81,10 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
         // Prevent client header spoofing by clearing internal identity headers on all requests
         ServerHttpRequest sanitizedRequest = exchange.getRequest().mutate()
                 .headers(headers -> {
-                    headers.remove("X-Auth-Username");
-                    headers.remove("X-Auth-Email");
+                    headers.keySet().stream()
+                            .filter(name -> name.toLowerCase(Locale.ROOT).startsWith("x-auth-"))
+                            .toList().forEach(headers::remove);
                     headers.remove("X-Internal-Token");
-                    headers.remove("X-Auth-Scope");
-                    headers.remove("X-Auth-Hub-Code");
-                    headers.remove("X-Auth-Shipper-Code");
-                    headers.remove("X-Auth-Session-Id");
                 })
                 .build();
 
@@ -104,7 +96,10 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
         String token = null;
         List<String> authHeader = sanitizedRequest.getHeaders().get(HttpHeaders.AUTHORIZATION);
         if (!CollectionUtils.isEmpty(authHeader)) {
-            token = authHeader.get(0).replace("Bearer ", "").trim();
+            if (authHeader.size() != 1 || !authHeader.get(0).regionMatches(true, 0, "Bearer ", 0, 7)) {
+                return unauthenticated(exchange.getResponse());
+            }
+            token = authHeader.get(0).substring(7).trim();
         } else if (path.equals(apiPrefix + "/notifications/stream")
                 || path.equals(apiPrefix + "/tracking/stream")) {
             // Browser EventSource cannot set Authorization headers, so SSE stream allows ?token=<jwt>
@@ -123,7 +118,9 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
                 log.debug("Gateway rejected revoked JWT via Redis Hot-Blacklist");
                 return unauthenticated(exchange.getResponse());
             }
-            return identityService.introspect(rawToken).flatMap(introspectResponse -> {
+            return identityService.introspect(rawToken)
+                    .switchIfEmpty(Mono.error(new IllegalStateException("Empty introspection response")))
+                    .flatMap(introspectResponse -> {
                 IntrospectResponse claims = introspectResponse != null ? introspectResponse.getResult() : null;
                 if (claims != null && claims.isValid()) {
                     if (!isAuthorized(path, sanitizedRequest.getMethod(), claims.getScope(), claims.getCustomerId())) {
@@ -233,29 +230,42 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
             }
             if (verb.equals("POST") && path.equals(apiPrefix + "/shipments"))
                 return roles.contains("CUSTOMER") || roles.contains("DISPATCHER");
-            return verb.equals("GET") ? roles.contains("DISPATCHER") || roles.contains("ESG_AUDITOR")
+            return verb.equals("GET")
+                    ? roles.contains("DISPATCHER") || roles.contains("ESG_AUDITOR") || roles.contains("DRIVER")
                     : roles.contains("DISPATCHER");
         }
         if (path.startsWith(apiPrefix + "/routing") || path.startsWith(apiPrefix + "/routes")) {
+            if (verb.equals("GET")) {
+                return roles.contains("DISPATCHER") || roles.contains("ESG_AUDITOR") || roles.contains("DRIVER");
+            }
             return roles.contains("DISPATCHER") || roles.contains("ESG_AUDITOR");
         }
         if (path.startsWith(apiPrefix + "/tracking")) {
-            if (path.contains("/telemetry")) return roles.contains("DRIVER");
             if (path.contains("/reroute-proposals/") && path.endsWith("/decision")) return roles.contains("DISPATCHER");
-            if (path.endsWith("/start") || path.endsWith("/complete")) return roles.contains("DISPATCHER");
+            if (path.contains("/telemetry")) {
+                return verb.equals("GET")
+                        ? roles.contains("DISPATCHER") || roles.contains("SAFETY_MANAGER")
+                                || roles.contains("ESG_AUDITOR") || roles.contains("DRIVER")
+                        : roles.contains("DRIVER");
+            }
+            if (path.endsWith("/start") || path.endsWith("/complete")) {
+                return roles.contains("DISPATCHER") || roles.contains("DRIVER");
+            }
             return roles.contains("DISPATCHER") || roles.contains("SAFETY_MANAGER")
-                    || roles.contains("ESG_AUDITOR");
+                    || roles.contains("ESG_AUDITOR") || roles.contains("DRIVER");
         }
         if (path.startsWith(apiPrefix + "/assets")) return authorizeAssets(path, verb, roles);
         if (path.startsWith(apiPrefix + "/incidents")) {
             if (path.endsWith("/resolve") || path.contains("/demerits/") && path.endsWith("/review"))
                 return roles.contains("SAFETY_MANAGER");
             if (verb.equals("POST")) return roles.contains("DRIVER");
+            if (verb.equals("GET")) return roles.contains("DISPATCHER") || roles.contains("SAFETY_MANAGER")
+                    || roles.contains("DRIVER");
             return roles.contains("DISPATCHER") || roles.contains("SAFETY_MANAGER");
         }
         if (path.startsWith(apiPrefix + "/carbon")) {
             if (verb.equals("GET")) return roles.contains("DISPATCHER") || roles.contains("ESG_AUDITOR")
-                    || roles.contains("CUSTOMER");
+                    || roles.contains("CUSTOMER") || roles.contains("DRIVER");
             return roles.contains("DISPATCHER") || roles.contains("ESG_AUDITOR") || roles.contains("DRIVER");
         }
         if (path.startsWith(apiPrefix + "/notifications")) {
@@ -275,7 +285,17 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
             return roles.contains("CUSTOMER") || roles.contains("DRIVER") || roles.contains("DISPATCHER")
                     || roles.contains("HUB_MANAGER") || roles.contains("HUB_SHIPPER") || roles.contains("SHIPPER");
         }
-        return true;
+        if (path.equals(apiPrefix + "/health")) return verb.equals("GET") && !roles.isEmpty();
+        if (path.startsWith(apiPrefix + "/auth/")) {
+            String action = path.substring((apiPrefix + "/auth/").length());
+            return !roles.isEmpty() && (Set.of("introspect", "chat-directory", "logout-all", "sessions", "change-password").contains(action)
+                    || (verb.equals("DELETE") && action.matches("sessions/[^/]+")));
+        }
+        if (path.equals(apiPrefix + "/applications") || path.startsWith(apiPrefix + "/applications/")) return false;
+        if (path.equals(apiPrefix + "/hub-iam") || path.startsWith(apiPrefix + "/hub-iam/")) {
+            return roles.contains("HUB_MANAGER") || (verb.equals("GET") && roles.contains("HUB_AUDITOR"));
+        }
+        return false;
     }
 
     private boolean authorizeAssets(String path, String verb, Set<String> roles) {
@@ -292,9 +312,14 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
         if (path.contains("/reviews")) return roles.contains("CUSTOMER") || roles.contains("DISPATCHER");
         if (path.contains("/containers") || path.contains("/drivers")) {
             if (!verb.equals("GET")) return roles.contains("DISPATCHER") || roles.contains("SAFETY_MANAGER")
-                    || roles.contains("DRIVER") && path.contains("/containers") && path.contains("/epod");
+                    || (roles.contains("DRIVER") && path.contains("/containers")
+                            && (path.contains("/epod") || path.contains("/telemetry")))
+                    || (roles.contains("DRIVER") && path.contains("/drivers") && path.endsWith("/status"));
             return roles.contains("DISPATCHER") || roles.contains("SAFETY_MANAGER") || roles.contains("DRIVER")
                     || roles.contains("CUSTOMER") || roles.contains("ESG_AUDITOR");
+        }
+        if (verb.equals("GET")) {
+            return roles.contains("DISPATCHER") || roles.contains("SAFETY_MANAGER") || roles.contains("DRIVER");
         }
         return roles.contains("DISPATCHER") || roles.contains("SAFETY_MANAGER");
     }
@@ -315,15 +340,11 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
                 && request.getQueryParams().getFirst("ticket") != null) {
             return true;
         }
-        if (path.contains("/v3/api-docs")
-                || path.contains("/swagger-ui")
-                || path.contains("/webjars")
-                || path.contains("/swagger-resources")
-                || path.startsWith("/services/")
-                || path.matches("/actuator/.*")) {
-            return true;
+        HttpMethod method = request.getMethod();
+        if (path.equals(apiPrefix + "/careers/openings") || path.equals(apiPrefix + "/careers/status")) {
+            return HttpMethod.GET.equals(method);
         }
-        return Arrays.stream(publicEndpoints)
+        return HttpMethod.POST.equals(method) && Arrays.stream(publicEndpoints)
                 .anyMatch(s -> path.matches(apiPrefix + s));
     }
 
@@ -341,6 +362,8 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
         }
 
         response.setStatusCode(HttpStatus.UNAUTHORIZED);
+        response.getHeaders().set(HttpHeaders.WWW_AUTHENTICATE, "Bearer realm=\"ccadro\"");
+        response.getHeaders().set(HttpHeaders.CACHE_CONTROL, "no-store");
         response.getHeaders().add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
 
         return response.writeWith(
@@ -351,6 +374,7 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
         ApiResponse<?> apiResponse = ApiResponse.builder().code(1403).message("Forbidden").build();
         try {
             response.setStatusCode(HttpStatus.FORBIDDEN);
+            response.getHeaders().set(HttpHeaders.CACHE_CONTROL, "no-store");
             response.getHeaders().add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
             return response.writeWith(Mono.just(response.bufferFactory()
                     .wrap(objectMapper.writeValueAsBytes(apiResponse))));

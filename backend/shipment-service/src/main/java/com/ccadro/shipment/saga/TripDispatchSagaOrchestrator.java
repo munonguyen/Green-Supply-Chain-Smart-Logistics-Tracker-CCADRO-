@@ -72,7 +72,8 @@ public class TripDispatchSagaOrchestrator {
         }
 
         if ("DISPATCHED".equalsIgnoreCase(shipment.getStatus())
-                || dispatchOrderRepository.existsByShipmentId(shipment.getId())) {
+                || dispatchOrderRepository.existsByShipmentIdAndStatusNotIn(
+                        shipment.getId(), java.util.List.of("FAILED", "CANCELLED"))) {
             throw new AppException(ErrorCode.SHIPMENT_ALREADY_DISPATCHED);
         }
 
@@ -97,14 +98,14 @@ public class TripDispatchSagaOrchestrator {
         dispatchOrder.setDispatchedAt(Instant.now());
         dispatchOrderRepository.save(dispatchOrder);
 
-        boolean assetLocked = false;
+        boolean assetReservationStarted = false;
         try {
             // Bước 2: Thẩm định điều kiện xuất bến & Khóa tài sản (Asset Service)
             dispatchEligibilityValidator.validateVehicleAndDriverEligibility(
                     shipment, request.getVehicleId(), request.getDriverId());
+            assetReservationStarted = true;
             dispatchEligibilityValidator.updateAssetStatusesOnDispatch(
                     request.getVehicleId(), request.getDriverId());
-            assetLocked = true;
 
             sagaLog.setCurrentStep("STEP_2_LOCK_ROUTE");
             sagaStateLogRepository.save(sagaLog);
@@ -116,10 +117,14 @@ public class TripDispatchSagaOrchestrator {
             sagaStateLogRepository.save(sagaLog);
 
             // Bước 4: Khởi tạo chuyến xe tại Tracking Service
-            registerTripWithTrackingService(shipment.getId(), request.getVehicleId(), request.getDriverId(), activeRouteVersionId,
+            UUID tripId = registerTripWithTrackingService(shipment.getId(), request.getVehicleId(), request.getDriverId(), activeRouteVersionId,
                     shipment.getCustomerId());
 
             // Bước 5: Hoàn tất thành công (SUCCEEDED)
+            if (activeRouteVersionId != null) {
+                dispatchOrder.setAssignedRouteVersionId(activeRouteVersionId);
+            }
+            dispatchOrder.setTripId(tripId);
             dispatchOrder.setStatus("ASSIGNED");
             dispatchOrderRepository.save(dispatchOrder);
 
@@ -151,7 +156,7 @@ public class TripDispatchSagaOrchestrator {
             sagaStateLogRepository.save(sagaLog);
 
             // Giao dịch bù trừ (Compensating Transaction) nếu xe/tài xế đã bị khóa
-            if (assetLocked) {
+            if (assetReservationStarted) {
                 compensateAssetReservation(request.getVehicleId(), request.getDriverId());
             }
 
@@ -202,7 +207,7 @@ public class TripDispatchSagaOrchestrator {
         }
     }
 
-    private void registerTripWithTrackingService(
+    private UUID registerTripWithTrackingService(
             UUID shipmentId, UUID vehicleId, UUID driverId, UUID activeRouteVersionId, String companyCode) {
         try {
             Map<String, Object> body = new LinkedHashMap<>();
@@ -215,17 +220,23 @@ public class TripDispatchSagaOrchestrator {
             }
 
             RestClient trackingClient = RestClient.builder().baseUrl(trackingServiceUrl).build();
-            trackingClient.post()
+            com.ccadro.shipment.dto.ApiResponse<Map<String, Object>> response = trackingClient.post()
                     .uri("/api/v1/tracking/trips")
                     .body(body)
                     .retrieve()
-                    .toBodilessEntity();
+                    .body(new ParameterizedTypeReference<>() {});
+            if (response == null || response.getResult() == null || response.getResult().get("id") == null) {
+                throw new AppException(ErrorCode.INVALID_REQUEST_ARGUMENT,
+                        "Tracking Service không trả về mã chuyến sau khi khởi tạo");
+            }
+            return UUID.fromString(response.getResult().get("id").toString());
         } catch (Exception e) {
             if (strictRemoteValidation) {
                 throw new AppException(ErrorCode.INVALID_REQUEST_ARGUMENT,
                         "Không thể khởi tạo chuyến xe tại Tracking Service cho đơn " + shipmentId + ": " + e.getMessage());
             }
             log.warn("Non-strict mode: Tracking service chưa ghi nhận chuyến cho đơn {}: {}", shipmentId, e.getMessage());
+            return null;
         }
     }
 

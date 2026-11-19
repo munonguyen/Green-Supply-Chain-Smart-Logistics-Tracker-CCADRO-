@@ -25,6 +25,9 @@ public class Driver extends BaseEntity {
     @Column(name = "driver_code", nullable = false, unique = true, length = 50)
     String driverCode;
 
+    @Column(name = "account_username", length = 80)
+    String accountUsername;
+
     @Column(name = "full_name", nullable = false, length = 100)
     String fullName;
 

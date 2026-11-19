@@ -19,6 +19,7 @@ public class DispatchOrderResponse {
     UUID driverId;
     UUID containerId;
     UUID assignedRouteVersionId;
+    UUID tripId;
     Instant dispatchedAt;
     String dispatchedBy;
     String status;

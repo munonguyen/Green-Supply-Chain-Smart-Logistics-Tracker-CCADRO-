@@ -35,10 +35,19 @@ public class TrackingController {
     TrackingMapper trackingMapper;
 
     @PostMapping("/telemetry")
-    @Operation(summary = "Ingest GPS Telemetry Point with Quality Gate & Deviation State Machine (UC08, UC09, BRULE-10)")
+    @Operation(summary = "Ingest GPS Telemetry Point with Quality Gate, Deviation State Machine & Arrival Geofence (UC08, UC09, BRULE-10)")
     public ApiResponse<TelemetryResponse> ingestTelemetry(@Valid @RequestBody IngestTelemetryRequest request) {
-        return ApiResponse.success("Dữ liệu telemetry được ghi nhận thành công",
-                trackingMapper.toTelemetryResponse(trackingService.ingestTelemetry(request)));
+        TelemetryResponse response = trackingMapper.toTelemetryResponse(trackingService.ingestTelemetry(request));
+        trackingService.findTripById(request.getTripId()).ifPresent(trip -> {
+            if (trip.getDistanceToDestinationMeters() != null) {
+                response.setDistanceToDestinationMeters(trip.getDistanceToDestinationMeters().doubleValue());
+            }
+            response.setArrivalStatus(trip.getArrivalStatus());
+            response.setArrivedAtDestination("ARRIVED_AT_DESTINATION".equalsIgnoreCase(trip.getArrivalStatus())
+                    || "DELIVERED".equalsIgnoreCase(trip.getArrivalStatus())
+                    || trip.getArrivedAt() != null);
+        });
+        return ApiResponse.success("Dữ liệu telemetry được ghi nhận thành công", response);
     }
 
     @PostMapping("/trips")
@@ -48,11 +57,12 @@ public class TrackingController {
     }
 
     @GetMapping("/trips")
-    @Operation(summary = "List all trips with Elastic search (?q=) and soft-delete filter (UC07)")
+    @Operation(summary = "List all trips with Elastic search (?q=), driverId and soft-delete filter (UC07)")
     public ApiResponse<List<Trip>> getAllTrips(
             @RequestParam(required = false) String q,
-            @RequestParam(required = false, defaultValue = "false") boolean includeDeleted) {
-        return ApiResponse.success(trackingService.getAllTrips(q, includeDeleted));
+            @RequestParam(required = false, defaultValue = "false") boolean includeDeleted,
+            @RequestParam(required = false) UUID driverId) {
+        return ApiResponse.success(trackingService.getAllTrips(q, includeDeleted, driverId));
     }
 
     @DeleteMapping("/trips/{tripId}")
@@ -73,8 +83,9 @@ public class TrackingController {
     @Operation(summary = "Get real-time fleet GPS telemetry snapshot aggregated from Trip, TelemetryEvent, RouteVersion & Container IoT (UC08)")
     public ApiResponse<List<LiveFleetTelemetryResponse>> getLiveFleetTelemetry(
             @RequestParam(required = false) String customerId,
-            @RequestParam(required = false) String q) {
-        return ApiResponse.success(trackingService.getLiveFleetTelemetry(customerId, q));
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) UUID driverId) {
+        return ApiResponse.success(trackingService.getLiveFleetTelemetry(customerId, q, driverId));
     }
 
     @GetMapping("/trips/{tripId}/live")

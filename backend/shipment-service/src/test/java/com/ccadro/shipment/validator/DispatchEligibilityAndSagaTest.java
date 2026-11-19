@@ -83,6 +83,9 @@ class DispatchEligibilityAndSagaTest {
                 .andRespond(withSuccess("{\"code\":1000,\"result\":{\"status\":\"AVAILABLE\",\"maxPayloadTons\":22.0}}", MediaType.APPLICATION_JSON));
         s3.expect(requestTo("http://asset-service/api/v1/assets/drivers/" + driverId))
                 .andRespond(withSuccess("{\"code\":1000,\"result\":{\"status\":\"AVAILABLE\",\"licenseExpiry\":\"2029-12-31\"}}", MediaType.APPLICATION_JSON));
+        s3.expect(requestTo("http://asset-service/api/v1/assets/vehicles/" + vehicleId + "/inspections/latest"))
+                .andRespond(withSuccess("{\"code\":1000,\"result\":{\"isPassed\":true,\"vehicleId\":\"" + vehicleId
+                        + "\",\"driverId\":\"" + driverId + "\"}}", MediaType.APPLICATION_JSON));
 
         DispatchEligibilityValidator v3 = new DispatchEligibilityValidator(b3.build(), true);
         assertDoesNotThrow(() -> v3.validateVehicleAndDriverEligibility(heavyShipment, vehicleId, driverId));
@@ -118,5 +121,40 @@ class DispatchEligibilityAndSagaTest {
                         .build()
         ));
         assertEquals(ErrorCode.SHIPMENT_ALREADY_DISPATCHED, ex.getErrorCode());
+    }
+
+    @Test
+    void dispatchSaga_shouldAllowRetryWhenOnlyFailedOrCancelledOrdersExist() {
+        TripDispatchSagaOrchestrator orchestrator = new TripDispatchSagaOrchestrator(
+                shipmentRepository,
+                dispatchOrderRepository,
+                sagaStateLogRepository,
+                outboxEventRepository,
+                mock(DispatchEligibilityValidator.class),
+                dispatchOrderMapper,
+                new ObjectMapper()
+        );
+
+        UUID shipmentId = UUID.randomUUID();
+        Shipment planned = Shipment.builder()
+                .id(shipmentId)
+                .shipmentCode("SHP-2026-RETRY")
+                .status("PLANNED")
+                .isDeleted(false)
+                .build();
+        when(shipmentRepository.findById(shipmentId)).thenReturn(Optional.of(planned));
+        when(dispatchOrderRepository.existsByShipmentIdAndStatusNotIn(
+                shipmentId, java.util.List.of("FAILED", "CANCELLED"))).thenReturn(false);
+        when(dispatchOrderRepository.existsByDispatchCode("DSP-DUP-CHECK")).thenReturn(true);
+
+        AppException ex = assertThrows(AppException.class, () -> orchestrator.executeDispatchSaga(
+                DispatchOrderRequest.builder()
+                        .dispatchCode("DSP-DUP-CHECK")
+                        .shipmentId(shipmentId)
+                        .vehicleId(UUID.randomUUID())
+                        .driverId(UUID.randomUUID())
+                        .build()
+        ));
+        assertNotEquals(ErrorCode.SHIPMENT_ALREADY_DISPATCHED, ex.getErrorCode());
     }
 }

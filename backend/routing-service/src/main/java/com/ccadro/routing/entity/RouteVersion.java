@@ -21,7 +21,6 @@ public class RouteVersion {
     @Column(name = "version_number", nullable = false)
     private int versionNumber = 1;
 
-    @com.fasterxml.jackson.annotation.JsonIgnore
     @Column(name = "route_geometry", columnDefinition = "geometry(LineString, 4326)")
     private LineString routeGeometry;
 

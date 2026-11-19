@@ -62,12 +62,12 @@ class AuthenticationFilterTest {
         void filter_shouldStripSpoofedHeadersOnPublicEndpointsAndInjectTrustedClaimsOnValidJwt() {
                 when(filterChain.filter(any())).thenReturn(Mono.empty());
 
-                // 1. Public endpoint (/api/v1/auth/register &
-                // /actuator/health)
+                // Public careers resource still strips all client-supplied identity headers.
                 MockServerWebExchange publicEx = MockServerWebExchange.from(
-                                MockServerHttpRequest.get("/actuator/health")
+                                MockServerHttpRequest.get("/api/v1/careers/openings")
                                                 .header("X-Auth-Scope", "ROLE_ADMIN")
                                                 .header("X-Auth-Hub-Code", "HUB-AMATA-BH")
+                                                .header("X-Auth-Customer-Id", "OTHER-COMPANY")
                                                 .build());
                 StepVerifier.create(filter.filter(publicEx, filterChain)).verifyComplete();
 
@@ -75,6 +75,7 @@ class AuthenticationFilterTest {
                 verify(filterChain, times(1)).filter(publicCaptor.capture());
                 assertNull(publicCaptor.getValue().getRequest().getHeaders().getFirst("X-Auth-Scope"));
                 assertNull(publicCaptor.getValue().getRequest().getHeaders().getFirst("X-Auth-Hub-Code"));
+                assertNull(publicCaptor.getValue().getRequest().getHeaders().getFirst("X-Auth-Customer-Id"));
 
                 // 2. Protected endpoint with valid JWT overwrites any spoofed headers with
                 // introspected claims
@@ -127,6 +128,46 @@ class AuthenticationFilterTest {
                                                 .build());
                 StepVerifier.create(filter.filter(trackingSseEx, filterChain)).verifyComplete();
                 assertEquals(HttpStatus.FORBIDDEN, trackingSseEx.getResponse().getStatusCode());
+        }
+
+        @Test
+        void rejectsMalformedAuthorizationAndDoesNotTreatDocumentationFragmentsAsPublic() {
+                for (String value : new String[] {"Basic secret", "some-token", "Bearer "}) {
+                        var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/api/v1/shipments")
+                                .header(HttpHeaders.AUTHORIZATION, value).build());
+                        StepVerifier.create(filter.filter(exchange, filterChain)).verifyComplete();
+                        assertEquals(HttpStatus.UNAUTHORIZED, exchange.getResponse().getStatusCode());
+                        assertEquals("Bearer realm=\"ccadro\"", exchange.getResponse().getHeaders().getFirst(HttpHeaders.WWW_AUTHENTICATE));
+                }
+                var fragment = MockServerWebExchange.from(MockServerHttpRequest.get("/api/v1/shipments/swagger-ui-fake").build());
+                StepVerifier.create(filter.filter(fragment, filterChain)).verifyComplete();
+                assertEquals(HttpStatus.UNAUTHORIZED, fragment.getResponse().getStatusCode());
+                verifyNoInteractions(identityService, filterChain);
+        }
+
+        @Test
+        void deniesUnclassifiedApiAndWrongMethodOnPublicResource() {
+                when(identityService.introspect("customer-token")).thenReturn(Mono.just(
+                        ApiResponse.<IntrospectResponse>builder().result(IntrospectResponse.builder()
+                                .valid(true).username("customer").scope("ROLE_CUSTOMER").build()).build()));
+                var unknown = MockServerWebExchange.from(MockServerHttpRequest.get("/api/v1/future-service")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer customer-token").build());
+                StepVerifier.create(filter.filter(unknown, filterChain)).verifyComplete();
+                assertEquals(HttpStatus.FORBIDDEN, unknown.getResponse().getStatusCode());
+                var wrongMethod = MockServerWebExchange.from(MockServerHttpRequest.delete("/api/v1/careers/openings").build());
+                StepVerifier.create(filter.filter(wrongMethod, filterChain)).verifyComplete();
+                assertEquals(HttpStatus.UNAUTHORIZED, wrongMethod.getResponse().getStatusCode());
+                verifyNoInteractions(filterChain);
+        }
+
+        @Test
+        void emptyIdentityResponseCannotProduceSuccessfulAnonymousApiResponse() {
+                when(identityService.introspect("empty-token")).thenReturn(Mono.empty());
+                var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/api/v1/shipments")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer empty-token").build());
+                StepVerifier.create(filter.filter(exchange, filterChain)).verifyComplete();
+                assertEquals(HttpStatus.UNAUTHORIZED, exchange.getResponse().getStatusCode());
+                verifyNoInteractions(filterChain);
         }
         @Test
         void socketIoPollingAndUpgradeRequireOneUseTicket() {
@@ -221,6 +262,53 @@ class AuthenticationFilterTest {
                 assertEquals(HttpStatus.UNAUTHORIZED, ex.getResponse().getStatusCode());
                 verifyNoInteractions(identityService);
                 verifyNoInteractions(filterChain);
+        }
+
+        @Test
+        void enforcesDriverRoleMatrixAtGateway() {
+                when(identityService.introspect("driver-token")).thenReturn(Mono.just(
+                                ApiResponse.<IntrospectResponse>builder().result(IntrospectResponse.builder()
+                                                .valid(true).username("driver").scope("ROLE_DRIVER").build()).build()));
+                when(filterChain.filter(any())).thenReturn(Mono.empty());
+
+                String[][] allowedRequests = new String[][] {
+                                { "GET", "/api/v1/assets/vehicles" },
+                                { "GET", "/api/v1/assets/drivers/me" },
+                                { "PUT", "/api/v1/assets/containers/TCKU-781920-4/telemetry" },
+                                { "PUT", "/api/v1/assets/drivers/11111111-1111-4111-8111-111111110001/status" },
+                                { "POST", "/api/v1/notifications/dispatch" },
+                                { "GET", "/api/v1/tracking/trips/f0000000-0000-0000-0000-000000000001/live" },
+                                { "GET", "/api/v1/routing/versions/e0000000-0000-0000-0000-000000000001/active" },
+                                { "GET", "/api/v1/incidents/drivers/11111111-1111-4111-8111-111111110001/demerit-summary" }
+                };
+                for (String[] req : allowedRequests) {
+                        var ex = MockServerWebExchange.from(MockServerHttpRequest
+                                        .method(HttpMethod.valueOf(req[0]), req[1])
+                                        .header(HttpHeaders.AUTHORIZATION, "Bearer driver-token")
+                                        .build());
+                        StepVerifier.create(filter.filter(ex, filterChain)).verifyComplete();
+                        assertNull(ex.getResponse().getStatusCode(),
+                                        "Expected DRIVER to be allowed on " + req[0] + " " + req[1]);
+                }
+
+                String[][] forbiddenRequests = new String[][] {
+                                { "POST", "/api/v1/shipments/dispatch" },
+                                { "PUT", "/api/v1/tracking/reroute-proposals/00000000-0000-0000-0000-000000000001/decision" },
+                                { "POST", "/api/v1/notifications/broadcast" },
+                                { "POST", "/api/v1/incidents/00000000-0000-0000-0000-000000000001/resolve" },
+                                { "POST", "/api/v1/assets/vehicles" }
+                };
+                for (String[] req : forbiddenRequests) {
+                        var ex = MockServerWebExchange.from(MockServerHttpRequest
+                                        .method(HttpMethod.valueOf(req[0]), req[1])
+                                        .header(HttpHeaders.AUTHORIZATION, "Bearer driver-token")
+                                        .build());
+                        StepVerifier.create(filter.filter(ex, filterChain)).verifyComplete();
+                        assertEquals(HttpStatus.FORBIDDEN, ex.getResponse().getStatusCode(),
+                                        "Expected DRIVER to get 403 on " + req[0] + " " + req[1]);
+                }
+
+                verify(filterChain, times(allowedRequests.length)).filter(any());
         }
 
 }

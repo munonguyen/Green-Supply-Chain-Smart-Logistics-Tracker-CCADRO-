@@ -9,11 +9,13 @@ import com.ccadro.asset.entity.Container;
 import com.ccadro.asset.entity.Driver;
 import com.ccadro.asset.entity.enums.ContainerStatus;
 import com.ccadro.asset.entity.enums.DriverStatus;
+import com.ccadro.asset.entity.enums.VehicleStatus;
 import com.ccadro.asset.exception.AppException;
 import com.ccadro.asset.exception.ErrorCode;
 import com.ccadro.asset.mapper.ContainerMapper;
 import com.ccadro.asset.repository.ContainerRepository;
 import com.ccadro.asset.repository.DriverRepository;
+import com.ccadro.asset.repository.VehicleRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -37,6 +39,7 @@ public class ContainerService {
 
     ContainerRepository containerRepository;
     DriverRepository driverRepository;
+    VehicleRepository vehicleRepository;
     ContainerMapper containerMapper;
 
     public List<ContainerResponse> getAllContainersResponse(ContainerStatus status, UUID driverId) {
@@ -192,6 +195,7 @@ public class ContainerService {
         container.setCompletedAt(Instant.now());
         container.setEpodRecipient(request.getRecipientName());
         container.setEpodSignature(request.getSignature());
+        container.setEpodNotes(request.getNotes());
         container.setStatus(ContainerStatus.DELIVERED);
         container.setProgressPct(BigDecimal.valueOf(100.0));
         container.setSpeedKmh(BigDecimal.ZERO);
@@ -209,6 +213,21 @@ public class ContainerService {
                 driverRepository.findById(saved.getAssignedDriverId()).ifPresent(drv -> {
                     drv.setStatus(DriverStatus.AVAILABLE);
                     driverRepository.save(drv);
+                });
+            }
+        }
+
+        // Automatically release assigned vehicle back to AVAILABLE if not under MAINTENANCE and no other active container
+        if (saved.getAssignedVehicleId() != null) {
+            boolean hasOtherActiveVehicle = containerRepository.findByStatusAndAssignedVehicleId(
+                    ContainerStatus.IN_TRANSIT, saved.getAssignedVehicleId()).stream()
+                    .anyMatch(c -> !c.getContainerCode().equals(containerCode));
+            if (!hasOtherActiveVehicle) {
+                vehicleRepository.findById(saved.getAssignedVehicleId()).ifPresent(veh -> {
+                    if (veh.getStatus() != VehicleStatus.MAINTENANCE) {
+                        veh.setStatus(VehicleStatus.AVAILABLE);
+                        vehicleRepository.save(veh);
+                    }
                 });
             }
         }

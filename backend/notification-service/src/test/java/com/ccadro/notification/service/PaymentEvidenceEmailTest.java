@@ -3,6 +3,7 @@ import com.ccadro.notification.dto.request.PaymentEvidenceRequest;
 import com.ccadro.notification.dto.request.SendEmailRequest;
 import com.ccadro.notification.dto.response.EmailDispatchResponse;
 import org.junit.jupiter.api.Test;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.server.ResponseStatusException;
 import java.util.*;
@@ -16,7 +17,7 @@ class PaymentEvidenceEmailTest {
   assertThrows(ResponseStatusException.class,()->inbox.accept(UUID.randomUUID(),request));verifyNoInteractions(jdbc);
  }
  @Test void sandboxRemainsQueuedAndProviderFailureIsRetried() {
-  var jdbc=mock(JdbcTemplate.class);var email=mock(TransactionalEmailService.class);var worker=new PaymentEvidenceEmailWorker(jdbc,email);
+  var jdbc=mock(JdbcTemplate.class);var email=mock(TransactionalEmailService.class);var worker=new PaymentEvidenceEmailWorker(jdbc,email,null,new ObjectMapper());
   worker.deliver();verifyNoInteractions(jdbc);
   when(email.isLiveProviderConfigured()).thenReturn(true);
   var row=new HashMap<String,Object>();row.put("event_id",UUID.randomUUID());row.put("attempts",0);
@@ -27,7 +28,7 @@ class PaymentEvidenceEmailTest {
   assertTrue(mockingDetails(jdbc).getInvocations().stream().anyMatch(i->Arrays.toString(i.getRawArguments()).contains("UPDATE payment_email_inbox SET status=?")));
  }
  @Test void successfulProviderAcceptanceIncludesStoredAttachmentsAndAudit() {
-  var jdbc=mock(JdbcTemplate.class);var email=mock(TransactionalEmailService.class);var worker=new PaymentEvidenceEmailWorker(jdbc,email);
+  var jdbc=mock(JdbcTemplate.class);var email=mock(TransactionalEmailService.class);var worker=new PaymentEvidenceEmailWorker(jdbc,email,null,new ObjectMapper());
   when(email.isLiveProviderConfigured()).thenReturn(true);
   var row=new HashMap<String,Object>();row.put("event_id",UUID.randomUUID());row.put("attempts",0);row.put("recipient_email","a@example.com");row.put("subject","receipt");row.put("html_content","<p>saved</p>");row.put("snapshot_json","{}");row.put("snapshot_sha256","a");row.put("html_sha256","b");
   when(jdbc.queryForList(anyString())).thenReturn(List.of(row));

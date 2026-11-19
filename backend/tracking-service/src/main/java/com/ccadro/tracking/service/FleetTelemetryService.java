@@ -6,6 +6,7 @@ import com.ccadro.tracking.entity.TelemetryEvent;
 import com.ccadro.tracking.entity.Trip;
 import com.ccadro.tracking.repository.TelemetryEventRepository;
 import com.ccadro.tracking.repository.TripRepository;
+import com.ccadro.tracking.application.port.RouteWaypointDecoder;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -39,8 +40,13 @@ public class FleetTelemetryService {
     TripRepository tripRepository;
     TelemetryEventRepository telemetryEventRepository;
     CcadroProperties ccadroProperties;
+    RouteWaypointDecoder routeWaypointDecoder;
 
     public List<LiveFleetTelemetryResponse> getLiveFleetTelemetry(String customerId, String q) {
+        return getLiveFleetTelemetry(customerId, q, null);
+    }
+
+    public List<LiveFleetTelemetryResponse> getLiveFleetTelemetry(String customerId, String q, UUID driverId) {
         List<LiveFleetTelemetryResponse> snapshots = new ArrayList<>();
         Set<UUID> trackedShipmentIds = new HashSet<>();
 
@@ -90,9 +96,14 @@ public class FleetTelemetryService {
         List<LiveFleetTelemetryResponse> scoped = snapshots;
         if (customerId != null && !customerId.isBlank()) {
             String target = customerId.trim().toLowerCase(Locale.ROOT);
-            scoped = snapshots.stream()
+            scoped = scoped.stream()
                     .filter(item -> item.getCustomerId() != null
                             && item.getCustomerId().trim().toLowerCase(Locale.ROOT).equals(target))
+                    .toList();
+        }
+        if (driverId != null) {
+            scoped = scoped.stream()
+                    .filter(item -> driverId.equals(item.getDriverId()))
                     .toList();
         }
 
@@ -111,6 +122,17 @@ public class FleetTelemetryService {
     public Optional<LiveFleetTelemetryResponse> getLiveSnapshotForTrip(UUID tripId) {
         if (tripId == null) {
             return Optional.empty();
+        }
+        try {
+            List<Object[]> directRows = tripRepository.findLiveTripTelemetryRowByTripId(tripId);
+            if (directRows != null && !directRows.isEmpty()) {
+                LiveFleetTelemetryResponse mapped = mapNativeTripRow(directRows.get(0));
+                if (mapped != null) {
+                    return Optional.of(mapped);
+                }
+            }
+        } catch (Exception ex) {
+            log.debug("Direct native snapshot lookup skipped for trip {}: {}", tripId, ex.getMessage());
         }
         try {
             List<Object[]> nativeRows = tripRepository.findLiveFleetTelemetryRows();
@@ -145,6 +167,7 @@ public class FleetTelemetryService {
             // Optional spatial query unavailable in minimal mocks
         }
 
+        double arrivalRadius = ccadroProperties.getArrival().getArrivalRadiusMeters();
         double totalKm = plannedMeters != null && plannedMeters > 0
                 ? round2(plannedMeters / 1000.0)
                 : 27.3;
@@ -158,7 +181,27 @@ public class FleetTelemetryService {
         double speedKmh = latest != null && latest.getSpeedKmh() != null
                 ? latest.getSpeedKmh().doubleValue()
                 : 0.0;
-        int etaMinutes = computeEtaMinutes(trip.getStatus(), remainingKm, speedKmh);
+
+        Double distToDestMeters = trip.getDistanceToDestinationMeters() != null
+                ? round1(trip.getDistanceToDestinationMeters().doubleValue())
+                : null;
+        boolean arrived = "COMPLETED".equalsIgnoreCase(trip.getStatus())
+                || "ARRIVED_AT_DESTINATION".equalsIgnoreCase(trip.getArrivalStatus())
+                || "DELIVERED".equalsIgnoreCase(trip.getArrivalStatus())
+                || (distToDestMeters != null && distToDestMeters <= arrivalRadius);
+        String arrivalStatus = trip.getArrivalStatus();
+        if ("COMPLETED".equalsIgnoreCase(trip.getStatus())) {
+            arrivalStatus = "DELIVERED";
+            arrived = true;
+            distToDestMeters = 0.0;
+        } else if (arrivalStatus == null || arrivalStatus.isBlank()) {
+            arrivalStatus = arrived ? "ARRIVED_AT_DESTINATION" : (progress > 0 ? "IN_TRANSIT" : "AT_ORIGIN");
+        }
+        if (arrived) {
+            remainingKm = 0.0;
+            progress = 100;
+        }
+        int etaMinutes = arrived ? 0 : computeEtaMinutes(trip.getStatus(), remainingKm, speedKmh);
         double deviationMeters = latest != null && latest.getDistanceFromRouteMeters() != null
                 ? round2(latest.getDistanceFromRouteMeters().doubleValue())
                 : 0.0;
@@ -191,6 +234,12 @@ public class FleetTelemetryService {
                 .tripStatus(trip.getStatus())
                 .dataSource(latest != null ? "LIVE_TELEMETRY_DB" : "TRIP_SCHEDULED")
                 .lastTelemetryAt(latest != null ? latest.getTimestamp() : trip.getUpdatedAt())
+                .distanceToDestinationMeters(distToDestMeters)
+                .arrivalRadiusMeters(arrivalRadius)
+                .arrivedAtDestination(arrived)
+                .arrivalStatus(arrivalStatus)
+                .arrivedAt(trip.getArrivedAt())
+                .routeSource("NONE")
                 .build());
     }
 
@@ -236,6 +285,10 @@ public class FleetTelemetryService {
         Double cProgress = numObj(r[35]);
         Integer cEta = r[36] instanceof Number n ? n.intValue() : null;
         Double cBattery = numObj(r[37]);
+        Instant persistedArrivedAt = r.length > 38 ? toInstant(r[38]) : null;
+        String persistedArrivalStatus = r.length > 39 ? str(r[39]) : null;
+        String routeGeoJson = r.length > 40 ? str(r[40]) : null;
+        List<List<Double>> routeWaypoints = routeWaypointDecoder.decode(routeGeoJson);
 
         Double curLat = teLat != null ? teLat : (cLat != null ? cLat : originLat);
         Double curLon = teLon != null ? teLon : (cLon != null ? cLon : originLon);
@@ -271,9 +324,19 @@ public class FleetTelemetryService {
                         ? (int) Math.round(Math.min(100.0, Math.max(0.0, cProgress)))
                         : computeProgressPercent(traveledKm, totalKm));
 
-        int etaMinutes = (cEta != null && teLat == null && cEta > 0)
-                ? cEta
-                : computeEtaMinutes(tripStatus, remainingKm, speedKmh);
+        ArrivalEvaluation arrival = evaluateArrival(
+                tripStatus, curLat, curLon, originLat, originLon, destLat, destLon,
+                progress, persistedArrivedAt, persistedArrivalStatus);
+        if (arrival.arrived()) {
+            remainingKm = 0.0;
+            progress = 100;
+        }
+
+        int etaMinutes = arrival.arrived()
+                ? 0
+                : ((cEta != null && teLat == null && cEta > 0)
+                        ? cEta
+                        : computeEtaMinutes(tripStatus, remainingKm, speedKmh));
 
         double heading = teHeading != null
                 ? teHeading
@@ -323,6 +386,13 @@ public class FleetTelemetryService {
                 .tripStatus(tripStatus)
                 .dataSource(source)
                 .lastTelemetryAt(teTs)
+                .distanceToDestinationMeters(arrival.distanceToDestinationMeters())
+                .arrivalRadiusMeters(arrival.arrivalRadiusMeters())
+                .arrivedAtDestination(arrival.arrived())
+                .arrivalStatus(arrival.arrivalStatus())
+                .arrivedAt(arrival.arrivedAt())
+                .routeWaypoints(routeWaypoints.isEmpty() ? null : routeWaypoints)
+                .routeSource(routeWaypoints.isEmpty() ? "NONE" : "POSTGIS_ROUTE_VERSION")
                 .build();
     }
 
@@ -351,14 +421,38 @@ public class FleetTelemetryService {
         Double tempC = r.length > 18 ? numObj(r[18]) : null;
         Double battery = r.length > 19 ? numObj(r[19]) : null;
         Instant updatedAt = r.length > 20 ? toInstant(r[20]) : null;
+        Double originLat = r.length > 21 ? numObj(r[21]) : null;
+        Double originLon = r.length > 22 ? numObj(r[22]) : null;
+        Double destLat = r.length > 23 ? numObj(r[23]) : null;
+        Double destLon = r.length > 24 ? numObj(r[24]) : null;
+        UUID linkedTripId = r.length > 25 ? toUuid(r[25]) : null;
+        Instant arrivedAt = r.length > 26 ? toInstant(r[26]) : null;
+        String routeGeoJson = r.length > 27 ? str(r[27]) : null;
+        List<List<Double>> routeWaypoints = routeWaypointDecoder.decode(routeGeoJson);
 
-        double totalKm = 32.0;
+        double totalKm = (originLat != null && originLon != null && destLat != null && destLon != null)
+                ? round2(haversineKm(originLat, originLon, destLat, destLon) * ROAD_TORTUOSITY_FACTOR)
+                : 32.0;
         double traveledKm = round2(totalKm * (progressPct / 100.0));
         double remainingKm = round2(Math.max(0.0, totalKm - traveledKm));
-        int computedEta = etaMins > 0 ? etaMins : computeEtaMinutes(status, remainingKm, speedKmh);
+        int roundedProgress = (int) Math.round(Math.min(100.0, Math.max(0.0, progressPct)));
+
+        ArrivalEvaluation arrival = evaluateArrival(
+                status, lat, lon, originLat, originLon, destLat, destLon,
+                roundedProgress, arrivedAt, null);
+        if (arrival.arrived()) {
+            remainingKm = 0.0;
+            roundedProgress = 100;
+        }
+        int computedEta = arrival.arrived()
+                ? 0
+                : (etaMins > 0 ? etaMins : computeEtaMinutes(status, remainingKm, speedKmh));
+        double heading = (lat != null && lon != null && destLat != null && destLon != null)
+                ? computeBearingDegrees(lat, lon, destLat, destLon)
+                : 0.0;
 
         return LiveFleetTelemetryResponse.builder()
-                .tripId(containerId)
+                .tripId(linkedTripId != null ? linkedTripId : containerId)
                 .tripCode(containerCode)
                 .shipmentId(shipmentId)
                 .shipmentCode(shipmentCode)
@@ -370,16 +464,20 @@ public class FleetTelemetryService {
                 .driverName(driverName)
                 .containerCode(containerCode)
                 .originName(originName)
+                .originLat(originLat)
+                .originLon(originLon)
                 .destinationName(destName)
+                .destinationLat(destLat)
+                .destinationLon(destLon)
                 .latitude(lat)
                 .longitude(lon)
                 .currentLocationName(locName)
                 .speedKmh(round1(speedKmh))
-                .headingDegrees(0.0)
+                .headingDegrees(round1(heading))
                 .totalDistanceKm(totalKm)
                 .traveledDistanceKm(traveledKm)
                 .remainingDistanceKm(remainingKm)
-                .progressPercent((int) Math.round(Math.min(100.0, Math.max(0.0, progressPct))))
+                .progressPercent(roundedProgress)
                 .etaMinutes(computedEta)
                 .deviationMeters(0.0)
                 .deviationStatus("ON_ROUTE")
@@ -389,7 +487,75 @@ public class FleetTelemetryService {
                 .tripStatus(status)
                 .dataSource("CONTAINER_IOT_DB")
                 .lastTelemetryAt(updatedAt)
+                .distanceToDestinationMeters(arrival.distanceToDestinationMeters())
+                .arrivalRadiusMeters(arrival.arrivalRadiusMeters())
+                .arrivedAtDestination(arrival.arrived())
+                .arrivalStatus(arrival.arrivalStatus())
+                .arrivedAt(arrival.arrivedAt())
+                .routeWaypoints(routeWaypoints.isEmpty() ? null : routeWaypoints)
+                .routeSource(routeWaypoints.isEmpty() ? "NONE" : "POSTGIS_ROUTE_VERSION")
                 .build();
+    }
+
+    ArrivalEvaluation evaluateArrival(
+            String tripStatus,
+            Double curLat,
+            Double curLon,
+            Double originLat,
+            Double originLon,
+            Double destLat,
+            Double destLon,
+            Integer progressPct,
+            Instant persistedArrivedAt,
+            String persistedArrivalStatus) {
+        double arrivalRadius = ccadroProperties.getArrival().getArrivalRadiusMeters();
+        double approachingRadius = ccadroProperties.getArrival().getApproachingRadiusMeters();
+
+        if ("COMPLETED".equalsIgnoreCase(tripStatus) || "DELIVERED".equalsIgnoreCase(tripStatus)) {
+            Double dist = (curLat != null && curLon != null && destLat != null && destLon != null)
+                    ? round1(haversineKm(curLat, curLon, destLat, destLon) * 1000.0)
+                    : 0.0;
+            return new ArrivalEvaluation(dist, arrivalRadius, true, "DELIVERED", persistedArrivedAt);
+        }
+
+        if (curLat != null && curLon != null && destLat != null && destLon != null) {
+            double distMeters = round1(haversineKm(curLat, curLon, destLat, destLon) * 1000.0);
+            if (distMeters <= arrivalRadius) {
+                return new ArrivalEvaluation(distMeters, arrivalRadius, true, "ARRIVED_AT_DESTINATION", persistedArrivedAt);
+            }
+            if (distMeters <= approachingRadius) {
+                return new ArrivalEvaluation(distMeters, arrivalRadius, false, "APPROACHING_DESTINATION", persistedArrivedAt);
+            }
+            if (originLat != null && originLon != null) {
+                double distOriginMeters = haversineKm(curLat, curLon, originLat, originLon) * 1000.0;
+                if (distOriginMeters <= arrivalRadius && (progressPct == null || progressPct < 5)) {
+                    return new ArrivalEvaluation(distMeters, arrivalRadius, false, "AT_ORIGIN", persistedArrivedAt);
+                }
+            }
+            return new ArrivalEvaluation(distMeters, arrivalRadius, false, "IN_TRANSIT", persistedArrivedAt);
+        }
+
+        if ("ARRIVED_AT_DESTINATION".equalsIgnoreCase(persistedArrivalStatus)) {
+            return new ArrivalEvaluation(0.0, arrivalRadius, true, "ARRIVED_AT_DESTINATION", persistedArrivedAt);
+        }
+        if (progressPct != null && progressPct >= 100) {
+            return new ArrivalEvaluation(0.0, arrivalRadius, true, "ARRIVED_AT_DESTINATION", persistedArrivedAt);
+        }
+        if (progressPct != null && progressPct >= 90) {
+            return new ArrivalEvaluation(null, arrivalRadius, false, "APPROACHING_DESTINATION", persistedArrivedAt);
+        }
+        if (progressPct != null && progressPct <= 0) {
+            return new ArrivalEvaluation(null, arrivalRadius, false, "AT_ORIGIN", persistedArrivedAt);
+        }
+        return new ArrivalEvaluation(null, arrivalRadius, false, "IN_TRANSIT", persistedArrivedAt);
+    }
+
+    record ArrivalEvaluation(
+            Double distanceToDestinationMeters,
+            Double arrivalRadiusMeters,
+            boolean arrived,
+            String arrivalStatus,
+            Instant arrivedAt) {
     }
 
     int computeEtaMinutes(String status, double remainingKm, double speedKmh) {

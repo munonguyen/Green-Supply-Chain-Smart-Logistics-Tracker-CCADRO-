@@ -96,6 +96,14 @@ public class AssetController {
         return ApiResponse.success("Đã khôi phục hồ sơ tài xế", assetService.restoreDriver(id));
     }
 
+    @GetMapping("/drivers/me")
+    @Operation(summary = "Resolve authenticated driver profile bound to X-Auth-Username")
+    public ApiResponse<DriverResponse> getCurrentDriver(
+            @RequestHeader(value = "X-Auth-Username", required = false) String callerUsername,
+            @RequestHeader(value = "X-Auth-Scope", required = false) String callerScope) {
+        return ApiResponse.success(assetService.getCurrentDriverProfile(callerUsername, callerScope));
+    }
+
     @GetMapping("/drivers/{id}")
     @Operation(summary = "Get full Grab-style driver profile by ID")
     public ApiResponse<DriverResponse> getDriverById(@PathVariable UUID id) {
@@ -319,6 +327,15 @@ public class AssetController {
             @RequestParam(required = false) String q,
             @RequestParam(required = false, defaultValue = "false") boolean includeDeleted) {
         return ApiResponse.success(assetService.getContainerManifestItems(hubCode, containerCode, q, includeDeleted));
+    }
+
+    @PostMapping("/containers/{containerCode}/manifest-items")
+    @Operation(summary = "Add an identified product/package to a container manifest")
+    public ApiResponse<ContainerCargoManifestItemResponse> createContainerManifestItem(
+            @PathVariable String containerCode,
+            @RequestBody @Valid ContainerManifestItemCreateRequest request) {
+        return ApiResponse.success("Đã thêm mặt hàng vào manifest container",
+                assetService.createContainerManifestItem(containerCode, request));
     }
 
     @DeleteMapping("/shipper-hubs/manifest-items/{itemCode}")

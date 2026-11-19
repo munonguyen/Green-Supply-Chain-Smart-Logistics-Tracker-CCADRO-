@@ -47,11 +47,27 @@ public class AuthController {
     @Operation(summary = "Đăng nhập và lấy cặp Access + Refresh Token", description = "Cấp Access JWT ngắn hạn (15p) và Refresh Token (7 ngày) gắn HttpOnly Cookie + bảng user_sessions")
     public ApiResponse<AuthenticationResponse> authenticate(
             @RequestBody @Valid AuthenticationRequest request,
+            @CookieValue(name = REFRESH_COOKIE_NAME, required = false) String previousCookieRefreshToken,
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String previousAuthorizationHeader,
             @RequestHeader(value = HttpHeaders.USER_AGENT, required = false) String userAgent,
             HttpServletRequest httpRequest,
             HttpServletResponse httpResponse) {
+        String previousAccessToken = (previousAuthorizationHeader != null && previousAuthorizationHeader.startsWith("Bearer "))
+                ? previousAuthorizationHeader.substring(7).trim()
+                : null;
         AuthenticationResponse result = authenticationService.authenticate(
                 request, userAgent, extractClientIp(httpRequest));
+        if ((previousAccessToken != null && !previousAccessToken.isBlank())
+                || (previousCookieRefreshToken != null && !previousCookieRefreshToken.isBlank())) {
+            try {
+                authenticationService.logout(LogoutRequest.builder()
+                        .token(previousAccessToken)
+                        .refreshToken(previousCookieRefreshToken)
+                        .build());
+            } catch (Exception ignored) {
+                // ignore previous session cleanup failure
+            }
+        }
         attachRefreshCookie(httpResponse, result.getRefreshToken(), REFRESH_COOKIE_MAX_AGE_SECONDS, httpRequest.isSecure());
         return ApiResponse.success(result);
     }
@@ -61,17 +77,24 @@ public class AuthController {
     public ApiResponse<AuthenticationResponse> refresh(
             @RequestBody(required = false) RefreshTokenRequest request,
             @CookieValue(name = REFRESH_COOKIE_NAME, required = false) String cookieRefreshToken,
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationHeader,
             @RequestHeader(value = HttpHeaders.USER_AGENT, required = false) String userAgent,
             HttpServletRequest httpRequest,
             HttpServletResponse httpResponse) {
         String effectiveRefreshToken = (request != null && request.getRefreshToken() != null && !request.getRefreshToken().isBlank())
                 ? request.getRefreshToken()
                 : cookieRefreshToken;
+        String previousAccessToken = (authorizationHeader != null && authorizationHeader.startsWith("Bearer "))
+                ? authorizationHeader.substring(7).trim()
+                : null;
         AuthenticationResponse result = authenticationService.refreshAccessToken(
                 RefreshTokenRequest.builder().refreshToken(effectiveRefreshToken).build(),
                 userAgent,
                 extractClientIp(httpRequest)
         );
+        if (previousAccessToken != null && !previousAccessToken.isBlank()) {
+            authenticationService.blacklistPreviousAccessTokenOnRotation(previousAccessToken, "TOKEN_REFRESH_ROTATED");
+        }
         attachRefreshCookie(httpResponse, result.getRefreshToken(), REFRESH_COOKIE_MAX_AGE_SECONDS, httpRequest.isSecure());
         return ApiResponse.success(result);
     }

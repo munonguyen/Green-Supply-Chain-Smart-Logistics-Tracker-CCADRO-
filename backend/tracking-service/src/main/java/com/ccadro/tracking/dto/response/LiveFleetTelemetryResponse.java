@@ -58,5 +58,14 @@ public class LiveFleetTelemetryResponse {
     String tripStatus;
     String dataSource;
     Instant lastTelemetryAt;
+
+    Double distanceToDestinationMeters;
+    Double arrivalRadiusMeters;
+    Boolean arrivedAtDestination;
+    String arrivalStatus;
+    Instant arrivedAt;
+
+    java.util.List<java.util.List<Double>> routeWaypoints;
+    String routeSource;
 }
 

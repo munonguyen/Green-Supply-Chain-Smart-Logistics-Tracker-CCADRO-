@@ -42,6 +42,9 @@ public interface TrackingMapper {
 
     @Mapping(target = "latitude", source = "locationGeom", qualifiedByName = "toLatitude")
     @Mapping(target = "longitude", source = "locationGeom", qualifiedByName = "toLongitude")
+    @Mapping(target = "distanceToDestinationMeters", ignore = true)
+    @Mapping(target = "arrivedAtDestination", ignore = true)
+    @Mapping(target = "arrivalStatus", ignore = true)
     TelemetryResponse toTelemetryResponse(TelemetryEvent entity);
 
     @Mapping(target = "latitude", source = "locationGeom", qualifiedByName = "toLatitude")

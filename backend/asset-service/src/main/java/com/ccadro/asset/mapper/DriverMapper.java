@@ -17,6 +17,7 @@ import java.util.List;
 public interface DriverMapper {
 
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "accountUsername", ignore = true)
     @Mapping(target = "verified", ignore = true)
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "rating", ignore = true)
@@ -57,6 +58,7 @@ public interface DriverMapper {
     List<DriverDispatchMessageResponse> toMessageResponseList(List<DriverDispatchMessage> messages);
 
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "accountUsername", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "verified", ignore = true)

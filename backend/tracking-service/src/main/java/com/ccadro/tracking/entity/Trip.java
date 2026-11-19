@@ -55,6 +55,15 @@ public class Trip {
     @Column(name = "deleted_by", length = 60)
     private String deletedBy;
 
+    @Column(name = "arrived_at")
+    private Instant arrivedAt;
+
+    @Column(name = "arrival_status", length = 30)
+    private String arrivalStatus = "AT_ORIGIN";
+
+    @Column(name = "distance_to_destination_meters", precision = 12, scale = 2)
+    private BigDecimal distanceToDestinationMeters;
+
     public Trip() {}
 
     public Boolean getIsDeleted() { return isDeleted; }
@@ -63,6 +72,13 @@ public class Trip {
     public void setDeletedAt(Instant deletedAt) { this.deletedAt = deletedAt; }
     public String getDeletedBy() { return deletedBy; }
     public void setDeletedBy(String deletedBy) { this.deletedBy = deletedBy; }
+
+    public Instant getArrivedAt() { return arrivedAt; }
+    public void setArrivedAt(Instant arrivedAt) { this.arrivedAt = arrivedAt; }
+    public String getArrivalStatus() { return arrivalStatus; }
+    public void setArrivalStatus(String arrivalStatus) { this.arrivalStatus = arrivalStatus; }
+    public BigDecimal getDistanceToDestinationMeters() { return distanceToDestinationMeters; }
+    public void setDistanceToDestinationMeters(BigDecimal distanceToDestinationMeters) { this.distanceToDestinationMeters = distanceToDestinationMeters; }
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }

@@ -1,6 +1,6 @@
 server:
   port: 8089
-  address: ${SERVER_ADDRESS:0.0.0.0}
+  address: ${SERVER_ADDRESS:127.0.0.1}
 
 spring:
   application:
@@ -26,7 +26,7 @@ management:
         include: health,info,metrics
   endpoint:
     health:
-      show-details: always
+      show-details: never
 
 
 # Infrastructure registry is separate from business UI. dev-start enables registration.
@@ -49,8 +49,8 @@ eureka:
 
 springdoc:
   api-docs:
-    enabled: true
+    enabled: ${API_DOCS_ENABLED:false}
     path: /v3/api-docs
   swagger-ui:
-    enabled: true
+    enabled: ${API_DOCS_ENABLED:false}
     path: /swagger-ui.html

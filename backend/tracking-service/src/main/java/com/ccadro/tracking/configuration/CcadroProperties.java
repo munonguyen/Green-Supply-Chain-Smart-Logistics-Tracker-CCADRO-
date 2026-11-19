@@ -11,6 +11,7 @@ public class CcadroProperties {
     private Carbon carbon = new Carbon();
     private Demerit demerit = new Demerit();
     private Security security = new Security();
+    private Arrival arrival = new Arrival();
 
     public static class Routing {
         private String provider = "mock";
@@ -93,6 +94,16 @@ public class CcadroProperties {
         public void setJwtExpirationMs(long jwtExpirationMs) { this.jwtExpirationMs = jwtExpirationMs; }
     }
 
+    public static class Arrival {
+        private double arrivalRadiusMeters = 250.0;
+        private double approachingRadiusMeters = 2000.0;
+
+        public double getArrivalRadiusMeters() { return arrivalRadiusMeters; }
+        public void setArrivalRadiusMeters(double arrivalRadiusMeters) { this.arrivalRadiusMeters = arrivalRadiusMeters; }
+        public double getApproachingRadiusMeters() { return approachingRadiusMeters; }
+        public void setApproachingRadiusMeters(double approachingRadiusMeters) { this.approachingRadiusMeters = approachingRadiusMeters; }
+    }
+
     public Routing getRouting() { return routing; }
     public void setRouting(Routing routing) { this.routing = routing; }
     public Deviation getDeviation() { return deviation; }
@@ -105,4 +116,6 @@ public class CcadroProperties {
     public void setDemerit(Demerit demerit) { this.demerit = demerit; }
     public Security getSecurity() { return security; }
     public void setSecurity(Security security) { this.security = security; }
+    public Arrival getArrival() { return arrival; }
+    public void setArrival(Arrival arrival) { this.arrival = arrival; }
 }

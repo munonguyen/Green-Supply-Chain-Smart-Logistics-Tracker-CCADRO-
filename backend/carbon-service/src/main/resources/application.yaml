@@ -1,6 +1,6 @@
 server:
   port: 8085
-  address: ${SERVER_ADDRESS:0.0.0.0}
+  address: ${SERVER_ADDRESS:127.0.0.1}
 
 spring:
   application:
@@ -28,7 +28,7 @@ management:
         include: health,info,metrics
   endpoint:
     health:
-      show-details: always
+      show-details: never
 
 # CCADRO Business Configurations
 ccadro:
@@ -57,10 +57,10 @@ ccadro:
 springdoc:
   api-docs:
     path: /v3/api-docs
-    enabled: true
+    enabled: ${API_DOCS_ENABLED:false}
   swagger-ui:
     path: /swagger-ui.html
-    enabled: true
+    enabled: ${API_DOCS_ENABLED:false}
     operationsSorter: method
     tagsSorter: alpha
 

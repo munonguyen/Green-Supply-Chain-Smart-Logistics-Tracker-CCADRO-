@@ -1001,8 +1001,28 @@ export default function ShipperPortalPage() {
 
     const strictHubIsolationEnforced = !isAdminRole;
 
-    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(
+        () => typeof window !== 'undefined' && window.innerWidth <= 768
+    );
     const [activeTab, setActiveTab] = useState('dispatch');
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return undefined;
+        const onResize = () => {
+            if (window.innerWidth <= 768) {
+                setIsSidebarCollapsed(true);
+            }
+        };
+        window.addEventListener('resize', onResize);
+        return () => window.removeEventListener('resize', onResize);
+    }, []);
+
+    const selectShipperTab = useCallback((tabId) => {
+        setActiveTab(tabId);
+        if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+            setIsSidebarCollapsed(true);
+        }
+    }, []);
     const [hubs, setHubs] = useState(INITIAL_DISTRIBUTION_HUBS);
     const [selectedHubCode, setSelectedHubCode] = useState(boundShipperDefault.hubCode);
 
@@ -1793,33 +1813,23 @@ export default function ShipperPortalPage() {
 
     return (
         <div
-            className="lp-root"
+            className="lp-root app-container"
             style={{
-                minHeight: '100vh',
-                display: 'flex',
                 background: isDark ? '#040f0c' : '#f1f7f4',
                 color: textPrimary,
                 fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif"
             }}
         >
             {/* ══════════════════════════════════════════════════════════════════
-          1. COLLAPSIBLE SIDEBAR (ĐỒNG BỘ CHUẨN CUSTOMER PORTAL)
+          1. COLLAPSIBLE SIDEBAR (ĐỒNG BỘ CHUẨN ADMIN & MOBILE DRAWER)
       ══════════════════════════════════════════════════════════════════ */}
             <aside
+                className={`sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`}
                 style={{
-                    width: isSidebarCollapsed ? 78 : 280,
-                    flexShrink: 0,
                     background: isDark ? '#061611' : '#ffffff',
                     borderRight: isDark
                         ? '1px solid rgba(110, 231, 183, 0.14)'
-                        : '1px solid rgba(15, 23, 42, 0.08)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    position: 'sticky',
-                    top: 0,
-                    height: '100vh',
-                    zIndex: 35,
-                    transition: 'width 0.25s cubic-bezier(0.22, 1, 0.36, 1)'
+                        : '1px solid rgba(15, 23, 42, 0.08)'
                 }}
             >
                 {/* Sidebar Brand Header */}
@@ -2003,7 +2013,7 @@ export default function ShipperPortalPage() {
                                             <button
                                                 key={item.id}
                                                 type="button"
-                                                onClick={() => setActiveTab(item.id)}
+                                                onClick={() => selectShipperTab(item.id)}
                                                 title={isSidebarCollapsed ? item.label : undefined}
                                                 style={{
                                                     width: '100%',
@@ -2218,10 +2228,20 @@ export default function ShipperPortalPage() {
                 </div>
             </aside>
 
+            {!isSidebarCollapsed && (
+                <button
+                    type="button"
+                    className="mobile-sidebar-backdrop"
+                    aria-label="Đóng menu"
+                    onClick={() => setIsSidebarCollapsed(true)}
+                />
+            )}
+
             {/* ══════════════════════════════════════════════════════════════════
           2. MAIN WORKSPACE (2-TIER HEADER + TAB VIEWS)
       ══════════════════════════════════════════════════════════════════ */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+            <div className="main-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, position: 'relative' }}>
+                <div className="ambient-gradient-mesh" />
                 {/* 2-Tier Sticky Header matching CustomerPortalPage */}
                 <header
                     style={{
@@ -2415,16 +2435,12 @@ export default function ShipperPortalPage() {
 
                     {/* Tier 2: Contextual Navigation Tabs & Quick Pipeline Actions */}
                     <div
+                        className="portal-subnav"
                         style={{
                             minHeight: 46,
-                            padding: '6px 24px',
                             borderTop: isDark
                                 ? '1px solid rgba(255, 255, 255, 0.05)'
                                 : '1px solid rgba(15, 23, 42, 0.05)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            gap: 12,
                             flexWrap: 'wrap'
                         }}
                     >
@@ -2550,7 +2566,7 @@ export default function ShipperPortalPage() {
                 )}
 
                 {/* ── MAIN CONTENT CONTAINER ── */}
-                <main style={{ padding: '22px 26px 48px', maxWidth: 1440, width: '100%', margin: '0 auto' }}>
+                <main className="page-body" style={{ maxWidth: 1480, width: '100%', margin: '0 auto', position: 'relative' }}>
                     {/* Active Hub Context Banner + Bento 4 KPI Cards (Same clean rhythm as CustomerPortalPage) */}
                     {activeHub && (
                         <div
@@ -3237,7 +3253,7 @@ export default function ShipperPortalPage() {
                                                     style={{
                                                         marginTop: 12,
                                                         display: 'grid',
-                                                        gridTemplateColumns: 'minmax(260px, 340px) minmax(0, 1fr)',
+                                                        gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))',
                                                         gap: 14,
                                                         alignItems: 'center'
                                                     }}
@@ -3553,7 +3569,7 @@ export default function ShipperPortalPage() {
                                                         borderTop: cardBorder,
                                                         display: 'grid',
                                                         gridTemplateColumns: item.proofImageUrl
-                                                            ? 'minmax(0, 1fr) 210px'
+                                                            ? 'repeat(auto-fit, minmax(min(100%, 210px), 1fr))'
                                                             : 'minmax(0, 1fr)',
                                                         gap: 12,
                                                         alignItems: 'center'
@@ -3686,7 +3702,7 @@ export default function ShipperPortalPage() {
                             <div
                                 style={{
                                     display: 'grid',
-                                    gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+                                    gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 290px), 1fr))',
                                     gap: 16
                                 }}
                             >
@@ -3991,7 +4007,7 @@ export default function ShipperPortalPage() {
                             <div
                                 style={{
                                     display: 'grid',
-                                    gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+                                    gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 290px), 1fr))',
                                     gap: 16
                                 }}
                             >

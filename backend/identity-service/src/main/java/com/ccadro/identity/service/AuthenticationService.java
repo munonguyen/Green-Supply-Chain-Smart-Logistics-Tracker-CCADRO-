@@ -22,6 +22,7 @@ import com.ccadro.identity.repository.InvalidatedTokenRepository;
 import com.ccadro.identity.repository.RoleRepository;
 import com.ccadro.identity.repository.UserRepository;
 import com.ccadro.identity.repository.UserSessionRepository;
+import com.ccadro.identity.security.AccessTokenPolicy;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
@@ -131,7 +132,7 @@ public class AuthenticationService {
         User user = userRepository.findByUsername(cleanUsername)
                 .orElseThrow(() -> {
                     writeAudit(cleanUsername, null, null, "LOGIN_FAILED", 404, "Tài khoản không tồn tại");
-                    return new AppException(ErrorCode.USER_NOT_EXISTED);
+                    return new AppException(ErrorCode.UNAUTHENTICATED);
                 });
 
         var iamAccountOpt = hubIamAccountRepository.findByUsernameIgnoreCase(user.getUsername());
@@ -341,14 +342,16 @@ public class AuthenticationService {
             }
 
             // Check session state in DB when session repository is enabled
-            if (sid != null && userSessionRepository != null) {
+            if (userSessionRepository != null) {
                 try {
+                    if (sid == null || sid.isBlank()) return IntrospectResponse.builder().valid(false).build();
                     UUID sidUuid = UUID.fromString(sid);
                     Optional<UserSession> sessionOpt = userSessionRepository.findById(sidUuid);
-                    if (sessionOpt.isPresent() && sessionOpt.get().isRevoked()) {
-                        if (tokenBlacklistRedisService != null) {
-                            tokenBlacklistRedisService.revokeSessionId(sidUuid, sessionOpt.get().getRevokeReason());
-                        }
+                    if (sessionOpt.isEmpty() || sessionOpt.get().isRevoked()
+                            || !username.equals(sessionOpt.get().getUsername())
+                            || !Objects.equals(u.getId(), sessionOpt.get().getUserId())
+                            || sessionOpt.get().getExpiresAt() == null
+                            || !sessionOpt.get().getExpiresAt().isAfter(Instant.now())) {
                         return IntrospectResponse.builder().valid(false).build();
                     }
                 } catch (IllegalArgumentException ignored) {
@@ -380,42 +383,7 @@ public class AuthenticationService {
         String refreshToken = request != null ? request.getRefreshToken() : null;
 
         if (accessToken != null && !accessToken.isBlank()) {
-            try {
-                SignedJWT signToken = verifyToken(accessToken, true);
-                JWTClaimsSet claims = signToken.getJWTClaimsSet();
-                String jit = claims.getJWTID();
-                String subject = claims.getSubject();
-                String hubCode = claims.getStringClaim("assignedHubCode");
-                String sid = claims.getStringClaim("sid");
-                Date expiryTime = claims.getExpirationTime();
-                Instant expiryInstant = expiryTime != null
-                        ? expiryTime.toInstant()
-                        : Instant.now().plus(VALID_DURATION, ChronoUnit.SECONDS);
-
-                // 1. Write-through PostgreSQL blacklist
-                InvalidatedToken invalidatedToken = InvalidatedToken.builder()
-                        .id(jit)
-                        .expiryTime(expiryInstant)
-                        .username(subject)
-                        .reason("LOGOUT")
-                        .build();
-                invalidatedTokenRepository.save(invalidatedToken);
-
-                // 2. Write-through Redis Hot Blacklist với TTL = thời gian sống còn lại
-                if (tokenBlacklistRedisService != null) {
-                    tokenBlacklistRedisService.blacklistJti(jit, expiryInstant, "LOGOUT");
-                }
-
-                // 3. Revoke associated session in DB + Redis
-                if (sid != null && !sid.isBlank()) {
-                    revokeSessionByStringId(sid, "LOGOUT");
-                }
-
-                writeAudit(subject, null, hubCode, "LOGOUT", 200, "Đăng xuất & đưa JWT vào Redis/DB Blacklist JTI=" + jit);
-                log.info("Token successfully blacklisted (PostgreSQL + Redis): JTI={}, SID={}", jit, sid);
-            } catch (AppException exception) {
-                log.info("Access token already expired, revoked, or invalid on logout");
-            }
+            blacklistAccessTokenJti(accessToken, "LOGOUT", true);
         }
 
         if (refreshToken != null && !refreshToken.isBlank() && userSessionRepository != null) {
@@ -431,6 +399,62 @@ public class AuthenticationService {
                     tokenBlacklistRedisService.revokeSessionId(session.getId(), "LOGOUT");
                 }
             });
+        }
+    }
+
+    @Transactional
+    public void blacklistPreviousAccessTokenOnRotation(String accessToken, String reason) {
+        if (accessToken == null || accessToken.isBlank()) {
+            return;
+        }
+        blacklistAccessTokenJti(accessToken, reason != null ? reason : "TOKEN_REFRESH_ROTATED", false);
+    }
+
+    private void blacklistAccessTokenJti(String accessToken, String reason, boolean revokeSession) {
+        try {
+            SignedJWT signToken = SignedJWT.parse(accessToken.trim());
+            JWSVerifier verifier = new MACVerifier(SIGNER_KEY.getBytes());
+            if (!signToken.verify(verifier)) {
+                log.info("Skipped blacklisting token with invalid HMAC signature");
+                return;
+            }
+            JWTClaimsSet claims = signToken.getJWTClaimsSet();
+            String jit = claims.getJWTID();
+            String subject = claims.getSubject();
+            String hubCode = claims.getStringClaim("assignedHubCode");
+            String sid = claims.getStringClaim("sid");
+            Date expiryTime = claims.getExpirationTime();
+            Instant now = Instant.now();
+            Instant expiryInstant = (expiryTime != null && expiryTime.toInstant().isAfter(now))
+                    ? expiryTime.toInstant()
+                    : now.plus(VALID_DURATION, ChronoUnit.SECONDS);
+
+            if (jit != null && !jit.isBlank()) {
+                // 1. Write-through PostgreSQL blacklist
+                InvalidatedToken invalidatedToken = InvalidatedToken.builder()
+                        .id(jit)
+                        .expiryTime(expiryInstant)
+                        .username(subject)
+                        .reason(reason)
+                        .build();
+                invalidatedTokenRepository.save(invalidatedToken);
+
+                // 2. Write-through Redis Hot Blacklist với TTL = thời gian sống còn lại
+                if (tokenBlacklistRedisService != null) {
+                    tokenBlacklistRedisService.blacklistJti(jit, expiryInstant, reason);
+                }
+            }
+
+            // 3. Revoke associated session in DB + Redis when logging out
+            if (revokeSession && sid != null && !sid.isBlank()) {
+                revokeSessionByStringId(sid, reason);
+            }
+
+            writeAudit(subject, null, hubCode, reason, 200,
+                    "Đưa JWT cũ vào Redis/DB Blacklist JTI=" + jit + " (" + reason + ")");
+            log.info("Token blacklisted (PostgreSQL + Redis): JTI={}, SID={}, reason={}", jit, sid, reason);
+        } catch (Exception exception) {
+            log.info("Access token could not be parsed for blacklisting on {}: {}", reason, exception.getMessage());
         }
     }
 
@@ -723,6 +747,7 @@ public class AuthenticationService {
         JWSVerifier verifier = new MACVerifier(SIGNER_KEY.getBytes());
         SignedJWT signedJWT = SignedJWT.parse(token);
         JWTClaimsSet claims = signedJWT.getJWTClaimsSet();
+        AccessTokenPolicy.validate(signedJWT.getHeader().getAlgorithm(), claims, Instant.now());
 
         Date expiryTime = (isRefresh)
                 ? new Date(claims.getIssueTime().toInstant().plus(REFRESHABLE_DURATION, ChronoUnit.SECONDS).toEpochMilli())

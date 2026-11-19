@@ -22,7 +22,13 @@ import VehicleMarker from '../../../../shared/map/VehicleMarker';
 import OriginMarker from '../../../../shared/map/OriginMarker';
 import DestinationMarker from '../../../../shared/map/DestinationMarker';
 import DeviationMarker from '../../../../shared/map/DeviationMarker';
-import { getRealRoadRoute } from '../../../../services/roadRoutingService';
+import {
+  evaluateDestinationArrival,
+  extractGeoJsonLineStringPoints,
+  fetchLiveOsrmRoute,
+  getRealRoadRoute,
+  measurePolylineDistanceKm
+} from '../../../../services/roadRoutingService';
 import { HUB_CORRIDOR_DIRECTORY } from '../../../../services/logisticsReferenceData';
 import { api } from '../../../../services/api';
 
@@ -52,6 +58,7 @@ export default function TripTrackingPage() {
   const [syncing, setSyncing] = useState(false);
   const [actionMsg, setActionMsg] = useState(null);
   const [focusCoords, setFocusCoords] = useState(null);
+  const [liveOsrmRoute, setLiveOsrmRoute] = useState(null);
 
   const focusLat = parseFloat(searchParams.get('focusLat'));
   const focusLon = parseFloat(searchParams.get('focusLon'));
@@ -196,33 +203,76 @@ export default function TripTrackingPage() {
     [destId]
   );
 
-  const activeRoadRoute = useMemo(() => getRealRoadRoute(originId, destId), [originId, destId]);
+  const fallbackRoadRoute = useMemo(() => getRealRoadRoute(originId, destId), [originId, destId]);
 
   const originCoords = useMemo(() => {
-    if (liveTelemetry?.originLatitude != null && liveTelemetry?.originLongitude != null) {
-      return [Number(liveTelemetry.originLatitude), Number(liveTelemetry.originLongitude)];
+    const oLat = liveTelemetry?.originLat ?? liveTelemetry?.originLatitude;
+    const oLon = liveTelemetry?.originLon ?? liveTelemetry?.originLongitude;
+    if (oLat != null && oLon != null) {
+      return [Number(oLat), Number(oLon)];
     }
-    return activeRoadRoute.points[0] || [10.7626, 106.7956];
-  }, [liveTelemetry, activeRoadRoute.points]);
+    return fallbackRoadRoute.points[0] || [10.7626, 106.7956];
+  }, [liveTelemetry, fallbackRoadRoute.points]);
 
   const destCoords = useMemo(() => {
-    if (liveTelemetry?.destinationLatitude != null && liveTelemetry?.destinationLongitude != null) {
-      return [
-        Number(liveTelemetry.destinationLatitude),
-        Number(liveTelemetry.destinationLongitude)
-      ];
+    const dLat = liveTelemetry?.destinationLat ?? liveTelemetry?.destinationLatitude;
+    const dLon = liveTelemetry?.destinationLon ?? liveTelemetry?.destinationLongitude;
+    if (dLat != null && dLon != null) {
+      return [Number(dLat), Number(dLon)];
     }
-    return activeRoadRoute.points[activeRoadRoute.points.length - 1] || [10.9312, 106.6974];
-  }, [liveTelemetry, activeRoadRoute.points]);
+    return fallbackRoadRoute.points[fallbackRoadRoute.points.length - 1] || [10.9312, 106.6974];
+  }, [liveTelemetry, fallbackRoadRoute.points]);
 
-  // Authentic recorded GPS coordinates from Backend TelemetryEvent / Container IoT
+  const postgisRoutePoints = useMemo(
+    () => extractGeoJsonLineStringPoints(liveTelemetry?.routeWaypoints),
+    [liveTelemetry?.routeWaypoints]
+  );
+
+  // Fetch live OSRM road route if PostGIS RouteVersion polyline is not available
+  useEffect(() => {
+    if (postgisRoutePoints.length >= 2) return;
+    let cancelled = false;
+    fetchLiveOsrmRoute(originCoords, destCoords).then((res) => {
+      if (!cancelled && res?.points?.length >= 2) {
+        setLiveOsrmRoute(res);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [postgisRoutePoints.length, originCoords, destCoords]);
+
+  const activeRoadRoute = useMemo(() => {
+    if (postgisRoutePoints.length >= 2) {
+      return {
+        points: postgisRoutePoints,
+        distanceKm:
+          liveTelemetry?.totalDistanceKm ?? measurePolylineDistanceKm(postgisRoutePoints),
+        source: 'POSTGIS_ROUTE_VERSION'
+      };
+    }
+    if (liveOsrmRoute?.points?.length >= 2) {
+      return {
+        points: liveOsrmRoute.points,
+        distanceKm: liveTelemetry?.totalDistanceKm ?? liveOsrmRoute.distanceKm,
+        source: 'OSRM_LIVE'
+      };
+    }
+    return {
+      ...fallbackRoadRoute,
+      source: 'OSRM_CORRIDOR_CACHE'
+    };
+  }, [postgisRoutePoints, liveTelemetry?.totalDistanceKm, liveOsrmRoute, fallbackRoadRoute]);
+
+  // Authentic recorded GPS coordinates from Backend TelemetryEvent / Container IoT (chronological ascending)
   const recordedTrail = useMemo(() => {
     return telemetryHistory
       .filter((t) => t.latitude != null && t.longitude != null)
       .map((t) => [Number(t.latitude), Number(t.longitude)]);
   }, [telemetryHistory]);
 
-  const latestRecordedEvent = telemetryHistory[0] || null;
+  const latestRecordedEvent =
+    telemetryHistory.length > 0 ? telemetryHistory[telemetryHistory.length - 1] : null;
 
   const currentVehiclePos = useMemo(() => {
     if (liveTelemetry?.latitude != null && liveTelemetry?.longitude != null) {
@@ -238,16 +288,46 @@ export default function TripTrackingPage() {
   }, [liveTelemetry, latestRecordedEvent, hasEmergencyFocus, focusLat, focusLon]);
 
   const pendingProposal = useMemo(
-    () => liveProposals.find((p) => p.decision === 'PENDING') || null,
+    () =>
+      liveProposals.find(
+        (p) => p.status === 'PENDING_DISPATCHER' || p.decision === 'PENDING'
+      ) || null,
     [liveProposals]
   );
 
   const isCriticalDeviation =
     hasEmergencyFocus ||
+    liveTelemetry?.deviationStatus === 'RED_DEVIATION' ||
     liveTelemetry?.deviationStatus === 'CRITICAL_200M' ||
     Number(liveTelemetry?.deviationMeters || 0) > 200;
   const isWarningDeviation =
-    !isCriticalDeviation && liveTelemetry?.deviationStatus === 'WARNING_50M';
+    !isCriticalDeviation &&
+    (liveTelemetry?.deviationStatus === 'YELLOW_WARNING' ||
+      liveTelemetry?.deviationStatus === 'WARNING_50M');
+
+  const arrivalInfo = useMemo(() => {
+    const computed = evaluateDestinationArrival(currentVehiclePos, destCoords, {
+      arrivalRadiusMeters: liveTelemetry?.arrivalRadiusMeters ?? 250,
+      isDelivered:
+        (liveTelemetry?.tripStatus || liveTrip?.status) === 'COMPLETED' ||
+        liveTelemetry?.arrivalStatus === 'DELIVERED',
+      progressPct: liveTelemetry?.progressPercent
+    });
+    const distMeters = liveTelemetry?.distanceToDestinationMeters ?? computed.distanceMeters;
+    const arrived =
+      typeof liveTelemetry?.arrivedAtDestination === 'boolean'
+        ? liveTelemetry.arrivedAtDestination
+        : computed.arrived;
+    const status = liveTelemetry?.arrivalStatus || computed.status;
+    return {
+      ...computed,
+      distanceMeters: distMeters,
+      distanceKm: distMeters != null ? Number((distMeters / 1000).toFixed(2)) : computed.distanceKm,
+      arrived,
+      status,
+      arrivedAt: liveTelemetry?.arrivedAt || liveTrip?.arrivedAt || null
+    };
+  }, [currentVehiclePos, destCoords, liveTelemetry, liveTrip]);
 
   const handleStartTrip = async () => {
     if (!tripId) return;
@@ -530,6 +610,31 @@ export default function TripTrackingPage() {
           <span>
             Mẫu GPS ghi nhận: <strong>{telemetryHistory.length}</strong>
           </span>
+          <span>
+            Tới điểm giao:{' '}
+            <strong
+              style={{
+                color: arrivalInfo.arrived
+                  ? 'var(--accent-green)'
+                  : arrivalInfo.status === 'APPROACHING_DESTINATION'
+                    ? 'var(--accent-amber)'
+                    : 'var(--accent-blue)'
+              }}
+            >
+              {arrivalInfo.arrived
+                ? `✓ ĐÃ TỚI ĐÍCH (${arrivalInfo.distanceMeters ?? 0}m)`
+                : arrivalInfo.distanceMeters != null
+                  ? `Chưa tới (còn ${
+                      arrivalInfo.distanceMeters >= 1000
+                        ? `${arrivalInfo.distanceKm} km`
+                        : `${arrivalInfo.distanceMeters} m`
+                    })`
+                  : 'Đang theo dõi'}
+            </strong>
+          </span>
+          <span>
+            Nguồn tuyến: <strong>{activeRoadRoute.source}</strong>
+          </span>
         </div>
       </div>
 
@@ -624,6 +729,9 @@ export default function TripTrackingPage() {
               position={destCoords}
               title={liveTelemetry?.destinationName || destNode.label}
               label={liveTelemetry?.destinationName || destNode.label}
+              showGeofence={true}
+              geofenceRadiusMeters={arrivalInfo.arrivalRadiusMeters || 250}
+              arrived={arrivalInfo.arrived}
             />
             <RoutePolyline
               positions={activeRoadRoute.points}
@@ -746,6 +854,32 @@ export default function TripTrackingPage() {
                 <span style={{ color: 'var(--text-muted)' }}>CO2e cắt giảm (GLEC v3)</span>
                 <strong style={{ color: 'var(--accent-green)' }}>
                   {liveTelemetry?.co2SavedKg != null ? `${liveTelemetry.co2SavedKg} kg` : '--'}
+                </strong>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 9, borderBottom: '1px solid var(--border-color)' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Trạng thái giao tới điểm đích</span>
+                <strong
+                  style={{
+                    color: arrivalInfo.arrived
+                      ? 'var(--accent-green)'
+                      : arrivalInfo.status === 'APPROACHING_DESTINATION'
+                        ? 'var(--accent-amber)'
+                        : 'var(--accent-blue)'
+                  }}
+                >
+                  {arrivalInfo.arrived
+                    ? `ĐÃ TỚI ĐÍCH (${arrivalInfo.distanceMeters ?? 0}m)`
+                    : arrivalInfo.distanceMeters != null
+                      ? `Chưa tới • Còn ${
+                          arrivalInfo.distanceMeters >= 1000
+                            ? `${arrivalInfo.distanceKm} km`
+                            : `${arrivalInfo.distanceMeters} m`
+                        }`
+                      : arrivalInfo.status}
+                  {arrivalInfo.arrivedAt
+                    ? ` • ${new Date(arrivalInfo.arrivedAt).toLocaleTimeString('vi-VN')}`
+                    : ''}
                 </strong>
               </div>
 

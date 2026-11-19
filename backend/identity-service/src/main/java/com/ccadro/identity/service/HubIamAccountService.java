@@ -49,7 +49,11 @@ public class HubIamAccountService {
     }
 
     private boolean isGlobalAdmin(String callerScope) {
-        return hasValidScope(callerScope) && callerScope.contains("ROLE_ADMIN");
+        return hasScope(callerScope, "ROLE_ADMIN");
+    }
+
+    private boolean hasScope(String scope, String required) {
+        return scope != null && Arrays.asList(scope.trim().split("\\s+")).contains(required);
     }
 
     public List<HubIamAccount> getAccountsByHubScope(String requestedHubCode, String callerScope,
@@ -146,7 +150,7 @@ public class HubIamAccountService {
         }
 
         boolean isAdmin = isGlobalAdmin(callerScope);
-        boolean isManager = callerScope.contains("ROLE_HUB_MANAGER") || callerScope.contains("HUB_ACCOUNT_MANAGE");
+        boolean isManager = hasScope(callerScope, "ROLE_HUB_MANAGER") || hasScope(callerScope, "HUB_ACCOUNT_MANAGE");
         if (!isAdmin && !isManager) {
             throw new AppException(ErrorCode.UNAUTHORIZED,
                     "Chỉ ADMIN hoặc HUB_MANAGER mới có quyền cấp phát tài khoản Trụ sở.");
@@ -273,7 +277,7 @@ public class HubIamAccountService {
             throw new AppException(ErrorCode.UNAUTHORIZED, "Thiếu thông tin phân quyền xác thực (X-Auth-Scope).");
         }
         boolean isAdmin = isGlobalAdmin(callerScope);
-        boolean isManager = callerScope.contains("ROLE_HUB_MANAGER") || callerScope.contains("HUB_ACCOUNT_MANAGE");
+        boolean isManager = hasScope(callerScope, "ROLE_HUB_MANAGER") || hasScope(callerScope, "HUB_ACCOUNT_MANAGE");
         if (!isAdmin && !isManager) {
             throw new AppException(ErrorCode.UNAUTHORIZED,
                     "Chỉ ADMIN hoặc HUB_MANAGER mới có quyền khóa/mở khóa tài khoản Trụ sở.");
@@ -412,7 +416,7 @@ public class HubIamAccountService {
             throw new AppException(ErrorCode.UNAUTHORIZED, "Thiếu thông tin phân quyền xác thực (X-Auth-Scope).");
         }
         boolean isAdmin = isGlobalAdmin(callerScope);
-        boolean isManager = callerScope.contains("ROLE_HUB_MANAGER") || callerScope.contains("HUB_ACCOUNT_MANAGE");
+        boolean isManager = hasScope(callerScope, "ROLE_HUB_MANAGER") || hasScope(callerScope, "HUB_ACCOUNT_MANAGE");
         if (!isAdmin && !isManager) {
             throw new AppException(ErrorCode.UNAUTHORIZED, "Chỉ ADMIN hoặc HUB_MANAGER mới có quyền " + actionLabel + " tài khoản Trụ sở.");
         }

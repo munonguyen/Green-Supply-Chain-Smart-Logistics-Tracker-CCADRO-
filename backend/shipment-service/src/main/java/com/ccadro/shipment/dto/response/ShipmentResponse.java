@@ -32,6 +32,8 @@ public class ShipmentResponse {
     Instant pickupTimePlanned;
     Instant deliveryDeadline;
     String status;
+    UUID assignedVehicleId;
+    UUID assignedDriverId;
     String distance;
     BigDecimal distanceKm;
     String distanceUnit;

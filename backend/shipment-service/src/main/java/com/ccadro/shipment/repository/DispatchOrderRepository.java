@@ -12,6 +12,7 @@ public interface DispatchOrderRepository extends JpaRepository<DispatchOrder, UU
     Optional<DispatchOrder> findByDispatchCode(String dispatchCode);
     Optional<DispatchOrder> findByShipmentId(UUID shipmentId);
     boolean existsByShipmentId(UUID shipmentId);
+    boolean existsByShipmentIdAndStatusNotIn(UUID shipmentId, java.util.Collection<String> statuses);
     boolean existsByDispatchCode(String dispatchCode);
 }
 

@@ -3,6 +3,7 @@ package com.ccadro.asset.service;
 import com.ccadro.asset.dto.request.ManifestItemStatusUpdateRequest;
 import com.ccadro.asset.dto.request.ThirdPartyHandoverUpdateRequest;
 import com.ccadro.asset.dto.response.ContainerCargoManifestItemResponse;
+import com.ccadro.asset.dto.request.ContainerManifestItemCreateRequest;
 import com.ccadro.asset.dto.response.HubLocalShipperResponse;
 import com.ccadro.asset.dto.response.LocalDistributionHubResponse;
 import com.ccadro.asset.dto.response.ThirdPartyHandoverResponse;
@@ -126,6 +127,35 @@ public class ThirdPartyHandoverService {
                 )
         );
         return ranked.stream().map(this::toManifestItemResponse).toList();
+    }
+
+    @Transactional
+    public ContainerCargoManifestItemResponse createManifestItem(
+            String containerCode, ContainerManifestItemCreateRequest request) {
+        if (manifestItemRepository.findByItemCode(request.getItemCode().trim()).isPresent()) {
+            throw new AppException(ErrorCode.INVALID_REQUEST_ARGUMENT,
+                    "Mã sản phẩm đã tồn tại: " + request.getItemCode());
+        }
+        ContainerCargoManifestItem item = ContainerCargoManifestItem.builder()
+                .itemCode(request.getItemCode().trim())
+                .containerCode(containerCode.trim())
+                .shipmentCode(request.getShipmentCode().trim())
+                .hubCode(request.getHubCode().trim())
+                .cargoName(request.getCargoName().trim())
+                .cargoCategory(request.getCargoCategory().trim())
+                .consigneeName(request.getConsigneeName().trim())
+                .consigneePhone(request.getConsigneePhone().trim())
+                .deliveryAddress(request.getDeliveryAddress().trim())
+                .deliveryZoneName(request.getDeliveryZoneName().trim())
+                .deliveryLat(request.getDeliveryLat())
+                .deliveryLng(request.getDeliveryLng())
+                .weightKg(request.getWeightKg())
+                .parcelCount(request.getParcelCount())
+                .requiredTempC(request.getRequiredTempC())
+                .requiresColdChain(request.getRequiresColdChain())
+                .slaWindow(request.getSlaWindow().trim())
+                .build();
+        return toManifestItemResponse(manifestItemRepository.save(item));
     }
 
     @Transactional

@@ -47,26 +47,18 @@ class SwaggerAggregationTest {
     }
 
     @Test
-    void swaggerConfigExposesAllElevenMicroservicesPublicly() {
+    void swaggerConfigIsNotPublishedThroughThePublicGateway() {
         webTestClient.get()
                 .uri("/v3/api-docs/swagger-config")
                 .exchange()
-                .expectStatus().isOk()
-                .expectBody()
-                .jsonPath("$.urls.length()").isEqualTo(11)
-                .jsonPath("$.urls[?(@.url == '/services/identity/v3/api-docs')]").isNotEmpty()
-                .jsonPath("$.urls[?(@.url == '/services/payments/v3/api-docs')]").isNotEmpty()
-                .jsonPath("$.urls[?(@.url == '/services/hub-shipper/v3/api-docs')]").isNotEmpty()
-                .jsonPath("$.urls[?(@.url == '/services/chat/v3/api-docs')]").isNotEmpty();
+                .expectStatus().isNotFound();
     }
 
     @Test
-    void downstreamServiceApiDocsRouteIsAccessibleWithoutJwt() {
+    void downstreamServiceApiDocsRouteIsHiddenWithoutJwt() {
         webTestClient.get()
                 .uri("/services/chat/v3/api-docs")
                 .exchange()
-                .expectStatus().isOk()
-                .expectBody()
-                .jsonPath("$.openapi").isEqualTo("3.0.1");
+                .expectStatus().isNotFound();
     }
 }

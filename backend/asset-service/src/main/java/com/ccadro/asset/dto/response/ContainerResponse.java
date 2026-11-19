@@ -18,6 +18,9 @@ public class ContainerResponse {
     String containerType;
     String isoType;
     String ownerName;
+    UUID responsibleCompanyId;
+    String responsibleCompanyCode;
+    String responsibleCompanyName;
     BigDecimal tareWeightTons;
     BigDecimal maxPayloadTons;
     BigDecimal cubicCapacityM3;
@@ -64,6 +67,7 @@ public class ContainerResponse {
     Instant completedAt;
     String epodRecipient;
     String epodSignature;
+    String epodNotes;
 
     Boolean isDeleted;
     Instant deletedAt;

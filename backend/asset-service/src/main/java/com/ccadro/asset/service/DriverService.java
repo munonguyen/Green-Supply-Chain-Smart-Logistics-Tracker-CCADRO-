@@ -21,8 +21,7 @@ import com.ccadro.asset.repository.ContainerRepository;
 import com.ccadro.asset.repository.DriverDispatchMessageRepository;
 import com.ccadro.asset.repository.DriverRepository;
 import com.ccadro.asset.repository.DriverReviewRepository;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ccadro.asset.application.port.DriverCertificationCodec;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -50,7 +49,7 @@ public class DriverService {
     DriverDispatchMessageRepository driverDispatchMessageRepository;
     ContainerRepository containerRepository;
     DriverMapper driverMapper;
-    ObjectMapper objectMapper;
+    DriverCertificationCodec certificationCodec;
     CcadroProperties ccadroProperties;
 
     public List<DriverResponse> getAllDriversResponse(DriverStatus status, String licenseClass) {
@@ -118,6 +117,56 @@ public class DriverService {
         return enrichDriverResponse(driver);
     }
 
+    public DriverResponse getCurrentDriverProfile(String username) {
+        return getCurrentDriverProfile(username, null);
+    }
+
+    public DriverResponse getCurrentDriverProfile(String username, String scope) {
+        String normalized = username != null ? username.trim() : "";
+        boolean hasExplicitScope = scope != null && !scope.isBlank();
+        boolean hasDriverRoleInScope = hasExplicitScope
+                && java.util.Arrays.asList(scope.trim().split("\\s+")).contains("ROLE_DRIVER");
+
+        if (hasExplicitScope && !hasDriverRoleInScope) {
+            throw new AppException(
+                    ErrorCode.DRIVER_NOT_FOUND,
+                    "Cảnh báo 404 Xác thực Phân hệ: Tài khoản '" + (normalized.isEmpty() ? "current" : normalized)
+                            + "' không thuộc vai trò DRIVER nên không thể truy cập API khoang lái tài xế (/api/v1/assets/drivers/me). Vui lòng đăng xuất (Blacklist Token hiện tại) và đăng nhập lại bằng tài khoản DRIVER."
+            );
+        }
+
+        Optional<Driver> matched = Optional.empty();
+        if (!normalized.isBlank()) {
+            matched = driverRepository.findByAccountUsernameIgnoreCase(normalized)
+                    .or(() -> driverRepository.findByDriverCode(normalized))
+                    .or(() -> driverRepository.findByEmailIgnoreCase(normalized))
+                    .or(() -> {
+                        String emailPrefix = normalized.toLowerCase() + "@";
+                        return driverRepository.findAll().stream()
+                                .filter(d -> !Boolean.TRUE.equals(d.getIsDeleted()))
+                                .filter(d -> d.getEmail() != null && d.getEmail().toLowerCase().startsWith(emailPrefix))
+                                .findFirst();
+                    });
+        }
+
+        boolean allowDefaultDriverFallback = hasDriverRoleInScope || normalized.equalsIgnoreCase("driver");
+        if (matched.isEmpty() && !allowDefaultDriverFallback) {
+            throw new AppException(
+                    ErrorCode.DRIVER_NOT_FOUND,
+                    "Cảnh báo 404 Xác thực Phân hệ: Không tìm thấy hồ sơ Tài xế (DRIVER) gắn với tài khoản '"
+                            + (normalized.isEmpty() ? "anonymous" : normalized)
+                            + "'. Vui lòng đăng xuất và đăng nhập bằng tài khoản DRIVER."
+            );
+        }
+
+        Driver driver = matched
+                .or(() -> driverRepository.findAll().stream()
+                        .filter(d -> !Boolean.TRUE.equals(d.getIsDeleted()))
+                        .findFirst())
+                .orElseThrow(() -> new AppException(ErrorCode.DRIVER_NOT_FOUND));
+        return enrichDriverResponse(driver);
+    }
+
     @Transactional
     public DriverResponse createDriver(DriverCreateRequest request) {
         if (driverRepository.findByDriverCode(request.getDriverCode()).isPresent()) {
@@ -179,9 +228,14 @@ public class DriverService {
                 .orElseThrow(() -> new AppException(ErrorCode.DRIVER_NOT_FOUND));
 
         int continuousLimit = ccadroProperties.getHos().getContinuousLimitMinutes();
+        int dailyLimit = ccadroProperties.getHos().getDailyLimitMinutes();
         if (nextStatus == DriverStatus.ON_TRIP && driver.getHosContinuousMin() >= continuousLimit) {
             throw new AppException(ErrorCode.DRIVER_NOT_AVAILABLE,
                     "Tài xế đã chạm ngưỡng giờ lái liên tục (" + continuousLimit + " phút), cần nghỉ ca HOS trước khi nhận chuyến.");
+        }
+        if (nextStatus == DriverStatus.ON_TRIP && driver.getHosDailyMin() >= dailyLimit) {
+            throw new AppException(ErrorCode.DRIVER_NOT_AVAILABLE,
+                    "Tài xế đã chạm ngưỡng giờ lái trong ngày (" + dailyLimit + " phút), cần nghỉ hết ca trước khi nhận chuyến.");
         }
         if (driver.getStatus() == DriverStatus.INACTIVE && nextStatus == DriverStatus.AVAILABLE) {
             driver.setHosContinuousMin(0);
@@ -334,21 +388,10 @@ public class DriverService {
     }
 
     private List<String> parseCerts(String certsJson) {
-        if (certsJson == null || certsJson.isBlank()) {
-            return List.of("Eco-Driving GLEC v3", "An Toàn Container");
-        }
-        try {
-            return objectMapper.readValue(certsJson, new TypeReference<>() {});
-        } catch (Exception ex) {
-            return List.of("Eco-Driving GLEC v3", "An Toàn Container");
-        }
+        return certificationCodec.decode(certsJson);
     }
 
     private String serializeCerts(List<String> certs) {
-        try {
-            return objectMapper.writeValueAsString(certs);
-        } catch (Exception ex) {
-            return "[\"Eco-Driving GLEC v3\",\"An Toàn Container\"]";
-        }
+        return certificationCodec.encode(certs);
     }
 }

@@ -36,7 +36,6 @@ public class FieldIncident {
     @Column(name = "severity", nullable = false, length = 20)
     String severity = "MODERATE";
 
-    @com.fasterxml.jackson.annotation.JsonIgnore
     @Column(name = "incident_location", columnDefinition = "geometry(Point, 4326)")
     Point incidentLocation;
 

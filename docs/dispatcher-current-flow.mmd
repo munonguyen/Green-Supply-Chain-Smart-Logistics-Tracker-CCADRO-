@@ -1,0 +1,27 @@
+flowchart TD
+    A[Dispatcher chọn vận đơn, xe và tài xế] --> B{Vận đơn hợp lệ, chưa điều phối?}
+    B -- Không --> X[Từ chối yêu cầu]
+    B -- Có --> C[Tạo Saga log và DispatchOrder PROCESSING]
+    C --> D{Xe AVAILABLE, đủ tải?}
+    D -- Không --> F[DispatchOrder FAILED]
+    D -- Có --> E{Tài xế AVAILABLE?}
+    E -- Không --> F
+    E -- Có --> G[Đặt xe IN_TRANSIT, tài xế ON_TRIP]
+    G --> H{Có RouteVersion hiệu lực?}
+    H -- Không, strict mode --> I[Bù trừ tài nguyên và ghi Saga ROLLED_BACK]
+    H -- Có --> J[Backend đăng ký trip tại Tracking Service]
+    J --> K{Đăng ký thành công?}
+    K -- Không --> I
+    K -- Có --> L[DispatchOrder ASSIGNED; Shipment DISPATCHED]
+    L --> M[Ghi Outbox event SHIPMENT_DISPATCHED]
+    M --> N[Theo dõi chuyến và duyệt đề xuất đổi tuyến]
+    L -. Rủi ro: UI gọi createTrip lần nữa .-> O[Khả năng tạo trip trùng]
+
+    classDef action fill:#e8f4ff,stroke:#2f6b8a,color:#102a36,stroke-width:1px;
+    classDef decision fill:#fff3cd,stroke:#b07a00,color:#3b2b00,stroke-width:1px;
+    classDef failure fill:#fde8e7,stroke:#b8423b,color:#421b18,stroke-width:1px;
+    classDef warning fill:#fff0dc,stroke:#c87500,color:#4a2b00,stroke-width:2px;
+    class A,C,G,J,L,M,N action;
+    class B,D,E,H,K decision;
+    class X,F,I failure;
+    class O warning;

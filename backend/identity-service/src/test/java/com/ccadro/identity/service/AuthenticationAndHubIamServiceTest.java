@@ -430,6 +430,24 @@ class AuthenticationAndHubIamServiceTest {
         assertFalse(dbBlacklist.isEmpty());
         assertFalse(redisJtiBlacklist.isEmpty());
         assertFalse(enterpriseAuth.introspect(new IntrospectRequest(freshLogin.getToken())).isValid());
+
+        // 5. Refresh after logout must fail cleanly because session & refresh token are revoked -> forces fresh login
+        assertThrows(AppException.class, () ->
+                enterpriseAuth.refreshAccessToken(
+                        RefreshTokenRequest.builder().refreshToken(freshLogin.getRefreshToken()).build(),
+                        "Safari macOS",
+                        "127.0.0.1"
+                )
+        );
+
+        // 6. Rotation blacklists previous Access JWT JTI immediately
+        AuthenticationResponse loginForRot = enterpriseAuth.authenticate(
+                AuthenticationRequest.builder().username("admin").password("123").build(),
+                "Safari macOS",
+                "127.0.0.1"
+        );
+        enterpriseAuth.blacklistPreviousAccessTokenOnRotation(loginForRot.getToken(), "TOKEN_REFRESH_ROTATED");
+        assertFalse(enterpriseAuth.introspect(new IntrospectRequest(loginForRot.getToken())).isValid());
     }
 }
 

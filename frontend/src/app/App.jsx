@@ -1,8 +1,10 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth, getDefaultPortalPath } from '../context/AuthContext';
+import { AuthProvider } from '../context/AuthContext';
 import { ThemeProvider } from '../context/ThemeContext';
 import ConsoleLayout from '../shared/layout/ConsoleLayout';
+import NotFoundPage from '../shared/components/NotFoundPage';
+import RequireRole from './RequireRole';
 import LandingPage from '../systems/public/features/marketing/LandingPage';
 import NetZeroPage from '../systems/public/features/marketing/NetZeroPage';
 import SolutionsPage from '../systems/public/features/marketing/SolutionsPage';
@@ -19,6 +21,7 @@ import ShipmentsPage from '../systems/operations/features/shipments/ShipmentsPag
 import NewShipmentPage from '../systems/operations/features/shipments/NewShipmentPage';
 import PlanningPage from '../systems/operations/features/planning/PlanningPage';
 import DispatchPage from '../systems/operations/features/dispatch/DispatchPage';
+import ContainerManagementPage from '../systems/operations/features/containers/ContainerManagementPage';
 import TripTrackingPage from '../systems/operations/features/tracking/TripTrackingPage';
 import TripCarbonPage from '../systems/operations/features/carbon/TripCarbonPage';
 import BenchmarkPage from '../systems/operations/features/carbon/BenchmarkPage';
@@ -26,17 +29,6 @@ import GovernanceAndSafetyPage from '../systems/admin/features/governance/Govern
 import OperationSelectionPage from '../systems/operations/shared/OperationSelectionPage';
 
 const INTERNAL_CONSOLE_ROLES = ['ADMIN', 'DISPATCHER', 'SAFETY_MANAGER', 'ESG_AUDITOR'];
-
-function RequireRole({ allowedRoles, children }) {
-  const { user } = useAuth();
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-  if (Array.isArray(allowedRoles) && !allowedRoles.includes(user.role)) {
-    return <Navigate to={getDefaultPortalPath(user)} replace />;
-  }
-  return children;
-}
 
 export default function App() {
   return (
@@ -60,7 +52,7 @@ export default function App() {
             <Route
               path="/customer"
               element={
-                <RequireRole allowedRoles={['CUSTOMER']}>
+                <RequireRole external allowedRoles={['CUSTOMER']}>
                   <CustomerPortalPage />
                 </RequireRole>
               }
@@ -71,7 +63,7 @@ export default function App() {
             <Route
               path="/shipper"
               element={
-                <RequireRole allowedRoles={['HUB_MANAGER', 'HUB_SHIPPER', 'HUB_AUDITOR', 'SHIPPER']}>
+                <RequireRole external allowedRoles={['HUB_MANAGER', 'HUB_SHIPPER', 'HUB_AUDITOR', 'SHIPPER']}>
                   <ShipperPortalPage />
                 </RequireRole>
               }
@@ -112,6 +104,14 @@ export default function App() {
                   <ConsoleLayout>
                     <ShipmentsPage />
                   </ConsoleLayout>
+                </RequireRole>
+              }
+            />
+            <Route
+              path="/containers"
+              element={
+                <RequireRole allowedRoles={['ADMIN', 'DISPATCHER']}>
+                  <ConsoleLayout><ContainerManagementPage /></ConsoleLayout>
                 </RequireRole>
               }
             />
@@ -268,7 +268,7 @@ export default function App() {
             <Route path="/users" element={<Navigate to="/admin/users" replace />} />
 
             {/* Fallback */}
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>

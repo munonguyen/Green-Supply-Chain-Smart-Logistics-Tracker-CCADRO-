@@ -7,6 +7,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 @Data
 @Builder
@@ -22,6 +23,9 @@ public class ContainerCreateRequest {
 
     String isoType;
     String ownerName;
+    UUID responsibleCompanyId;
+    String responsibleCompanyCode;
+    String responsibleCompanyName;
     BigDecimal tareWeightTons;
     BigDecimal maxPayloadTons;
     BigDecimal cubicCapacityM3;

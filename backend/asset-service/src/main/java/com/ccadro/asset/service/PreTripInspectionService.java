@@ -5,6 +5,7 @@ import com.ccadro.asset.dto.request.PreTripInspectionRequest;
 import com.ccadro.asset.dto.response.PreTripInspectionResponse;
 import com.ccadro.asset.entity.PreTripInspection;
 import com.ccadro.asset.entity.Vehicle;
+import com.ccadro.asset.entity.enums.VehicleStatus;
 import com.ccadro.asset.exception.AppException;
 import com.ccadro.asset.exception.ErrorCode;
 import com.ccadro.asset.exception.InspectionFailedException;
@@ -13,8 +14,7 @@ import com.ccadro.asset.repository.DriverRepository;
 import com.ccadro.asset.repository.PreTripInspectionRepository;
 import com.ccadro.asset.repository.VehicleRepository;
 import com.ccadro.asset.validate.AssetBusinessValidator;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ccadro.asset.application.port.InspectionChecklistEncoder;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -23,7 +23,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -42,7 +41,7 @@ public class PreTripInspectionService {
     DriverRepository driverRepository;
     PreTripInspectionRepository preTripInspectionRepository;
     PreTripInspectionMapper preTripInspectionMapper;
-    ObjectMapper objectMapper;
+    InspectionChecklistEncoder checklistEncoder;
     AssetBusinessValidator assetBusinessValidator;
 
     @Transactional(noRollbackFor = InspectionFailedException.class)
@@ -52,10 +51,28 @@ public class PreTripInspectionService {
 
         ChecklistEvaluation eval = ChecklistEvaluation.from(request);
 
+        if (vehicle.getStatus() == VehicleStatus.MAINTENANCE && eval.allPassed()) {
+            throw new AppException(ErrorCode.VEHICLE_MAINTENANCE_REQUIRED,
+                    "Xe đang trong trạng thái bảo dưỡng (MAINTENANCE), cần Safety Manager nghiệm thu hoàn tất bảo dưỡng trước khi xuất bến.");
+        }
+
         vehicle.setStatus(eval.getTargetVehicleStatus());
         PreTripInspection inspection = buildInspectionEntity(request, eval);
 
         preTripInspectionRepository.save(inspection);
+
+        if (request.getDriverId() != null) {
+            driverRepository.findById(request.getDriverId()).ifPresent(drv -> {
+                drv.setPreTripPassed(eval.allPassed());
+                String timeStr = java.time.format.DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy")
+                        .withZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh"))
+                        .format(Instant.now());
+                drv.setPreTripTime(eval.allPassed()
+                        ? timeStr + " (6/6 Đạt)"
+                        : timeStr + " (Không đạt " + eval.failuresCount() + " mục)");
+                driverRepository.save(drv);
+            });
+        }
 
         if (!eval.allPassed()) {
             throw new InspectionFailedException(ErrorCode.PRE_TRIP_INSPECTION_FAILED);
@@ -75,18 +92,11 @@ public class PreTripInspectionService {
     private PreTripInspection buildInspectionEntity(PreTripInspectionRequest request, ChecklistEvaluation eval) {
         PreTripInspection inspection = preTripInspectionMapper.toEntity(request);
         inspection.setCriticalFailuresCount(eval.failuresCount());
-        inspection.setChecklistJson(toJson(eval.items()));
+        inspection.setChecklistJson(checklistEncoder.encode(eval.items()));
         inspection.setStatus(eval.getInspectionStatus());
         inspection.setInspectionTime(Instant.now());
         return inspection;
     }
 
-    private String toJson(Map<String, String> data) {
-        try {
-            return objectMapper.writeValueAsString(data);
-        } catch (JsonProcessingException e) {
-            throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
-        }
-    }
 }
 

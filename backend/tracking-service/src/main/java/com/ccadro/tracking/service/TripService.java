@@ -52,7 +52,12 @@ public class TripService {
     }
 
     public List<Trip> getAllTrips(String q, boolean includeDeleted) {
-        List<Trip> items = tripRepository.findAll().stream()
+        return getAllTrips(q, includeDeleted, null);
+    }
+
+    public List<Trip> getAllTrips(String q, boolean includeDeleted, UUID driverId) {
+        List<Trip> source = driverId != null ? tripRepository.findByDriverId(driverId) : tripRepository.findAll();
+        List<Trip> items = source.stream()
                 .filter(trip -> includeDeleted || !Boolean.TRUE.equals(trip.getIsDeleted()))
                 .toList();
         return ElasticSearchSupport.filterAndRank(items, q, trip -> List.of(
@@ -63,6 +68,10 @@ public class TripService {
                 new ElasticSearchSupport.WeightedField(trip.getDriverId() != null ? trip.getDriverId().toString() : null, 1.5),
                 new ElasticSearchSupport.WeightedField(trip.getDeletedBy(), 1.0)
         ));
+    }
+
+    public Optional<Trip> findTripById(UUID tripId) {
+        return tripId == null ? Optional.empty() : tripRepository.findById(tripId);
     }
 
     @Transactional
@@ -135,9 +144,15 @@ public class TripService {
     @Transactional
     public Trip completeTrip(UUID tripId) {
         Trip trip = getTripById(tripId);
+        Instant now = Instant.now();
         trip.setStatus("COMPLETED");
-        trip.setEndTime(Instant.now());
-        trip.setUpdatedAt(Instant.now());
+        trip.setArrivalStatus("DELIVERED");
+        if (trip.getArrivedAt() == null) {
+            trip.setArrivedAt(now);
+        }
+        trip.setDistanceToDestinationMeters(BigDecimal.ZERO);
+        trip.setEndTime(now);
+        trip.setUpdatedAt(now);
         Trip saved = tripRepository.save(trip);
         broadcastLiveState(saved.getId());
         return saved;

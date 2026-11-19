@@ -56,6 +56,14 @@ public class TrackingService {
         return tripService.getAllTrips(q, includeDeleted);
     }
 
+    public List<Trip> getAllTrips(String q, boolean includeDeleted, UUID driverId) {
+        return tripService.getAllTrips(q, includeDeleted, driverId);
+    }
+
+    public Optional<Trip> findTripById(UUID tripId) {
+        return tripService.findTripById(tripId);
+    }
+
     @Transactional
     public Trip softDeleteTrip(UUID tripId, String deletedBy) {
         return tripService.softDeleteTrip(tripId, deletedBy);
@@ -93,6 +101,10 @@ public class TrackingService {
     // --- 2b. Real-Time Live Fleet Telemetry & SSE Stream ---
     public List<LiveFleetTelemetryResponse> getLiveFleetTelemetry(String customerId, String q) {
         return fleetTelemetryService.getLiveFleetTelemetry(customerId, q);
+    }
+
+    public List<LiveFleetTelemetryResponse> getLiveFleetTelemetry(String customerId, String q, UUID driverId) {
+        return fleetTelemetryService.getLiveFleetTelemetry(customerId, q, driverId);
     }
 
     public LiveFleetTelemetryResponse getLiveTripTelemetry(UUID tripId) {

@@ -99,9 +99,10 @@ public class TelemetryIngestionService {
         boolean qualityPassed = coordsValid && speedValid;
         event.setQualityPassed(qualityPassed);
 
-        // 2. Cộng dồn quãng đường thực tế cho Trip nếu có điểm GPS hợp lệ trước đó
+        // 2. Cộng dồn quãng đường thực tế & cập nhật trạng thái tới điểm giao hàng cho Trip
         if (qualityPassed && req.getLatitude() != null && req.getLongitude() != null) {
             updateTripCumulativeDistance(req.getTripId(), req.getLatitude(), req.getLongitude());
+            updateTripArrivalState(req.getTripId(), req.getLatitude(), req.getLongitude(), req.getSpeedKmh());
         }
 
         double yellowThreshold = ccadroProperties.getDeviation().getYellowMeters();
@@ -162,6 +163,65 @@ public class TelemetryIngestionService {
                 trip.setUpdatedAt(Instant.now());
                 tripRepository.save(trip);
             }
+        }
+    }
+
+    private void updateTripArrivalState(UUID tripId, Double lat, Double lon, BigDecimal speedKmh) {
+        if (tripId == null || lat == null || lon == null) {
+            return;
+        }
+        Optional<Trip> tripOpt = tripRepository.findById(tripId);
+        if (tripOpt.isEmpty()) {
+            return;
+        }
+        Trip trip = tripOpt.get();
+        if (Boolean.TRUE.equals(trip.getIsDeleted()) || "COMPLETED".equalsIgnoreCase(trip.getStatus())) {
+            return;
+        }
+
+        boolean changed = false;
+        if ("SCHEDULED".equalsIgnoreCase(trip.getStatus())
+                && speedKmh != null && speedKmh.doubleValue() > 2.0) {
+            trip.setStatus("EN_ROUTE");
+            if (trip.getStartTime() == null) {
+                trip.setStartTime(Instant.now());
+            }
+            changed = true;
+        }
+
+        try {
+            List<Object[]> coordsRows = tripRepository.findDestinationCoordinatesByTripId(tripId);
+            if (coordsRows != null && !coordsRows.isEmpty()) {
+                Object[] row = coordsRows.get(0);
+                Double destLat = row.length > 0 && row[0] instanceof Number n ? n.doubleValue() : null;
+                Double destLon = row.length > 1 && row[1] instanceof Number n ? n.doubleValue() : null;
+                if (destLat != null && destLon != null) {
+                    double distMeters = calculateHaversineKm(lat, lon, destLat, destLon) * 1000.0;
+                    double arrivalRadius = ccadroProperties.getArrival().getArrivalRadiusMeters();
+                    double approachingRadius = ccadroProperties.getArrival().getApproachingRadiusMeters();
+
+                    trip.setDistanceToDestinationMeters(
+                            BigDecimal.valueOf(distMeters).setScale(2, RoundingMode.HALF_UP));
+                    if (distMeters <= arrivalRadius) {
+                        trip.setArrivalStatus("ARRIVED_AT_DESTINATION");
+                        if (trip.getArrivedAt() == null) {
+                            trip.setArrivedAt(Instant.now());
+                        }
+                    } else if (distMeters <= approachingRadius) {
+                        trip.setArrivalStatus("APPROACHING_DESTINATION");
+                    } else {
+                        trip.setArrivalStatus("IN_TRANSIT");
+                    }
+                    changed = true;
+                }
+            }
+        } catch (Exception ex) {
+            log.debug("Destination arrival geofence check skipped for trip {}: {}", tripId, ex.getMessage());
+        }
+
+        if (changed) {
+            trip.setUpdatedAt(Instant.now());
+            tripRepository.save(trip);
         }
     }
 

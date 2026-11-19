@@ -107,6 +107,14 @@ public class AssetService {
         return driverService.getDriverResponseById(id);
     }
 
+    public DriverResponse getCurrentDriverProfile(String username) {
+        return driverService.getCurrentDriverProfile(username, null);
+    }
+
+    public DriverResponse getCurrentDriverProfile(String username, String scope) {
+        return driverService.getCurrentDriverProfile(username, scope);
+    }
+
     @Transactional
     public DriverResponse createDriver(DriverCreateRequest request) {
         return driverService.createDriver(request);
@@ -261,6 +269,12 @@ public class AssetService {
     public List<ContainerCargoManifestItemResponse> getContainerManifestItems(
             String hubCode, String containerCode, String q, boolean includeDeleted) {
         return thirdPartyHandoverService.getManifestItems(hubCode, containerCode, q, includeDeleted);
+    }
+
+    @Transactional
+    public ContainerCargoManifestItemResponse createContainerManifestItem(
+            String containerCode, ContainerManifestItemCreateRequest request) {
+        return thirdPartyHandoverService.createManifestItem(containerCode, request);
     }
 
     @Transactional

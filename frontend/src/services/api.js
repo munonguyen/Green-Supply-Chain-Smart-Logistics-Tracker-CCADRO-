@@ -29,7 +29,42 @@ function persistRefreshedTokens(result) {
     if (result.refreshToken) {
       window.localStorage.setItem('ccadro_refresh_token', result.refreshToken);
     }
-    window.dispatchEvent(new CustomEvent('ccadro-token-refreshed', { detail: { token: result.token } }));
+    window.dispatchEvent(
+      new CustomEvent('ccadro-token-refreshed', {
+        detail: {
+          token: result.token,
+          refreshToken: result.refreshToken || null,
+          result
+        }
+      })
+    );
+  } catch (_) {
+    // ignore storage errors
+  }
+}
+
+function isLocalSyntheticToken(tok) {
+  if (!tok || typeof tok !== 'string') return false;
+  return (
+    tok.startsWith('iam-jwt-') ||
+    tok.startsWith('customer-jwt-') ||
+    tok.startsWith('test-token-')
+  );
+}
+
+function notifyAuthSessionExpired(reason = 'TOKEN_EXPIRED_OR_BLACKLISTED') {
+  if (typeof window === 'undefined') return;
+  try {
+    if (window.localStorage) {
+      window.localStorage.removeItem('ccadro_token');
+      window.localStorage.removeItem('ccadro_refresh_token');
+      window.localStorage.removeItem('ccadro_user');
+    }
+    window.dispatchEvent(
+      new CustomEvent('ccadro-auth-expired', {
+        detail: { reason }
+      })
+    );
   } catch (_) {
     // ignore storage errors
   }
@@ -43,10 +78,7 @@ async function refreshSessionSingleFlight() {
   }
   const currentToken = getStoredToken();
   const currentRefreshToken = getStoredRefreshToken();
-  if (
-    !currentRefreshToken &&
-    (!currentToken || currentToken.startsWith('iam-jwt-') || currentToken.startsWith('customer-jwt-'))
-  ) {
+  if (!currentRefreshToken && (!currentToken || isLocalSyntheticToken(currentToken))) {
     return null;
   }
 
@@ -55,7 +87,12 @@ async function refreshSessionSingleFlight() {
       const res = await fetch(`${API_BASE}/api/v1/auth/refresh`, {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(currentToken && !isLocalSyntheticToken(currentToken)
+            ? { Authorization: `Bearer ${currentToken}` }
+            : {})
+        },
         body: JSON.stringify(currentRefreshToken ? { refreshToken: currentRefreshToken } : {})
       });
       if (!res.ok) {
@@ -101,22 +138,27 @@ async function fetchJson(endpoint, options = {}) {
 
   if (
     res.status === 401 &&
-    !_retriedAfterRefresh &&
     !endpoint.includes('/api/v1/auth/token') &&
     !endpoint.includes('/api/v1/auth/refresh') &&
     !endpoint.includes('/api/v1/auth/logout') &&
-    !endpoint.includes('/api/v1/auth/register')
+    !endpoint.includes('/api/v1/auth/register') &&
+    !endpoint.includes('/api/v1/auth/introspect')
   ) {
-    const nextToken = await refreshSessionSingleFlight();
-    if (nextToken) {
-      return fetchJson(endpoint, {
-        ...options,
-        _retriedAfterRefresh: true,
-        headers: {
-          ...customHeaders,
-          Authorization: `Bearer ${nextToken}`
-        }
-      });
+    if (!_retriedAfterRefresh) {
+      const nextToken = await refreshSessionSingleFlight();
+      if (nextToken) {
+        return fetchJson(endpoint, {
+          ...options,
+          _retriedAfterRefresh: true,
+          headers: {
+            ...customHeaders,
+            Authorization: `Bearer ${nextToken}`
+          }
+        });
+      }
+    }
+    if (token && !isLocalSyntheticToken(token) && import.meta.env.VITE_DEMO_MODE !== 'true') {
+      notifyAuthSessionExpired('SESSION_EXPIRED_OR_BLACKLISTED');
     }
   }
 
@@ -201,6 +243,7 @@ export const api = {
   logout: (token, refreshToken) =>
     fetchJson('/api/v1/auth/logout', {
       method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: JSON.stringify(refreshToken ? { token, refreshToken } : { token })
     }),
   logoutAll: () =>
@@ -361,6 +404,7 @@ export const api = {
     const queryString = query.toString();
     return fetchJson(`/api/v1/assets/drivers${queryString ? `?${queryString}` : ''}`);
   },
+  getMyDriverProfile: () => fetchJson('/api/v1/assets/drivers/me'),
   getDriverById: (id) => fetchJson(`/api/v1/assets/drivers/${id}`),
   createDriver: (data) =>
     fetchJson('/api/v1/assets/drivers', {
@@ -417,6 +461,11 @@ export const api = {
     const qs = query.toString();
     return fetchJson(`/api/v1/assets/shipper-hubs/manifest-items${qs ? `?${qs}` : ''}`);
   },
+  createContainerManifestItem: (containerCode, data) =>
+    fetchJson(`/api/v1/assets/containers/${encodeURIComponent(containerCode)}/manifest-items`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
   ingestContainerManifest: (containerCode) =>
     fetchJson(
       `/api/v1/assets/shipper-hubs/containers/${encodeURIComponent(containerCode)}/ingest-manifest`,
@@ -523,6 +572,8 @@ export const api = {
       body: JSON.stringify(data)
     }),
   getRouteCandidates: (shipmentId) => fetchJson(`/api/v1/routing/candidates/${shipmentId}`),
+  getActiveRouteVersion: (shipmentId) =>
+    fetchJson(`/api/v1/routing/versions/${encodeURIComponent(shipmentId)}/active`),
   selectRoute: (data) =>
     fetchJson('/api/v1/routing/select', {
       method: 'POST',
@@ -533,6 +584,7 @@ export const api = {
   getLiveFleetTelemetry: (params = {}) => {
     const query = new URLSearchParams();
     if (params.customerId) query.append('customerId', params.customerId);
+    if (params.driverId) query.append('driverId', params.driverId);
     if (params.q) query.append('q', params.q);
     const qs = query.toString();
     return fetchJson(`/api/v1/tracking/fleet/live${qs ? `?${qs}` : ''}`);
@@ -541,6 +593,7 @@ export const api = {
     fetchJson(`/api/v1/tracking/trips/${encodeURIComponent(tripId)}/live`),
   getTrips: (params = {}) => {
     const query = new URLSearchParams();
+    if (params.driverId) query.append('driverId', params.driverId);
     if (params.q) query.append('q', params.q);
     if (params.includeDeleted) query.append('includeDeleted', 'true');
     const qs = query.toString();
@@ -572,6 +625,11 @@ export const api = {
 
   // Carbon (Port 8085)
   getEmissionFactors: () => fetchJson('/api/v1/carbon/factors'),
+  submitCarbonPod: (payload) =>
+    fetchJson('/api/v1/carbon/pod', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    }),
   getCarbonBenchmarks: () => fetchJson('/api/v1/carbon/benchmarks'),
   getTripCarbon: (tripId) => fetchJson(`/api/v1/carbon/trips/${encodeURIComponent(tripId)}`),
   calculateTripCarbon: (payload) =>

@@ -103,7 +103,20 @@ export default function Sidebar({ collapsed = false, onToggleCollapse }) {
       )}
 
       {/* Navigation Groups (RBAC filtered cleanly by role) */}
-      <nav className="sidebar-nav">
+      <nav
+        className="sidebar-nav"
+        onClick={(e) => {
+          if (
+            typeof window !== 'undefined' &&
+            window.innerWidth <= 768 &&
+            e.target?.closest?.('a.nav-link') &&
+            onToggleCollapse &&
+            !collapsed
+          ) {
+            onToggleCollapse();
+          }
+        }}
+      >
         {/* SECTION 1: OPERATIONS */}
         <div className="sidebar-section-title">Vận Hành & Hạm Đội</div>
 
@@ -135,6 +148,15 @@ export default function Sidebar({ collapsed = false, onToggleCollapse }) {
         >
           <Package size={17} />
           <span>Quản Lý Vận Đơn</span>
+        </NavLink>}
+
+        {['ADMIN', 'DISPATCHER'].includes(user?.role) && <NavLink
+          to="/containers"
+          title="Quản lý Container"
+          className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+        >
+          <Truck size={17} />
+          <span>Quản lý Container</span>
         </NavLink>}
 
         {['ADMIN', 'DISPATCHER'].includes(user?.role) && <NavLink

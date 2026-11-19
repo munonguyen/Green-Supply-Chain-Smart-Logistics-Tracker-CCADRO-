@@ -20,7 +20,8 @@ public class ChatAuthenticationService {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
         var claims = identityClient.introspect(authorization.substring(7));
-        if (!claims.valid() || claims.username().isBlank()) {
+        if (claims == null || !claims.valid() || claims.username() == null || claims.username().isBlank()
+                || claims.scope() == null || claims.scope().isBlank()) {
             throw new AppException(ErrorCode.INVALID_SESSION);
         }
         String role = Arrays.stream(claims.scope().split("\\s+"))

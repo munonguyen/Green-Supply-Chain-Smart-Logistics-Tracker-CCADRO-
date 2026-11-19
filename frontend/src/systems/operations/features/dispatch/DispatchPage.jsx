@@ -83,7 +83,7 @@ export default function DispatchPage() {
       const dList = dRes.status === 'fulfilled' ? dRes.value?.result ?? dRes.value : null;
       if (Array.isArray(vList) && vList.length > 0) {
         setVehicles(vList);
-        const ready = vList.find((v) => v.status !== 'MAINTENANCE') || vList[0];
+        const ready = vList.find((v) => v.status === 'AVAILABLE') || vList[0];
         if (ready?.id) setSelectedVehicleId(ready.id);
       }
       if (Array.isArray(dList) && dList.length > 0) {
@@ -95,12 +95,15 @@ export default function DispatchPage() {
 
   const activeVehicle = vehicles.find((v) => v.id === selectedVehicleId) || vehicles[0];
   const activeDriver = drivers.find((d) => d.id === selectedDriverId) || drivers[0];
-  const isMaintenanceBlocked = activeVehicle?.status === 'MAINTENANCE';
+  const isVehicleBlocked = activeVehicle?.status !== 'AVAILABLE';
+  const isDriverBlocked = activeDriver?.status !== 'AVAILABLE';
 
   const handleDispatchAndStart = async () => {
-    if (isMaintenanceBlocked) {
+    if (isVehicleBlocked || isDriverBlocked) {
       setDispatchError(
-        `BRULE-01: Phương tiện ${activeVehicle.vehicleCode} đang ở trạng thái BẢO TRÌ (MAINTENANCE), không đủ điều kiện xuất bến!`
+        isVehicleBlocked
+          ? `Xe ${activeVehicle.vehicleCode} hiện không ở trạng thái sẵn sàng.`
+          : `Tài xế ${activeDriver.driverCode} hiện không ở trạng thái sẵn sàng.`
       );
       return;
     }
@@ -108,25 +111,17 @@ export default function DispatchPage() {
     setDispatching(true);
     try {
       const dispatchRes = await api.createDispatchOrder({
+        dispatchCode: `DSP-${Date.now().toString().slice(-6)}`,
         shipmentId: shipmentId || 'e0000000-0000-0000-0000-000000000001',
         vehicleId: activeVehicle.id,
-        driverId: activeDriver.id,
-        dispatcherUsername: 'dispatcher'
+        driverId: activeDriver.id
       });
       const dispatchOrder = dispatchRes?.result ?? dispatchRes;
-      const tripRes = await api.createTrip({
-        shipmentId: shipmentId || 'e0000000-0000-0000-0000-000000000001',
-        dispatchOrderId: dispatchOrder?.id,
-        vehicleId: activeVehicle.id,
-        driverId: activeDriver.id,
-        plannedDistanceKm: selectedPlan ? Number((selectedPlan.distanceMeters / 1000).toFixed(2)) : 27.3
-      });
-      const createdTrip = tripRes?.result ?? tripRes;
-      if (!createdTrip?.id) {
-        throw new Error('Tracking Service không trả về mã chuyến thực tế.');
+      if (!dispatchOrder?.tripId) {
+        throw new Error('Lệnh điều phối không trả về mã chuyến đã khởi tạo.');
       }
-      await api.startTrip(createdTrip.id);
-      navigate(`/trips/${createdTrip.id}`);
+      await api.startTrip(dispatchOrder.tripId);
+      navigate(`/trips/${dispatchOrder.tripId}`);
     } catch (err) {
       setDispatchError(
         err?.message ||
@@ -138,49 +133,33 @@ export default function DispatchPage() {
   };
 
   return (
-    <div className="page-body">
+    <div className="page-body dispatch-workspace">
       <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          marginBottom: 22,
-          flexWrap: 'wrap',
-          gap: 14
-        }}
+        className="dispatch-page-heading"
       >
-        <div>
-          <div
-            style={{
-              fontSize: '0.74rem',
-              fontWeight: 800,
-              color: '#10b981',
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-              marginBottom: 4
-            }}
-          >
-            PHÊ DUYỆT XUẤT BẾN &amp; GÁN TÀI SẢN ĐỘI XE XANH (UC07)
+        <div className="dispatch-heading-copy">
+          <div className="dispatch-eyebrow">ĐIỀU HÀNH VẬN TẢI / XUẤT BẾN</div>
+          <h2>Điều phối chuyến</h2>
+          <div className="dispatch-shipment-ref">
+            Vận đơn <code>{(shipmentId || 'SH-2026-081').slice(0, 12)}</code>
           </div>
-          <h2 style={{ fontSize: '1.45rem', fontWeight: 800, margin: 0 }}>
-            Điều Phối Phương Tiện &amp; Khóa Phiên Bản Lộ Trình 3D
-          </h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: 4 }}>
-            Gán xe đầu kéo đạt chuẩn kiểm định Pre-trip và tài xế đủ điều kiện vào lộ trình xanh đã
-            tối ưu (Mã vận đơn:{' '}
-            <code style={{ color: 'var(--accent-green)' }}>
-              {(shipmentId || 'SH-2026-081').slice(0, 12)}
-            </code>
-            )
-          </p>
         </div>
+        <div className="dispatch-heading-actions">
+          <span className="dispatch-stage"><span /> CHỜ XUẤT BẾN</span>
+          <Link to={`/planning/${shipmentId || 'e0000000-0000-0000-0000-000000000001'}`} className="btn btn-secondary">
+            <Route size={15} /> Lập tuyến
+          </Link>
+        </div>
+      </div>
 
-        <Link
-          to={`/planning/${shipmentId || 'e0000000-0000-0000-0000-000000000001'}`}
-          className="btn btn-secondary"
-        >
-          <Route size={15} /> Quay Lại Lập Tuyến 3D (UC05)
-        </Link>
+      <div className="dispatch-step-strip" aria-label="Các bước điều phối">
+        <div className="dispatch-step done"><span>1</span><b>Vận đơn & tuyến</b></div>
+        <i />
+        <div className="dispatch-step active"><span>2</span><b>Xe & tài xế</b></div>
+        <i />
+        <div className="dispatch-step"><span>3</span><b>Xuất bến</b></div>
+        <i />
+        <div className="dispatch-step"><span>4</span><b>Giám sát chuyến</b></div>
       </div>
 
       <div className="split-dispatch-grid">
@@ -217,7 +196,7 @@ export default function DispatchPage() {
                 background: 'rgba(56, 189, 248, 0.06)',
                 padding: 16,
                 borderRadius: 12,
-                border: `1px solid ${isMaintenanceBlocked ? '#ef4444' : 'rgba(56, 189, 248, 0.35)'}`
+                    border: `1px solid ${isVehicleBlocked ? '#ef4444' : 'var(--border-color)'}`
               }}
             >
               <div
@@ -249,7 +228,7 @@ export default function DispatchPage() {
                   }}
                 >
                   {vehicles.map((v) => (
-                    <option key={v.id} value={v.id}>
+                    <option key={v.id} value={v.id} disabled={v.status !== 'AVAILABLE'}>
                       {v.vehicleCode} ({v.licensePlate}) — {v.status}
                     </option>
                   ))}
@@ -266,10 +245,8 @@ export default function DispatchPage() {
                 </strong>{' '}
                 (Đạt chuẩn GLEC v3)
                 <br />• Kiểm định Pre-trip (UC01):{' '}
-                <strong style={{ color: isMaintenanceBlocked ? '#ef4444' : 'var(--accent-green)' }}>
-                  {isMaintenanceBlocked
-                    ? 'KHÔNG ĐẠT (MAINTENANCE — CẤM XUẤT BẾN)'
-                    : 'ĐẠT 6/6 HẠNG MỤC AN TOÀN'}
+                <strong style={{ color: isVehicleBlocked || activeVehicle.preTripPassed === false ? '#ef4444' : 'var(--accent-green)' }}>
+                  {isVehicleBlocked ? `KHÔNG SẴN SÀNG (${activeVehicle.status})` : activeVehicle.preTripPassed === false ? 'PRE-TRIP CHƯA ĐẠT' : 'SẴN SÀNG'}
                 </strong>
               </div>
             </div>
@@ -311,7 +288,7 @@ export default function DispatchPage() {
                   }}
                 >
                   {drivers.map((d) => (
-                    <option key={d.id} value={d.id}>
+                    <option key={d.id} value={d.id} disabled={d.status !== 'AVAILABLE'}>
                       {d.driverCode} — {d.fullName}
                     </option>
                   ))}
@@ -359,7 +336,7 @@ export default function DispatchPage() {
           <button
             type="button"
             onClick={handleDispatchAndStart}
-            disabled={dispatching || isMaintenanceBlocked}
+            disabled={dispatching || isVehicleBlocked || isDriverBlocked}
             className="btn btn-primary"
             style={{ width: '100%', justifyContent: 'center', padding: '12px 18px' }}
           >
@@ -373,7 +350,7 @@ export default function DispatchPage() {
         </div>
 
         {/* Right: 3D Locked Corridor Map Preview */}
-        <div className="card" style={{ padding: 16 }}>
+        <div className="card dispatch-map-panel" style={{ padding: 16 }}>
           <div
             style={{
               display: 'flex',

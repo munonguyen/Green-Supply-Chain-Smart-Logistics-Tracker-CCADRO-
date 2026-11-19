@@ -633,10 +633,3 @@ public class PaymentService {
     }
 
 }
-
-    }
-
-    private boolean isNotBlank(String s) {
-        return s != null && !s.isBlank();
-    }
-}

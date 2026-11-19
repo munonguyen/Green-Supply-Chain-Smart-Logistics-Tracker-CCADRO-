@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nghiệp vụ Dispatcher hiện tại</title>
+  <style>
+    :root { color-scheme: light; font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #eef2f3; color: #172b32; }
+    main { width: 1600px; height: 1100px; margin: 0 auto; padding: 42px 52px; background: #f7f9f8; }
+    header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #d7e0de; padding-bottom: 24px; }
+    .eyebrow { color: #087e70; font-size: 14px; font-weight: 750; text-transform: uppercase; }
+    h1 { margin: 9px 0 8px; font-size: 34px; line-height: 1.2; }
+    .subtitle { margin: 0; color: #586c70; font-size: 16px; }
+    .stamp { border: 1px solid #c6d6d2; background: #e9f3f0; color: #17665d; border-radius: 6px; padding: 10px 14px; font-size: 13px; font-weight: 700; }
+    .section { margin-top: 25px; }
+    .section-title { margin: 0 0 12px; font-size: 16px; font-weight: 750; color: #32494f; }
+    .flow { display: block; width: 1496px; height: 715px; background: #fff; border: 1px solid #dbe4e2; border-radius: 8px; }
+    .legend { display: flex; gap: 22px; margin-top: 13px; color: #52666a; font-size: 13px; }
+    .legend span { display: inline-flex; align-items: center; gap: 7px; }
+    .dot { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+    footer { margin-top: 22px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+    .note { min-height: 116px; padding: 15px 17px; border: 1px solid #d9e2e0; border-radius: 7px; background: #fff; }
+    .note b { display: block; margin-bottom: 7px; font-size: 14px; }
+    .note p { margin: 0; color: #53686c; font-size: 13px; line-height: 1.5; }
+    .note.warn { background: #fff8ed; border-color: #edc894; }
+    .note.warn b { color: #9a5c08; }
+    .note.info { background: #eef7f4; border-color: #bcd9cf; }
+    .note.info b { color: #126d5d; }
+    svg text { font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <div class="eyebrow">CCADRO · Luồng vận hành</div>
+      <h1>Nghiệp vụ Dispatcher hiện tại</h1>
+      <p class="subtitle">Từ chọn vận đơn và tài nguyên đến phát lệnh, khởi hành và giám sát chuyến</p>
+    </div>
+    <div class="stamp">AS-IS · THEO CODE HIỆN TẠI</div>
+  </header>
+
+  <section class="section">
+    <h2 class="section-title">Luồng điều phối và các nhánh xử lý</h2>
+    <svg class="flow" viewBox="0 0 1496 715" role="img" aria-label="Sơ đồ quy trình điều phối dispatcher">
+      <defs>
+        <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#74888a"/></marker>
+        <marker id="redArrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#c45a52"/></marker>
+        <marker id="greenArrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#17816f"/></marker>
+      </defs>
+      <rect x="0" y="0" width="1496" height="715" fill="#fff"/>
+      <!-- Main path -->
+      <path d="M205 110H255" stroke="#74888a" stroke-width="2" marker-end="url(#arrow)"/>
+      <path d="M425 110H475" stroke="#74888a" stroke-width="2" marker-end="url(#arrow)"/>
+      <path d="M655 110H705" stroke="#74888a" stroke-width="2" marker-end="url(#arrow)"/>
+      <path d="M885 110H935" stroke="#74888a" stroke-width="2" marker-end="url(#arrow)"/>
+      <path d="M1115 110H1165" stroke="#74888a" stroke-width="2" marker-end="url(#arrow)"/>
+      <path d="M1345 110H1392V270H1345" fill="none" stroke="#17816f" stroke-width="2" marker-end="url(#greenArrow)"/>
+      <path d="M1255 155V225" fill="none" stroke="#17816f" stroke-width="2" marker-end="url(#greenArrow)"/>
+      <path d="M1255 305V375" fill="none" stroke="#17816f" stroke-width="2" marker-end="url(#greenArrow)"/>
+      <path d="M1165 420H1015" fill="none" stroke="#74888a" stroke-width="2" marker-end="url(#arrow)"/>
+      <path d="M835 420H685" fill="none" stroke="#74888a" stroke-width="2" marker-end="url(#arrow)"/>
+      <path d="M505 420H435" fill="none" stroke="#74888a" stroke-width="2" marker-end="url(#arrow)"/>
+      <!-- Error branches -->
+      <path d="M565 155V250H425" fill="none" stroke="#c45a52" stroke-width="2" marker-end="url(#redArrow)"/>
+      <path d="M795 155V250H425" fill="none" stroke="#c45a52" stroke-width="2" marker-end="url(#redArrow)"/>
+      <path d="M1025 155V250H425" fill="none" stroke="#c45a52" stroke-width="2" marker-end="url(#redArrow)"/>
+      <path d="M1155 420V540H990" fill="none" stroke="#c45a52" stroke-width="2" marker-end="url(#redArrow)"/>
+      <path d="M865 460V540H990" fill="none" stroke="#c45a52" stroke-width="2" marker-end="url(#redArrow)"/>
+      <!-- Labels -->
+      <text x="224" y="97" font-size="12" fill="#607477">gửi request</text>
+      <text x="645" y="96" font-size="12" fill="#17816f">đạt</text>
+      <text x="874" y="96" font-size="12" fill="#17816f">đạt</text>
+      <text x="1106" y="96" font-size="12" fill="#17816f">đạt</text>
+      <text x="502" y="242" font-size="12" fill="#b34e47">không đạt</text>
+      <text x="748" y="242" font-size="12" fill="#b34e47">không đạt</text>
+      <text x="990" y="242" font-size="12" fill="#b34e47">không có tuyến</text>
+      <text x="1265" y="212" font-size="12" fill="#17816f">thành công</text>
+      <!-- Nodes -->
+      <g>
+        <rect x="35" y="65" width="170" height="90" rx="7" fill="#eaf3f2" stroke="#7eaaa3"/>
+        <text x="120" y="96" text-anchor="middle" font-size="15" font-weight="700" fill="#183a3b">Dispatcher</text>
+        <text x="120" y="119" text-anchor="middle" font-size="13" fill="#486164">chọn vận đơn, xe, tài xế</text>
+      </g>
+      <g>
+        <rect x="255" y="65" width="170" height="90" rx="7" fill="#f2f5f5" stroke="#9babad"/>
+        <text x="340" y="96" text-anchor="middle" font-size="14" font-weight="700" fill="#263d42">Kiểm tra yêu cầu</text>
+        <text x="340" y="119" text-anchor="middle" font-size="13" fill="#52666a">vận đơn chưa điều phối</text>
+      </g>
+      <g>
+        <polygon points="565,65 655,110 565,155 475,110" fill="#fff4dc" stroke="#c39a44" stroke-width="1.5"/>
+        <text x="565" y="105" text-anchor="middle" font-size="13" font-weight="700" fill="#5b4515">Xe sẵn sàng</text>
+        <text x="565" y="123" text-anchor="middle" font-size="12" fill="#715e35">đủ tải?</text>
+      </g>
+      <g>
+        <polygon points="795,65 885,110 795,155 705,110" fill="#fff4dc" stroke="#c39a44" stroke-width="1.5"/>
+        <text x="795" y="105" text-anchor="middle" font-size="13" font-weight="700" fill="#5b4515">Tài xế</text>
+        <text x="795" y="123" text-anchor="middle" font-size="12" fill="#715e35">AVAILABLE?</text>
+      </g>
+      <g>
+        <polygon points="1025,65 1115,110 1025,155 935,110" fill="#fff4dc" stroke="#c39a44" stroke-width="1.5"/>
+        <text x="1025" y="105" text-anchor="middle" font-size="13" font-weight="700" fill="#5b4515">Pre-trip</text>
+        <text x="1025" y="123" text-anchor="middle" font-size="12" fill="#715e35">đạt, đúng xe/tài xế?</text>
+      </g>
+      <g>
+        <rect x="1165" y="65" width="180" height="90" rx="7" fill="#eaf3f2" stroke="#7eaaa3"/>
+        <text x="1255" y="96" text-anchor="middle" font-size="14" font-weight="700" fill="#183a3b">Reserve tài nguyên</text>
+        <text x="1255" y="119" text-anchor="middle" font-size="13" fill="#486164">xe IN_TRANSIT</text>
+        <text x="1255" y="137" text-anchor="middle" font-size="13" fill="#486164">tài xế ON_TRIP</text>
+      </g>
+      <g>
+        <rect x="1165" y="225" width="180" height="80" rx="7" fill="#eaf3f2" stroke="#7eaaa3"/>
+        <text x="1255" y="256" text-anchor="middle" font-size="14" font-weight="700" fill="#183a3b">Kiểm tra tuyến</text>
+        <text x="1255" y="279" text-anchor="middle" font-size="13" fill="#486164">RouteVersion hiệu lực</text>
+      </g>
+      <g>
+        <rect x="1165" y="375" width="180" height="90" rx="7" fill="#eaf3f2" stroke="#7eaaa3"/>
+        <text x="1255" y="406" text-anchor="middle" font-size="14" font-weight="700" fill="#183a3b">Tạo / lấy Trip</text>
+        <text x="1255" y="429" text-anchor="middle" font-size="13" fill="#486164">Tracking: createOrGet</text>
+      </g>
+      <g>
+        <rect x="835" y="375" width="180" height="90" rx="7" fill="#eaf3f2" stroke="#7eaaa3"/>
+        <text x="925" y="406" text-anchor="middle" font-size="14" font-weight="700" fill="#183a3b">Hoàn tất điều phối</text>
+        <text x="925" y="429" text-anchor="middle" font-size="13" fill="#486164">ASSIGNED / DISPATCHED</text>
+      </g>
+      <g>
+        <rect x="505" y="375" width="180" height="90" rx="7" fill="#eaf3f2" stroke="#7eaaa3"/>
+        <text x="595" y="406" text-anchor="middle" font-size="14" font-weight="700" fill="#183a3b">UI khởi hành</text>
+        <text x="595" y="429" text-anchor="middle" font-size="13" fill="#486164">startTrip(tripId)</text>
+      </g>
+      <g>
+        <rect x="255" y="375" width="180" height="90" rx="7" fill="#eaf3f2" stroke="#7eaaa3"/>
+        <text x="345" y="406" text-anchor="middle" font-size="14" font-weight="700" fill="#183a3b">Theo dõi chuyến</text>
+        <text x="345" y="429" text-anchor="middle" font-size="13" fill="#486164">GPS / cảnh báo / đổi tuyến</text>
+      </g>
+      <g>
+        <rect x="255" y="250" width="190" height="75" rx="7" fill="#fff0ef" stroke="#ce7770"/>
+        <text x="350" y="279" text-anchor="middle" font-size="14" font-weight="700" fill="#8e342f">Từ chối điều phối</text>
+        <text x="350" y="301" text-anchor="middle" font-size="12" fill="#8e504c">lỗi điều kiện / tài nguyên</text>
+      </g>
+      <g>
+        <rect x="895" y="520" width="230" height="82" rx="7" fill="#fff0ef" stroke="#ce7770"/>
+        <text x="1010" y="550" text-anchor="middle" font-size="14" font-weight="700" fill="#8e342f">Saga FAILED / ROLLED_BACK</text>
+        <text x="1010" y="574" text-anchor="middle" font-size="12" fill="#8e504c">thử giải phóng xe và tài xế</text>
+      </g>
+      <!-- Side annotation -->
+      <path d="M595 465V555H485" fill="none" stroke="#c87500" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#arrow)"/>
+      <rect x="230" y="525" width="260" height="92" rx="7" fill="#fff8ed" stroke="#e0aa5e" stroke-width="1.5"/>
+      <text x="250" y="553" font-size="13" font-weight="700" fill="#8b5207">UI hiện tại tự gọi startTrip</text>
+      <text x="250" y="575" font-size="12" fill="#725b3b">sau khi API dispatch trả tripId.</text>
+      <text x="250" y="595" font-size="12" fill="#725b3b">Không tự tạo trip lần thứ hai.</text>
+      <text x="60" y="675" font-size="12" fill="#75878a">Ghi chú: kiểm tra Pre-trip ở đây là thay đổi mới phía backend; thời hạn hiệu lực inspection chưa được giới hạn.</text>
+    </svg>
+    <div class="legend">
+      <span><i class="dot" style="background:#eaf3f2;border:1px solid #7eaaa3"></i>Bước xử lý</span>
+      <span><i class="dot" style="background:#fff4dc;border:1px solid #c39a44"></i>Điều kiện nghiệp vụ</span>
+      <span><i class="dot" style="background:#fff0ef;border:1px solid #ce7770"></i>Lỗi / từ chối / bù trừ</span>
+      <span><i class="dot" style="background:#fff8ed;border:1px solid #e0aa5e"></i>Ghi chú hành vi UI</span>
+    </div>
+  </section>
+
+  <footer>
+    <article class="note info"><b>Đã có trong backend</b><p>Chống điều phối vận đơn trùng; kiểm tra xe, tải trọng, tài xế và Pre-trip; xác minh tuyến; tạo/nhận trip; cập nhật trạng thái; ghi Saga và Outbox.</p></article>
+    <article class="note warn"><b>Còn cần hoàn thiện</b><p>Reserve xe và tài xế chưa nguyên tử. Pre-trip hiện đối chiếu đạt và đúng tài xế, nhưng chưa có giới hạn tuổi biên bản theo chuyến.</p></article>
+    <article class="note"><b>Luồng sau xuất bến</b><p>Dispatcher giám sát GPS, xử lý cảnh báo và duyệt/từ chối đề xuất đổi tuyến. Hoàn chuyến, ePOD và đối soát carbon thuộc các bước tiếp theo.</p></article>
+  </footer>
+</main>
+</body>
+</html>

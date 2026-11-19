@@ -24,7 +24,6 @@ public class TelemetryEvent {
     @Column(name = "timestamp", nullable = false)
     private Instant timestamp;
 
-    @com.fasterxml.jackson.annotation.JsonIgnore
     @Column(name = "location_geom", nullable = false, columnDefinition = "geometry(Point, 4326)")
     private Point locationGeom;
 

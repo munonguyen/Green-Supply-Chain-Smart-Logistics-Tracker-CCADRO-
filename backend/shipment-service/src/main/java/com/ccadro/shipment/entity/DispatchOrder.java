@@ -38,6 +38,9 @@ public class DispatchOrder {
     @Column(name = "assigned_route_version_id")
     UUID assignedRouteVersionId;
 
+    @Column(name = "trip_id")
+    UUID tripId;
+
     @Column(name = "dispatched_at", nullable = false)
     Instant dispatchedAt = Instant.now();
 

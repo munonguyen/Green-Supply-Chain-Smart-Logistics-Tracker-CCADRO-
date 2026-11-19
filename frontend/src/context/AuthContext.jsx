@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { useLiveIdentity } from '../hooks/useLiveIdentity';
 
@@ -1015,6 +1015,40 @@ function appendHubAuthAuditLog(entry) {
   return next;
 }
 
+const SESSION_CHECK_TIMEOUT_MS = 8000;
+const SESSION_STORAGE_KEYS = ['ccadro_token', 'ccadro_refresh_token', 'ccadro_user'];
+
+/** Đọc exp trong JWT (không xác minh chữ ký) – chỉ dùng để phát hiện phiên cũ đã hết hạn phía client. */
+export function isJwtExpired(tok, skewMs = 0) {
+  if (!tok || typeof tok !== 'string' || !tok.startsWith('eyJ')) return false;
+  try {
+    const part = tok.split('.')[1];
+    if (!part) return true;
+    const padded = part.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(part.length / 4) * 4, '=');
+    const payload = JSON.parse(window.atob(padded));
+    const expMs = Number(payload?.exp || 0) * 1000;
+    if (!Number.isFinite(expMs) || expMs <= 0) return false;
+    return expMs - skewMs <= Date.now();
+  } catch (_) {
+    return true; // JWT hỏng -> coi như hết hạn
+  }
+}
+
+export function clearStoredSession() {
+  try {
+    SESSION_STORAGE_KEYS.forEach((k) => window.localStorage.removeItem(k));
+  } catch (_) {
+    // ignore
+  }
+}
+
+function withTimeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('SESSION_CHECK_TIMEOUT')), ms))
+  ]);
+}
+
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
@@ -1023,11 +1057,24 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     try {
       const saved = window.localStorage.getItem('ccadro_user');
+      const storedToken = window.localStorage.getItem('ccadro_token');
+      const storedRefresh = window.localStorage.getItem('ccadro_refresh_token');
+      // Phiên cũ: JWT đã hết hạn và không còn Refresh Token -> coi như chưa đăng nhập ngay từ đầu
+      if (saved && isJwtExpired(storedToken) && !storedRefresh) {
+        clearStoredSession();
+        return null;
+      }
       if (saved) {
-        return hydrateAccountWithRoleVisuals(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        if (!parsed || typeof parsed !== 'object' || !parsed.username) {
+          clearStoredSession();
+          return null;
+        }
+        return hydrateAccountWithRoleVisuals(parsed);
       }
     } catch (_) {
-      // ignore
+      // Dữ liệu phiên hỏng -> xóa để không làm vỡ giao diện
+      clearStoredSession();
     }
     return null;
   });
@@ -1040,12 +1087,180 @@ export function AuthProvider({ children }) {
     }
   });
 
+  // true khi đang xác minh phiên cũ (JWT đã hết hạn) với máy chủ -> các trang bảo vệ hiển thị màn chờ thay vì màn đen
+  const [sessionChecking, setSessionChecking] = useState(() => {
+    try {
+      return (
+        import.meta.env.VITE_DEMO_MODE !== 'true' &&
+        Boolean(window.localStorage.getItem('ccadro_user')) &&
+        isJwtExpired(window.localStorage.getItem('ccadro_token'))
+      );
+    } catch (_) {
+      return false;
+    }
+  });
+
   const [authMode, setAuthMode] = useState('IAM_MANAGED');
   const [companies, setCompanies] = useState(() => loadSystemCompanies());
   const [hubAuthAuditLogs, setHubAuthAuditLogs] = useState(() => loadHubAuthAuditLogs());
   const demoIdentity = import.meta.env.VITE_DEMO_MODE === 'true';
   const liveIdentity = useLiveIdentity({ user, token, setUser, setToken, setAuthMode,
     templates: ENTERPRISE_ROLES, enabled: !demoIdentity });
+
+  // Đồng bộ sự kiện xoay vòng Refresh Token (ccadro-token-refreshed) & thu hồi phiên hết hạn/blacklist (ccadro-auth-expired)
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    const handleTokenRefreshed = (evt) => {
+      const nextToken = evt?.detail?.token;
+      if (nextToken) {
+        setToken(nextToken);
+      }
+    };
+
+    const handleAuthExpired = () => {
+      setToken(null);
+      setUser(null);
+      setAuthMode('IAM_MANAGED');
+      try {
+        window.localStorage.removeItem('ccadro_token');
+        window.localStorage.removeItem('ccadro_refresh_token');
+        window.localStorage.removeItem('ccadro_user');
+      } catch (_) {
+        // ignore
+      }
+    };
+
+    window.addEventListener('ccadro-token-refreshed', handleTokenRefreshed);
+    window.addEventListener('ccadro-auth-expired', handleAuthExpired);
+    return () => {
+      window.removeEventListener('ccadro-token-refreshed', handleTokenRefreshed);
+      window.removeEventListener('ccadro-auth-expired', handleAuthExpired);
+    };
+  }, []);
+
+  // Kiểm định JWT thực tế (eyJ...) khi khởi tạo phiên: nếu token đã hết hạn hoặc bị đưa vào Blacklist thì tự động xoay vòng Refresh Token hoặc bắt buộc đăng nhập lại
+  useEffect(() => {
+    if (demoIdentity || typeof window === 'undefined') {
+      setSessionChecking(false);
+      return undefined;
+    }
+    let currentStoredToken = null;
+    let currentRefreshToken = null;
+    try {
+      currentStoredToken = window.localStorage.getItem('ccadro_token');
+      currentRefreshToken = window.localStorage.getItem('ccadro_refresh_token');
+    } catch (_) {
+      setSessionChecking(false);
+      return undefined;
+    }
+    if (!currentStoredToken || !currentStoredToken.startsWith('eyJ')) {
+      setSessionChecking(false);
+      return undefined;
+    }
+
+    let cancelled = false;
+    const expiredLocally = isJwtExpired(currentStoredToken);
+    const clearStaleSession = () => {
+      // Người dùng đã đăng nhập phiên mới trong lúc kiểm tra -> không được xóa phiên mới
+      if (window.localStorage.getItem('ccadro_token') !== currentStoredToken) return;
+      clearStoredSession();
+      setToken(null);
+      setUser(null);
+      setAuthMode('IAM_MANAGED');
+    };
+    (async () => {
+      try {
+        if (!expiredLocally) {
+          // Token chưa hết hạn theo exp -> hỏi máy chủ xem đã bị Blacklist chưa (không chặn giao diện)
+          const introspectRes = await withTimeout(api.introspect(currentStoredToken), SESSION_CHECK_TIMEOUT_MS);
+          const isValid = Boolean(introspectRes?.result?.valid ?? introspectRes?.valid);
+          if (isValid || cancelled) return;
+        }
+
+        // Token không còn hiệu lực (hết hạn hoặc đã bị Blacklist) -> thử xoay vòng bằng Refresh Token
+        if (currentRefreshToken) {
+          try {
+            const refreshRes = await withTimeout(api.refreshToken(currentRefreshToken), SESSION_CHECK_TIMEOUT_MS);
+            const refreshed = refreshRes?.result || refreshRes;
+            if (!cancelled && refreshed?.token) {
+              window.localStorage.setItem('ccadro_token', refreshed.token);
+              if (refreshed.refreshToken) {
+                window.localStorage.setItem('ccadro_refresh_token', refreshed.refreshToken);
+              }
+              setToken(refreshed.token);
+              return;
+            }
+          } catch (_) {
+            // Refresh token cũng đã bị thu hồi hoặc hết hạn
+          }
+        }
+
+        if (!cancelled) clearStaleSession();
+      } catch (_) {
+        // Mạng gián đoạn: token còn hạn thì giữ phiên; token đã hết hạn chắc chắn không dùng được -> buộc đăng nhập lại
+        if (!cancelled && expiredLocally) clearStaleSession();
+      } finally {
+        if (!cancelled) setSessionChecking(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [demoIdentity]);
+
+  // Chủ động xoay vòng Access Token trước khi hết hạn (~60s trước exp) để phiên hoạt động luôn dùng token mới
+  useEffect(() => {
+    if (demoIdentity || typeof window === 'undefined' || !token || !token.startsWith('eyJ')) {
+      return undefined;
+    }
+    let refreshTimer = null;
+    try {
+      const parts = token.split('.');
+      if (parts.length < 2) return undefined;
+      const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      const payload = JSON.parse(window.atob(base64));
+      const expMs = Number(payload?.exp || 0) * 1000;
+      if (!Number.isFinite(expMs) || expMs <= 0) return undefined;
+
+      const delayMs = Math.max(5000, expMs - Date.now() - 60000);
+      refreshTimer = window.setTimeout(async () => {
+        let rt = null;
+        try {
+          rt = window.localStorage.getItem('ccadro_refresh_token');
+        } catch (_) {
+          // ignore
+        }
+        try {
+          const refreshRes = await api.refreshToken(rt);
+          const refreshed = refreshRes?.result || refreshRes;
+          if (refreshed?.token) {
+            window.localStorage.setItem('ccadro_token', refreshed.token);
+            if (refreshed.refreshToken) {
+              window.localStorage.setItem('ccadro_refresh_token', refreshed.refreshToken);
+            }
+            setToken(refreshed.token);
+            return;
+          }
+        } catch (_) {
+          // Token hoặc phiên đã bị thu hồi / hết hạn -> buộc đăng nhập lại
+        }
+        window.localStorage.removeItem('ccadro_token');
+        window.localStorage.removeItem('ccadro_refresh_token');
+        window.localStorage.removeItem('ccadro_user');
+        setToken(null);
+        setUser(null);
+        setAuthMode('IAM_MANAGED');
+      }, delayMs);
+    } catch (_) {
+      // ignore invalid jwt payload format
+    }
+
+    return () => {
+      if (refreshTimer) window.clearTimeout(refreshTimer);
+    };
+  }, [demoIdentity, token]);
 
   /**
    * Đăng nhập bảo mật đa lớp:
@@ -1254,6 +1469,11 @@ export function AuthProvider({ children }) {
     );
 
     try {
+      const prevToken = window.localStorage.getItem('ccadro_token');
+      const prevRefreshToken = window.localStorage.getItem('ccadro_refresh_token');
+      if (prevToken && prevToken.startsWith('eyJ') && prevToken !== sessionToken) {
+        await api.logout(prevToken, prevRefreshToken).catch(() => {});
+      }
       window.localStorage.setItem('ccadro_token', sessionToken);
       if (backendAuthPayload?.refreshToken) {
         window.localStorage.setItem('ccadro_refresh_token', backendAuthPayload.refreshToken);
@@ -2205,17 +2425,25 @@ export function AuthProvider({ children }) {
 
   const logout = async ({ allDevices = false } = {}) => {
     let storedRefreshToken = null;
+    let storedAccessToken = null;
     try {
       storedRefreshToken = window.localStorage.getItem('ccadro_refresh_token');
+      storedAccessToken = window.localStorage.getItem('ccadro_token');
     } catch (_) {
       // ignore
     }
-    if (token && !token.startsWith('iam-jwt-') && !token.startsWith('customer-jwt-')) {
+    const effectiveToken = storedAccessToken || token;
+    if (
+      effectiveToken &&
+      !effectiveToken.startsWith('iam-jwt-') &&
+      !effectiveToken.startsWith('customer-jwt-') &&
+      !effectiveToken.startsWith('test-token-')
+    ) {
       try {
         if (allDevices && typeof api.logoutAll === 'function') {
           await api.logoutAll();
         } else {
-          await api.logout(token, storedRefreshToken);
+          await api.logout(effectiveToken, storedRefreshToken);
         }
       } catch (_) {
         // ignore
@@ -2230,7 +2458,7 @@ export function AuthProvider({ children }) {
           outcome: 'SUCCESS',
           detail: allDevices
             ? 'Đăng xuất & thu hồi toàn bộ phiên trên mọi thiết bị.'
-            : 'Đăng xuất phiên làm việc.'
+            : 'Đăng xuất phiên làm việc & đưa JWT cũ vào Blacklist.'
         })
       );
     }
@@ -2271,6 +2499,7 @@ export function AuthProvider({ children }) {
       value={{
         user,
         token,
+        sessionChecking,
         authMode,
         accounts: demoIdentity ? accounts : liveIdentity.accounts,
         companies: demoIdentity ? companies : liveIdentity.companies,

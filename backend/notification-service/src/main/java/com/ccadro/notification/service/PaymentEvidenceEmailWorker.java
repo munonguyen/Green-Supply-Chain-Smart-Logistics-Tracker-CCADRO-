@@ -3,7 +3,6 @@ package com.ccadro.notification.service;
 import com.ccadro.notification.dto.request.SendEmailRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -31,21 +30,16 @@ public class PaymentEvidenceEmailWorker {
     @Value("${ccadro.kafka.payment-email-status-topic:ccadro.payment.email.status.v1}")
     private String emailStatusTopic = "ccadro.payment.email.status.v1";
 
-    public PaymentEvidenceEmailWorker(JdbcTemplate jdbc, TransactionalEmailService email) {
-        this(jdbc, email, null, null);
-    }
-
-    @Autowired
     public PaymentEvidenceEmailWorker(
             JdbcTemplate jdbc,
             TransactionalEmailService email,
             @Nullable KafkaTemplate<String, String> kafkaTemplate,
-            @Nullable ObjectMapper objectMapper
+            ObjectMapper objectMapper
     ) {
         this.jdbc = jdbc;
         this.email = email;
         this.kafkaTemplate = kafkaTemplate;
-        this.objectMapper = objectMapper != null ? objectMapper : new ObjectMapper();
+        this.objectMapper = Objects.requireNonNull(objectMapper, "A configured JSON mapper is required");
     }
 
     @Scheduled(fixedDelayString = "${ccadro.payment-email.poll-ms:15000}")

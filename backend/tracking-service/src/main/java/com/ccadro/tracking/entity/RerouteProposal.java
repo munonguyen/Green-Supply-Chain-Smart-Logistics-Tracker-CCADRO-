@@ -30,7 +30,6 @@ public class RerouteProposal {
     @Column(name = "benefit_ratio", nullable = false, precision = 6, scale = 4)
     private BigDecimal benefitRatio;
 
-    @com.fasterxml.jackson.annotation.JsonIgnore
     @Column(name = "proposed_geometry", columnDefinition = "geometry(LineString, 4326)")
     private LineString proposedGeometry;
 

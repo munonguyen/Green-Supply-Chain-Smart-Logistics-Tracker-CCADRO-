@@ -24,7 +24,6 @@ public class DeviationAlert {
     @Column(name = "deviation_distance_meters", nullable = false, precision = 10, scale = 2)
     private BigDecimal deviationDistanceMeters;
 
-    @com.fasterxml.jackson.annotation.JsonIgnore
     @Column(name = "location_geom", columnDefinition = "geometry(Point, 4326)")
     private Point locationGeom;
 

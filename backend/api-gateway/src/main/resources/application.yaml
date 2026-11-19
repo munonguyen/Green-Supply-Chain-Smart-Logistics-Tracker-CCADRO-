@@ -7,10 +7,10 @@ app:
 
 springdoc:
   api-docs:
-    enabled: true
+    enabled: false
     path: /v3/api-docs
   swagger-ui:
-    enabled: true
+    enabled: false
     path: /swagger-ui.html
     operationsSorter: method
     tagsSorter: alpha

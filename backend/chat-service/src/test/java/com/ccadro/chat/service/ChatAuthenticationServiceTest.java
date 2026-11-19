@@ -26,6 +26,16 @@ class ChatAuthenticationServiceTest {
     }
 
     @Test
+    void incompleteIdentityResponsesFailClosed() {
+        when(identity.introspect("empty")).thenReturn(null);
+        when(identity.introspect("missing-user")).thenReturn(new IntrospectionResponse(true, null, "ROLE_ADMIN"));
+        when(identity.introspect("missing-scope")).thenReturn(new IntrospectionResponse(true, "alice", null));
+        for (String token : new String[] {"empty", "missing-user", "missing-scope"}) {
+            assertThatThrownBy(() -> service.authenticate("Bearer " + token)).isInstanceOf(AppException.class);
+        }
+    }
+
+    @Test
     void actorUsesVerifiedClaimsAndDoesNotPrintBearerInDebugOutput() {
         when(identity.introspect("private-token"))
                 .thenReturn(new IntrospectionResponse(true, "alice", "READ\tROLE_CUSTOMER"));

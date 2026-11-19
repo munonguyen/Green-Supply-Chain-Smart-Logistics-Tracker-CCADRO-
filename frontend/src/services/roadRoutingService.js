@@ -324,3 +324,221 @@ export function calculateTelemetry(totalDistanceKm, progressPct, speedKmh) {
     remainingMinutes
   };
 }
+
+/**
+ * Compute geodesic forward bearing in degrees [0, 360).
+ */
+export function computeBearingDegrees(lat1, lon1, lat2, lon2) {
+  if (
+    lat1 == null ||
+    lon1 == null ||
+    lat2 == null ||
+    lon2 == null ||
+    (Number(lat1) === Number(lat2) && Number(lon1) === Number(lon2))
+  ) {
+    return 0;
+  }
+  const phi1 = (Number(lat1) * Math.PI) / 180;
+  const phi2 = (Number(lat2) * Math.PI) / 180;
+  const dLon = ((Number(lon2) - Number(lon1)) * Math.PI) / 180;
+  const y = Math.sin(dLon) * Math.cos(phi2);
+  const x =
+    Math.cos(phi1) * Math.sin(phi2) -
+    Math.sin(phi1) * Math.cos(phi2) * Math.cos(dLon);
+  return Math.round(((Math.atan2(y, x) * 180) / Math.PI + 360) % 360);
+}
+
+/**
+ * Evaluate whether the vehicle has arrived inside the destination geofence.
+ */
+export function evaluateDestinationArrival(currentCoords, destCoords, options = {}) {
+  const arrivalRadiusMeters = Number(options.arrivalRadiusMeters ?? 250);
+  const approachingRadiusMeters = Number(options.approachingRadiusMeters ?? 2000);
+  const isDelivered = Boolean(options.isDelivered);
+  const progressPct = options.progressPct != null ? Number(options.progressPct) : null;
+
+  if (isDelivered) {
+    const dist =
+      Array.isArray(currentCoords) && Array.isArray(destCoords)
+        ? Math.round(
+            haversineDistanceMeters(currentCoords[0], currentCoords[1], destCoords[0], destCoords[1])
+          )
+        : 0;
+    return {
+      distanceMeters: dist,
+      distanceKm: Number((dist / 1000).toFixed(2)),
+      arrivalRadiusMeters,
+      arrived: true,
+      status: 'DELIVERED',
+      label: 'Đã bàn giao ePOD tại điểm đích'
+    };
+  }
+
+  if (
+    Array.isArray(currentCoords) &&
+    currentCoords.length >= 2 &&
+    Array.isArray(destCoords) &&
+    destCoords.length >= 2 &&
+    Number.isFinite(Number(currentCoords[0])) &&
+    Number.isFinite(Number(currentCoords[1])) &&
+    Number.isFinite(Number(destCoords[0])) &&
+    Number.isFinite(Number(destCoords[1]))
+  ) {
+    const dist = Math.round(
+      haversineDistanceMeters(
+        Number(currentCoords[0]),
+        Number(currentCoords[1]),
+        Number(destCoords[0]),
+        Number(destCoords[1])
+      )
+    );
+    const distanceKm = Number((dist / 1000).toFixed(2));
+    if (dist <= arrivalRadiusMeters || (progressPct != null && progressPct >= 100)) {
+      return {
+        distanceMeters: dist,
+        distanceKm,
+        arrivalRadiusMeters,
+        arrived: true,
+        status: 'ARRIVED_AT_DESTINATION',
+        label: 'Đã tới địa điểm giao hàng (trong vùng Geofence)'
+      };
+    }
+    if (dist <= approachingRadiusMeters) {
+      return {
+        distanceMeters: dist,
+        distanceKm,
+        arrivalRadiusMeters,
+        arrived: false,
+        status: 'APPROACHING_DESTINATION',
+        label: 'Sắp tới địa điểm giao hàng (< 2 km)'
+      };
+    }
+    if (progressPct != null && progressPct <= 0) {
+      return {
+        distanceMeters: dist,
+        distanceKm,
+        arrivalRadiusMeters,
+        arrived: false,
+        status: 'AT_ORIGIN',
+        label: 'Đang tại điểm xuất phát'
+      };
+    }
+    return {
+      distanceMeters: dist,
+      distanceKm,
+      arrivalRadiusMeters,
+      arrived: false,
+      status: 'IN_TRANSIT',
+      label: 'Đang trên đường giao hàng'
+    };
+  }
+
+  if (progressPct != null && progressPct >= 100) {
+    return {
+      distanceMeters: 0,
+      distanceKm: 0,
+      arrivalRadiusMeters,
+      arrived: true,
+      status: 'ARRIVED_AT_DESTINATION',
+      label: 'Đã tới địa điểm giao hàng (trong vùng Geofence)'
+    };
+  }
+  return {
+    distanceMeters: null,
+    distanceKm: null,
+    arrivalRadiusMeters,
+    arrived: false,
+    status: progressPct != null && progressPct <= 0 ? 'AT_ORIGIN' : 'IN_TRANSIT',
+    label: 'Đang trên đường giao hàng'
+  };
+}
+
+/**
+ * Convert GeoJSON LineString or [[lon,lat]] / [[lat,lon]] payload into Leaflet [[lat, lon], ...] points.
+ */
+export function extractGeoJsonLineStringPoints(routeGeometry) {
+  if (!routeGeometry) return [];
+  if (Array.isArray(routeGeometry)) {
+    return routeGeometry
+      .filter((pt) => Array.isArray(pt) && pt.length >= 2 && Number.isFinite(Number(pt[0])) && Number.isFinite(Number(pt[1])))
+      .map((pt) => [Number(pt[0]), Number(pt[1])]);
+  }
+  let parsed = routeGeometry;
+  if (typeof routeGeometry === 'string') {
+    try {
+      parsed = JSON.parse(routeGeometry);
+    } catch {
+      return [];
+    }
+  }
+  const coords = parsed?.coordinates;
+  if (!Array.isArray(coords)) return [];
+  return coords
+    .filter((pt) => Array.isArray(pt) && pt.length >= 2 && Number.isFinite(Number(pt[0])) && Number.isFinite(Number(pt[1])))
+    .map((pt) => [Number(pt[1]), Number(pt[0])]);
+}
+
+export function measurePolylineDistanceKm(points) {
+  if (!Array.isArray(points) || points.length < 2) return 0;
+  let meters = 0;
+  for (let i = 0; i < points.length - 1; i++) {
+    meters += haversineDistanceMeters(
+      Number(points[i][0]),
+      Number(points[i][1]),
+      Number(points[i + 1][0]),
+      Number(points[i + 1][1])
+    );
+  }
+  return Number((meters / 1000).toFixed(2));
+}
+
+const LIVE_OSRM_ROUTE_CACHE = new Map();
+
+/**
+ * Fetch authentic live driving polyline from OSRM between arbitrary [lat, lon] coordinates.
+ */
+export async function fetchLiveOsrmRoute(originCoords, destCoords) {
+  if (
+    !Array.isArray(originCoords) ||
+    !Array.isArray(destCoords) ||
+    originCoords.length < 2 ||
+    destCoords.length < 2
+  ) {
+    return null;
+  }
+  const oLat = Number(originCoords[0]);
+  const oLon = Number(originCoords[1]);
+  const dLat = Number(destCoords[0]);
+  const dLon = Number(destCoords[1]);
+  if (![oLat, oLon, dLat, dLon].every(Number.isFinite)) {
+    return null;
+  }
+  const cacheKey = `${oLat.toFixed(4)},${oLon.toFixed(4)}->${dLat.toFixed(4)},${dLon.toFixed(4)}`;
+  if (LIVE_OSRM_ROUTE_CACHE.has(cacheKey)) {
+    return LIVE_OSRM_ROUTE_CACHE.get(cacheKey);
+  }
+
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timeout = controller ? setTimeout(() => controller.abort(), 4000) : null;
+  try {
+    const url = `https://router.project-osrm.org/route/v1/driving/${oLon.toFixed(6)},${oLat.toFixed(6)};${dLon.toFixed(6)},${dLat.toFixed(6)}?overview=full&geometries=geojson`;
+    const res = await fetch(url, controller ? { signal: controller.signal } : undefined);
+    if (!res.ok) return null;
+    const json = await res.json();
+    const route = json?.routes?.[0];
+    const points = extractGeoJsonLineStringPoints(route?.geometry);
+    if (points.length < 2) return null;
+    const result = {
+      points,
+      distanceKm: Number(((route.distance || 0) / 1000).toFixed(2)),
+      durationMinutes: Math.max(1, Math.round((route.duration || 0) / 60)),
+      source: 'OSRM_LIVE'
+    };
+    LIVE_OSRM_ROUTE_CACHE.set(cacheKey, result);
+    return result;
+  } catch {
+    return null;
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
+}

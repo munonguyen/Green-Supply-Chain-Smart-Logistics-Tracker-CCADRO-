@@ -1,6 +1,8 @@
 package com.ccadro.tracking.service;
 
 import com.ccadro.tracking.configuration.CcadroProperties;
+import com.ccadro.tracking.infrastructure.json.JacksonRouteWaypointDecoder;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ccadro.tracking.controller.dto.IngestTelemetryRequest;
 import com.ccadro.tracking.dto.response.LiveFleetTelemetryResponse;
 import com.ccadro.tracking.entity.TelemetryEvent;
@@ -43,7 +45,8 @@ class FleetTelemetryServiceTest {
     @Test
     void getLiveFleetTelemetry_computesAccurateEtaDeviationAndCo2() {
         CcadroProperties props = new CcadroProperties();
-        FleetTelemetryService service = new FleetTelemetryService(tripRepository, telemetryEventRepository, props);
+        FleetTelemetryService service = new FleetTelemetryService(tripRepository, telemetryEventRepository, props,
+                new JacksonRouteWaypointDecoder(new ObjectMapper()));
 
         UUID tripId = UUID.randomUUID();
         Trip trip = new Trip();
@@ -127,6 +130,91 @@ class FleetTelemetryServiceTest {
         ingestionService.ingestTelemetry(req);
 
         verify(streamService).broadcastUpdate(liveSnap);
+    }
+
+    @Test
+    void evaluateArrivalAndGeoJsonParsing_shouldDetectDestinationGeofenceAndRouteWaypoints() {
+        CcadroProperties props = new CcadroProperties();
+        FleetTelemetryService service = new FleetTelemetryService(tripRepository, telemetryEventRepository, props,
+                new JacksonRouteWaypointDecoder(new ObjectMapper()));
+
+        double destLat = 10.9242;
+        double destLon = 106.7145;
+        double originLat = 10.7623;
+        double originLon = 106.7824;
+
+        // Inside 250m destination geofence
+        var arrived = service.evaluateArrival("EN_ROUTE", 10.9245, 106.7148,
+                originLat, originLon, destLat, destLon, 99, Instant.now(), null);
+        assertTrue(arrived.arrived());
+        assertEquals("ARRIVED_AT_DESTINATION", arrived.arrivalStatus());
+        assertTrue(arrived.distanceToDestinationMeters() <= 250.0);
+
+        // Within 2000m approaching zone (~1.2 km away)
+        var approaching = service.evaluateArrival("EN_ROUTE", 10.9150, 106.7145,
+                originLat, originLon, destLat, destLon, 92, null, null);
+        assertFalse(approaching.arrived());
+        assertEquals("APPROACHING_DESTINATION", approaching.arrivalStatus());
+        assertTrue(approaching.distanceToDestinationMeters() > 250.0 && approaching.distanceToDestinationMeters() <= 2000.0);
+
+        // En-route midway
+        var transit = service.evaluateArrival("EN_ROUTE", 10.8400, 106.7500,
+                originLat, originLon, destLat, destLon, 45, null, null);
+        assertFalse(transit.arrived());
+        assertEquals("IN_TRANSIT", transit.arrivalStatus());
+
+        // Completed -> DELIVERED
+        var delivered = service.evaluateArrival("COMPLETED", destLat, destLon,
+                originLat, originLon, destLat, destLon, 100, Instant.now(), "DELIVERED");
+        assertTrue(delivered.arrived());
+        assertEquals("DELIVERED", delivered.arrivalStatus());
+
+
+    }
+
+    @Test
+    void ingestTelemetry_shouldPersistArrivedStatusWhenInsideDestinationGeofence() {
+        CcadroProperties props = new CcadroProperties();
+        TelemetryIngestionService ingestionService = new TelemetryIngestionService(
+                telemetryEventRepository,
+                tripRepository,
+                trackingMapper,
+                props,
+                deviationDetectionService,
+                rerouteProposalService
+        );
+
+        UUID tripId = UUID.randomUUID();
+        Trip trip = new Trip();
+        trip.setId(tripId);
+        trip.setStatus("SCHEDULED");
+        trip.setArrivalStatus("AT_ORIGIN");
+        trip.setActualDistanceMeters(BigDecimal.ZERO);
+
+        IngestTelemetryRequest req = new IngestTelemetryRequest();
+        req.setTripId(tripId);
+        req.setTimestamp(Instant.now());
+        req.setLatitude(10.9243);
+        req.setLongitude(106.7146);
+        req.setSpeedKmh(BigDecimal.valueOf(35.0));
+
+        TelemetryEvent entity = new TelemetryEvent();
+        entity.setTripId(tripId);
+        entity.setSpeedKmh(BigDecimal.valueOf(35.0));
+        when(trackingMapper.toEntity(req)).thenReturn(entity);
+        when(telemetryEventRepository.save(any())).thenReturn(entity);
+        when(tripRepository.findById(tripId)).thenReturn(Optional.of(trip));
+        when(tripRepository.findDestinationCoordinatesByTripId(tripId))
+                .thenReturn(List.<Object[]>of(new Object[] { 10.9242, 106.7145, 10.7623, 106.7824 }));
+
+        ingestionService.ingestTelemetry(req);
+
+        assertEquals("EN_ROUTE", trip.getStatus());
+        assertEquals("ARRIVED_AT_DESTINATION", trip.getArrivalStatus());
+        assertNotNull(trip.getArrivedAt());
+        assertNotNull(trip.getDistanceToDestinationMeters());
+        assertTrue(trip.getDistanceToDestinationMeters().doubleValue() <= 250.0);
+        verify(tripRepository, atLeastOnce()).save(trip);
     }
 }
 

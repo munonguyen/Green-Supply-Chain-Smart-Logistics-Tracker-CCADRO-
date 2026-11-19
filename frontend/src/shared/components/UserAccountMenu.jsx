@@ -104,7 +104,7 @@ export default function UserAccountMenu({
     if (logout) {
       await logout();
     }
-    navigate('/');
+    navigate('/login');
   };
 
   return (

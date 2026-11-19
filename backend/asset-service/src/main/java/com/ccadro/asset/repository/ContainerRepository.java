@@ -14,4 +14,5 @@ public interface ContainerRepository extends JpaRepository<Container, UUID> {
     List<Container> findByAssignedDriverId(UUID driverId);
     List<Container> findByAssignedShipmentCode(String assignedShipmentCode);
     List<Container> findByStatusAndAssignedDriverId(ContainerStatus status, UUID driverId);
+    List<Container> findByStatusAndAssignedVehicleId(ContainerStatus status, UUID vehicleId);
 }

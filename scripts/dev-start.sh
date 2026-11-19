@@ -6,6 +6,24 @@ cd "$PROJECT_ROOT"
 
 mkdir -p logs .pids
 
+# A new OS session keeps services alive when a terminal/tool session exits.
+start_detached() {
+  local name="$1"
+  local workdir="$2"
+  shift 2
+  python3 - "$PROJECT_ROOT" "$name" "$workdir" "$@" <<'PY'
+from pathlib import Path
+import subprocess
+import sys
+
+root, name, workdir = Path(sys.argv[1]), sys.argv[2], sys.argv[3]
+with (root / 'logs' / (name + '.log')).open('wb') as output:
+    process = subprocess.Popen(sys.argv[4:], cwd=workdir, stdin=subprocess.DEVNULL,
+                               stdout=output, stderr=subprocess.STDOUT, start_new_session=True)
+(root / '.pids' / (name + '.pid')).write_text(str(process.pid) + '\n')
+PY
+}
+
 # Source environment
 if [ ! -f .env ]; then
   echo ".env is missing; run scripts/setup.sh first." >&2
@@ -32,6 +50,11 @@ source scripts/chat-env.sh
 export SERVER_ADDRESS=${SERVER_ADDRESS:-127.0.0.1}
 export EUREKA_CLIENT_ENABLED=${EUREKA_CLIENT_ENABLED:-true}
 export EUREKA_SERVER_URL=${EUREKA_SERVER_URL:-http://127.0.0.1:${EUREKA_PORT:-8761}/eureka/}
+# Bound local JVM/thread and connection usage when the complete stack shares one machine.
+read -r -a JAVA_OPTIONS <<< "${CCADRO_JAVA_OPTS:--Xms64m -Xmx256m -XX:+UseSerialGC -XX:ActiveProcessorCount=2}"
+export SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE=${SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE:-4}
+export SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE=${SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE:-1}
+export LOGGING_LEVEL_ORG_SPRINGFRAMEWORK=${LOGGING_LEVEL_ORG_SPRINGFRAMEWORK:-INFO}
 
 # Start the standalone registry before clients; skip it only for an explicit external registry.
 if [ "${EUREKA_START_LOCAL:-true}" = true ]; then
@@ -40,8 +63,7 @@ if [ "${EUREKA_START_LOCAL:-true}" = true ]; then
     if [ ! -f "$EUREKA_JAR" ]; then
       mvn -f backend/eureka-server/pom.xml package -DskipTests -q
     fi
-    nohup java -Xms128m -Xmx256m -jar "$EUREKA_JAR" > logs/eureka-server.log 2>&1 &
-    echo $! > .pids/eureka-server.pid
+    start_detached eureka-server "$PROJECT_ROOT" java "${JAVA_OPTIONS[@]}" -jar "$EUREKA_JAR"
   fi
   EUREKA_READY=false
   for i in {1..30}; do
@@ -106,7 +128,7 @@ for item in "${SERVICES[@]}"; do
 
   if [ -f "$PID_FILE" ] && kill -0 $(cat "$PID_FILE") 2>/dev/null; then
     echo "  • $SVC already running (PID: $(cat $PID_FILE), Port: $PORT)"
-  elif lsof -ti :$PORT >/dev/null 2>&1; then
+  elif lsof -tiTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1; then
     echo "  • $SVC already listening on port $PORT"
   else
     if [ ! -f "$JAR" ]; then
@@ -114,29 +136,58 @@ for item in "${SERVICES[@]}"; do
       mvn -f backend/$SVC/pom.xml package -DskipTests -q
     fi
     echo "  • Launching $SVC on port $PORT..."
-    nohup java -Xms128m -Xmx256m -jar "$JAR" > "logs/$SVC.log" 2>&1 &
-    echo $! > "$PID_FILE"
+    start_detached "$SVC" "$PROJECT_ROOT" java "${JAVA_OPTIONS[@]}" -jar "$JAR"
   fi
+
+  SERVICE_READY=false
+  for i in {1..90}; do
+    if [ "$SVC" = api-gateway ]; then
+      if curl --max-time 2 -fsS http://127.0.0.1:8888/api/v1/careers/openings 2>/dev/null | grep -q '"code":1000'; then
+        SERVICE_READY=true
+        break
+      fi
+    elif curl --max-time 2 -fsS "http://127.0.0.1:$PORT/actuator/health" 2>/dev/null | grep -q '"status":"UP"'; then
+      SERVICE_READY=true
+      break
+    fi
+    if [ -f "$PID_FILE" ] && ! kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
+      break
+    fi
+    sleep 2
+  done
+  if [ "$SERVICE_READY" != true ]; then
+    echo "$SVC readiness failed; inspect logs/$SVC.log" >&2
+    exit 1
+  fi
+  echo "  ✓ $SVC ready"
 done
 
 echo "==> Starting React / Vite Frontend..."
 if [ -f "$PROJECT_ROOT/.pids/frontend.pid" ] && kill -0 $(cat "$PROJECT_ROOT/.pids/frontend.pid") 2>/dev/null; then
   echo "Frontend is already running (PID: $(cat "$PROJECT_ROOT/.pids/frontend.pid"))"
-elif lsof -ti :5173 >/dev/null 2>&1; then
+elif lsof -tiTCP:5173 -sTCP:LISTEN >/dev/null 2>&1; then
   echo "Frontend is already listening on port 5173"
 else
-  (cd "$PROJECT_ROOT/frontend" && nohup npm run dev > "$PROJECT_ROOT/logs/frontend.log" 2>&1 & echo $! > "$PROJECT_ROOT/.pids/frontend.pid")
+  start_detached frontend "$PROJECT_ROOT/frontend" npm run dev -- --host "${FRONTEND_HOST:-127.0.0.1}"
   echo "Frontend process launched (PID: $(cat "$PROJECT_ROOT/.pids/frontend.pid"), logs at logs/frontend.log)"
 fi
 
 echo "==> Waiting for API Gateway and Identity Service..."
-for i in {1..20}; do
-  if curl -s http://localhost:8888/api/v1/health | grep '"status":"UP"' >/dev/null 2>&1; then
-    echo "✓ API Gateway and Microservices are UP and Healthy!"
+GATEWAY_READY=false
+for i in {1..90}; do
+  # /api/v1/health requires authentication; technical endpoints are hidden at the gateway.
+  if curl --max-time 2 -fsS http://127.0.0.1:8080/actuator/health 2>/dev/null | grep -q '"status":"UP"' \
+      && curl --max-time 2 -fsS http://127.0.0.1:8888/api/v1/careers/openings 2>/dev/null | grep -q '"code":1000'; then
+    GATEWAY_READY=true
+    echo "✓ API Gateway routes to a healthy Identity Service."
     break
   fi
   sleep 2
 done
+if [ "$GATEWAY_READY" != true ]; then
+  echo "Gateway/Identity readiness failed; inspect their logs." >&2
+  exit 1
+fi
 
 echo ""
 echo "=========================================================="
@@ -145,8 +196,8 @@ echo "=========================================================="
 echo "  • Frontend Web Console:  http://localhost:5173"
 echo "  • API Gateway (Unified): http://localhost:8888"
 echo "  • Eureka Infrastructure: http://localhost:${EUREKA_PORT:-8761}"
-echo "  • Swagger / OpenAPI UI:  http://localhost:8888/swagger-ui.html"
-echo "  • System Capabilities:   http://localhost:8888/api/v1/health"
+echo "  • Swagger / OpenAPI:     hidden on gateway; see docs/ACCESS_BOUNDARY_SECURITY.md"
+echo "  • System Capabilities:   http://localhost:8888/api/v1/health (Bearer token required)"
 echo "  • Identity Service:      http://localhost:8080"
 echo "  • Asset Service:         http://localhost:8081"
 echo "  • Shipment Service:      http://localhost:8082"
