@@ -76,6 +76,18 @@ export function validateComplianceForApproval(staff) {
     if (!staff?.licenseExpiryDate || String(staff.licenseExpiryDate) < todayStr) {
       missing.push('Hạn GPLX còn hiệu lực');
     }
+    if (role === 'DRIVER') {
+      if (!staff.dateOfBirth) missing.push('Ngày sinh');
+      if (!staff.licenseIssueDate || staff.licenseIssueDate > todayStr) missing.push('Ngày cấp GPLX hợp lệ');
+      if (!['CE', 'FC'].includes(staff.licenseClass)) missing.push('Hạng CE hoặc FC chuyển tiếp');
+      if (staff.licenseClass === 'FC' && staff.licenseIssueDate >= '2025-01-01') missing.push('FC phải được cấp trước 01/01/2025');
+      if (staff.licenseIssueDate && staff.licenseExpiryDate && staff.licenseIssueDate >= staff.licenseExpiryDate) missing.push('Ngày hết hạn phải sau ngày cấp');
+      if (staff.licenseClass === 'CE' && staff.dateOfBirth && staff.licenseIssueDate) {
+        const birth = new Date(staff.dateOfBirth + 'T00:00:00');
+        birth.setFullYear(birth.getFullYear() + 24);
+        if (birth > new Date(staff.licenseIssueDate + 'T00:00:00')) missing.push('Đủ 24 tuổi tại ngày cấp hạng CE');
+      }
+    }
     if (!staff?.healthCheckPassed) missing.push('Giấy khám sức khỏe đạt chuẩn');
     if (!staff?.safetyTrainingCertified) missing.push('Chứng chỉ tập huấn an toàn EV/PCCC');
   } else if (CONTROLLER_ROLE_CODES.includes(role)) {
@@ -304,13 +316,13 @@ export const INITIAL_STAFF_SEED = [
     verificationStatus: 'APPROVED',
     verifiedBy: 'admin',
     verifiedAt: '2026-11-03T10:00:00Z',
-    verificationNotes: 'Đã kiểm duyệt chứng chỉ thanh tra kỹ thuật & quyền ký duyệt UC01/UC16.',
+    verificationNotes: 'Đã kiểm duyệt chứng chỉ thanh tra kỹ thuật & thẩm quyền ký duyệt an toàn / sự cố.',
     backgroundCheckPassed: true,
     safetyTrainingCertified: true,
     certificationCode: 'HSE-AN-TOAN-2026-003',
     certificateExpiryDate: '2028-12-31',
     issuingAuthority: 'Cục Đăng Kiểm & An Toàn Lao Động',
-    inspectionScope: 'PRE_TRIP_UC01, DEMERIT_BRULE18, INCIDENT_UC16',
+    inspectionScope: 'AN_TOAN_KY_THUAT, DIEM_TRU_AN_TOAN, XU_LY_SU_CO',
     canSignOffCompliance: true,
     notes: 'Phê duyệt biên bản Pre-trip & xử lý cảnh báo khẩn cấp.',
     isDeleted: false
@@ -344,7 +356,7 @@ export const INITIAL_STAFF_SEED = [
     certificationCode: 'GLEC-ISO14083-VN-042',
     certificateExpiryDate: '2028-09-30',
     issuingAuthority: 'Smart Freight Centre / GLEC v3 Accredited',
-    inspectionScope: 'GLEC_V3_CARBON_UC12, CORRIDOR_BENCHMARK_UC13, SHA256_REPORT',
+    inspectionScope: 'KIEM_TOAN_CARBON_GLEC, DOI_SANH_HANH_LANG, SHA256_REPORT',
     canSignOffCompliance: true,
     notes: 'Phát hành chứng chỉ Carbon Credit và báo cáo ISO 14083.',
     isDeleted: false
@@ -375,6 +387,8 @@ export const INITIAL_STAFF_SEED = [
     verificationNotes: 'Đạt chuẩn bằng FC, khám sức khỏe định kỳ & chứng chỉ lái xe điện an toàn.',
     backgroundCheckPassed: true,
     licenseNumber: '790145889201',
+    dateOfBirth: '1980-01-01',
+    licenseIssueDate: '2020-01-01',
     licenseClass: 'FC',
     licenseExpiryDate: '2029-12-31',
     healthCheckPassed: true,
@@ -411,6 +425,8 @@ export const INITIAL_STAFF_SEED = [
     verificationNotes: 'Đạt bằng FC & chứng chỉ vận hành đầu kéo điện cao áp EV.',
     backgroundCheckPassed: true,
     licenseNumber: '740194881120',
+    dateOfBirth: '1980-01-01',
+    licenseIssueDate: '2020-01-01',
     licenseClass: 'FC',
     licenseExpiryDate: '2029-06-30',
     healthCheckPassed: true,
@@ -625,7 +641,7 @@ export const INITIAL_STAFF_SEED = [
     certificationCode: 'HSE-DRV-2026-088',
     certificateExpiryDate: '2028-08-31',
     issuingAuthority: 'Sở LĐTBXH TP.HCM',
-    inspectionScope: 'PRE_TRIP_UC01, CAMERA_AI_VIOLATION',
+    inspectionScope: 'AN_TOAN_KY_THUAT, CAMERA_AI_VIOLATION',
     canSignOffCompliance: false,
     notes: 'Phụ trách giám sát hành trình cảng Cát Lái.',
     isDeleted: false
@@ -771,7 +787,7 @@ export const PUBLIC_CAREER_OPENINGS = [
     department: 'An Toàn Vận Hành & HSE',
     salaryRangeVnd: '26.000.000 – 36.000.000 ₫/tháng',
     badge: 'Kiểm soát trọng yếu',
-    requirementsSummary: 'Chứng chỉ An toàn lao động / PCCC / HSE còn hạn & kinh nghiệm thẩm định Pre-trip UC01.'
+    requirementsSummary: 'Chứng chỉ An toàn lao động / PCCC / HSE còn hạn & kinh nghiệm thẩm định an toàn trước chuyến.'
   },
   {
     roleCode: 'ESG_AUDITOR',
@@ -825,6 +841,7 @@ export const INITIAL_APPLICATIONS_SEED = [
     experienceYears: 7,
     expectedSalaryVnd: 23000000,
     licenseNumber: '790192004512',
+    licenseIssueDate: '2020-01-01',
     licenseClass: 'FC',
     licenseExpiryDate: '2029-12-31',
     healthCheckDeclared: true,
@@ -889,7 +906,7 @@ export const INITIAL_APPLICATIONS_SEED = [
     certificationCode: 'HSE-VN-2026-309',
     certificateExpiryDate: '2028-11-30',
     issuingAuthority: 'Cục An Toàn Lao Động — Bộ LĐTBXH',
-    inspectionScope: 'PRE_TRIP_UC01, INCIDENT_UC16',
+    inspectionScope: 'AN_TOAN_KY_THUAT, XU_LY_SU_CO',
     healthCheckDeclared: true,
     safetyTrainingDeclared: true,
     candidateNotes: 'Có chứng chỉ HSE hạng A và kinh nghiệm giám sát an toàn đội xe lạnh Amata.',
@@ -921,7 +938,7 @@ export const INITIAL_APPLICATIONS_SEED = [
     certificationCode: 'ISO14083-ESG-511',
     certificateExpiryDate: '2029-05-31',
     issuingAuthority: 'Smart Freight Centre / GLEC v3',
-    inspectionScope: 'GLEC_V3_CARBON_UC12, SHA256_REPORT',
+    inspectionScope: 'KIEM_TOAN_CARBON_GLEC, SHA256_REPORT',
     healthCheckDeclared: true,
     safetyTrainingDeclared: true,
     candidateNotes: 'Chuyên gia kiểm toán phát thải GHG Scope 3 chuỗi cung ứng lạnh.',
@@ -985,6 +1002,7 @@ export function submitLocalApplication(payload) {
     expectedSalaryVnd: Number(payload?.expectedSalaryVnd || 0),
     licenseNumber: payload?.licenseNumber || '',
     licenseClass: payload?.licenseClass || '',
+    licenseIssueDate: payload?.licenseIssueDate || '',
     licenseExpiryDate: payload?.licenseExpiryDate || '',
     certificationCode: payload?.certificationCode || '',
     certificateExpiryDate: payload?.certificateExpiryDate || '',
@@ -1066,6 +1084,8 @@ export function approveLocalApplication(appId, decision = {}, actor = 'admin') {
     backgroundCheckPassed: decision.backgroundCheckPassed ?? true,
     licenseNumber: decision.licenseNumber ?? app.licenseNumber,
     licenseClass: decision.licenseClass ?? app.licenseClass,
+    dateOfBirth: app.dateOfBirth,
+    licenseIssueDate: app.licenseIssueDate,
     licenseExpiryDate: decision.licenseExpiryDate ?? app.licenseExpiryDate,
     healthCheckPassed: decision.healthCheckPassed ?? Boolean(app.healthCheckDeclared),
     healthCheckDate: decision.healthCheckDate || new Date().toISOString().slice(0, 10),

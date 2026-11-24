@@ -458,10 +458,13 @@ export function evaluateDestinationArrival(currentCoords, destCoords, options = 
  */
 export function extractGeoJsonLineStringPoints(routeGeometry) {
   if (!routeGeometry) return [];
+  const numeric = (value) => (typeof value === 'number' || (typeof value === 'string' && value.trim() !== '')) && Number.isFinite(Number(value));
+  const valid = (point, latitudeIndex, longitudeIndex) => Array.isArray(point) && point.length >= 2
+    && numeric(point[latitudeIndex]) && numeric(point[longitudeIndex])
+    && Math.abs(Number(point[latitudeIndex])) <= 90 && Math.abs(Number(point[longitudeIndex])) <= 180;
   if (Array.isArray(routeGeometry)) {
-    return routeGeometry
-      .filter((pt) => Array.isArray(pt) && pt.length >= 2 && Number.isFinite(Number(pt[0])) && Number.isFinite(Number(pt[1])))
-      .map((pt) => [Number(pt[0]), Number(pt[1])]);
+    if (routeGeometry.length < 2 || !routeGeometry.every((point) => valid(point, 0, 1))) return [];
+    return routeGeometry.map((point) => [Number(point[0]), Number(point[1])]);
   }
   let parsed = routeGeometry;
   if (typeof routeGeometry === 'string') {
@@ -471,11 +474,11 @@ export function extractGeoJsonLineStringPoints(routeGeometry) {
       return [];
     }
   }
+  if (parsed?.type === 'Feature') parsed = parsed.geometry;
   const coords = parsed?.coordinates;
-  if (!Array.isArray(coords)) return [];
-  return coords
-    .filter((pt) => Array.isArray(pt) && pt.length >= 2 && Number.isFinite(Number(pt[0])) && Number.isFinite(Number(pt[1])))
-    .map((pt) => [Number(pt[1]), Number(pt[0])]);
+  if (parsed?.type !== 'LineString' || !Array.isArray(coords) || coords.length < 2
+      || !coords.every((point) => valid(point, 1, 0))) return [];
+  return coords.map((point) => [Number(point[1]), Number(point[0])]);
 }
 
 export function measurePolylineDistanceKm(points) {
@@ -493,9 +496,11 @@ export function measurePolylineDistanceKm(points) {
 }
 
 const LIVE_OSRM_ROUTE_CACHE = new Map();
+const OSRM_CACHE_TTL_MS = 60_000;
+const OSRM_CACHE_MAX_ENTRIES = 100;
 
 /**
- * Fetch authentic live driving polyline from OSRM between arbitrary [lat, lon] coordinates.
+ * Fetch a road-network driving polyline (OSRM has no live traffic) from OSRM between arbitrary [lat, lon] coordinates.
  */
 export async function fetchLiveOsrmRoute(originCoords, destCoords) {
   if (
@@ -506,35 +511,49 @@ export async function fetchLiveOsrmRoute(originCoords, destCoords) {
   ) {
     return null;
   }
+  if ([originCoords[0], originCoords[1], destCoords[0], destCoords[1]].some(
+    (value) => value == null || typeof value === 'boolean' || String(value).trim() === ''
+  )) return null;
   const oLat = Number(originCoords[0]);
   const oLon = Number(originCoords[1]);
   const dLat = Number(destCoords[0]);
   const dLon = Number(destCoords[1]);
-  if (![oLat, oLon, dLat, dLon].every(Number.isFinite)) {
+  if (![oLat, oLon, dLat, dLon].every(Number.isFinite)
+      || Math.abs(oLat) > 90 || Math.abs(dLat) > 90 || Math.abs(oLon) > 180 || Math.abs(dLon) > 180) {
     return null;
   }
-  const cacheKey = `${oLat.toFixed(4)},${oLon.toFixed(4)}->${dLat.toFixed(4)},${dLon.toFixed(4)}`;
-  if (LIVE_OSRM_ROUTE_CACHE.has(cacheKey)) {
-    return LIVE_OSRM_ROUTE_CACHE.get(cacheKey);
-  }
+  const cacheKey = `${oLat.toFixed(6)},${oLon.toFixed(6)}->${dLat.toFixed(6)},${dLon.toFixed(6)}`;
+  const cached = LIVE_OSRM_ROUTE_CACHE.get(cacheKey);
+  if (cached && Date.now() - cached.fetchedAt < OSRM_CACHE_TTL_MS) return cached.result;
+  LIVE_OSRM_ROUTE_CACHE.delete(cacheKey);
 
   const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
   const timeout = controller ? setTimeout(() => controller.abort(), 4000) : null;
   try {
-    const url = `https://router.project-osrm.org/route/v1/driving/${oLon.toFixed(6)},${oLat.toFixed(6)};${dLon.toFixed(6)},${dLat.toFixed(6)}?overview=full&geometries=geojson`;
+    const url = `https://router.project-osrm.org/route/v1/driving/${oLon.toFixed(6)},${oLat.toFixed(6)};${dLon.toFixed(6)},${dLat.toFixed(6)}?overview=full&geometries=geojson&radiuses=100;100&steps=true`;
     const res = await fetch(url, controller ? { signal: controller.signal } : undefined);
     if (!res.ok) return null;
     const json = await res.json();
+    if (json?.code !== 'Ok') return null;
     const route = json?.routes?.[0];
     const points = extractGeoJsonLineStringPoints(route?.geometry);
-    if (points.length < 2) return null;
+    if (points.length < 2 || !Number.isFinite(route?.distance) || route.distance <= 0
+        || !Number.isFinite(route?.duration) || route.duration <= 0) return null;
+    const first = points[0], last = points[points.length - 1];
+    if (haversineDistanceMeters(oLat, oLon, first[0], first[1]) > 100
+        || haversineDistanceMeters(dLat, dLon, last[0], last[1]) > 100) return null;
     const result = {
       points,
       distanceKm: Number(((route.distance || 0) / 1000).toFixed(2)),
       durationMinutes: Math.max(1, Math.round((route.duration || 0) / 60)),
-      source: 'OSRM_LIVE'
+      source: 'OSRM_LIVE',
+      trafficSource: 'NOT_AVAILABLE',
+      guidance: route.legs?.flatMap((leg) => leg.steps || []) || []
     };
-    LIVE_OSRM_ROUTE_CACHE.set(cacheKey, result);
+    if (LIVE_OSRM_ROUTE_CACHE.size >= OSRM_CACHE_MAX_ENTRIES) {
+      LIVE_OSRM_ROUTE_CACHE.delete(LIVE_OSRM_ROUTE_CACHE.keys().next().value);
+    }
+    LIVE_OSRM_ROUTE_CACHE.set(cacheKey, { result, fetchedAt: Date.now() });
     return result;
   } catch {
     return null;

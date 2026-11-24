@@ -7,6 +7,14 @@ export function formatNumberVi(value) {
   return Number.isFinite(num) ? num.toLocaleString('vi-VN') : '0';
 }
 
+export function formatDecimalVi(value, digits = 1, fallback = '—') {
+  if (value == null || value === '') return fallback;
+  const num = Number(value);
+  return Number.isFinite(num)
+    ? num.toLocaleString('vi-VN', { maximumFractionDigits: digits })
+    : fallback;
+}
+
 export function formatVnd(value, suffix = '₫') {
   return `${formatNumberVi(value)}${suffix ? ` ${suffix}` : ''}`;
 }

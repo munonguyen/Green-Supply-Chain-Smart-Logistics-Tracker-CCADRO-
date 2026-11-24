@@ -129,7 +129,7 @@ export default function DeviationTrendSparkline({
         <div>
           <div className="chart-title">
             <Radio size={18} color="#ef4444" />
-            <span>Giám Sát Độ Lệch Tuyến &amp; Sự Cố (UC09 / UC10)</span>
+            <span>Giám Sát Độ Lệch Tuyến &amp; Sự Cố Hành Trình</span>
           </div>
           <div className="chart-subtitle">
             Tổng hợp từ vị trí đội xe, sự cố và cảnh báo hành trình
@@ -330,7 +330,7 @@ export default function DeviationTrendSparkline({
                     className="badge badge-purple"
                     style={{ padding: '2px 6px', fontSize: '0.69rem' }}
                   >
-                    UC10 Đổi Tuyến
+                    Đổi Tuyến Động
                   </span>
                 )}
               </div>

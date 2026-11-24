@@ -9,6 +9,7 @@ export default function RoutePolyline({
   opacity = 0.95,
   dashArray = null,
   showCorridorBuffer = true,
+  routingMetadataJson,
   autoFit = true
 }) {
   const groupRef = useRef(null);
@@ -24,16 +25,17 @@ export default function RoutePolyline({
     const layers = [];
 
     if (showCorridorBuffer && !dashArray) {
-      // Outer 200m corridor safety halo
+      // Decorative stroke width is in pixels, not a geographical corridor buffer.
       const outerHalo = L.polyline(positions, {
+        smoothFactor: 0,
         color,
         weight: weight + 14,
         opacity: 0.16,
         lineCap: 'round',
         lineJoin: 'round'
       });
-      // Inner 50m corridor buffer
       const innerHalo = L.polyline(positions, {
+        smoothFactor: 0,
         color: '#ffffff',
         weight: weight + 4,
         opacity: 0.45,
@@ -44,6 +46,7 @@ export default function RoutePolyline({
     }
 
     const mainLine = L.polyline(positions, {
+        smoothFactor: 0,
       color,
       weight,
       opacity,
@@ -52,6 +55,28 @@ export default function RoutePolyline({
       lineJoin: 'round'
     });
     layers.push(mainLine);
+
+    // Provider indices refer to this exact, unsimplified route geometry.
+    let metadata;
+    try { metadata = JSON.parse(routingMetadataJson || '{}'); } catch { metadata = null; }
+    const sections = Array.isArray(metadata?.trafficSections) ? metadata.trafficSections : [];
+    for (const section of sections) {
+      const start = section.startPointIndex, end = section.endPointIndex;
+      if (section.sectionType !== 'TRAFFIC' || !Number.isInteger(start) || !Number.isInteger(end)
+          || start < 0 || end <= start || end >= positions.length) continue;
+      const delay = Number(section.delayInSeconds);
+      if (!Number.isFinite(delay) || delay <= 0) continue;
+      const line = L.polyline(positions.slice(start, end + 1), {
+        smoothFactor: 0, color: delay >= 300 ? '#dc2626' : '#f59e0b',
+        weight: weight + 2, opacity: 0.95
+      });
+      const label = document.createElement('span');
+      label.textContent = `Dự báo giao thông: chậm ${Math.ceil(delay / 60)} phút`
+        + (metadata.departAt ? ` · khởi hành ${new Date(metadata.departAt).toLocaleString('vi-VN')}` : '')
+        + (metadata.fetchedAt ? ` · dữ liệu ${new Date(metadata.fetchedAt).toLocaleString('vi-VN')}` : '');
+      line.bindTooltip(label);
+      layers.push(line);
+    }
 
     const group = L.layerGroup(layers).addTo(map);
     groupRef.current = group;
@@ -67,7 +92,7 @@ export default function RoutePolyline({
     return () => {
       group.remove();
     };
-  }, [map, positions, color, weight, opacity, dashArray, showCorridorBuffer, autoFit]);
+  }, [map, positions, color, weight, opacity, dashArray, showCorridorBuffer, autoFit, routingMetadataJson]);
 
   return null;
 }

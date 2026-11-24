@@ -1,0 +1,17 @@
+.transport-history { display: grid; gap: 10px; padding: 12px 0; min-width: 0; }
+.transport-history form, .transport-history nav, .transport-history-heading {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px; justify-content: space-between;
+}
+.transport-history form .search-field { flex: 1 1 220px; min-width: 0; margin: 0; }
+.transport-history nav { justify-content: flex-end; }
+.transport-history-entry { border: 1px solid var(--border-color, #64748b55); border-radius: 8px; padding: 12px; overflow-wrap: anywhere; }
+.transport-history-heading strong { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; }
+.transport-history-heading small, .transport-history-entry dt { color: var(--text-muted); font-weight: 400; }
+.transport-history-entry p, .transport-history-entry dl { margin: 8px 0; }
+.transport-history-entry dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); gap: 6px 12px; }
+.transport-history-entry dt { font-size: .78rem; }
+.transport-history-entry dd { margin: 0; }
+.transport-history-entry summary { cursor: pointer; font-weight: 600; }
+.transport-history-entry ul { padding: 0; margin: 6px 0 0; list-style: none; }
+.transport-history-entry li { display: flex; flex-wrap: wrap; gap: 4px 12px; padding: 5px 0; border-top: 1px solid var(--border-color, #64748b55); }
+.dispatch-history-picker { display: grid; gap: 8px; max-width: 420px; margin: 12px 0; }

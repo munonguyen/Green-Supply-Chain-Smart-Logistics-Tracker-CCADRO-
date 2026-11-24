@@ -36,7 +36,7 @@ export default function MapView({
   focusZoom = 15,
   defaultLayer = 'google_hybrid',
   defaultTile,
-  default3D = true,
+  default3D = false,
   defaultPitch,
   height = 520,
   hudTitle = 'Bản Đồ Giám Sát Vệ Tinh 3D Thời Gian Thực',
@@ -65,7 +65,7 @@ export default function MapView({
     if (!mapContainerRef.current || mapInstanceRef.current) return;
 
     const map = L.map(mapContainerRef.current, {
-      center,
+      center: center || [10.8231, 106.74],
       zoom,
       zoomControl: false
     });
@@ -106,16 +106,18 @@ export default function MapView({
 
   // Smooth flyTo when focusPosition changes
   useEffect(() => {
+    mapInstanceRef.current?.stop();
     if (
       mapInstanceRef.current &&
       Array.isArray(focusPosition) &&
       focusPosition.length === 2 &&
-      typeof focusPosition[0] === 'number' &&
-      typeof focusPosition[1] === 'number'
+      Number.isFinite(focusPosition[0]) && Math.abs(focusPosition[0]) <= 90 &&
+      Number.isFinite(focusPosition[1]) && Math.abs(focusPosition[1]) <= 180
     ) {
+      const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
       mapInstanceRef.current.flyTo(focusPosition, focusZoom, {
-        animate: true,
-        duration: 1.1
+        animate: !reduce,
+        duration: reduce ? 0 : 0.65
       });
     }
   }, [focusPosition, focusZoom]);
@@ -142,7 +144,7 @@ export default function MapView({
     setPitch(is3D ? 38 : 0);
     setBearing(0);
     if (mapInstanceRef.current) {
-      mapInstanceRef.current.flyTo(center, zoom, { animate: true, duration: 0.9 });
+      mapInstanceRef.current.flyTo(center || [10.8231, 106.74], zoom, { animate: true, duration: 0.9 });
     }
   };
 
@@ -154,6 +156,8 @@ export default function MapView({
       style={{
         height: containerHeight,
         position: 'relative',
+        isolation: 'isolate',
+        zIndex: isExpanded ? 25 : 1,
         borderRadius: '18px',
         overflow: 'hidden',
         background: '#060c17',
@@ -177,12 +181,13 @@ export default function MapView({
         />
       )}
 
-      {/* Top-Left Live Telemetry HUD Badge */}
+      <div style={{ position: 'absolute', top: 14, left: 14, right: 14, zIndex: 450,
+        display: 'flex', flexDirection: 'column', gap: 8, pointerEvents: 'none' }}>
+      {/* Live Telemetry HUD */}
       <div
         style={{
-          position: 'absolute',
-          top: 14,
-          left: 14,
+          position: 'relative',
+          minWidth: 0,
           zIndex: 450,
           display: 'flex',
           alignItems: 'center',
@@ -199,8 +204,8 @@ export default function MapView({
         }}
       >
         <span className="radar-dot" />
-        <div>
-          <div style={{ fontSize: '0.78rem', fontWeight: 700, lineHeight: 1.2 }}>{resolvedHudTitle}</div>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.78rem', fontWeight: 700, lineHeight: 1.2 }}>{resolvedHudTitle}</div>
           <div style={{ fontSize: '0.68rem', color: '#94a3b8', marginTop: 2 }}>
             {hudSubtitle ||
               `${is3D ? `Góc nhìn 3D (${pitch}° nghiêng • ${bearing}° hướng)` : 'Góc nhìn phẳng 2D'} • ${MAP_LAYERS[activeLayer]?.label}`}
@@ -210,10 +215,11 @@ export default function MapView({
 
       {/* Top-Right Layer Switcher (Google Satellite 3D / Google Maps / Terrain / Dark) */}
       <div
+        className="map-view-layer-dock"
         style={{
-          position: 'absolute',
-          top: 14,
-          right: 14,
+          position: 'relative',
+          order: -1,
+          pointerEvents: 'auto',
           zIndex: 450,
           display: 'flex',
           alignItems: 'center',
@@ -266,8 +272,10 @@ export default function MapView({
         })}
       </div>
 
+      </div>
       {/* Bottom-Left 3D Perspective & Camera Control Dock */}
       <div
+        className="map-view-camera-dock"
         style={{
           position: 'absolute',
           bottom: 16,

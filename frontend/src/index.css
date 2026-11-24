@@ -192,7 +192,7 @@ a {
 }
 
 .sidebar {
-  width: 268px;
+  width: 280px;
   background-color: var(--bg-secondary);
   border-right: 1px solid var(--border-color);
   display: flex;
@@ -727,14 +727,18 @@ a {
 }
 
 .btn-secondary {
-  background: var(--bg-card-hover);
+  background: var(--bg-secondary);
   color: var(--text-main);
   border: 1px solid var(--border-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .btn-secondary:hover {
-  background: var(--bg-card);
-  border-color: var(--border-highlight);
+  background: var(--bg-card-hover);
+  border-color: var(--accent-green);
+  color: var(--accent-green);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
 }
 
 /* Table */
@@ -927,8 +931,8 @@ tr:hover td {
 }
 
 @media (max-width: 768px) {
-  .sidebar { position: fixed; inset: 0 auto 0 0; z-index: 80; width: 272px; }
-  .sidebar.collapsed { width: 272px; transform: translateX(-100%); pointer-events: none; }
+  .sidebar { position: fixed; inset: 0 auto 0 0; z-index: 80; width: 280px; }
+  .sidebar.collapsed { width: 280px; transform: translateX(-100%); pointer-events: none; }
   .mobile-sidebar-backdrop { display: block; position: fixed; inset: 0; z-index: 70; background: rgba(2, 6, 23, 0.58); backdrop-filter: blur(2px); border: 0; }
   .main-content { width: 100%; min-width: 0; }
   .page-body { padding: 14px 12px 44px; }
@@ -941,3 +945,32 @@ tr:hover td {
   .portal-subnav { padding: 6px 12px; gap: 8px; }
   .map-view-container { height: 340px; }
 }
+/* Provenance and limitations stay beside the route being considered. */
+.route-evidence {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--border-color, #dce4eb);
+  border-radius: 12px;
+  background: var(--bg-secondary, #f8fafc);
+  color: var(--text-muted, #536278);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+.route-evidence > p { margin: 8px 0; }
+.route-evidence > ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+.route-evidence > ul > li {
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--accent-green, #087f5b);
+  font-weight: 600;
+}
+.route-evidence summary { cursor: pointer; font-weight: 600; padding: 8px 0; }
+.route-evidence details li { margin: 8px 0; }

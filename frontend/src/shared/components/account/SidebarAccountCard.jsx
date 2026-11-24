@@ -1,9 +1,23 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, Settings } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../../context/AuthContext';
+import { useTheme } from '../../../context/ThemeContext';
 import AccountSettingsModal from './AccountSettingsModal';
+
+const ROLE_LABEL_MAP = {
+  ADMIN: 'Quản trị viên',
+  OPERATOR: 'Điều hành viên',
+  DRIVER: 'Tài xế / Shipper',
+  CUSTOMER: 'Khách hàng B2B',
+  DISPATCHER: 'Điều phối viên',
+  SAFETY_MANAGER: 'Giám sát an toàn',
+  ESG_AUDITOR: 'Kiểm toán ESG',
+  HUB_MANAGER: 'Trưởng bưu cục',
+  HUB_SHIPPER: 'Shipper bưu cục',
+  SHIPPER: 'Đối tác giao nhận',
+  HUB_AUDITOR: 'Kiểm soát viên'
+};
 
 function getInitials(user) {
   const source = (user?.fullName || user?.username || 'U').trim();
@@ -293,9 +307,10 @@ export default function SidebarAccountCard({
 
               <span style={{ minWidth: 0, flex: 1 }}>
                 <span
+                  title={user.fullName || user.username}
                   style={{
                     display: 'block',
-                    fontSize: '0.78rem',
+                    fontSize: '0.8rem',
                     fontWeight: 700,
                     color: textMain,
                     whiteSpace: 'nowrap',
@@ -306,19 +321,20 @@ export default function SidebarAccountCard({
                   {user.fullName || user.username}
                 </span>
                 <span
+                  title={`@${user.username} • ${ROLE_LABEL_MAP[user.role] || user.role}`}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: 4,
                     marginTop: 1,
-                    fontSize: '0.67rem',
+                    fontSize: '0.68rem',
                     color: textMuted,
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis'
                   }}
                 >
-                  <span style={{ fontWeight: 700, color: roleColor }}>{user.role}</span>
+                  <span style={{ fontWeight: 700, color: roleColor }}>{ROLE_LABEL_MAP[user.role] || user.role}</span>
                   <span>• @{user.username}</span>
                 </span>
               </span>

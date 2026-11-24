@@ -13,8 +13,8 @@ import {
   Sun,
   Truck
 } from 'lucide-react';
-import { useAuth, getAccessibleWorkspaces } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
+import { useAuth, getAccessibleWorkspaces } from '../../../context/AuthContext';
+import { useTheme } from '../../../context/ThemeContext';
 import AccountSettingsModal from './AccountSettingsModal';
 
 const WORKSPACE_ICONS = {

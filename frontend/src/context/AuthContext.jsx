@@ -3,17 +3,28 @@ import { api } from '../services/api';
 import { useLiveIdentity } from '../hooks/useLiveIdentity';
 
 /**
- * Định nghĩa cố định (Hardcoded) 7 Vai trò (Role Templates) chuẩn CCADRO v4.0
- * Tách biệt hoàn toàn CUSTOMER (Khách hàng B2B tại /customer) và SHIPPER (Bên giao nhận điểm đích / 3PL tại /shipper)
- * đồng bộ 1-1 với Flyway V014 -> V020.
+ * Định nghĩa chuẩn 4 Vai trò Tối Giản (Core 4 Roles) CCADRO v4.2
+ * 1. ADMIN     - Quản trị viên toàn hệ thống
+ * 2. OPERATOR  - Nhân viên điều hành & vận hành (Điều phối trung tâm + Trưởng bưu cục)
+ * 3. DRIVER    - Đội ngũ tài xế & giao vận (Tài xế container đường dài + Shipper bưu cục chặng cuối)
+ * 4. CUSTOMER  - Doanh nghiệp B2B / Chủ hàng
  */
+export const CORE_SYSTEM_ROLES = Object.freeze([
+  'ADMIN',
+  'OPERATOR',
+  'DRIVER',
+  'CUSTOMER'
+]);
+
 export const SYSTEM_FIXED_ROLES = Object.freeze([
   'ADMIN',
+  'OPERATOR',
+  'DRIVER',
+  'CUSTOMER',
+  // Tương thích ngược (Legacy Role Aliases)
   'DISPATCHER',
   'SAFETY_MANAGER',
-  'DRIVER',
   'ESG_AUDITOR',
-  'CUSTOMER',
   'HUB_MANAGER',
   'HUB_SHIPPER',
   'HUB_AUDITOR',
@@ -98,6 +109,47 @@ export const ENTERPRISE_ROLES = {
       'Toàn quyền cấu hình hệ thống, khởi tạo tài khoản cho các role nội bộ, phân quyền RBAC và giám sát toàn bộ phân hệ.',
     permissions: ALL_SYSTEM_PERMISSIONS.map((p) => p.code)
   },
+  OPERATOR: {
+    role: 'OPERATOR',
+    portalType: 'INTERNAL',
+    fullName: 'Nhân Viên Điều Hành & Vận Hành Logistics',
+    department: 'Khối Vận Hành & Điều Phối Mạng Lưới',
+    zone: 'OPERATIONS_CORE',
+    zoneLabel: 'Hệ Thống Vận Hành & Điều Phối (Operations Core)',
+    color: '#0284c7',
+    bgDim: 'rgba(2, 132, 199, 0.16)',
+    border: 'rgba(2, 132, 199, 0.45)',
+    description:
+      'Điều phối toàn trình logistics: lập kế hoạch lộ trình xe tải, theo dõi an toàn/kỹ thuật xe đường dài, tiếp nhận container tại bưu cục, phân bổ tuyến và đối soát COD.',
+    permissions: [
+      'SHIPMENT_READ',
+      'SHIPMENT_WRITE',
+      'SHIPMENT_DISPATCH',
+      'ROUTE_PLAN',
+      'ROUTE_SELECT',
+      'REROUTE_APPROVE',
+      'TRACKING_LIVE',
+      'ALERT_ACK',
+      'VEHICLE_READ',
+      'VEHICLE_WRITE',
+      'MAINTENANCE_MANAGE',
+      'INSPECTION_REVIEW',
+      'EXCEPTION_RESOLVE',
+      'DEMERIT_MANAGE',
+      'CARBON_CALCULATE',
+      'DRIVER_CHAT',
+      'HUB_WORKSPACE_READ',
+      'SHIPMENT_READ_INBOUND',
+      'CONTAINER_MANIFEST_INGEST',
+      'HUB_DISPATCH_AUTO',
+      'HUB_TASK_RANGE_ASSIGN',
+      'SHIPPER_POLICY_READ',
+      'POD_PHOTO_VIEW',
+      'POD_SUBMIT',
+      'EXTERNAL_3PL_SYNC',
+      'HUB_ACCOUNT_MANAGE'
+    ]
+  },
   DISPATCHER: {
     role: 'DISPATCHER',
     portalType: 'INTERNAL',
@@ -109,7 +161,7 @@ export const ENTERPRISE_ROLES = {
     bgDim: 'rgba(56, 189, 248, 0.16)',
     border: 'rgba(56, 189, 248, 0.45)',
     description:
-      'Lập lộ trình đa tiêu chí (UC05), phát lệnh điều xe (UC06), theo dõi GPS (UC09) & duyệt đổi tuyến động (UC10).',
+      'Lập lộ trình tối ưu đa tiêu chí, phát lệnh điều xe, theo dõi GPS trực tuyến & duyệt đổi tuyến hành trình.',
     permissions: [
       'SHIPMENT_READ',
       'SHIPMENT_WRITE',
@@ -135,7 +187,7 @@ export const ENTERPRISE_ROLES = {
     bgDim: 'rgba(249, 115, 22, 0.16)',
     border: 'rgba(249, 115, 22, 0.45)',
     description:
-      'Phát lệnh cảnh báo khẩn cấp toàn đội xe, kiểm duyệt Pre-trip (UC01), xử lý ngoại lệ (BRULE-17) & điểm phạt tài xế (BRULE-18).',
+      'Phát lệnh cảnh báo khẩn cấp toàn đội xe, kiểm duyệt an toàn trước chuyến, xử lý ngoại lệ & trừ điểm kỷ luật an toàn.',
     permissions: [
       'VEHICLE_READ',
       'VEHICLE_WRITE',
@@ -150,22 +202,30 @@ export const ENTERPRISE_ROLES = {
   DRIVER: {
     role: 'DRIVER',
     portalType: 'INTERNAL',
-    fullName: 'Tài Xế Vận Tải Hành Lang Xanh',
-    department: 'Đội Vận Tải Đường Dài Nam Bộ',
+    fullName: 'Tài Xế & Nhân Viên Giao Vận',
+    department: 'Đội Vận Tải & Giao Nhận Chặng Cuối',
     zone: 'INTERNAL_CORE',
-    zoneLabel: 'Thiết Bị Đầu Cuối Nội Bộ (Driver Terminal)',
+    zoneLabel: 'Thiết Bị Đầu Cuối & Khoang Lái (Driver Terminal)',
     color: '#10b981',
     bgDim: 'rgba(16, 185, 129, 0.16)',
     border: 'rgba(16, 185, 129, 0.45)',
     description:
-      'Thực hiện kiểm tra an toàn 6 hạng mục trước chuyến (UC01), gửi tọa độ GPS (UC09), báo cáo sự cố (UC16) & ký nhận ePOD (UC11).',
+      'Đội ngũ tài xế và giao vận toàn hệ thống: bao gồm lái xe container đường dài (cabin HUD) và shipper giao nhận bưu cục chặng cuối (giao diện bưu cục).',
     permissions: [
       'INSPECTION_SUBMIT',
       'TELEMETRY_SEND',
       'INCIDENT_REPORT',
       'POD_SUBMIT',
       'VEHICLE_READ',
-      'DRIVER_CHAT'
+      'DRIVER_CHAT',
+      'HUB_WORKSPACE_READ',
+      'SHIPMENT_READ_INBOUND',
+      'SHIPPER_POLICY_READ',
+      'SHIPPER_OWN_SCOPE_READ',
+      'SHIPPER_ITEM_STATUS_UPDATE',
+      'POD_PHOTO_SUBMIT',
+      'POD_PHOTO_VIEW',
+      'TRACKING_LIVE'
     ]
   },
   ESG_AUDITOR: {
@@ -179,7 +239,7 @@ export const ENTERPRISE_ROLES = {
     bgDim: 'rgba(234, 179, 8, 0.16)',
     border: 'rgba(234, 179, 8, 0.45)',
     description:
-      'Truy cập chỉ đọc (Read-only): Kiểm toán phát thải WTW/TTW/WTT (UC12), đối sánh hành lang (UC13) & xác thực báo cáo SHA-256 (UC14).',
+      'Truy cập chỉ đọc: Kiểm toán phát thải WTW/TTW/WTT, đối sánh hành lang & xác thực báo cáo toàn vẹn SHA-256.',
     permissions: ['CARBON_READ', 'BENCHMARK_READ', 'REPORT_EXPORT', 'SHIPMENT_READ']
   },
   CUSTOMER: {
@@ -193,7 +253,7 @@ export const ENTERPRISE_ROLES = {
     bgDim: 'rgba(236, 72, 153, 0.16)',
     border: 'rgba(236, 72, 153, 0.45)',
     description:
-      'Khách hàng B2B đặt xe xanh tại /customer: khởi tạo vận đơn, giám sát container & IoT, chat 2 chiều với tài xế Grab/Xanh SM, xem ePOD & chứng chỉ ISO 14083 (BRULE-16).',
+      'Khách hàng B2B: khởi tạo vận đơn, giám sát container & nhiệt độ IoT, trao đổi trực tiếp với tài xế, xem ảnh chứng từ giao nhận ePOD & chứng nhận phát thải xanh.',
     permissions: [
       'SHIPMENT_CREATE',
       'SHIPMENT_READ_OWN',
@@ -474,7 +534,7 @@ const ROOT_ADMIN_ACCOUNT = {
   username: 'admin',
   password: '123',
   email: 'admin@ccadro.com',
-  fullName: 'Quản Trị Viên Hệ Thống (Root Admin)',
+  fullName: 'Quản Trị Viên Hệ Thống',
   companyName: 'CCADRO Green Logistics Corporation',
   department: 'Ban Quản Trị Hạ Tầng & Bảo Mật IAM',
   customerId: 'CCADRO_CORE',
@@ -496,7 +556,7 @@ const ROOT_DISPATCHER_ACCOUNT = {
   username: 'dispatcher',
   password: '123',
   email: 'dispatcher@ccadro.com',
-  fullName: 'Nguyễn Văn Nam (Điều Phối Trưởng)',
+  fullName: 'Nguyễn Văn Nam',
   companyName: 'CCADRO Green Logistics Corporation',
   department: 'Trung Tâm Điều Hành Vận Tải Xanh',
   customerId: 'CCADRO_CORE',
@@ -518,7 +578,7 @@ const ROOT_DRIVER_ACCOUNT = {
   username: 'driver',
   password: '123',
   email: 'driver@ccadro.com',
-  fullName: 'Trần Văn Tài (Tài Xế Trưởng)',
+  fullName: 'Trần Văn Tài',
   companyName: 'CCADRO Green Logistics Corporation',
   department: 'Đội Vận Tải Đường Dài Nam Bộ',
   customerId: 'CCADRO_FLEET',
@@ -540,7 +600,7 @@ const ROOT_AUDITOR_ACCOUNT = {
   username: 'auditor',
   password: '123',
   email: 'auditor@ccadro.com',
-  fullName: 'Lê Thị Kiểm Toán (GLEC v3 Auditor)',
+  fullName: 'Lê Thị Kiểm Toán',
   companyName: 'CCADRO Green Logistics Corporation',
   department: 'Tổ Chức Chứng Nhận Phát Thải Xanh',
   customerId: 'CCADRO_AUDIT',
@@ -562,7 +622,7 @@ const ROOT_SAFETY_ACCOUNT = {
   username: 'safety',
   password: '123',
   email: 'safety@ccadro.com',
-  fullName: 'Phạm Văn An Toàn (Safety Manager)',
+  fullName: 'Phạm Văn An Toàn',
   companyName: 'CCADRO Green Logistics Corporation',
   department: 'Phòng Thanh Tra Kỹ Thuật & An Toàn',
   customerId: 'CCADRO_SAFETY',
@@ -584,7 +644,7 @@ const ROOT_SHIPPER_ACCOUNT = {
   username: 'shipper',
   password: '123',
   email: 'shipper-bn1@ccadro.com',
-  fullName: 'Nguyễn Văn Toàn (Shipper Đình Bảng #1)',
+  fullName: 'Nguyễn Văn Toàn',
   companyName: 'Trụ sở Đình Bảng - Từ Sơn, Bắc Ninh',
   department: 'Đội Giao Nhận Đình Bảng • KCN VSIP Bắc Ninh',
   customerId: 'HUB_DINHBANG_BN',
@@ -608,7 +668,7 @@ const ROOT_HUB_MGR_DINHBANG = {
   username: 'hub_mgr_dinhbang',
   password: '123',
   email: 'hub-mgr-dinhbang@ccadro.com',
-  fullName: 'Trần Minh Quang (Trưởng Trụ Sở Đình Bảng)',
+  fullName: 'Trần Minh Quang',
   companyName: 'Trụ sở Đình Bảng - Từ Sơn, Bắc Ninh',
   department: 'Ban Điều Hành Trụ Sở Đình Bảng - Từ Sơn',
   customerId: 'HUB_DINHBANG_BN',
@@ -632,7 +692,7 @@ const ROOT_HUB_MGR_AMATA = {
   username: 'hub_mgr_amata',
   password: '123',
   email: 'hub-mgr-amata@ccadro.com',
-  fullName: 'Lê Hoàng Nam (Trưởng Trụ Sở Amata)',
+  fullName: 'Lê Hoàng Nam',
   companyName: 'Trụ sở Amata - Biên Hòa, Đồng Nai',
   department: 'Ban Điều Hành Trụ Sở Amata - Biên Hòa',
   customerId: 'HUB_AMATA_BH',
@@ -656,7 +716,7 @@ const ROOT_SHIPPER_BN2 = {
   username: 'shipper_bn2',
   password: '123',
   email: 'shipper-bn2@ccadro.com',
-  fullName: 'Phạm Thị Lan Anh (Shipper Đình Bảng #2)',
+  fullName: 'Phạm Thị Lan Anh',
   companyName: 'Trụ sở Đình Bảng - Từ Sơn, Bắc Ninh',
   department: 'Đội Giao Nhận Đình Bảng • Phố Mới Từ Sơn',
   customerId: 'HUB_DINHBANG_BN',
@@ -680,7 +740,7 @@ const ROOT_SHIPPER_BN3 = {
   username: 'shipper_bn3',
   password: '123',
   email: 'shipper-bn3@ccadro.com',
-  fullName: 'Ngô Đức Hải (Shipper Đình Bảng #3)',
+  fullName: 'Ngô Đức Hải',
   companyName: 'Trụ sở Đình Bảng - Từ Sơn, Bắc Ninh',
   department: 'Đội Giao Nhận Đình Bảng • Cụm Đền Đô',
   customerId: 'HUB_DINHBANG_BN',
@@ -704,7 +764,7 @@ const ROOT_SHIPPER_AMATA = {
   username: 'shipper_amata',
   password: '123',
   email: 'shipper-amata@ccadro.com',
-  fullName: 'Đặng Quốc Bảo (Shipper Amata #101)',
+  fullName: 'Đặng Quốc Bảo',
   companyName: 'Trụ sở Amata - Biên Hòa, Đồng Nai',
   department: 'Đội Giao Nhận Amata • KCN Long Bình',
   customerId: 'HUB_AMATA_BH',
@@ -728,7 +788,7 @@ const ROOT_HUB_AUDITOR_BN = {
   username: 'hub_inspector_bn',
   password: '123',
   email: 'inspector-bn@ccadro.com',
-  fullName: 'Vũ Thu Hà (Kiểm Tra Viên Ảnh POD & SLA)',
+  fullName: 'Vũ Thu Hà',
   companyName: 'Trụ sở Đình Bảng - Từ Sơn, Bắc Ninh',
   department: 'Bộ Phận Thanh Tra Chất Lượng POD & SLA',
   customerId: 'HUB_DINHBANG_BN',
@@ -752,7 +812,7 @@ const ROOT_CUSTOMER_ACCOUNT = {
   username: 'customer',
   password: '123',
   email: 'customer@ccadro.com',
-  fullName: 'Minh Phú & Vinamilk B2B (Chủ Hàng)',
+  fullName: 'Vinamilk & Minh Phú B2B',
   jobTitle: 'Trưởng nhóm Điều vận B2B',
   companyId: '90000000-0000-0000-0000-000000000002',
   companyCode: 'VINAMILK',
@@ -816,13 +876,23 @@ const SHIPPER_PORTAL_ROLES = ['HUB_MANAGER', 'HUB_SHIPPER', 'HUB_AUDITOR', 'SHIP
 
 export function getDefaultPortalPath(targetUser) {
   if (!targetUser) return '/login';
-  if (SHIPPER_PORTAL_ROLES.includes(targetUser.role) || targetUser.portalType === 'SHIPPER') {
-    return '/shipper';
-  }
-  if (targetUser.role === 'CUSTOMER' || targetUser.portalType === 'CUSTOMER') {
+  const role = String(targetUser.role || '').toUpperCase();
+  if (role === 'CUSTOMER' || targetUser.portalType === 'CUSTOMER') {
     return '/customer';
   }
-  if (targetUser.role === 'DRIVER') {
+  if (SHIPPER_PORTAL_ROLES.includes(role) || targetUser.portalType === 'SHIPPER') {
+    return '/shipper';
+  }
+  if (role === 'OPERATOR') {
+    if (targetUser.assignedHubCode || targetUser.portalType === 'SHIPPER') {
+      return '/shipper';
+    }
+    return '/portal';
+  }
+  if (role === 'DRIVER') {
+    if (targetUser.assignedHubCode || targetUser.assignedShipperCode || targetUser.portalType === 'SHIPPER') {
+      return '/shipper';
+    }
     return '/driver';
   }
   return '/portal';
@@ -830,11 +900,13 @@ export function getDefaultPortalPath(targetUser) {
 
 export function getAccessibleWorkspaces(targetUser) {
   if (!targetUser) return [];
-  const role = targetUser.role;
+  const role = String(targetUser.role || '').toUpperCase();
 
-  // Nguyên tắc phân quyền chặt: mỗi role CHỈ truy cập đúng cổng đã được phân quyền cho tài khoản đăng nhập.
-  // Không cho phép Admin hay bất kỳ role nào chuyển/xoay ngang sang cổng của role khác.
-  if (['ADMIN', 'DISPATCHER', 'SAFETY_MANAGER', 'ESG_AUDITOR'].includes(role)) {
+  // 1. Quản trị & Điều hành Trung tâm (NOC)
+  if (
+    ['ADMIN', 'DISPATCHER', 'SAFETY_MANAGER', 'ESG_AUDITOR'].includes(role) ||
+    (role === 'OPERATOR' && !targetUser.assignedHubCode && targetUser.portalType !== 'SHIPPER')
+  ) {
     return [
       {
         id: 'internal',
@@ -846,7 +918,13 @@ export function getAccessibleWorkspaces(targetUser) {
     ];
   }
 
-  if (SHIPPER_PORTAL_ROLES.includes(role)) {
+  // 2. Bưu cục & Giao hàng Chặng cuối (Hub & Last-Mile)
+  if (
+    SHIPPER_PORTAL_ROLES.includes(role) ||
+    targetUser.portalType === 'SHIPPER' ||
+    (role === 'OPERATOR' && targetUser.assignedHubCode) ||
+    (role === 'DRIVER' && (targetUser.assignedHubCode || targetUser.assignedShipperCode))
+  ) {
     return [
       {
         id: 'shipper',
@@ -860,6 +938,7 @@ export function getAccessibleWorkspaces(targetUser) {
     ];
   }
 
+  // 3. Khách hàng B2B / Chủ hàng
   if (role === 'CUSTOMER') {
     return [
       {
@@ -872,14 +951,15 @@ export function getAccessibleWorkspaces(targetUser) {
     ];
   }
 
+  // 4. Tài xế đường dài / Container (Cabin HUD)
   if (role === 'DRIVER') {
     return [
       {
         id: 'driver',
         path: '/driver',
         name: 'Khoang Lái Tài Xế (Driver HUD)',
-        subtitle: 'Điều hướng GPS, sự cố chặng đường & ePOD',
-        badge: 'Driver'
+        subtitle: 'Telemetry GPS, Kiểm định an toàn & Báo cáo sự cố',
+        badge: 'Cabin OS'
       }
     ];
   }
@@ -1179,6 +1259,7 @@ export function AuthProvider({ children }) {
         }
 
         // Token không còn hiệu lực (hết hạn hoặc đã bị Blacklist) -> thử xoay vòng bằng Refresh Token
+        let refreshRejected = false;
         if (currentRefreshToken) {
           try {
             const refreshRes = await withTimeout(api.refreshToken(currentRefreshToken), SESSION_CHECK_TIMEOUT_MS);
@@ -1191,15 +1272,15 @@ export function AuthProvider({ children }) {
               setToken(refreshed.token);
               return;
             }
-          } catch (_) {
-            // Refresh token cũng đã bị thu hồi hoặc hết hạn
+          } catch (refreshError) {
+            refreshRejected = refreshError?.status === 401 || refreshError?.status === 403;
           }
         }
 
-        if (!cancelled) clearStaleSession();
+        if (!cancelled && (!currentRefreshToken || refreshRejected)) clearStaleSession();
       } catch (_) {
-        // Mạng gián đoạn: token còn hạn thì giữ phiên; token đã hết hạn chắc chắn không dùng được -> buộc đăng nhập lại
-        if (!cancelled && expiredLocally) clearStaleSession();
+        // Giữ phiên nếu máy chủ tạm thời không phản hồi; bộ hẹn giờ sẽ thử làm mới lại.
+        if (!cancelled && expiredLocally && !currentRefreshToken) clearStaleSession();
       } finally {
         if (!cancelled) setSessionChecking(false);
       }
@@ -1216,6 +1297,7 @@ export function AuthProvider({ children }) {
       return undefined;
     }
     let refreshTimer = null;
+    let cancelled = false;
     try {
       const parts = token.split('.');
       if (parts.length < 2) return undefined;
@@ -1224,8 +1306,17 @@ export function AuthProvider({ children }) {
       const expMs = Number(payload?.exp || 0) * 1000;
       if (!Number.isFinite(expMs) || expMs <= 0) return undefined;
 
-      const delayMs = Math.max(5000, expMs - Date.now() - 60000);
-      refreshTimer = window.setTimeout(async () => {
+      const clearIfStillCurrent = () => {
+        if (window.localStorage.getItem('ccadro_token') !== token) return;
+        window.localStorage.removeItem('ccadro_token');
+        window.localStorage.removeItem('ccadro_refresh_token');
+        window.localStorage.removeItem('ccadro_user');
+        setToken(null);
+        setUser(null);
+        setAuthMode('IAM_MANAGED');
+      };
+      const refresh = async () => {
+        if (cancelled || window.localStorage.getItem('ccadro_token') !== token) return;
         let rt = null;
         try {
           rt = window.localStorage.getItem('ccadro_refresh_token');
@@ -1243,21 +1334,26 @@ export function AuthProvider({ children }) {
             setToken(refreshed.token);
             return;
           }
-        } catch (_) {
-          // Token hoặc phiên đã bị thu hồi / hết hạn -> buộc đăng nhập lại
+          clearIfStillCurrent();
+        } catch (refreshError) {
+          if (refreshError?.status === 401 || refreshError?.status === 403) {
+            clearIfStillCurrent();
+            return;
+          }
+          // Lỗi mạng hoặc dịch vụ tạm thời không làm mất phiên; thử lại sau 30 giây.
+          if (!cancelled && window.localStorage.getItem('ccadro_token') === token) {
+            refreshTimer = window.setTimeout(refresh, 30000);
+          }
         }
-        window.localStorage.removeItem('ccadro_token');
-        window.localStorage.removeItem('ccadro_refresh_token');
-        window.localStorage.removeItem('ccadro_user');
-        setToken(null);
-        setUser(null);
-        setAuthMode('IAM_MANAGED');
-      }, delayMs);
+      };
+      const delayMs = Math.max(5000, expMs - Date.now() - 60000);
+      refreshTimer = window.setTimeout(refresh, delayMs);
     } catch (_) {
       // ignore invalid jwt payload format
     }
 
     return () => {
+      cancelled = true;
       if (refreshTimer) window.clearTimeout(refreshTimer);
     };
   }, [demoIdentity, token]);

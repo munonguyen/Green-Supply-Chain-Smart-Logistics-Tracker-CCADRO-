@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { triggerCircularThemeReveal } from '../shared/effects/motionTokens';
 
 const ThemeContext = createContext();
 
@@ -27,8 +28,15 @@ export function ThemeProvider({ children }) {
     }
   }, [theme]);
 
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  const toggleTheme = (event) => {
+    const nextTheme = theme === 'dark' ? 'light' : 'dark';
+    const applyDom = () => {
+      if (typeof document !== 'undefined') {
+        document.documentElement.setAttribute('data-theme', nextTheme);
+      }
+      setTheme(nextTheme);
+    };
+    triggerCircularThemeReveal(event, applyDom);
   };
 
   return (

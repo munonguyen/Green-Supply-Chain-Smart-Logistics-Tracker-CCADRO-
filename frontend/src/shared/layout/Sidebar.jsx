@@ -3,7 +3,9 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
   Building2,
+  Database,
   ClipboardCheck,
+  Fuel,
   Home,
   LayoutDashboard,
   MapPin,
@@ -22,8 +24,8 @@ import {
   PanelLeftOpen
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import CcadroLogo from '../components/CcadroLogo';
-import SidebarAccountCard from '../components/SidebarAccountCard';
+import CcadroLogo from '../components/ui/CcadroLogo';
+import SidebarAccountCard from '../components/account/SidebarAccountCard';
 
 export default function Sidebar({ collapsed = false, onToggleCollapse }) {
   const navigate = useNavigate();
@@ -130,7 +132,7 @@ export default function Sidebar({ collapsed = false, onToggleCollapse }) {
           <span>Trang Chủ Website</span>
         </NavLink>
 
-        {['ADMIN', 'DISPATCHER', 'SAFETY_MANAGER', 'ESG_AUDITOR'].includes(user?.role) && <NavLink
+        {['ADMIN', 'OPERATOR', 'DISPATCHER', 'SAFETY_MANAGER', 'ESG_AUDITOR'].includes(user?.role) && <NavLink
           to="/portal"
           title="Trung Tâm Giám Sát"
           className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
@@ -140,7 +142,7 @@ export default function Sidebar({ collapsed = false, onToggleCollapse }) {
           <span>Trung Tâm Giám Sát</span>
         </NavLink>}
 
-        {['ADMIN', 'DISPATCHER', 'ESG_AUDITOR'].includes(user?.role) && <NavLink
+        {['ADMIN', 'OPERATOR', 'DISPATCHER', 'ESG_AUDITOR'].includes(user?.role) && <NavLink
           to="/shipments"
           title="Quản Lý Vận Đơn"
           className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
@@ -150,7 +152,7 @@ export default function Sidebar({ collapsed = false, onToggleCollapse }) {
           <span>Quản Lý Vận Đơn</span>
         </NavLink>}
 
-        {['ADMIN', 'DISPATCHER'].includes(user?.role) && <NavLink
+        {['ADMIN', 'OPERATOR', 'DISPATCHER', 'SAFETY_MANAGER'].includes(user?.role) && <NavLink
           to="/containers"
           title="Quản lý Container"
           className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
@@ -159,7 +161,13 @@ export default function Sidebar({ collapsed = false, onToggleCollapse }) {
           <span>Quản lý Container</span>
         </NavLink>}
 
-        {['ADMIN', 'DISPATCHER'].includes(user?.role) && <NavLink
+        {['ADMIN', 'OPERATOR', 'DISPATCHER', 'SAFETY_MANAGER'].includes(user?.role) && <NavLink
+          to="/container-inspections"
+          title="Kiểm tra Container"
+          className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+        ><ClipboardCheck size={17} /><span>Kiểm tra Container</span></NavLink>}
+
+        {['ADMIN', 'OPERATOR', 'DISPATCHER'].includes(user?.role) && <NavLink
           to="/shipments/new"
           title="Tạo Đơn Hàng Mới"
           className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
@@ -168,7 +176,7 @@ export default function Sidebar({ collapsed = false, onToggleCollapse }) {
           <span>Tạo Đơn Hàng Mới</span>
         </NavLink>}
 
-        {['ADMIN', 'DISPATCHER'].includes(user?.role) && <NavLink
+        {['ADMIN', 'OPERATOR', 'DISPATCHER'].includes(user?.role) && <NavLink
           to="/operations/dispatch"
           title="Điều Phối & Xuất Bến"
           className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
@@ -177,7 +185,7 @@ export default function Sidebar({ collapsed = false, onToggleCollapse }) {
           <span>Điều Phối & Xuất Bến</span>
         </NavLink>}
 
-        {['ADMIN', 'DISPATCHER', 'SAFETY_MANAGER', 'ESG_AUDITOR'].includes(user?.role) && <NavLink
+        {['ADMIN', 'OPERATOR', 'DISPATCHER', 'SAFETY_MANAGER', 'ESG_AUDITOR'].includes(user?.role) && <NavLink
           to="/operations/tracking"
           title="Giám Sát GPS & Lệch Tuyến"
           className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
@@ -199,40 +207,60 @@ export default function Sidebar({ collapsed = false, onToggleCollapse }) {
         )}
 
         {/* SECTION 2: GREEN INTELLIGENCE */}
-        {['ADMIN', 'DISPATCHER', 'ESG_AUDITOR'].includes(user?.role) && <div className="sidebar-section-title">Lộ Trình & Xanh Hóa (ESG)</div>}
+        {['ADMIN', 'OPERATOR', 'DISPATCHER', 'SAFETY_MANAGER', 'ESG_AUDITOR'].includes(user?.role) && <div className="sidebar-section-title">Lộ Trình & Xanh Hóa (ESG)</div>}
 
-        {['ADMIN', 'DISPATCHER'].includes(user?.role) && <NavLink
+        {['ADMIN', 'OPERATOR', 'DISPATCHER'].includes(user?.role) && <NavLink
           to="/operations/planning"
-          title="Đa Mục Tiêu Pareto (UC05)"
+          title="Tối Ưu Tuyến Đường Xanh"
           className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
         >
           <Route size={17} />
-          <span>Đa Mục Tiêu Pareto (UC05)</span>
+          <span>Tối Ưu Tuyến Đường Xanh</span>
         </NavLink>}
 
-        {['ADMIN', 'DISPATCHER', 'ESG_AUDITOR'].includes(user?.role) && <NavLink
+        {['ADMIN', 'OPERATOR', 'DISPATCHER', 'ESG_AUDITOR'].includes(user?.role) && <NavLink
           to="/operations/carbon"
-          title="Kiểm Toán GLEC v3 (UC12)"
+          title="Kiểm Toán Phát Thải GLEC"
           className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
         >
           <Leaf size={17} />
-          <span>Kiểm Toán GLEC v3 (UC12)</span>
+          <span>Kiểm Toán Phát Thải GLEC</span>
         </NavLink>}
 
-        {['ADMIN', 'DISPATCHER', 'ESG_AUDITOR'].includes(user?.role) && <NavLink
+        {['ADMIN', 'OPERATOR', 'DISPATCHER', 'ESG_AUDITOR'].includes(user?.role) && <NavLink
           to="/analytics/benchmark"
-          title="Định Mức Hành Lang (UC13)"
+          title="Đối Sánh Hành Lang"
           className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
         >
           <BarChart3 size={17} />
-          <span>Định Mức Hành Lang (UC13)</span>
+          <span>Đối Sánh Hành Lang</span>
+        </NavLink>}
+
+        {['ADMIN', 'OPERATOR', 'DISPATCHER', 'SAFETY_MANAGER', 'ESG_AUDITOR'].includes(user?.role) && <NavLink
+          to="/vehicle-fuels"
+          title="Nhiên Liệu & CO₂ Đội Xe"
+          className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+        >
+          <Fuel size={17} />
+          <span>Nhiên Liệu &amp; CO₂ Xe</span>
         </NavLink>}
 
         {/* SECTION 3: GOVERNANCE & SECURITY */}
-        <div className="sidebar-section-title">Quản Trị Tổ Chức &amp; An Toàn</div>
+        {['ADMIN', 'SAFETY_MANAGER', 'CUSTOMER', 'HUB_MANAGER', 'HUB_SHIPPER', 'HUB_AUDITOR', 'SHIPPER'].includes(
+          user?.role
+        ) && <div className="sidebar-section-title">Quản Trị Tổ Chức &amp; An Toàn</div>}
 
         {user?.role === 'ADMIN' && (
           <>
+            <NavLink
+              to="/admin/data"
+              title="Kiểm kê dữ liệu và nguồn hệ thống (/admin/data)"
+              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+            >
+              <Database size={17} />
+              <span>Dữ liệu hệ thống</span>
+            </NavLink>
+
             <NavLink
               to="/admin/users"
               title="Quản Lý Tài Khoản IAM (/admin/users)"
@@ -330,15 +358,6 @@ export default function Sidebar({ collapsed = false, onToggleCollapse }) {
             <span>Cổng Shipper Đích (3PL)</span>
           </NavLink>
         )}
-
-        <NavLink
-          to="/login"
-          title="Cổng Xác Thực IAM"
-          className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-        >
-          <Lock size={17} />
-          <span>Cổng Xác Thực IAM</span>
-        </NavLink>
       </nav>
 
       {/* Sidebar Footer Account Info Card with Settings */}
