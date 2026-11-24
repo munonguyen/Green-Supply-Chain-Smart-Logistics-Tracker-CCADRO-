@@ -80,7 +80,7 @@ describe('Role Isolation 404 Auth, Logout Token Blacklist & Unified Driver Conso
     expect(logoutCalls).toHaveLength(0);
   });
 
-  it('renders DriverTerminalPage with unified Admin-style Sidebar, Topbar, Overview KPI grid & mobile drawer', async () => {
+  it('shows an unlinked driver state without sample containers when the profile cannot be loaded', async () => {
     installMockStorage({
       ccadro_user: JSON.stringify({
         username: 'driver',
@@ -101,13 +101,10 @@ describe('Role Isolation 404 Auth, Logout Token Blacklist & Unified Driver Conso
       </MemoryRouter>
     );
 
-    expect(container.querySelector('.app-container')).toBeInTheDocument();
-    expect(container.querySelector('aside.sidebar')).toBeInTheDocument();
-    expect(container.querySelector('main.main-content')).toBeInTheDocument();
-    expect(container.querySelector('.topbar')).toBeInTheDocument();
-    expect(container.querySelector('.page-body')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /Trung Tâm Khoang Lái & Vận Hành Tài Xế/i })).toBeInTheDocument();
-    expect(screen.getByText(/Geofence Điểm Đích/i)).toBeInTheDocument();
-    expect(screen.getByText(/Hồ Sơ GPLX, HOS & Đánh Giá/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Chưa đọc được hồ sơ tài xế liên kết/)).toBeInTheDocument();
+    expect(container.querySelector('aside.sidebar')).not.toBeInTheDocument();
+    expect(screen.queryByText('TCKU-781920-4')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tải lại' })).toBeInTheDocument();
+
   });
 });

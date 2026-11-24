@@ -53,7 +53,7 @@ describe('Executive System Evaluation Dashboard', () => {
 
     // Switch across evaluation sub-tabs
     fireEvent.click(screen.getByRole('button', { name: /Vận Hành & Đội Xe/i }));
-    expect(screen.getByText(/Sẵn Sàng Hạm Đội \(BRULE-01\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Tỷ Lệ Sẵn Sàng Xuất Bến/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /Carbon GLEC v3/i }));
     expect(screen.getByText(/Tổng Phát Thải Cắt Giảm \(GLEC v3\)/i)).toBeInTheDocument();
