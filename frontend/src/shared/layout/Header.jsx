@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   MapPin,
   MessageCircle,
+  Search,
   Zap,
   Megaphone,
   Sun,
@@ -17,11 +18,12 @@ import {
   PanelLeftClose,
   PanelLeftOpen
 } from 'lucide-react';
-import { api } from '../../services/api';
+import { api, gatewayUrl } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
-import UserAccountMenu from '../components/UserAccountMenu';
-import AccountSettingsModal from '../components/AccountSettingsModal';
+import UserAccountMenu from '../components/account/UserAccountMenu';
+import AccountSettingsModal from '../components/account/AccountSettingsModal';
+import CommandFinder from '../components/search/CommandFinder';
 import BroadcastEmergencyModal from '../notifications/BroadcastEmergencyModal';
 import MessengerWorkspaceModal from '../chat/MessengerWorkspaceModal';
 import { getRoleHeaderMeta } from '../../utils/userSettings';
@@ -30,6 +32,13 @@ import {
   loadChatThreadsMap,
   subscribeDriverChat
 } from '../../utils/driverChatSync';
+import {
+  getNotificationsForViewer,
+  loadStoredRoleNotifications,
+  mergeIncomingBackendNotifications,
+  publishCrossRoleNotification,
+  subscribeRoleNotifications
+} from '../../utils/roleNotificationSync';
 
 const INITIAL_DEMO_NOTIFICATIONS = [
   {
@@ -39,9 +48,9 @@ const INITIAL_DEMO_NOTIFICATIONS = [
     severity: 'CRITICAL',
     sourceService: 'tracking-service',
     tripId: 'd0000000-0000-0000-0000-000000000001',
-    title: '[BÁO ĐỘNG ĐỎ UC09] Xe V001 lệch hành lang 300m (> 200m)',
+    title: '[CẢNH BÁO NGUY CẤP] Xe V001 lệch hành lang 300m (> 200m)',
     message:
-      'Phát hiện 3 điểm GPS hợp lệ liên tiếp vượt ngưỡng 200m trên tuyến Võ Chí Công -> VSIP 1. Đã kích hoạt đề xuất đổi tuyến động (UC10).',
+      'Phát hiện 3 điểm GPS hợp lệ liên tiếp vượt ngưỡng an toàn trên tuyến Võ Chí Công -> VSIP 1. Đã kích hoạt đề xuất đổi tuyến đường tránh sự cố.',
     latitude: 10.8525,
     longitude: 106.743,
     status: 'UNREAD'
@@ -53,7 +62,7 @@ const INITIAL_DEMO_NOTIFICATIONS = [
     severity: 'HIGH',
     sourceService: 'incident-service',
     tripId: 'd0000000-0000-0000-0000-000000000001',
-    title: '[SỰ CỐ KHẨN CẤP UC16] Phong tỏa làn container Vành Đai 2',
+    title: '[SỰ CỐ KHẨN CẤP] Phong tỏa làn container Vành Đai 2',
     message:
       'Tài xế Nguyễn Văn An báo cáo tai nạn liên hoàn tại cầu Phú Hữu. Chờ Điều phối viên phê duyệt phương án đổi lộ trình.',
     latitude: 10.82,
@@ -74,9 +83,27 @@ export default function Header({
   const [openBroadcastModal, setOpenBroadcastModal] = useState(false);
   const [openMessenger, setOpenMessenger] = useState(false);
   const [openSettings, setOpenSettings] = useState(false);
+  const [openFinder, setOpenFinder] = useState(false);
   const [messengerThreads, setMessengerThreads] = useState(() => loadChatThreadsMap());
   const [notifications, setNotifications] = useState(INITIAL_DEMO_NOTIFICATIONS);
   const roleMeta = getRoleHeaderMeta(user?.role || 'ADMIN');
+
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setOpenFinder((prev) => !prev);
+        return;
+      }
+      const tag = event.target?.closest?.('input, textarea, select, [contenteditable]');
+      if (!tag && !event.metaKey && !event.ctrlKey && !event.altKey && event.key === '/') {
+        event.preventDefault();
+        setOpenFinder(true);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   useEffect(() => {
     const sync = () => setMessengerThreads(loadChatThreadsMap());
@@ -89,12 +116,28 @@ export default function Header({
   );
 
   useEffect(() => {
+    const syncRoleNotifs = () => {
+      const busItems = getNotificationsForViewer(user, loadStoredRoleNotifications());
+      setNotifications((prev) => {
+        const byId = new Map();
+        [...busItems, ...prev].forEach((n) => {
+          if (n?.id && !byId.has(n.id)) byId.set(n.id, n);
+        });
+        return Array.from(byId.values());
+      });
+    };
+    syncRoleNotifs();
+    return subscribeRoleNotifications(syncRoleNotifs);
+  }, [user]);
+
+  useEffect(() => {
     let isMounted = true;
     api
       .getNotifications()
       .then((res) => {
         const list = res?.result || (Array.isArray(res) ? res : null);
         if (isMounted && Array.isArray(list) && list.length > 0) {
+          mergeIncomingBackendNotifications(list);
           setNotifications(list);
         }
       })
@@ -104,7 +147,7 @@ export default function Header({
 
     if (typeof window !== 'undefined' && typeof window.EventSource !== 'undefined') {
       const baseStreamUrl =
-        (import.meta.env.VITE_API_URL || 'http://localhost:8888') + '/api/v1/notifications/stream';
+        gatewayUrl('/api/v1/notifications/stream');
       const jwtToken =
         window.localStorage.getItem('ccadro_token') ||
         window.localStorage.getItem('ccadro_access_token_v1') ||
@@ -146,6 +189,15 @@ export default function Header({
   }, []);
 
   const unreadCount = notifications.filter((n) => n.status !== 'ACKNOWLEDGED').length;
+  const prevUnreadRef = useRef(unreadCount);
+  const [bellPulseKey, setBellPulseKey] = useState(0);
+
+  useEffect(() => {
+    if (unreadCount > prevUnreadRef.current) {
+      setBellPulseKey((k) => k + 1);
+    }
+    prevUnreadRef.current = unreadCount;
+  }, [unreadCount]);
 
   const handleFlyToIncident = (notif) => {
     setOpenPanel(false);
@@ -182,6 +234,18 @@ export default function Header({
       status: 'UNREAD'
     };
     setNotifications((prev) => [newAlert, ...prev]);
+    publishCrossRoleNotification({
+      eventType: newAlert.eventType,
+      severity: newAlert.severity,
+      senderRole: 'OPERATOR',
+      senderName: newAlert.sourceService,
+      targetRoles: ['ADMIN', 'OPERATOR', 'DRIVER'],
+      tripId: newAlert.tripId,
+      title: newAlert.title,
+      message: newAlert.message,
+      latitude: newAlert.latitude,
+      longitude: newAlert.longitude
+    });
     api.dispatchEmergencyNotification(newAlert).catch(() => { });
   };
 
@@ -235,6 +299,20 @@ export default function Header({
           </button>
         )}
 
+        {/* Command Finder Trigger (⌘K / /) */}
+        <motion.button
+          whileHover={{ y: -1 }}
+          whileTap={{ scale: 0.97 }}
+          type="button"
+          className="topbar-btn halvi-finder-trigger"
+          onClick={() => setOpenFinder(true)}
+          title="Tìm nhanh trang & thao tác (Ctrl+K / ⌘K)"
+          aria-label="Tìm nhanh chức năng"
+        >
+          <Search size={14} />
+          <kbd className="halvi-kbd">⌘K</kbd>
+        </motion.button>
+
         {/* CCADRO Messenger Launcher */}
         <motion.button
           whileHover={{ y: -1 }}
@@ -272,10 +350,13 @@ export default function Header({
           {unreadCount > 0 ? (
             <span className="radar-dot radar-dot-red" aria-hidden="true"></span>
           ) : null}
-          <Bell size={15} color={unreadCount > 0 ? '#ef4444' : 'var(--text-muted)'} />
+          <span key={`bell-${bellPulseKey}`} className={bellPulseKey > 0 ? 'halvi-bell-swing' : ''}>
+            <Bell size={15} color={unreadCount > 0 ? '#ef4444' : 'var(--text-muted)'} />
+          </span>
           <span className="topbar-label">{roleMeta.alertLabel}</span>
           <span
-            className="topbar-count-pill"
+            key={`badge-${bellPulseKey}`}
+            className={`topbar-count-pill${bellPulseKey > 0 ? ' halvi-badge-pop' : ''}`}
             style={
               unreadCount > 0
                 ? undefined
@@ -632,6 +713,11 @@ export default function Header({
       <AccountSettingsModal
         isOpen={openSettings}
         onClose={() => setOpenSettings(false)}
+      />
+
+      <CommandFinder
+        isOpen={openFinder}
+        onClose={() => setOpenFinder(false)}
       />
     </header>
   );

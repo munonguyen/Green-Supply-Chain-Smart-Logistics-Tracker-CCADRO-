@@ -1,3 +1,4 @@
+import SearchField from '../components/search/SearchField';
 import React, { useMemo, useState } from 'react';
 import {
   Bell,
@@ -8,7 +9,6 @@ import {
   MapPin,
   Pin,
   PinOff,
-  Search,
   Truck,
   UserPlus,
   Users,
@@ -285,29 +285,14 @@ export function MessengerComposePanel({
         </div>
       )}
 
-      <div style={{ position: 'relative' }}>
-        <Search
-          size={13}
-          color={textMuted}
-          style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }}
-        />
-        <input
-          type="text"
-          value={contactSearch}
-          onChange={(e) => setContactSearch(e.target.value)}
-          placeholder="Tìm người dùng, tài xế, hub, công ty..."
-          style={{
-            width: '100%',
-            padding: '7px 10px 7px 29px',
-            borderRadius: 999,
-            border: `1px solid ${border}`,
-            background: inputBg,
-            color: textMain,
-            fontSize: '0.75rem',
-            outline: 'none'
-          }}
-        />
-      </div>
+      <SearchField
+        label="Tìm người liên hệ"
+        hideLabel
+        value={contactSearch}
+        onValueChange={setContactSearch}
+        placeholder="Tên, tài xế, hub hoặc công ty…"
+        tone="blue"
+      />
 
       <div style={{ flex: 1, overflowY: 'auto', display: 'grid', gap: 4, alignContent: 'start' }}>
         {filteredContacts.map((c) => {
@@ -585,42 +570,13 @@ export function MessengerInfoSidebar({
       </div>
 
       {/* Search within conversation */}
-      <div>
-        <label
-          style={{
-            display: 'block',
-            fontSize: '0.69rem',
-            fontWeight: 700,
-            color: textMuted,
-            marginBottom: 5
-          }}
-        >
-          Tìm trong cuộc trò chuyện
-        </label>
-        <div style={{ position: 'relative' }}>
-          <Search
-            size={13}
-            color={textMuted}
-            style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }}
-          />
-          <input
-            type="text"
-            value={inThreadSearch}
-            onChange={(e) => onChangeInThreadSearch(e.target.value)}
-            placeholder="Lọc nội dung tin nhắn..."
-            style={{
-              width: '100%',
-              padding: '7px 10px 7px 29px',
-              borderRadius: 999,
-              border: `1px solid ${border}`,
-              background: subtleBg,
-              color: textMain,
-              fontSize: '0.74rem',
-              outline: 'none'
-            }}
-          />
-        </div>
-      </div>
+      <SearchField
+        label="Tìm trong cuộc trò chuyện"
+        value={inThreadSearch}
+        onValueChange={onChangeInThreadSearch}
+        placeholder="Nhập nội dung tin nhắn…"
+        tone="blue"
+      />
 
       {/* Shipment / Container Context Card */}
       {(activeShipment || thread.assignedContainerCode || thread.containerCode) && (
