@@ -19,6 +19,8 @@ public class ContainerTelemetryUpdateRequest {
     Integer etaMinutes;
     BigDecimal supplyAirTempC;
     BigDecimal returnAirTempC;
+    BigDecimal reeferSetPointTempC;
+    String reeferTemperatureAlarmStatus;
     BigDecimal humidityPct;
     BigDecimal shockG;
     BigDecimal solarPowerWatts;

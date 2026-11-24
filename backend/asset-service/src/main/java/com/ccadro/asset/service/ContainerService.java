@@ -1,8 +1,10 @@
 package com.ccadro.asset.service;
 
 import com.ccadro.asset.dto.request.ContainerAssignTripRequest;
+import com.ccadro.asset.dto.request.ContainerCscUpdateRequest;
 import com.ccadro.asset.dto.request.ContainerCreateRequest;
 import com.ccadro.asset.dto.request.ContainerEpodRequest;
+import com.ccadro.asset.dto.request.ContainerManifestItemCreateRequest;
 import com.ccadro.asset.dto.request.ContainerTelemetryUpdateRequest;
 import com.ccadro.asset.dto.response.ContainerResponse;
 import com.ccadro.asset.entity.Container;
@@ -41,6 +43,8 @@ public class ContainerService {
     DriverRepository driverRepository;
     VehicleRepository vehicleRepository;
     ContainerMapper containerMapper;
+    DriverDispatchEligibility driverEligibility;
+    ContainerControlService controlService;
 
     public List<ContainerResponse> getAllContainersResponse(ContainerStatus status, UUID driverId) {
         return getAllContainersResponse(status, driverId, null, false);
@@ -84,7 +88,7 @@ public class ContainerService {
 
     @Transactional
     public ContainerResponse softDeleteContainer(String containerCode, String deletedBy) {
-        Container container = containerRepository.findByContainerCode(containerCode)
+        Container container = containerRepository.findForControlUpdate(containerCode)
                 .orElseThrow(() -> new AppException(ErrorCode.CONTAINER_NOT_FOUND, "Không tìm thấy container có mã: " + containerCode));
         container.setIsDeleted(true);
         container.setDeletedAt(Instant.now());
@@ -94,7 +98,7 @@ public class ContainerService {
 
     @Transactional
     public ContainerResponse restoreContainer(String containerCode) {
-        Container container = containerRepository.findByContainerCode(containerCode)
+        Container container = containerRepository.findForControlUpdate(containerCode)
                 .orElseThrow(() -> new AppException(ErrorCode.CONTAINER_NOT_FOUND, "Không tìm thấy container có mã: " + containerCode));
         container.setIsDeleted(false);
         container.setDeletedAt(null);
@@ -121,18 +125,114 @@ public class ContainerService {
     }
 
     @Transactional
+    public ContainerResponse updateCscData(String containerCode, ContainerCscUpdateRequest request) {
+        Container container = containerRepository.findForControlUpdate(containerCode)
+                .orElseThrow(() -> new AppException(ErrorCode.CONTAINER_NOT_FOUND,
+                        "Không tìm thấy container có mã: " + containerCode));
+        if (container.getStatus() == ContainerStatus.IN_TRANSIT
+                || (container.getStatus() == ContainerStatus.ASSIGNED
+                    && controlService.isConfirmed(containerCode, "DEPARTURE"))) {
+            throw new AppException(ErrorCode.CONTAINER_CONTROL_CONFLICT,
+                    "Không sửa hồ sơ CSC sau khi xuất bến");
+        }
+        container.setCscApprovalCountry(clean(request.getCscApprovalCountry()));
+        container.setCscApprovalReference(clean(request.getCscApprovalReference()));
+        container.setCscManufactureDate(request.getCscManufactureDate());
+        String scheme = clean(request.getCscInspectionScheme());
+        container.setCscInspectionScheme(scheme);
+        if ("PERIODIC".equals(scheme)) {
+            container.setCscNextExaminationDate(request.getCscNextExaminationDate());
+            container.setCscAcepProgramNumber(null);
+        } else if ("ACEP".equals(scheme)) {
+            container.setCscNextExaminationDate(null);
+            container.setCscAcepProgramNumber(clean(request.getCscAcepProgramNumber()));
+        } else {
+            container.setCscNextExaminationDate(null);
+            container.setCscAcepProgramNumber(null);
+        }
+        return containerMapper.toResponse(containerRepository.save(container));
+    }
+
+    private String clean(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    @Transactional
+    public void checkManifestAddition(String code, ContainerManifestItemCreateRequest request) {
+        Container container = containerRepository.findForControlUpdate(code)
+                .orElseThrow(() -> new AppException(ErrorCode.CONTAINER_NOT_FOUND));
+        if (Boolean.TRUE.equals(container.getIsDeleted()) || (container.getStatus() != ContainerStatus.AVAILABLE
+                && container.getStatus() != ContainerStatus.ASSIGNED)
+                || (controlService.hasActiveRound(code) && controlService.isConfirmed(code, "PREPARATION"))) {
+            throw new AppException(ErrorCode.CONTAINER_CONTROL_CONFLICT, "Manifest chỉ được thêm trước khi xác nhận chuẩn bị");
+        }
+        if (container.getAssignedShipmentCode() != null
+                && !container.getAssignedShipmentCode().equals(request.getShipmentCode().trim())) {
+            throw new AppException(ErrorCode.INVALID_REQUEST_ARGUMENT, "Mã vận đơn phải trùng vận đơn được phân công");
+        }
+        if (Boolean.TRUE.equals(request.getRequiresColdChain())
+                && (!Boolean.TRUE.equals(container.getIsReefer()) || request.getRequiredTempC() == null)) {
+            throw new AppException(ErrorCode.INVALID_REQUEST_ARGUMENT, "Hàng chuỗi lạnh cần container lạnh và nhiệt độ yêu cầu");
+        }
+    }
+
+    @Transactional
     public ContainerResponse updateTelemetry(String containerCode, ContainerTelemetryUpdateRequest request) {
-        Container container = containerRepository.findByContainerCode(containerCode)
+        return updateTelemetry(containerCode, request, null);
+    }
+
+    @Transactional
+    public ContainerResponse updateTelemetry(String containerCode, ContainerTelemetryUpdateRequest request, Instant positionObservedAt) {
+        Container container = containerRepository.findForControlUpdate(containerCode)
                 .orElseThrow(() -> new AppException(ErrorCode.CONTAINER_NOT_FOUND, "Không tìm thấy container có mã: " + containerCode));
 
-        if (request.getLastLatitude() != null) container.setLastLatitude(request.getLastLatitude());
-        if (request.getLastLongitude() != null) container.setLastLongitude(request.getLastLongitude());
-        if (request.getLastLocationName() != null) container.setLastLocationName(request.getLastLocationName());
+        boolean hasPosition = request.getLastLatitude() != null && request.getLastLongitude() != null;
+        if ((request.getLastLatitude() == null) != (request.getLastLongitude() == null)
+                || (hasPosition && (request.getLastLatitude().abs().compareTo(BigDecimal.valueOf(90)) > 0
+                || request.getLastLongitude().abs().compareTo(BigDecimal.valueOf(180)) > 0))) {
+            throw new AppException(ErrorCode.INVALID_REQUEST_ARGUMENT, "Cần cặp tọa độ GPS hợp lệ");
+        }
+        boolean signal = hasPosition
+                || request.getLastLocationName() != null
+                || request.getProgressPct() != null || request.getSpeedKmh() != null || request.getEtaMinutes() != null
+                || request.getSupplyAirTempC() != null || request.getReturnAirTempC() != null
+                || request.getReeferSetPointTempC() != null || request.getReeferTemperatureAlarmStatus() != null
+                || request.getHumidityPct() != null || request.getShockG() != null
+                || request.getSolarPowerWatts() != null || request.getBatteryPct() != null
+                || request.getESealStatus() != null || request.getESealIntegrityPct() != null;
+        Instant receivedAt = Instant.now();
+        if (signal) container.setLastTelemetryReceivedAt(receivedAt);
+        if (request.getLastLocationName() != null) container.setLastLocationNameAt(receivedAt);
+        if (request.getProgressPct() != null) container.setLastProgressAt(receivedAt);
+        if (request.getSpeedKmh() != null) container.setLastSpeedAt(receivedAt);
+        if (request.getSupplyAirTempC() != null) container.setLastSupplyAirTempAt(receivedAt);
+        if (request.getReturnAirTempC() != null) container.setLastReturnAirTempAt(receivedAt);
+        if (request.getReeferSetPointTempC() != null) container.setLastReeferSetPointAt(receivedAt);
+        if (request.getReeferTemperatureAlarmStatus() != null) container.setLastReeferAlarmAt(receivedAt);
+        if (request.getHumidityPct() != null) container.setLastHumidityAt(receivedAt);
+        if (request.getShockG() != null) container.setLastShockAt(receivedAt);
+        if (request.getSolarPowerWatts() != null) container.setLastSolarPowerAt(receivedAt);
+        if (request.getBatteryPct() != null) container.setLastBatteryAt(receivedAt);
+        if (request.getEtaMinutes() != null) container.setLastEtaAt(receivedAt);
+        if (request.getESealStatus() != null || request.getESealIntegrityPct() != null) {
+            container.setLastSealAt(receivedAt);
+        }
+        if (hasPosition) {
+            container.setLastPositionReceivedAt(receivedAt);
+            container.setLastPositionObservedAt(positionObservedAt != null ? positionObservedAt : receivedAt);
+            container.setLastLatitude(request.getLastLatitude());
+            container.setLastLongitude(request.getLastLongitude());
+            container.setLastLocationName(request.getLastLocationName());
+        } else if (request.getLastLocationName() != null) {
+            container.setLastLocationName(request.getLastLocationName());
+        }
         if (request.getProgressPct() != null) container.setProgressPct(request.getProgressPct());
         if (request.getSpeedKmh() != null) container.setSpeedKmh(request.getSpeedKmh());
         if (request.getEtaMinutes() != null) container.setEtaMinutes(request.getEtaMinutes());
         if (request.getSupplyAirTempC() != null) container.setSupplyAirTempC(request.getSupplyAirTempC());
         if (request.getReturnAirTempC() != null) container.setReturnAirTempC(request.getReturnAirTempC());
+        if (request.getReeferSetPointTempC() != null) container.setReeferSetPointTempC(request.getReeferSetPointTempC());
+        if (request.getReeferTemperatureAlarmStatus() != null) container.setReeferTemperatureAlarmStatus(request.getReeferTemperatureAlarmStatus());
         if (request.getHumidityPct() != null) container.setHumidityPct(request.getHumidityPct());
         if (request.getShockG() != null) container.setShockG(request.getShockG());
         if (request.getSolarPowerWatts() != null) container.setSolarPowerWatts(request.getSolarPowerWatts());
@@ -145,53 +245,70 @@ public class ContainerService {
 
     @Transactional
     public ContainerResponse assignTrip(String containerCode, ContainerAssignTripRequest request) {
-        Container container = containerRepository.findByContainerCode(containerCode)
+        Container container = containerRepository.findForControlUpdate(containerCode)
                 .orElseThrow(() -> new AppException(ErrorCode.CONTAINER_NOT_FOUND, "Không tìm thấy container có mã: " + containerCode));
 
-        Driver assignedDriver = resolveDriver(request.getAssignedDriverId(), request.getDriverPhone(), request.getDriverName());
-
+        boolean controlled = controlService.hasRound(containerCode);
+        if (!controlled || !controlService.hasActiveRound(containerCode)) {
+            throw new AppException(ErrorCode.CONTAINER_CONTROL_CONFLICT,
+                    "Mở đợt kiểm soát hiện hành trước khi phân công container");
+        }
+        if (container.getStatus() != ContainerStatus.AVAILABLE
+                || controlService.isConfirmed(containerCode, "DEPARTURE"))
+            throw new AppException(ErrorCode.INVALID_REQUEST_ARGUMENT, "Không phân công lại sau xuất bến; cần hoàn tất đợt hiện tại");
+        if (request.getAssignedDriverId() == null) {
+            throw new AppException(ErrorCode.DRIVER_NOT_FOUND);
+        }
+        if (request.getAssignedVehicleId() == null || request.getAssignedShipmentId() == null
+                || request.getAssignedShipmentCode() == null || request.getAssignedShipmentCode().isBlank()
+                || request.getOriginName() == null || request.getOriginName().isBlank()
+                || request.getDestinationName() == null || request.getDestinationName().isBlank()) {
+            throw new AppException(ErrorCode.INVALID_REQUEST_ARGUMENT, "Thiếu xe, vận đơn hoặc hành trình");
+        }
+        var vehicle = vehicleRepository.findForAssignment(request.getAssignedVehicleId())
+                .orElseThrow(() -> new AppException(ErrorCode.VEHICLE_NOT_FOUND));
+        Driver assignedDriver = driverRepository.findForAssignment(request.getAssignedDriverId())
+                .orElseThrow(() -> new AppException(ErrorCode.DRIVER_NOT_FOUND));
+        var qualification = driverEligibility.requireAvailable(assignedDriver.getId());
+        if (vehicle.getStatus() != VehicleStatus.AVAILABLE || Boolean.TRUE.equals(vehicle.getIsDeleted())) {
+            throw new AppException(ErrorCode.INVALID_REQUEST_ARGUMENT, "Xe không sẵn sàng phân công");
+        }
+        vehicle.setStatus(VehicleStatus.ASSIGNED);
+        request.setVehicleLicensePlate(vehicle.getPlateNumber());
+        request.setVehicleTypeLabel(vehicle.getFuelType());
         container.setAssignedShipmentId(request.getAssignedShipmentId());
         container.setAssignedShipmentCode(request.getAssignedShipmentCode());
-        if (assignedDriver != null) {
-            container.setAssignedDriverId(assignedDriver.getId());
-            container.setDriverName(assignedDriver.getFullName());
-            container.setDriverPhone(assignedDriver.getPhone());
-            container.setDriverLicense(request.getDriverLicense() != null
-                    ? request.getDriverLicense()
-                    : "GPLX Hạng " + assignedDriver.getLicenseClass() + " • " + assignedDriver.getExperienceYears() + " năm kinh nghiệm");
-            container.setDriverSafetyScore(assignedDriver.getRating());
-
-            assignedDriver.setStatus(DriverStatus.ON_TRIP);
-            assignedDriver.setTotalTrips((assignedDriver.getTotalTrips() != null ? assignedDriver.getTotalTrips() : 0) + 1);
-            if (request.getVehicleLicensePlate() != null && !request.getVehicleLicensePlate().isBlank()) {
-                assignedDriver.setAssignedVehiclePlate(request.getVehicleLicensePlate());
-            }
-            driverRepository.save(assignedDriver);
-        } else {
-            container.setAssignedDriverId(request.getAssignedDriverId());
-            container.setDriverName(request.getDriverName());
-            container.setDriverPhone(request.getDriverPhone());
-            container.setDriverLicense(request.getDriverLicense());
-            if (request.getDriverSafetyScore() != null) {
-                container.setDriverSafetyScore(request.getDriverSafetyScore());
-            }
-        }
+        container.setAssignedDriverId(assignedDriver.getId());
+        container.setDriverName(assignedDriver.getFullName());
+        container.setDriverPhone(assignedDriver.getPhone());
+        container.setDriverLicense("GPLX hạng " + qualification.licenseClass());
+        container.setDriverSafetyScore(assignedDriver.getRating());
+        assignedDriver.setStatus(DriverStatus.ASSIGNED);
+        assignedDriver.setAssignedVehiclePlate(vehicle.getPlateNumber());
 
         container.setAssignedVehicleId(request.getAssignedVehicleId());
         container.setVehicleLicensePlate(request.getVehicleLicensePlate());
         container.setVehicleTypeLabel(request.getVehicleTypeLabel());
         container.setOriginName(request.getOriginName());
         container.setDestinationName(request.getDestinationName());
-        container.setStatus(ContainerStatus.IN_TRANSIT);
+        container.setStatus(ContainerStatus.ASSIGNED);
 
         return containerMapper.toResponse(containerRepository.save(container));
     }
 
     @Transactional
     public ContainerResponse submitEpod(String containerCode, ContainerEpodRequest request) {
-        Container container = containerRepository.findByContainerCode(containerCode)
+        Container container = containerRepository.findForControlUpdate(containerCode)
                 .orElseThrow(() -> new AppException(ErrorCode.CONTAINER_NOT_FOUND, "Không tìm thấy container có mã: " + containerCode));
 
+        if (controlService.hasRound(containerCode)) {
+            if (container.getStatus() == ContainerStatus.DELIVERED) {
+                throw new AppException(ErrorCode.POD_ALREADY_SUBMITTED);
+            }
+            if (container.getStatus() != ContainerStatus.IN_TRANSIT || !controlService.isConfirmed(containerCode, "IN_TRANSIT")) {
+                throw new AppException(ErrorCode.CONTAINER_CONTROL_CONFLICT, "Cần xác nhận kiểm soát hành trình trước ePOD");
+            }
+        }
         container.setCompletedAt(Instant.now());
         container.setEpodRecipient(request.getRecipientName());
         container.setEpodSignature(request.getSignature());
@@ -252,9 +369,30 @@ public class ContainerService {
 
     @Transactional
     public ContainerResponse updateStatus(String containerCode, ContainerStatus status) {
-        Container container = containerRepository.findByContainerCode(containerCode)
+        Container container = containerRepository.findForControlUpdate(containerCode)
                 .orElseThrow(() -> new AppException(ErrorCode.CONTAINER_NOT_FOUND, "Không tìm thấy container có mã: " + containerCode));
 
+        if (controlService.hasRound(containerCode) && !(container.getStatus() == ContainerStatus.DELIVERED
+                && controlService.isConfirmed(containerCode, "HANDOVER") && status == ContainerStatus.AVAILABLE))
+            throw new AppException(ErrorCode.INVALID_REQUEST_ARGUMENT, "Cần chuyển trạng thái qua quy trình kiểm soát và ePOD");
+        if (status == ContainerStatus.AVAILABLE && controlService.isConfirmed(containerCode, "HANDOVER")) {
+            container.setAssignedShipmentId(null);
+            container.setAssignedShipmentCode(null);
+            container.setAssignedDriverId(null);
+            container.setDriverName(null);
+            container.setDriverPhone(null);
+            container.setDriverLicense(null);
+            container.setDriverSafetyScore(null);
+            container.setAssignedVehicleId(null);
+            container.setVehicleLicensePlate(null);
+            container.setVehicleTypeLabel(null);
+            container.setOriginName(null);
+            container.setDestinationName(null);
+            container.setCompletedAt(null);
+            container.setEpodRecipient(null);
+            container.setEpodSignature(null);
+            container.setEpodNotes(null);
+        }
         container.setStatus(status);
         return containerMapper.toResponse(containerRepository.save(container));
     }

@@ -135,35 +135,9 @@ public class DriverService {
             );
         }
 
-        Optional<Driver> matched = Optional.empty();
-        if (!normalized.isBlank()) {
-            matched = driverRepository.findByAccountUsernameIgnoreCase(normalized)
-                    .or(() -> driverRepository.findByDriverCode(normalized))
-                    .or(() -> driverRepository.findByEmailIgnoreCase(normalized))
-                    .or(() -> {
-                        String emailPrefix = normalized.toLowerCase() + "@";
-                        return driverRepository.findAll().stream()
-                                .filter(d -> !Boolean.TRUE.equals(d.getIsDeleted()))
-                                .filter(d -> d.getEmail() != null && d.getEmail().toLowerCase().startsWith(emailPrefix))
-                                .findFirst();
-                    });
-        }
-
-        boolean allowDefaultDriverFallback = hasDriverRoleInScope || normalized.equalsIgnoreCase("driver");
-        if (matched.isEmpty() && !allowDefaultDriverFallback) {
-            throw new AppException(
-                    ErrorCode.DRIVER_NOT_FOUND,
-                    "Cảnh báo 404 Xác thực Phân hệ: Không tìm thấy hồ sơ Tài xế (DRIVER) gắn với tài khoản '"
-                            + (normalized.isEmpty() ? "anonymous" : normalized)
-                            + "'. Vui lòng đăng xuất và đăng nhập bằng tài khoản DRIVER."
-            );
-        }
-
-        Driver driver = matched
-                .or(() -> driverRepository.findAll().stream()
-                        .filter(d -> !Boolean.TRUE.equals(d.getIsDeleted()))
-                        .findFirst())
-                .orElseThrow(() -> new AppException(ErrorCode.DRIVER_NOT_FOUND));
+        Driver driver = driverRepository.findByAccountUsernameIgnoreCaseAndIsDeletedFalse(normalized)
+                .orElseThrow(() -> new AppException(ErrorCode.DRIVER_NOT_FOUND,
+                        "Tài khoản chưa liên kết với hồ sơ tài xế đang hoạt động"));
         return enrichDriverResponse(driver);
     }
 
@@ -175,16 +149,14 @@ public class DriverService {
         }
         Driver driver = driverMapper.toEntity(request);
         if (driver.getLicenseClass() == null || driver.getLicenseClass().isBlank()) {
-            driver.setLicenseClass("FC");
+            driver.setLicenseClass("");
         }
+        driver.setVerified(false);
         if (driver.getExperienceYears() == null) {
             driver.setExperienceYears(5);
         }
         if (driver.getEmail() == null || driver.getEmail().isBlank()) {
             driver.setEmail(driver.getDriverCode().toLowerCase() + "@ccadro-fleet.vn");
-        }
-        if (driver.getPreTripTime() == null || driver.getPreTripTime().isBlank()) {
-            driver.setPreTripTime("Đã kiểm định hồ sơ mới (6/6 Đạt)");
         }
         if (request.getSafetyCerts() != null && !request.getSafetyCerts().isEmpty()) {
             driver.setSafetyCertsJson(serializeCerts(request.getSafetyCerts()));
@@ -207,6 +179,7 @@ public class DriverService {
         if (request.getAvatarUrl() != null) driver.setAvatarUrl(request.getAvatarUrl());
         if (request.getLicenseClass() != null) driver.setLicenseClass(request.getLicenseClass());
         if (request.getLicenseNumber() != null) driver.setLicenseNumber(request.getLicenseNumber());
+        if (request.getLicenseIssueDate() != null) driver.setLicenseIssueDate(request.getLicenseIssueDate());
         if (request.getLicenseExpiryDate() != null) driver.setLicenseExpiryDate(request.getLicenseExpiryDate());
         if (request.getExperienceYears() != null) driver.setExperienceYears(request.getExperienceYears());
         if (request.getHosContinuousMin() != null) driver.setHosContinuousMin(request.getHosContinuousMin());

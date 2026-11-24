@@ -194,6 +194,11 @@ public class AssetService {
     }
 
     @Transactional
+    public ContainerResponse updateContainerCscData(String containerCode, ContainerCscUpdateRequest request) {
+        return containerService.updateCscData(containerCode, request);
+    }
+
+    @Transactional
     public ContainerResponse updateContainerTelemetry(String containerCode, ContainerTelemetryUpdateRequest request) {
         return containerService.updateTelemetry(containerCode, request);
     }
@@ -274,6 +279,7 @@ public class AssetService {
     @Transactional
     public ContainerCargoManifestItemResponse createContainerManifestItem(
             String containerCode, ContainerManifestItemCreateRequest request) {
+        containerService.checkManifestAddition(containerCode, request);
         return thirdPartyHandoverService.createManifestItem(containerCode, request);
     }
 

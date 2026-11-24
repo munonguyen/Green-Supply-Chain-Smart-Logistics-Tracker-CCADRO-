@@ -56,6 +56,9 @@ public class Driver extends BaseEntity {
     @Column(name = "license_number", length = 50)
     String licenseNumber;
 
+    @Column(name = "license_issue_date", length = 20)
+    String licenseIssueDate;
+
     @Column(name = "license_expiry_date", length = 20)
     String licenseExpiryDate;
 

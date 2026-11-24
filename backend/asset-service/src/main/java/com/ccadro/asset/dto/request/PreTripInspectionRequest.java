@@ -14,6 +14,7 @@ import java.util.UUID;
 public class PreTripInspectionRequest {
     UUID vehicleId;
     UUID driverId;
+    UUID shipmentId;
     Boolean tirePressurePassed;
     Boolean brakeSystemPassed;
     Boolean lightingSystemPassed;

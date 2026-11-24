@@ -56,7 +56,9 @@ public class PreTripInspectionService {
                     "Xe đang trong trạng thái bảo dưỡng (MAINTENANCE), cần Safety Manager nghiệm thu hoàn tất bảo dưỡng trước khi xuất bến.");
         }
 
-        vehicle.setStatus(eval.getTargetVehicleStatus());
+        if (!eval.allPassed() || vehicle.getStatus() != VehicleStatus.ASSIGNED) {
+            vehicle.setStatus(eval.getTargetVehicleStatus());
+        }
         PreTripInspection inspection = buildInspectionEntity(request, eval);
 
         preTripInspectionRepository.save(inspection);

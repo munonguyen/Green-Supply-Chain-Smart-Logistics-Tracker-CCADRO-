@@ -78,7 +78,7 @@ class DriverProfileIsolationTest {
                 .fullName("Nguyễn Văn Tài")
                 .build();
 
-        when(driverRepository.findByAccountUsernameIgnoreCase("driver")).thenReturn(Optional.of(driverEntity));
+        when(driverRepository.findByAccountUsernameIgnoreCaseAndIsDeletedFalse("driver")).thenReturn(Optional.of(driverEntity));
         when(driverMapper.toResponse(driverEntity)).thenReturn(mapped);
 
         DriverResponse result = driverService.getCurrentDriverProfile("driver", "ROLE_DRIVER POD_SUBMIT");

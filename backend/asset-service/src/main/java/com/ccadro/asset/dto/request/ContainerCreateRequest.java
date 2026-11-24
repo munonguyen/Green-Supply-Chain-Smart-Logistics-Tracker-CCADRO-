@@ -3,10 +3,12 @@ package com.ccadro.asset.dto.request;
 import com.ccadro.asset.entity.enums.ContainerType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Data
@@ -23,6 +25,13 @@ public class ContainerCreateRequest {
 
     String isoType;
     String ownerName;
+    String cscApprovalCountry;
+    String cscApprovalReference;
+    LocalDate cscManufactureDate;
+    @Pattern(regexp = "PERIODIC|ACEP", message = "Chương trình kiểm tra phải là PERIODIC hoặc ACEP")
+    String cscInspectionScheme;
+    String cscAcepProgramNumber;
+    LocalDate cscNextExaminationDate;
     UUID responsibleCompanyId;
     String responsibleCompanyCode;
     String responsibleCompanyName;
