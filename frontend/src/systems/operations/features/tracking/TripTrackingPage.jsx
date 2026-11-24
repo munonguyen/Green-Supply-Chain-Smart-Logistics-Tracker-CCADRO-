@@ -11,7 +11,6 @@ import {
   Lock,
   MapPin,
   Navigation,
-  Play,
   Radio,
   RefreshCw,
   ShieldCheck
@@ -22,27 +21,14 @@ import VehicleMarker from '../../../../shared/map/VehicleMarker';
 import OriginMarker from '../../../../shared/map/OriginMarker';
 import DestinationMarker from '../../../../shared/map/DestinationMarker';
 import DeviationMarker from '../../../../shared/map/DeviationMarker';
+import RouteEvidence from '../../../../shared/map/RouteEvidence';
 import {
   evaluateDestinationArrival,
   extractGeoJsonLineStringPoints,
-  fetchLiveOsrmRoute,
-  getRealRoadRoute,
   measurePolylineDistanceKm
 } from '../../../../services/roadRoutingService';
-import { HUB_CORRIDOR_DIRECTORY } from '../../../../services/logisticsReferenceData';
-import { api } from '../../../../services/api';
+import { api, gatewayUrl } from '../../../../services/api';
 
-function matchCorridorId(locationName = '') {
-  const lower = String(locationName).toLowerCase();
-  if (!lower) return null;
-  const found = HUB_CORRIDOR_DIRECTORY.find(
-    (h) =>
-      lower.includes(h.label.toLowerCase()) ||
-      lower.includes(h.area.toLowerCase()) ||
-      lower.includes(h.id)
-  );
-  return found ? found.id : null;
-}
 
 export default function TripTrackingPage() {
   const { tripId } = useParams();
@@ -57,8 +43,8 @@ export default function TripTrackingPage() {
   const [syncError, setSyncError] = useState(null);
   const [syncing, setSyncing] = useState(false);
   const [actionMsg, setActionMsg] = useState(null);
+  const [calculatingReroute, setCalculatingReroute] = useState(false);
   const [focusCoords, setFocusCoords] = useState(null);
-  const [liveOsrmRoute, setLiveOsrmRoute] = useState(null);
 
   const focusLat = parseFloat(searchParams.get('focusLat'));
   const focusLon = parseFloat(searchParams.get('focusLon'));
@@ -99,7 +85,7 @@ export default function TripTrackingPage() {
       } else {
         setDataSourceState('OFFLINE_NO_DATA');
         setSyncError(
-          'Chưa kết nối được PostgreSQL / Tracking Service (:8888). Hệ thống không tự sinh dữ liệu GPS giả lập.'
+          'Chưa kết nối được Hệ thống Giám sát Hành trình. Dữ liệu GPS hiển thị dựa trên tín hiệu thực tế.'
         );
       }
 
@@ -138,8 +124,9 @@ export default function TripTrackingPage() {
     if (typeof window !== 'undefined' && typeof window.EventSource !== 'undefined') {
       try {
         const base =
-          (import.meta.env.VITE_API_URL || 'http://localhost:8888') + '/api/v1/tracking/stream';
+          gatewayUrl('/api/v1/tracking/stream');
         const token =
+          window.localStorage.getItem('ccadro_token') ||
           window.localStorage.getItem('ccadro_access_token_v1') ||
           window.sessionStorage.getItem('ccadro_access_token_v1');
         const url = token ? `${base}?token=${encodeURIComponent(token)}` : base;
@@ -191,28 +178,14 @@ export default function TripTrackingPage() {
     }
   }, [hasEmergencyFocus, focusLat, focusLon]);
 
-  const originId = matchCorridorId(liveTelemetry?.originName) || 'catlai';
-  const destId = matchCorridorId(liveTelemetry?.destinationName) || 'vsip';
-
-  const originNode = useMemo(
-    () => HUB_CORRIDOR_DIRECTORY.find((h) => h.id === originId) || HUB_CORRIDOR_DIRECTORY[0],
-    [originId]
-  );
-  const destNode = useMemo(
-    () => HUB_CORRIDOR_DIRECTORY.find((h) => h.id === destId) || HUB_CORRIDOR_DIRECTORY[1],
-    [destId]
-  );
-
-  const fallbackRoadRoute = useMemo(() => getRealRoadRoute(originId, destId), [originId, destId]);
-
   const originCoords = useMemo(() => {
     const oLat = liveTelemetry?.originLat ?? liveTelemetry?.originLatitude;
     const oLon = liveTelemetry?.originLon ?? liveTelemetry?.originLongitude;
     if (oLat != null && oLon != null) {
       return [Number(oLat), Number(oLon)];
     }
-    return fallbackRoadRoute.points[0] || [10.7626, 106.7956];
-  }, [liveTelemetry, fallbackRoadRoute.points]);
+    return null;
+  }, [liveTelemetry]);
 
   const destCoords = useMemo(() => {
     const dLat = liveTelemetry?.destinationLat ?? liveTelemetry?.destinationLatitude;
@@ -220,27 +193,13 @@ export default function TripTrackingPage() {
     if (dLat != null && dLon != null) {
       return [Number(dLat), Number(dLon)];
     }
-    return fallbackRoadRoute.points[fallbackRoadRoute.points.length - 1] || [10.9312, 106.6974];
-  }, [liveTelemetry, fallbackRoadRoute.points]);
+    return null;
+  }, [liveTelemetry]);
 
   const postgisRoutePoints = useMemo(
     () => extractGeoJsonLineStringPoints(liveTelemetry?.routeWaypoints),
     [liveTelemetry?.routeWaypoints]
   );
-
-  // Fetch live OSRM road route if PostGIS RouteVersion polyline is not available
-  useEffect(() => {
-    if (postgisRoutePoints.length >= 2) return;
-    let cancelled = false;
-    fetchLiveOsrmRoute(originCoords, destCoords).then((res) => {
-      if (!cancelled && res?.points?.length >= 2) {
-        setLiveOsrmRoute(res);
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [postgisRoutePoints.length, originCoords, destCoords]);
 
   const activeRoadRoute = useMemo(() => {
     if (postgisRoutePoints.length >= 2) {
@@ -251,18 +210,11 @@ export default function TripTrackingPage() {
         source: 'POSTGIS_ROUTE_VERSION'
       };
     }
-    if (liveOsrmRoute?.points?.length >= 2) {
-      return {
-        points: liveOsrmRoute.points,
-        distanceKm: liveTelemetry?.totalDistanceKm ?? liveOsrmRoute.distanceKm,
-        source: 'OSRM_LIVE'
-      };
-    }
     return {
-      ...fallbackRoadRoute,
-      source: 'OSRM_CORRIDOR_CACHE'
+      points: [], distanceKm: null,
+      source: 'Chưa có hình học tuyến chính thức'
     };
-  }, [postgisRoutePoints, liveTelemetry?.totalDistanceKm, liveOsrmRoute, fallbackRoadRoute]);
+  }, [postgisRoutePoints, liveTelemetry?.totalDistanceKm]);
 
   // Authentic recorded GPS coordinates from Backend TelemetryEvent / Container IoT (chronological ascending)
   const recordedTrail = useMemo(() => {
@@ -329,17 +281,6 @@ export default function TripTrackingPage() {
     };
   }, [currentVehiclePos, destCoords, liveTelemetry, liveTrip]);
 
-  const handleStartTrip = async () => {
-    if (!tripId) return;
-    setActionMsg(null);
-    try {
-      await api.startTrip(tripId);
-      setActionMsg('Đã kích hoạt chuyến xe thực tế trên Backend (EN_ROUTE)!');
-      await fetchRealTripData();
-    } catch (err) {
-      setActionMsg(err?.message || 'Không thể gọi /trips/{id}/start (kiểm tra Backend :8888).');
-    }
-  };
 
   const handleSendRealDeviceGps = () => {
     setActionMsg(null);
@@ -417,6 +358,16 @@ export default function TripTrackingPage() {
     }
   };
 
+  const calculateRoadReroute = async () => {
+    setCalculatingReroute(true);
+    try {
+      const response = await api.calculateTripReroute(tripId);
+      setActionMsg(response.message || 'Đã tính phương án từ GPS hiện tại.');
+      await fetchRealTripData();
+    } catch (error) { setActionMsg(error.message || 'Chưa tính được phương án đường thực.'); }
+    finally { setCalculatingReroute(false); }
+  };
+
   const liveSpeed =
     liveTelemetry?.speedKmh != null
       ? Number(liveTelemetry.speedKmh)
@@ -475,10 +426,10 @@ export default function TripTrackingPage() {
           >
             <Radio size={14} />
             {dataSourceState === 'LIVE_SSE'
-              ? 'LUỒNG SSE + POSTGRESQL / POSTGIS THỰC TẾ'
+              ? 'LUỒNG DỮ LIỆU ĐỘI XE THỜI GIAN THỰC'
               : dataSourceState === 'LIVE_DB'
-                ? 'DỮ LIỆU REAL-TIME TỪ TRACKING SERVICE (POSTGRESQL)'
-                : 'CHẾ ĐỘ CHỜ BACKEND — KHÔNG TỰ SINH GPS ẢO'}
+                ? 'DỮ LIỆU GIÁM SÁT TRỰC TUYẾN TỪ MÁY CHỦ'
+                : 'CHẾ ĐỘ CHỜ KẾT NỐI — KHÔNG TỰ SINH GPS ẢO'}
           </div>
           <h2 style={{ fontSize: '1.45rem', fontWeight: 800 }}>
             Giám Sát GPS Thời Gian Thực &amp; Cảnh Báo Lệch Tuyến
@@ -502,17 +453,9 @@ export default function TripTrackingPage() {
             <span>{syncing ? 'Đang tải...' : 'Làm mới từ DB'}</span>
           </button>
 
-          {(liveTrip?.status === 'SCHEDULED' || liveTelemetry?.tripStatus === 'SCHEDULED') && (
-            <button
-              type="button"
-              onClick={handleStartTrip}
-              className="btn btn-primary"
-              style={{ fontSize: '0.82rem' }}
-            >
-              <Play size={15} />
-              <span>Bắt đầu Chuyến (EN_ROUTE)</span>
-            </button>
-          )}
+          {(liveTrip?.status === 'SCHEDULED' || liveTelemetry?.tripStatus === 'SCHEDULED') &&
+            <p>Đang chờ tài xế kiểm tra trước chuyến và xác nhận khởi hành trong khoang lái.</p>}
+
 
           <button
             type="button"
@@ -578,8 +521,8 @@ export default function TripTrackingPage() {
         <div style={{ fontSize: '0.84rem', fontWeight: 700 }}>
           🚩 Hành lang:{' '}
           <span style={{ color: 'var(--accent-green)' }}>
-            {liveTelemetry?.originName || originNode.label} ➔{' '}
-            {liveTelemetry?.destinationName || destNode.label}
+            {liveTelemetry?.originName || 'Chưa có điểm đi'} ➔{' '}
+            {liveTelemetry?.destinationName || 'Chưa có điểm đến'}
           </span>
         </div>
         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
@@ -588,7 +531,7 @@ export default function TripTrackingPage() {
             <strong style={{ color: 'var(--accent-green)' }}>
               {liveTelemetry?.totalDistanceKm != null
                 ? `${liveTelemetry.totalDistanceKm} km`
-                : `${activeRoadRoute.distanceKm} km`}
+                : activeRoadRoute.distanceKm == null ? 'Chưa xác minh' : `${activeRoadRoute.distanceKm} km`}
             </strong>
           </span>
           <span>
@@ -600,7 +543,7 @@ export default function TripTrackingPage() {
             </strong>
           </span>
           <span>
-            ETA:{' '}
+            ETA tham khảo theo vị trí/tốc độ:{' '}
             <strong>
               {liveTelemetry?.etaMinutes != null
                 ? `Khoảng ${liveTelemetry.etaMinutes} phút`
@@ -639,6 +582,12 @@ export default function TripTrackingPage() {
       </div>
 
       {/* Real Deviation / Reroute Proposal Alert */}
+      <div className="card" style={{ marginBottom: 18 }}>
+        <button type="button" className="btn btn-secondary" onClick={calculateRoadReroute} disabled={calculatingReroute || liveTrip?.status !== 'EN_ROUTE'}>
+          <RefreshCw size={16} /> {calculatingReroute ? 'Đang tính tuyến đường…' : 'Tính đổi tuyến từ GPS hiện tại'}
+        </button>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: 10 }}>Dùng GPS hợp lệ trong 5 phút gần nhất. Ngưỡng lợi ích so với phần đường còn lại của tuyến đã chốt; không khẳng định mức tiết kiệm nhiên liệu thực đo.</p>
+      </div>
       {(isCriticalDeviation || isWarningDeviation || pendingProposal) && (
         <div
           className="card"
@@ -674,7 +623,8 @@ export default function TripTrackingPage() {
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: 4 }}>
                   {pendingProposal
                     ? `Đề xuất đổi tuyến #${pendingProposal.id}: ${pendingProposal.reason || 'Tránh ùn tắc / lệch hành lang'}`
-                    : 'Ghi nhận trực tiếp từ PostGIS ST_Distance trên TelemetryEvent thực tế.'}
+                    : 'Ghi nhận từ cảm biến định vị GPS vệ tinh thời gian thực.'}
+                  {pendingProposal && !pendingProposal.routeGeometryAvailable && <p>Đây là ước tính lợi ích, chưa có hình học đường mới. Cần tính tuyến thực trước khi phê duyệt.</p>}
                 </div>
               </div>
             </div>
@@ -691,6 +641,7 @@ export default function TripTrackingPage() {
                 <button
                   type="button"
                   onClick={() => handleProposalDecision('ACCEPTED')}
+                  disabled={!pendingProposal.routeGeometryAvailable}
                   className="btn btn-primary"
                 >
                   <CheckCircle2 size={15} />
@@ -702,38 +653,46 @@ export default function TripTrackingPage() {
         </div>
       )}
 
+      {pendingProposal?.routeGeometryAvailable && <section className="card" style={{ marginBottom: 18 }}>
+        <h3>Phương án đổi tuyến đang chờ duyệt</h3>
+        <p>{(Number(pendingProposal.proposedDistanceMeters) / 1000).toFixed(2)} km · {Math.round(Number(pendingProposal.proposedDurationSeconds) / 60)} phút ước tính · giảm {(Number(pendingProposal.benefitRatio) * 100).toFixed(1)}% quãng đường so với phần tuyến được chiếu từ GPS.</p>
+        <p>Đường nét đứt màu cam trên bản đồ là phương án chờ duyệt. Tuyến xanh vẫn là tuyến đang áp dụng.</p>
+        <RouteEvidence candidate={pendingProposal} />
+      </section>}
+
       {/* Main Layout: 3D Map + Authentic Backend Telemetry Panel */}
       <div className="split-map-grid">
         <div className="card" style={{ padding: '14px' }}>
           <MapView
-            center={currentVehiclePos || originCoords}
+            center={currentVehiclePos || originCoords || [10.8231, 106.74]}
             zoom={12}
             focusPosition={focusCoords}
             focusZoom={14}
             defaultLayer="google_hybrid"
-            default3D={true}
+            default3D={false}
             height={560}
-            hudTitle={`${vehicleTitle} • Dữ liệu thực PostgreSQL + SSE`}
+            hudTitle={`${vehicleTitle} • Định vị vệ tinh trực tiếp (Real-time)`}
             hudSubtitle={
               currentVehiclePos
                 ? `${liveTelemetry?.dataSource || 'LIVE_DB'} • Tốc độ ${liveSpeed ?? 0} km/h`
                 : 'Chưa có tọa độ GPS thực từ TelemetryEvent — hiển thị điểm đầu/cuối hành lang'
             }
           >
-            <OriginMarker
+            {originCoords && <OriginMarker
               position={originCoords}
-              title={liveTelemetry?.originName || originNode.label}
-              label={liveTelemetry?.originName || originNode.label}
-            />
-            <DestinationMarker
+              title={liveTelemetry?.originName}
+              label={liveTelemetry?.originName}
+            />}
+            {destCoords && <DestinationMarker
               position={destCoords}
-              title={liveTelemetry?.destinationName || destNode.label}
-              label={liveTelemetry?.destinationName || destNode.label}
+              title={liveTelemetry?.destinationName}
+              label={liveTelemetry?.destinationName}
               showGeofence={true}
               geofenceRadiusMeters={arrivalInfo.arrivalRadiusMeters || 250}
               arrived={arrivalInfo.arrived}
-            />
+            />}
             <RoutePolyline
+              routingMetadataJson={liveTelemetry?.routingMetadataJson}
               positions={activeRoadRoute.points}
               color="#10b981"
               weight={5}
@@ -744,9 +703,16 @@ export default function TripTrackingPage() {
                 positions={recordedTrail}
                 color="#0ea5e9"
                 weight={4}
+                dashArray="5, 6"
+                showCorridorBuffer={false}
                 autoFit={false}
               />
             )}
+            {pendingProposal?.routeGeometryAvailable && <RoutePolyline
+              routingMetadataJson={pendingProposal.routingMetadataJson}
+              positions={extractGeoJsonLineStringPoints(pendingProposal.routeWaypoints)}
+              color="#f59e0b" weight={5} dashArray="10, 7" showCorridorBuffer={false} autoFit={false}
+            />}
             {currentVehiclePos && (
               <VehicleMarker
                 position={currentVehiclePos}
@@ -765,6 +731,9 @@ export default function TripTrackingPage() {
               />
             )}
           </MapView>
+          {liveTelemetry?.routingMetadataJson && (
+            <RouteEvidence candidate={{ routingMetadataJson: liveTelemetry.routingMetadataJson }} />
+          )}
         </div>
 
         {/* Right Authentic Telemetry Panel */}
@@ -923,7 +892,7 @@ export default function TripTrackingPage() {
             <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.6, display: 'grid', gap: 9 }}>
               <div style={{ padding: '9px 11px', borderRadius: 10, background: 'var(--bg-card-hover)', borderLeft: '3px solid var(--accent-green)' }}>
                 <strong style={{ color: 'var(--text-main)', display: 'block' }}>Vùng an toàn (&lt; 50m)</strong>
-                Bám sát tuyến hành lang đã duyệt trên PostgreSQL/PostGIS.
+                Phương tiện bám sát đúng tuyến hành lang đã phê duyệt.
               </div>
               <div style={{ padding: '9px 11px', borderRadius: 10, background: 'var(--bg-card-hover)', borderLeft: '3px solid var(--accent-amber)' }}>
                 <strong style={{ color: 'var(--text-main)', display: 'block' }}>Cảnh báo vàng (50m – 200m)</strong>
