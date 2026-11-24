@@ -1,0 +1,195 @@
+.data-management-page {
+  display: grid;
+  gap: 22px;
+}
+.data-management-page .page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.data-management-page .page-header h1 {
+  margin: 5px 0;
+}
+.data-management-page .page-header p,
+.data-inventory-note {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.page-eyebrow {
+  color: var(--accent-green-light);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .08em;
+}
+.data-management-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(180px, 1.4fr);
+  gap: 12px;
+  align-items: stretch;
+}
+.data-management-summary article,
+.data-management-summary > p {
+  margin: 0;
+  padding: 15px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-card);
+}
+.data-management-summary article {
+  display: grid;
+  gap: 4px;
+}
+.data-management-summary article strong {
+  font-size: 23px;
+}
+.data-management-summary article span,
+.data-management-summary > p {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+.data-management-summary .has-alert strong {
+  color: #f59e0b;
+}
+.data-management-alert {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 13px 15px;
+  border: 1px solid rgba(239, 68, 68, .5);
+  border-radius: 10px;
+  background: rgba(239, 68, 68, .1);
+  color: #fca5a5;
+  font-size: 12px;
+}
+.data-integrity-panel,
+.data-coverage-note {
+  padding: 17px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-card);
+}
+.data-integrity-panel > div,
+.data-group > h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.data-integrity-panel h2,
+.data-coverage-note h2,
+.data-group > h2 {
+  margin: 0;
+  font-size: 15px;
+}
+.data-integrity-panel > div svg {
+  color: #f59e0b;
+}
+.data-integrity-panel p,
+.data-coverage-note p {
+  margin: 9px 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.data-integrity-panel a,
+.data-source-card a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--accent-green-light);
+  font-size: 11px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.data-group {
+  display: grid;
+  gap: 12px;
+}
+.data-group > h2 svg {
+  color: var(--accent-green-light);
+}
+.data-group-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+  gap: 12px;
+}
+.data-source-card {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 11px;
+  background: var(--bg-card);
+}
+.data-source-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--text-muted);
+  font-size: 10px;
+}
+.data-source-available .data-source-topline svg,
+.data-service-card.status-up span {
+  color: #34d399;
+}
+.data-source-unavailable .data-source-topline svg,
+.data-service-card.status-down span,
+.data-service-card.status-check_timeout span {
+  color: #f87171;
+}
+.data-source-unknown .data-source-topline svg,
+.data-service-card.status-degraded span,
+.data-service-card.status-not_registered span,
+.data-service-card.status-check_failed span {
+  color: #fbbf24;
+}
+.data-source-card h3 {
+  min-height: 38px;
+  margin: 12px 0 5px;
+  font-size: 13px;
+}
+.data-source-count {
+  font-size: 20px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.data-source-card > p {
+  min-height: 31px;
+  margin: 5px 0 12px;
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.data-source-card > p::after {
+  content: '';
+}
+.data-service-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+.data-service-card {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 9px;
+  background: var(--bg-card);
+  font-size: 11px;
+}
+.data-service-card > span {
+  font-weight: 700;
+}
+.data-service-card > small {
+  color: var(--text-muted);
+}
+@media (max-width: 720px) {
+  .data-management-page .page-header {
+    flex-direction: column;
+  }
+  .data-management-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

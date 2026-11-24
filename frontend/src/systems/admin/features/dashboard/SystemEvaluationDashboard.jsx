@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { CountingNumber } from '../../../../shared/components/CountingNumber';
+import { CountingNumber } from '../../../../shared/effects/CountingNumber';
 import {
   Activity,
   AlertTriangle,
@@ -370,8 +370,8 @@ export default function SystemEvaluationDashboard({
     if (maintenanceVehicles > 0) {
       diagnostics.push({
         severity: 'INFO',
-        title: `${maintenanceVehicles} xe trạng thái MAINTENANCE bị khóa xuất bến theo quy tắc an toàn BRULE-01`,
-        actionLabel: 'Kiểm định Pre-Trip UC01',
+        title: `${maintenanceVehicles} xe trạng thái MAINTENANCE bị khóa xuất bến chờ bảo trì an toàn`,
+        actionLabel: 'Kiểm định An toàn Trước Chuyến',
         path: '/governance'
       });
     }
@@ -403,7 +403,7 @@ export default function SystemEvaluationDashboard({
       diagnostics.push({
         severity: 'OK',
         title: 'Toàn bộ 5 trụ cột nghiệp vụ đạt ngưỡng ổn định — Không phát hiện điểm nghẽn tồn đọng.',
-        actionLabel: 'Xem Định mức Carbon UC13',
+        actionLabel: 'Xem Định Mức Phát Thải Hành Lang',
         path: '/analytics/benchmark'
       });
     }
@@ -772,7 +772,7 @@ export default function SystemEvaluationDashboard({
           </div>
 
           <div className="card" style={{ padding: 14 }}>
-            <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>Sẵn Sàng Hạm Đội (BRULE-01)</div>
+            <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>Tỷ Lệ Sẵn Sàng Xuất Bến</div>
             <div style={{ fontSize: '1.35rem', fontWeight: 900, margin: '4px 0', color: '#38bdf8' }}>
               {analytics.readyVehicles} / {analytics.totalVehicles} Xe
             </div>
@@ -804,7 +804,7 @@ export default function SystemEvaluationDashboard({
               {analytics.unackedAlerts} Cảnh báo
             </div>
             <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
-              {analytics.openIncidents} sự cố đang chờ thẩm định UC16
+              {analytics.openIncidents} sự cố đang chờ thẩm định
             </div>
           </div>
         </motion.div>
@@ -860,7 +860,7 @@ export default function SystemEvaluationDashboard({
                 cursor: 'pointer'
               }}
             >
-              Xem chi tiết định mức hành lang (UC13) →
+              Xem chi tiết định mức hành lang →
             </button>
           </div>
         </motion.div>

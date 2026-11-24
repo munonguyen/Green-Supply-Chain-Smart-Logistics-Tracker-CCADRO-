@@ -14,8 +14,8 @@ import {
 import '../../../../styles/landing.css';
 import LandingNavbar from '../../shared/LandingNavbar';
 import LandingFooter from '../../shared/LandingFooter';
-import Reveal from '../../../../shared/components/Reveal';
-import { CountingNumber } from '../../../../shared/components/CountingNumber';
+import Reveal from '../../../../shared/effects/Reveal';
+import { CountingNumber } from '../../../../shared/effects/CountingNumber';
 import { IMAGES, PILLARS, ROADMAP, VIDEOS } from '../../shared/landingContent';
 
 const ESG_COMMITMENTS = [

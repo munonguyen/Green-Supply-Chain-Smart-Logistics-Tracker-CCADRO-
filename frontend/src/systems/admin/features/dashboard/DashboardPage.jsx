@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import CountingNumber from '../../../../shared/components/CountingNumber';
-import ElasticSearchBar from '../../../../shared/components/ElasticSearchBar';
+import { CountingNumber, SlidingPillTabs } from '../../../../shared/effects';
+import SearchToolbar from '../../../../shared/components/search/SearchToolbar';
 import { elasticSearchMatch } from '../../../../utils/elasticSearch';
 import CarbonBenchmarkChart from '../../../../shared/charts/CarbonBenchmarkChart';
 import FleetStatusDonutChart from '../../../../shared/charts/FleetStatusDonutChart';
@@ -11,7 +11,7 @@ import DeviationTrendSparkline from '../../../../shared/charts/DeviationTrendSpa
 import RevenueAndBranchChart from '../../../../shared/charts/RevenueAndBranchChart';
 import RealTimeFleetMap3D from '../../../../shared/map/RealTimeFleetMap3D';
 import SystemEvaluationDashboard from './SystemEvaluationDashboard';
-import { api } from '../../../../services/api';
+import { api, gatewayUrl } from '../../../../services/api';
 import { useAuth } from '../../../../context/AuthContext';
 import { identityProfile } from '../../../../hooks/useLiveIdentity';
 import { loadStoredUserShipments } from '../../../customer/features/portal/CustomerPortalPage';
@@ -59,7 +59,7 @@ function unwrapArray(res) {
 
 export default function DashboardPage() {
   const navigate = useNavigate();
-  const { user, token, accounts = [], companies = [], demoIdentity } = useAuth();
+  const { user, token, accounts = [], companies = [], demoIdentity, identityLoading = false } = useAuth();
 
   const [shipments, setShipments] = useState(() =>
     (demoIdentity ? loadStoredUserShipments() : []).map((s) => ({
@@ -306,14 +306,13 @@ export default function DashboardPage() {
     if (typeof window === 'undefined' || typeof window.EventSource === 'undefined') {
       return undefined;
     }
-    const baseApi = import.meta.env.VITE_API_URL || 'http://localhost:8888';
     const qs = token ? `?token=${encodeURIComponent(token)}` : '';
 
     let trackingEs = null;
     let alertEs = null;
 
     try {
-      trackingEs = new window.EventSource(`${baseApi}/api/v1/tracking/stream${qs}`);
+      trackingEs = new window.EventSource(gatewayUrl(`/api/v1/tracking/stream${qs}`));
       trackingEs.addEventListener('fleet-snapshot', (evt) => {
         try {
           const list = JSON.parse(evt.data);
@@ -344,7 +343,7 @@ export default function DashboardPage() {
     }
 
     try {
-      alertEs = new window.EventSource(`${baseApi}/api/v1/notifications/stream${qs}`);
+      alertEs = new window.EventSource(gatewayUrl(`/api/v1/notifications/stream${qs}`));
       alertEs.addEventListener('open', () => setSseAlertLive(true));
       alertEs.addEventListener('emergency-alert', (evt) => {
         try {
@@ -686,7 +685,7 @@ export default function DashboardPage() {
               <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>Cảnh báo</span>
             </div>
             <span style={{ fontSize: '0.73rem', color: lockedAccountsCount > 0 ? '#fca5a5' : 'var(--text-muted)' }}>
-              {openIncidentsCount} sự cố UC16 • {lockedAccountsCount} tài khoản khóa
+              {openIncidentsCount} sự cố hiện trường • {lockedAccountsCount} tài khoản khóa
             </span>
           </div>
           <Bell size={30} color="#ef4444" />
@@ -850,17 +849,18 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          <div
+          <SlidingPillTabs
+            layoutId="dashboard-tab-pill"
+            itemRole="button"
+            ariaLabel="Danh mục giám sát bảng điều hành"
+            activeId={activeTab}
+            onChange={setActiveTab}
             style={{
-              display: 'flex',
               background: 'rgba(148, 163, 184, 0.08)',
               padding: '3px',
-              borderRadius: '9px',
-              gap: '4px',
-              flexWrap: 'wrap'
+              borderRadius: '9px'
             }}
-          >
-            {[
+            tabs={[
               { id: 'shipments', label: `Vận Đơn (${visibleShipments.length})` },
               { id: 'revenue', label: `Doanh Thu & Hợp Đồng (${b2bPayments.length})` },
               { id: 'vehicles', label: `Đội Xe & Telemetry (${vehicles.length})` },
@@ -871,26 +871,8 @@ export default function DashboardPage() {
                 label: `Cảnh Báo & Sự Cố (${unackedNotificationsCount + openIncidentsCount})`
               },
               { id: 'users', label: `IAM & Bảo Mật (${activeAccounts.length})` }
-            ].map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => setActiveTab(t.id)}
-                style={{
-                  background: activeTab === t.id ? 'var(--accent-green)' : 'transparent',
-                  color: activeTab === t.id ? '#090d16' : 'var(--text-muted)',
-                  fontWeight: 700,
-                  fontSize: '0.76rem',
-                  border: 'none',
-                  padding: '6px 12px',
-                  borderRadius: '6px',
-                  cursor: 'pointer'
-                }}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
+            ]}
+          />
         </div>
 
         {/* Tab 1: Shipments */}
@@ -985,7 +967,7 @@ export default function DashboardPage() {
                   <th>Biển Số</th>
                   <th>Loại Phương Tiện</th>
                   <th>Vận Tốc &amp; Lệch Tuyến Live</th>
-                  <th>Trạng Thái (BRULE-01)</th>
+                  <th>Trạng Thái An Toàn</th>
                 </tr>
               </thead>
               <tbody>
@@ -1391,7 +1373,7 @@ export default function DashboardPage() {
                     {incidents.map((inc) => (
                       <tr key={`i-${inc.id}`}>
                         <td>
-                          <span className="badge badge-amber">UC16</span>
+                          <span className="badge badge-amber">Sự Cố</span>
                         </td>
                         <td>
                           <strong>{inc.incidentType}</strong>
@@ -1408,7 +1390,7 @@ export default function DashboardPage() {
                             className="btn btn-secondary"
                             style={{ padding: '4px 9px', fontSize: '0.73rem' }}
                           >
-                            Thẩm Định UC17
+                            Thẩm Định An Toàn
                           </button>
                         </td>
                       </tr>
@@ -1455,14 +1437,14 @@ export default function DashboardPage() {
               </button>
             </div>
             <div style={{ marginBottom: 12 }}>
-              <ElasticSearchBar
+              <SearchToolbar
                 value={accountSearch}
                 onChange={setAccountSearch}
-                placeholder="Elastic search: username, họ tên, công ty, MST, vai trò..."
+                label="Tìm tài khoản"
+                loading={identityLoading}
+                placeholder="Tên đăng nhập, họ tên, công ty hoặc vai trò…"
                 totalCount={activeAccounts.length}
                 matchedCount={elasticDashboardAccounts.items.length}
-                tookMs={elasticDashboardAccounts.tookMs}
-                rounded={8}
               />
             </div>
             <div className="table-wrapper">
@@ -1522,7 +1504,7 @@ export default function DashboardPage() {
           style={{ fontSize: '0.78rem' }}
         >
           <ShieldAlert size={14} color="#f59e0b" />
-          <span>Đi tới Trung tâm Kiểm định An toàn &amp; Sự cố (UC01 / UC16)</span>
+          <span>Đi tới Trung tâm Kiểm định An toàn &amp; Sự cố Hiện trường</span>
         </button>
       </div>
     </div>

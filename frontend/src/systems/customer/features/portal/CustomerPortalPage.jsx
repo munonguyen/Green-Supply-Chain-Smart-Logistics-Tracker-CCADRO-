@@ -60,9 +60,9 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../../context/AuthContext';
 import { useTheme } from '../../../../context/ThemeContext';
-import { api } from '../../../../services/api';
-import CcadroLogo from '../../../../shared/components/CcadroLogo';
-import GrabDriverAvatar from '../../../../shared/components/GrabDriverAvatar';
+import { api, gatewayUrl } from '../../../../services/api';
+import CcadroLogo from '../../../../shared/components/ui/CcadroLogo';
+import GrabDriverAvatar from '../../../../shared/components/account/GrabDriverAvatar';
 import GrabDriverChatModal from '../../../../shared/chat/GrabDriverChatModal';
 import CustomerPaymentModal from '../../shared/CustomerPaymentModal';
 import CustomerContractModal from '../../shared/CustomerContractModal';
@@ -86,11 +86,19 @@ import {
   loadChatThreadsMap,
   subscribeDriverChat
 } from '../../../../utils/driverChatSync';
-import { CountingNumber } from '../../../../shared/components/CountingNumber';
-import UserAccountMenu from '../../../../shared/components/UserAccountMenu';
-import AccountSettingsModal from '../../../../shared/components/AccountSettingsModal';
-import SidebarAccountCard from '../../../../shared/components/SidebarAccountCard';
-import ElasticSearchBar from '../../../../shared/components/ElasticSearchBar';
+import {
+  getNotificationsForViewer,
+  isNotificationUnreadForViewer,
+  loadStoredRoleNotifications,
+  markNotificationReadForViewer,
+  publishCrossRoleNotification,
+  subscribeRoleNotifications
+} from '../../../../utils/roleNotificationSync';
+import { CountingNumber } from '../../../../shared/effects/CountingNumber';
+import UserAccountMenu from '../../../../shared/components/account/UserAccountMenu';
+import AccountSettingsModal from '../../../../shared/components/account/AccountSettingsModal';
+import SidebarAccountCard from '../../../../shared/components/account/SidebarAccountCard';
+import SearchToolbar from '../../../../shared/components/search/SearchToolbar';
 import { elasticSearchMatch } from '../../../../utils/elasticSearch';
 import MapView from '../../../../shared/map/MapView';
 import RoutePolyline from '../../../../shared/map/RoutePolyline';
@@ -804,7 +812,7 @@ const SIDEBAR_SECTIONS = [
     items: [
       {
         id: 'booking',
-        label: 'Đặt Thuê Xe & Tối Ưu Tuyến (UC05)',
+        label: 'Đặt Thuê Xe & Tối Ưu Lộ Trình',
         shortLabel: 'Đặt Thuê Xe',
         icon: PlusCircle,
         badge: null
@@ -1002,6 +1010,17 @@ export default function CustomerPortalPage() {
     autoEpodEmail: true,
     monthlyEsgDigest: true
   });
+  const [customerRoleNotifs, setCustomerRoleNotifs] = useState(() =>
+    getNotificationsForViewer(user, loadStoredRoleNotifications())
+  );
+
+  useEffect(() => {
+    const refreshNotifs = () => {
+      setCustomerRoleNotifs(getNotificationsForViewer(user, loadStoredRoleNotifications()));
+    };
+    refreshNotifs();
+    return subscribeRoleNotifications(refreshNotifs);
+  }, [user]);
 
   // Database real-time sync state
   const [dbSyncState, setDbSyncState] = useState('LOCAL_CACHE'); // 'LIVE_DB' | 'LOCAL_CACHE'
@@ -2330,7 +2349,7 @@ export default function CustomerPortalPage() {
     if (typeof window !== 'undefined' && typeof window.EventSource !== 'undefined') {
       try {
         const base =
-          (import.meta.env.VITE_API_URL || 'http://localhost:8888') + '/api/v1/tracking/stream';
+          gatewayUrl('/api/v1/tracking/stream');
         const token =
           window.localStorage.getItem('ccadro_access_token_v1') ||
           window.sessionStorage.getItem('ccadro_access_token_v1');
@@ -2658,6 +2677,16 @@ export default function CustomerPortalPage() {
     const updated = [newOrder, ...allShipments];
     setAllShipments(updated);
     saveStoredUserShipments(updated);
+    publishCrossRoleNotification({
+      eventType: 'CUSTOMER_BOOKING_CREATED',
+      severity: 'INFO',
+      senderRole: 'CUSTOMER',
+      senderUsername: user?.username,
+      senderName: user?.companyName || user?.fullName || 'Chủ hàng B2B',
+      targetRoles: ['OPERATOR', 'ADMIN'],
+      title: `Đơn đặt xe xanh mới ${newCode} (${Number(bookingForm.cargoWeightTons)} tấn)`,
+      message: `${user?.companyName || 'Khách hàng B2B'} vừa khởi tạo vận đơn tuyến ${originLabel} → ${destLabel} kèm container ${containerCode}.`
+    });
 
     const chosenMethod = bookingForm.preferredPaymentMethod || 'VIETQR_NAPAS';
     const isNet30Order = chosenMethod === 'GREEN_CREDIT_NET30';
@@ -3303,7 +3332,7 @@ export default function CustomerPortalPage() {
               {/* Subtle Enterprise DB Sync Chip */}
               <div
                 className="topbar-status-pill"
-                title="Trạng thái đồng bộ dữ liệu thời gian thực với PostgreSQL Database"
+                title="Trạng thái kết nối trực tuyến với hệ thống trung tâm"
                 style={{
                   background: isDark ? 'rgba(15, 23, 42, 0.72)' : '#f8fafc',
                   border:
@@ -3321,7 +3350,7 @@ export default function CustomerPortalPage() {
                 />
                 <Database size={12} color={dbSyncState === 'LIVE_DB' ? '#10b981' : '#0284c7'} />
                 <span style={{ fontWeight: 700 }}>
-                  {dbSyncState === 'LIVE_DB' ? 'DB Live' : 'Realtime'}
+                  {dbSyncState === 'LIVE_DB' ? 'Trực tuyến' : 'Đang kết nối'}
                 </span>
                 <span
                   className="topbar-status-sub"
@@ -3336,7 +3365,7 @@ export default function CustomerPortalPage() {
                 <button
                   type="button"
                   onClick={syncContainersFromDb}
-                  title="Làm mới dữ liệu từ Database ngay"
+                  title="Cập nhật dữ liệu vận đơn mới nhất"
                   style={{
                     background: 'transparent',
                     border: 'none',
@@ -3396,10 +3425,12 @@ export default function CustomerPortalPage() {
                     className="topbar-btn topbar-btn-icon"
                     onClick={() => setShowNotifPanel((v) => !v)}
                     aria-label="Thông báo vận đơn"
-                    title="Thông báo vận đơn"
+                    title="Thông báo vận đơn & điều phối"
                   >
                     <Bell size={15} />
-                    {userOwnShipments.length > 0 && (
+                    {(customerRoleNotifs.filter((n) => isNotificationUnreadForViewer(n, user)).length +
+                      userOwnShipments.length) >
+                      0 && (
                       <span
                         style={{
                           position: 'absolute',
@@ -3420,7 +3451,8 @@ export default function CustomerPortalPage() {
                           lineHeight: 1
                         }}
                       >
-                        {userOwnShipments.length}
+                        {customerRoleNotifs.filter((n) => isNotificationUnreadForViewer(n, user)).length ||
+                          userOwnShipments.length}
                       </span>
                     )}
                   </button>
@@ -3431,7 +3463,7 @@ export default function CustomerPortalPage() {
                         position: 'absolute',
                         right: 0,
                         top: 42,
-                        width: 320,
+                        width: 350,
                         padding: 14,
                         borderRadius: 14,
                         background: isDark ? '#071a14' : '#ffffff',
@@ -3449,16 +3481,59 @@ export default function CustomerPortalPage() {
                           justifyContent: 'space-between'
                         }}
                       >
-                        <span>Thông báo Vận đơn Real-time</span>
-                        <span style={{ color: '#10b981' }}>{userOwnShipments.length} sự kiện</span>
+                        <span>Thông báo Vận đơn &amp; Giao nhận</span>
+                        <span style={{ color: '#10b981' }}>
+                          {customerRoleNotifs.length + userOwnShipments.length} sự kiện
+                        </span>
                       </div>
-                      {userOwnShipments.length === 0 ? (
-                        <div style={{ fontSize: '0.76rem', opacity: 0.72, padding: '8px 0' }}>
-                          Tài khoản mới khởi tạo chưa có thông báo vận đơn nào.
-                        </div>
-                      ) : (
-                        <div style={{ display: 'grid', gap: 8, maxHeight: 220, overflowY: 'auto' }}>
-                          {userOwnShipments.map((s) => (
+                      <div style={{ display: 'grid', gap: 8, maxHeight: 300, overflowY: 'auto' }}>
+                        {customerRoleNotifs.slice(0, 6).map((n) => {
+                          const unread = isNotificationUnreadForViewer(n, user);
+                          return (
+                            <div
+                              key={n.id}
+                              style={{
+                                padding: '8px 10px',
+                                borderRadius: 8,
+                                background: unread ? 'rgba(16, 185, 129, 0.1)' : subtleBg,
+                                border: unread
+                                  ? '1px solid rgba(16, 185, 129, 0.35)'
+                                  : '1px solid transparent',
+                                fontSize: '0.74rem'
+                              }}
+                            >
+                              <div style={{ fontWeight: 800, color: '#059669' }}>{n.title}</div>
+                              <div style={{ opacity: 0.82, marginTop: 2, lineHeight: 1.35 }}>
+                                {n.message}
+                              </div>
+                              {unread && (
+                                <button
+                                  type="button"
+                                  onClick={() => markNotificationReadForViewer(n.id, user)}
+                                  style={{
+                                    marginTop: 5,
+                                    border: 'none',
+                                    background: 'rgba(16, 185, 129, 0.16)',
+                                    color: '#059669',
+                                    padding: '2px 7px',
+                                    borderRadius: 5,
+                                    fontSize: '0.68rem',
+                                    fontWeight: 700,
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  Đã xem
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                        {userOwnShipments.length === 0 && customerRoleNotifs.length === 0 ? (
+                          <div style={{ fontSize: '0.76rem', opacity: 0.72, padding: '8px 0' }}>
+                            Tài khoản mới khởi tạo chưa có thông báo vận đơn nào.
+                          </div>
+                        ) : (
+                          userOwnShipments.map((s) => (
                             <div
                               key={s.shipmentCode}
                               style={{
@@ -3474,9 +3549,9 @@ export default function CustomerPortalPage() {
                                 {s.originName} → {s.destinationName}
                               </div>
                             </div>
-                          ))}
-                        </div>
-                      )}
+                          ))
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -5612,15 +5687,13 @@ export default function CustomerPortalPage() {
                     <option value="20_STANDARD">20ft Tiêu Chuẩn (22G1)</option>
                   </select>
 
-                  <ElasticSearchBar
+                  <SearchToolbar
                     value={containerSearch}
                     onChange={setContainerSearch}
-                    placeholder="Elastic search: mã Cont, Tài xế, SĐT, Biển số..."
+                    label="Tìm container"
+                    placeholder="Mã container, tài xế hoặc biển số…"
                     totalCount={containerScopedList.length}
                     matchedCount={filteredContainers.length}
-                    tookMs={elasticContainersResult.tookMs}
-                    minWidth={280}
-                    rounded={999}
                   />
                 </div>
               </div>
@@ -6535,15 +6608,13 @@ export default function CustomerPortalPage() {
                     <option value="C">GPLX Hạng C (Xe tải nặng)</option>
                   </select>
 
-                  <ElasticSearchBar
+                  <SearchToolbar
                     value={driverSearch}
                     onChange={setDriverSearch}
-                    placeholder="Elastic search: tên tài xế, mã DRV, SĐT, biển số..."
+                    label="Tìm tài xế"
+                    placeholder="Tên, mã tài xế, điện thoại hoặc biển số…"
                     totalCount={driverScopedList.length}
                     matchedCount={filteredDrivers.length}
-                    tookMs={elasticDriversResult.tookMs}
-                    minWidth={280}
-                    rounded={999}
                   />
                 </div>
               </div>
@@ -7021,7 +7092,7 @@ export default function CustomerPortalPage() {
                       letterSpacing: '0.05em'
                     }}
                   >
-                    NGHIỆP VỤ UC05 • TỐI ƯU TUYẾN ĐA TIÊU CHÍ PARETO
+                    ĐIỀU PHỐI VẬN TẢI • TỐI ƯU LỘ TRÌNH ĐA MỤC TIÊU
                   </div>
                   <h2 style={{ fontSize: '1.24rem', fontWeight: 800, margin: '2px 0 6px' }}>
                     Đặt Thuê Xe Vận Chuyển Xanh &amp; Khởi Tạo Vận Đơn Real-Time
@@ -7198,7 +7269,7 @@ export default function CustomerPortalPage() {
                         marginBottom: 6
                       }}
                     >
-                      Chiến Lược Tối Ưu Tuyến Pareto (UC05 Multi-Criteria)
+                      Chiến Lược Tối Ưu Tuyến Đa Mục Tiêu (Chi phí & Phát thải)
                     </label>
                     <div style={{ display: 'grid', gap: 6 }}>
                       {PARETO_ROUTING_MODES.map((mode) => {
@@ -7782,18 +7853,16 @@ export default function CustomerPortalPage() {
                 </div>
 
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-                  <ElasticSearchBar
+                  <SearchToolbar
                     value={searchQuery}
                     onChange={setSearchQuery}
-                    placeholder="Elastic search: mã đơn, cảng, biển số, tài xế..."
+                    label="Tìm vận đơn"
+                    placeholder="Mã đơn, cảng, biển số hoặc tài xế…"
                     totalCount={orderStatusScopedShipments.length}
                     matchedCount={filteredShipments.length}
-                    tookMs={elasticShipmentsResult.tookMs}
                     showDeleted={showDeletedOrders}
                     onToggleDeleted={() => setShowDeletedOrders((prev) => !prev)}
                     deletedCount={deletedUserShipments.length}
-                    minWidth={280}
-                    rounded={999}
                   />
 
                   {['ALL', 'IN_TRANSIT', 'COMPLETED'].map((st) => (
@@ -8951,18 +9020,16 @@ export default function CustomerPortalPage() {
                   </div>
 
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <ElasticSearchBar
+                    <SearchToolbar
                       value={contractSearch}
                       onChange={setContractSearch}
-                      placeholder="Elastic search: mã HĐ, mã chuyến, tuyến..."
+                      label="Tìm hợp đồng"
+                      placeholder="Mã hợp đồng, mã chuyến hoặc tuyến…"
                       totalCount={contractTypeFiltered.length}
                       matchedCount={filteredContracts.length}
-                      tookMs={elasticContractsResult.tookMs}
                       showDeleted={showDeletedContracts}
                       onToggleDeleted={() => setShowDeletedContracts((prev) => !prev)}
                       deletedCount={deletedContractsCount}
-                      minWidth={260}
-                      rounded={999}
                     />
                     <button
                       type="button"
@@ -9414,18 +9481,16 @@ export default function CustomerPortalPage() {
                   </div>
 
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                    <ElasticSearchBar
+                    <SearchToolbar
                       value={paymentSearch}
                       onChange={setPaymentSearch}
-                      placeholder="Elastic search: mã GD, số HĐ, vận đơn..."
+                      label="Tìm giao dịch"
+                      placeholder="Mã giao dịch, hợp đồng hoặc vận đơn…"
                       totalCount={paymentStatusFiltered.length}
                       matchedCount={filteredPayments.length}
-                      tookMs={elasticPaymentsResult.tookMs}
                       showDeleted={showDeletedPayments}
                       onToggleDeleted={() => setShowDeletedPayments((prev) => !prev)}
                       deletedCount={deletedPaymentsCount}
-                      minWidth={260}
-                      rounded={999}
                     />
 
                     {[
@@ -9683,7 +9748,7 @@ export default function CustomerPortalPage() {
                       value: user?.companyName || 'Doanh Nghiệp Đối Tác B2B'
                     },
                     {
-                      label: 'Mã định danh Đối tác (BRULE-16)',
+                      label: 'Mã định danh Đối tác',
                       value: user?.customerId || 'B2B_PARTNER'
                     },
                     { label: 'Tài khoản đăng nhập', value: `@${user?.username || 'user'}` },
@@ -10751,7 +10816,7 @@ export default function CustomerPortalPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#10b981' }}>
-                  QUẢN LÝ NHÂN SỰ LÁI XE • UC01
+                  QUẢN LÝ NHÂN SỰ LÁI XE • HỒ SƠ AN TOÀN
                 </div>
                 <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: '2px 0 0' }}>
                   Đăng Ký Hồ Sơ Tài Xế Mới

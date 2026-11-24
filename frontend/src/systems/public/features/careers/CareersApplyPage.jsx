@@ -13,7 +13,7 @@ import {
   UserCheck
 } from 'lucide-react';
 import { api } from '../../../../services/api';
-import { sharedInputStyle } from '../../../../shared/components/SharedPrimitives';
+import { sharedInputStyle } from '../../../../shared/components/ui/SharedPrimitives';
 import { isClientHttpError, unwrapApiData } from '../../../../utils/formatters';
 import {
   APPLICATION_STATUS_META,
@@ -47,8 +47,9 @@ const INITIAL_FORM = {
   experienceYears: 2,
   expectedSalaryVnd: 20000000,
   licenseNumber: '',
-  licenseClass: 'FC',
-  licenseExpiryDate: '2029-12-31',
+  licenseClass: 'CE',
+  licenseIssueDate: '',
+  licenseExpiryDate: '',
   certificationCode: '',
   certificateExpiryDate: '2029-12-31',
   issuingAuthority: '',
@@ -118,7 +119,7 @@ export default function CareersApplyPage() {
     setForm((prev) => ({
       ...prev,
       roleCode,
-      licenseClass: roleCode === 'HUB_SHIPPER' ? 'B2' : roleCode === 'DRIVER' ? 'FC' : prev.licenseClass
+      licenseClass: roleCode === 'HUB_SHIPPER' ? 'B2' : roleCode === 'DRIVER' ? 'CE' : prev.licenseClass
     }));
     setSubmitError('');
   };
@@ -143,6 +144,10 @@ export default function CareersApplyPage() {
     setSubmitting(true);
     const payload = {
       ...form,
+      appliedRoleCode: form.roleCode,
+      dateOfBirth: form.dateOfBirth || null,
+      licenseIssueDate: form.licenseIssueDate || null,
+      licenseExpiryDate: form.licenseExpiryDate || null,
       experienceYears: Number(form.experienceYears || 0),
       expectedSalaryVnd: Number(form.expectedSalaryVnd || 0),
       preferredBranchId: form.preferredBranchId || null
@@ -151,7 +156,7 @@ export default function CareersApplyPage() {
       const res = await api.submitPublicApplication(payload);
       setReceipt(unwrapApiData(res));
     } catch (err) {
-      if (isClientHttpError(err) && err?.message) {
+      if (((form.roleCode === 'DRIVER' && import.meta.env.VITE_DEMO_MODE !== 'true') || isClientHttpError(err)) && err?.message) {
         setSubmitError(err.message);
       } else {
         try {
@@ -602,14 +607,21 @@ export default function CareersApplyPage() {
                           onChange={(e) => setForm({ ...form, licenseClass: e.target.value })}
                           style={inputStyle}
                         >
-                          <option value="FC">FC — Đầu kéo Container</option>
-                          <option value="CE">CE — Rơ-moóc tải nặng</option>
+                          <option value="FC">FC · GPLX cấp trước 01/01/2025</option>
+                          <option value="CE">CE · Đầu kéo sơ mi rơ moóc</option>
                           <option value="C">C — Xe tải trên 3.5 tấn</option>
                           <option value="C1">C1 — Xe tải trung</option>
                           <option value="B2">B2 — Xe tải nhẹ / Van EV</option>
                           <option value="A1">A1 — Xe máy Last-Mile</option>
                         </select>
                       </label>
+                      {form.roleCode === 'DRIVER' && (
+                        <label style={{ display: 'grid', gap: 5, fontSize: 13, fontWeight: 600 }}>
+                          Ngày cấp GPLX *
+                          <input required type="date" value={form.licenseIssueDate}
+                            onChange={(event) => setForm({ ...form, licenseIssueDate: event.target.value })} style={inputStyle} />
+                        </label>
+                      )}
                       <label style={{ display: 'grid', gap: 5, fontSize: 13, fontWeight: 600 }}>
                         Hạn GPLX *
                         <input
@@ -692,7 +704,7 @@ export default function CareersApplyPage() {
                           required
                           value={form.inspectionScope}
                           onChange={(e) => setForm({ ...form, inspectionScope: e.target.value })}
-                          placeholder="PRE_TRIP_UC01, GLEC_V3_CARBON_UC12"
+                          placeholder="AN_TOAN_KY_THUAT, KIEM_TOAN_CARBON"
                           style={inputStyle}
                         />
                       </label>

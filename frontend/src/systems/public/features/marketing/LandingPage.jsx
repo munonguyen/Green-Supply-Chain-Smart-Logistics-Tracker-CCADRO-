@@ -16,8 +16,8 @@ import '../../../../styles/landing.css';
 import LandingNavbar from '../../shared/LandingNavbar';
 import LandingFooter from '../../shared/LandingFooter';
 import HeroTrackingWidget from '../../shared/HeroTrackingWidget';
-import Reveal from '../../../../shared/components/Reveal';
-import { CountingNumber } from '../../../../shared/components/CountingNumber';
+import Reveal from '../../../../shared/effects/Reveal';
+import { CountingNumber } from '../../../../shared/effects/CountingNumber';
 import {
   ENTERPRISE_METRICS,
   IMAGES,
@@ -259,7 +259,7 @@ export default function LandingPage() {
                   <ShieldCheck size={18} color="#6ee7b7" />
                   <span>
                     <strong>Kiểm soát hành lang kép:</strong> Cảnh báo sớm lệch tuyến 50m (Vàng) và
-                    200m (Đỏ) bằng thuật toán không gian PostGIS.
+                    200m (Đỏ) bằng thuật toán không gian địa lý vệ tinh.
                   </span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -300,7 +300,7 @@ export default function LandingPage() {
                 <div className="lp-live__row">
                   <span>Ngưỡng cảnh báo đệm vàng</span>
                   <strong>
-                    <CountingNumber value={50} suffix="m (PostGIS)" />
+                    <CountingNumber value={50} suffix="m (Hành lang an toàn)" />
                   </strong>
                 </div>
                 <div className="lp-live__row">
@@ -569,9 +569,9 @@ export default function LandingPage() {
                       {item.id === 'dinh-huong' &&
                         'Lộ trình giảm 50% cường độ phát thải đến năm 2030, chiến lược chuyển đổi đội xe điện EV và hạ tầng depot năng lượng mặt trời.'}
                       {item.id === 'giai-phap' &&
-                        'Kiến trúc giải pháp lập tuyến Pareto (UC05), giám sát đệm GPS 50m/200m (UC09), điều hướng tránh ùn tắc (UC10) và kiểm toán GLEC v3.'}
+                        'Kiến trúc giải pháp lập tuyến xanh tối ưu, giám sát an toàn hành lang GPS 50m/200m, điều hướng tránh ùn tắc và kiểm toán phát thải GLEC v3.'}
                       {item.id === 'thong-ke-carbon' &&
-                        'Sổ cái CO2e tiết kiệm thực tế, biểu đồ xu hướng 12 tháng, định mức hành lang (UC13) và công cụ ước tính phát thải trực tuyến.'}
+                        'Sổ cái CO2e tiết kiệm thực tế, biểu đồ xu hướng 12 tháng, định mức phát thải hành lang và công cụ ước tính trực tuyến.'}
                       {item.id === 'tin-tuc' &&
                         'Bản tin chiến lược ESG, báo cáo kiểm toán định kỳ, câu hỏi thường gặp và cổng đăng ký tư vấn doanh nghiệp.'}
                     </p>
