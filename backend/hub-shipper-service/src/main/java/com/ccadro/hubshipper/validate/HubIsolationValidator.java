@@ -46,7 +46,7 @@ public class HubIsolationValidator {
         if (!authContext.isAdmin() && !authContext.isManager()) {
             throw new SecurityException(
                     "Tài khoản @" + authContext.username()
-                            + " không có quyền Giao nhiệm vụ theo dải mã (yêu cầu HUB_MANAGER hoặc ADMIN).");
+                            + " không có quyền Giao nhiệm vụ theo dải mã (yêu cầu Điều hành Trụ sở hoặc Quản trị viên).");
         }
         if (!authContext.isAdmin() && authContext.assignedHubCode() != null && !authContext.assignedHubCode().isBlank()
                 && !targetHubCode.equalsIgnoreCase(authContext.assignedHubCode().trim())) {
@@ -76,6 +76,7 @@ public class HubIsolationValidator {
                     "Tài khoản Thanh tra POD (HUB_AUDITOR) chỉ có quyền xem (Read-only), không được cập nhật trạng thái hoặc nộp POD.");
         }
         if (!authContext.isAdmin() && !authContext.hasScope("POD_PHOTO_SUBMIT")
+                && !authContext.hasScope("ROLE_DRIVER") && !authContext.hasScope("ROLE_OPERATOR")
                 && !authContext.hasScope("ROLE_HUB_SHIPPER") && !authContext.hasScope("ROLE_HUB_MANAGER")
                 && !authContext.hasScope("ROLE_SHIPPER")) {
             throw new SecurityException("Tài khoản không có quyền cập nhật trạng thái giao hàng / nộp Ảnh POD.");
@@ -125,6 +126,33 @@ public class HubIsolationValidator {
         if (!authContext.isAdmin() && authContext.assignedHubCode() != null
                 && !authContext.assignedHubCode().equalsIgnoreCase(item.getHubCode())) {
             throw new SecurityException("Vi phạm cô lập Trụ sở: Không thể " + action + " kiện hàng của Trụ sở khác.");
+        }
+    }
+
+    public void validateShipperProfileEditAccess(HubAuthContext authContext, HubLocalShipper shipper) {
+        requireAuthenticatedContext(authContext);
+        if (authContext.isAuditorOnly()) {
+            throw new SecurityException("Tài khoản Thanh tra (HUB_AUDITOR) chỉ có quyền xem hồ sơ Shipper.");
+        }
+        if (authContext.isAdmin()) return;
+        if (authContext.assignedHubCode() == null || !authContext.assignedHubCode().equalsIgnoreCase(shipper.getHubCode())) {
+            throw new SecurityException("Vi phạm cô lập Trụ sở: Không thể cập nhật hồ sơ Shipper của Trụ sở khác.");
+        }
+        if (authContext.isShipperScoped()
+                && (authContext.assignedShipperCode() == null
+                || !authContext.assignedShipperCode().equalsIgnoreCase(shipper.getShipperCode()))) {
+            throw new SecurityException("Tài khoản Shipper chỉ được phép cập nhật hồ sơ của chính mình.");
+        }
+    }
+
+    public void validateShipperVerificationAccess(HubAuthContext authContext, HubLocalShipper shipper) {
+        requireAuthenticatedContext(authContext);
+        if (!authContext.isAdmin() && !authContext.isManager()) {
+            throw new SecurityException("Chỉ Trưởng Trụ sở (HUB_MANAGER) hoặc ADMIN mới được phê duyệt xác thực hồ sơ Shipper.");
+        }
+        if (!authContext.isAdmin()
+                && (authContext.assignedHubCode() == null || !authContext.assignedHubCode().equalsIgnoreCase(shipper.getHubCode()))) {
+            throw new SecurityException("Vi phạm cô lập Trụ sở: Không thể phê duyệt hồ sơ Shipper thuộc Trụ sở khác.");
         }
     }
 }

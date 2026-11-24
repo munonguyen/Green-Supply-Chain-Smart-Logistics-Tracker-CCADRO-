@@ -12,10 +12,18 @@ import {
   UserPlus
 } from 'lucide-react';
 import { api } from '../../../../services/api';
-import ElasticSearchBar from '../../../../shared/components/ElasticSearchBar';
+import SearchToolbar from '../../../../shared/components/search/SearchToolbar';
 import { elasticSearchMatch } from '../../../../utils/elasticSearch';
 
 const HUB_SHIPPER_ROLE_OPTIONS = [
+  {
+    role: 'DRIVER',
+    label: 'DRIVER — Tài xế giao vận Bưu cục (Khóa 1 Trụ sở + 1 Mã Shipper)'
+  },
+  {
+    role: 'OPERATOR',
+    label: 'OPERATOR — Nhân viên điều hành / Trưởng Bưu cục (Quản lý trạm)'
+  },
   {
     role: 'HUB_SHIPPER',
     label: 'HUB_SHIPPER — Nhân viên Giao hàng Chặng cuối (Khóa 1 Trụ sở + 1 Mã Shipper)'
@@ -110,7 +118,7 @@ export default function HubIamAccountsTab({
 
   const scopedHubAccounts = useMemo(() => {
     const source = remoteAccounts || accounts || [];
-    const hubRoles = ['HUB_MANAGER', 'HUB_SHIPPER', 'HUB_AUDITOR', 'SHIPPER', 'ADMIN'];
+    const hubRoles = ['OPERATOR', 'DRIVER', 'HUB_MANAGER', 'HUB_SHIPPER', 'HUB_AUDITOR', 'SHIPPER', 'ADMIN'];
     return source
       .map((acc) => ({
         ...acc,
@@ -171,7 +179,7 @@ export default function HubIamAccountsTab({
         password,
         role,
         assignedHubCode: isAdmin ? targetHubCode : lockedHub,
-        assignedShipperCode: role === 'HUB_SHIPPER' ? targetShipperCode : null
+        assignedShipperCode: (role === 'HUB_SHIPPER' || role === 'DRIVER') ? targetShipperCode : null
       });
       setFormMsg({
         type: 'success',
@@ -334,7 +342,7 @@ export default function HubIamAccountsTab({
 
             <div>
               <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: textMuted, marginBottom: 4 }}>
-                Vai trò chức năng (Role RBAC)
+                Vai trò &amp; Phân quyền chức năng
               </label>
               <select
                 data-testid="iam-new-role"
@@ -376,11 +384,11 @@ export default function HubIamAccountsTab({
                 </label>
                 <input
                   data-testid="iam-new-shipper-code"
-                  value={role === 'HUB_SHIPPER' ? targetShipperCode : 'N/A (Quản lý/Thanh tra)'}
-                  disabled={role !== 'HUB_SHIPPER'}
+                  value={(role === 'HUB_SHIPPER' || role === 'DRIVER') ? targetShipperCode : 'N/A (Quản lý/Điều hành)'}
+                  disabled={role !== 'HUB_SHIPPER' && role !== 'DRIVER'}
                   onChange={(e) => setTargetShipperCode(e.target.value)}
                   placeholder="SHP-BN-004"
-                  style={{ ...inputStyle, opacity: role === 'HUB_SHIPPER' ? 1 : 0.65 }}
+                  style={{ ...inputStyle, opacity: (role === 'HUB_SHIPPER' || role === 'DRIVER') ? 1 : 0.65 }}
                 />
               </div>
             </div>
@@ -476,17 +484,16 @@ export default function HubIamAccountsTab({
             </div>
 
             <div style={{ marginBottom: 12 }}>
-              <ElasticSearchBar
+              <SearchToolbar
                 value={accountSearch}
                 onChange={setAccountSearch}
-                placeholder="Elastic search: username, họ tên không dấu, vai trò, trụ sở..."
+                label="Tìm tài khoản trụ sở"
+                placeholder="Tên đăng nhập, họ tên, vai trò hoặc trụ sở…"
                 totalCount={activeOrDeletedHubAccounts.length}
                 matchedCount={displayedAccounts.length}
-                tookMs={elasticHubAccounts.tookMs}
                 showDeleted={showDeletedAccounts}
                 onToggleDeleted={() => setShowDeletedAccounts((prev) => !prev)}
                 deletedCount={deletedHubAccountsCount}
-                rounded={10}
               />
             </div>
 

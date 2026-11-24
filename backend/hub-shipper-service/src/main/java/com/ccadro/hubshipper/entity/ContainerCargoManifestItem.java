@@ -128,6 +128,74 @@ public class ContainerCargoManifestItem {
     String recipientPodName;
 
     @Builder.Default
+    @Column(name = "arrived_at_stop", nullable = false)
+    Boolean arrivedAtStop = false;
+
+    @Column(name = "arrived_at")
+    Instant arrivedAt;
+
+    @Column(name = "handover_method", length = 50)
+    String handoverMethod;
+
+    @Column(name = "measured_temp_c")
+    Double measuredTempC;
+
+    @Builder.Default
+    @Column(name = "ndr_count", nullable = false)
+    Integer ndrCount = 0;
+
+    @Column(name = "ndr_reason", length = 300)
+    String ndrReason;
+
+    @Column(name = "last_ndr_at")
+    Instant lastNdrAt;
+
+    @Builder.Default
+    @Column(name = "cod_amount_vnd", nullable = false)
+    Long codAmountVnd = 0L;
+
+    @Builder.Default
+    @Column(name = "cod_status", nullable = false, length = 32)
+    String codStatus = "NONE";
+
+    @Builder.Default
+    @Column(name = "delivery_attempt_count", nullable = false)
+    Integer deliveryAttemptCount = 0;
+
+    @Builder.Default
+    @Column(name = "max_delivery_attempts", nullable = false)
+    Integer maxDeliveryAttempts = 3;
+
+    @Builder.Default
+    @Column(name = "call_attempts_count", nullable = false)
+    Integer callAttemptsCount = 0;
+
+    @Column(name = "last_called_at")
+    Instant lastCalledAt;
+
+    @Builder.Default
+    @Column(name = "package_condition", nullable = false, length = 40)
+    String packageCondition = "INTACT";
+
+    @Column(name = "recipient_otp_code", length = 12)
+    String recipientOtpCode;
+
+    @Column(name = "pod_signature_note", length = 160)
+    String podSignatureNote;
+
+    @Column(name = "exception_type", length = 32)
+    String exceptionType;
+
+    @Column(name = "exception_evidence_url", columnDefinition = "TEXT")
+    String exceptionEvidenceUrl;
+
+    @Column(name = "returned_to_hub_at")
+    Instant returnedToHubAt;
+
+    @Column(name = "hub_return_received_by", length = 100)
+    String hubReturnReceivedBy;
+
+    @Builder.Default
     @Column(name = "is_deleted", nullable = false)
     Boolean isDeleted = false;
 

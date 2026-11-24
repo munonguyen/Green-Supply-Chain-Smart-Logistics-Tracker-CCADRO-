@@ -416,7 +416,7 @@ export default function HubShipperIsolationPanel({
             <span>
               {isReadOnlyAuditor
                 ? 'Tài khoản Kiểm tra viên (HUB_AUDITOR) ở chế độ Chỉ Đọc — chỉ thẩm định Phiếu giao Dải mã & Ảnh POD, không được sửa phân công.'
-                : 'Chỉ Trưởng Trụ sở (HUB_MANAGER) hoặc Quản trị viên (ADMIN) mới có quyền giao nhiệm vụ theo Dải mã số. Tài khoản Shipper chỉ xem dải mã mình phụ trách bên dưới.'}
+                : 'Chỉ Điều hành Trụ sở hoặc Quản trị viên mới có quyền giao nhiệm vụ theo Dải mã số. Tài khoản Shipper chỉ xem dải mã mình phụ trách bên dưới.'}
             </span>
           </div>
         )}

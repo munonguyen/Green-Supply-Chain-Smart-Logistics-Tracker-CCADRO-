@@ -1,8 +1,7 @@
 package com.ccadro.hubshipper.service;
 
 import com.ccadro.hubshipper.dto.HubAuthContext;
-import com.ccadro.hubshipper.dto.request.AssignTaskRangeRequest;
-import com.ccadro.hubshipper.dto.request.SubmitPhotoPodRequest;
+import com.ccadro.hubshipper.dto.request.*;
 import com.ccadro.hubshipper.dto.response.HubShipperWorkspaceResponse;
 import com.ccadro.hubshipper.entity.*;
 import com.ccadro.hubshipper.repository.*;
@@ -373,6 +372,298 @@ class HubShipperWorkspaceServiceTest {
         // 3. Restore recovers p1
         ContainerCargoManifestItem restored = service.restoreManifestItem("PKG-DB-0001", dinhBangMgrCtx);
         assertFalse(Boolean.TRUE.equals(restored.getIsDeleted()));
+    }
+
+    @Test
+    void shipperProfileUpdateAndKycVerificationEnforceStrictRbac() {
+        HubLocalShipper shipper1 = HubLocalShipper.builder()
+                .shipperCode("SHP-BN-001")
+                .hubCode("HUB-DINHBANG-BN")
+                .fullName("Nguyễn Văn Bắc")
+                .phone("0978 312 689")
+                .kycStatus("PENDING_REVIEW")
+                .build();
+
+        HubAuthContext shipperSelf = HubAuthContext.builder()
+                .username("shipper")
+                .scope("ROLE_HUB_SHIPPER HUB_WORKSPACE_READ")
+                .assignedHubCode("HUB-DINHBANG-BN")
+                .assignedShipperCode("SHP-BN-001")
+                .build();
+        HubAuthContext managerCtx = HubAuthContext.builder()
+                .username("hub_mgr_dinhbang")
+                .scope("ROLE_HUB_MANAGER HUB_TASK_RANGE_ASSIGN")
+                .assignedHubCode("HUB-DINHBANG-BN")
+                .build();
+
+        when(shipperRepository.findByShipperCode("SHP-BN-001")).thenReturn(Optional.of(shipper1));
+        when(shipperRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        // 1. Shipper can update own phone/vehicle plate/shift status/avatar
+        var updated = service.updateShipperProfile("SHP-BN-001",
+                UpdateShipperProfileRequest.builder()
+                        .phone("0978 999 888")
+                        .driverLicenseClass("C")
+                        .vehicleRegistrationNo("99A-99999")
+                        .avatarUrl("data:image/svg+xml;utf8,<svg/>")
+                        .shiftStatus("ON_DELIVERY")
+                        .build(),
+                shipperSelf);
+        assertEquals("0978 999 888", updated.getPhone());
+        assertEquals("C", updated.getDriverLicenseClass());
+        assertEquals("99A-99999", updated.getVehicleRegistrationNo());
+        assertEquals("data:image/svg+xml;utf8,<svg/>", updated.getAvatarUrl());
+        assertEquals("ON_DELIVERY", updated.getShiftStatus());
+
+        // 2. Shipper CANNOT approve their own KYC
+        assertThrows(SecurityException.class, () ->
+                service.verifyShipperKyc("SHP-BN-001",
+                        VerifyShipperKycRequest.builder().kycStatus("VERIFIED").build(),
+                        shipperSelf));
+
+        // 3. Hub Manager can verify KYC for shipper in same hub
+        var verified = service.verifyShipperKyc("SHP-BN-001",
+                VerifyShipperKycRequest.builder().kycStatus("VERIFIED").kycNote("Đã đối chiếu CCCD & GPLX").build(),
+                managerCtx);
+        assertEquals("VERIFIED", verified.getKycStatus());
+        assertEquals("hub_mgr_dinhbang", verified.getKycVerifiedBy());
+        assertNotNull(verified.getKycVerifiedAt());
+    }
+
+    @Test
+    void realtimeFieldOperationsAndShiftSettlementPersistCompleteState() {
+        HubLocalShipper shipper = HubLocalShipper.builder()
+                .shipperCode("SHP-BN-001")
+                .hubCode("HUB-DINHBANG-BN")
+                .fullName("Nguyễn Văn Bắc")
+                .shiftStatus("AVAILABLE")
+                .currentLat(21.1145)
+                .currentLng(105.9585)
+                .completedOrdersMonth(148)
+                .build();
+
+        ContainerCargoManifestItem pkg2 = ContainerCargoManifestItem.builder()
+                .itemCode("PKG-DB-0002")
+                .hubCode("HUB-DINHBANG-BN")
+                .assignedShipperCode("SHP-BN-001")
+                .consigneeName("Nhà máy KCN Tiên Sơn")
+                .deliveryLat(21.1128)
+                .deliveryLng(105.9688)
+                .weightKg(100.0)
+                .requiresColdChain(true)
+                .requiredTempC(4.0)
+                .dispatchStatus("ASSIGNED_TO_SHIPPER")
+                .build();
+
+        HubShipperPolicy policy = HubShipperPolicy.builder()
+                .hubCode("HUB-DINHBANG-BN")
+                .requirePhotoPod(true)
+                .build();
+
+        HubAuthContext shipperCtx = HubAuthContext.builder()
+                .username("shipper")
+                .scope("ROLE_HUB_SHIPPER POD_PHOTO_SUBMIT")
+                .assignedHubCode("HUB-DINHBANG-BN")
+                .assignedShipperCode("SHP-BN-001")
+                .build();
+
+        when(shipperRepository.findByShipperCode("SHP-BN-001")).thenReturn(Optional.of(shipper));
+        when(shipperRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(manifestItemRepository.findByItemCode("PKG-DB-0002")).thenReturn(Optional.of(pkg2));
+        when(manifestItemRepository.findByHubCodeOrderByItemCodeAsc("HUB-DINHBANG-BN")).thenReturn(List.of(pkg2));
+        when(manifestItemRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(manifestItemRepository.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));
+        when(policyRepository.findByHubCode("HUB-DINHBANG-BN")).thenReturn(Optional.of(policy));
+
+        // 1. Batch pickup transitions ASSIGNED_TO_SHIPPER -> OUT_FOR_DELIVERY and sets shipper ON_DELIVERY
+        var picked = service.batchPickupItems(
+                BatchPickupScanRequest.builder().itemCodes(List.of("PKG-DB-0002")).build(),
+                shipperCtx);
+        assertEquals(1, picked.size());
+        assertEquals("OUT_FOR_DELIVERY", pkg2.getDispatchStatus());
+        assertEquals("ON_DELIVERY", shipper.getShiftStatus());
+        assertTrue(pkg2.getTrackingHistoryJson().contains("SPX Batch Pickup"));
+
+        // 2. Guard: cannot switch to OFF_SHIFT while pkg2 is OUT_FOR_DELIVERY
+        assertThrows(IllegalArgumentException.class, () ->
+                service.updateShipperTelemetryAndShift("SHP-BN-001",
+                        ShipperTelemetryUpdateRequest.builder().shiftStatus("OFF_SHIFT").build(),
+                        shipperCtx));
+
+        // 3. Check-in GPS arrival sets arrivedAtStop=true and moves shipper live GPS
+        service.executeItemFieldAction("PKG-DB-0002",
+                ItemFieldActionRequest.builder().action("CHECKIN_ARRIVAL").build(),
+                shipperCtx);
+        assertTrue(Boolean.TRUE.equals(pkg2.getArrivedAtStop()));
+        assertEquals(21.1128, shipper.getCurrentLat());
+
+        // 4. NDR report transitions OUT_FOR_DELIVERY -> NDR_RESCHEDULED and increments ndrCount; Retry restores OUT_FOR_DELIVERY
+        service.executeItemFieldAction("PKG-DB-0002",
+                ItemFieldActionRequest.builder().action("REPORT_NDR").reason("Kho nghỉ giao ca").build(),
+                shipperCtx);
+        assertEquals("NDR_RESCHEDULED", pkg2.getDispatchStatus());
+        assertEquals(1, pkg2.getNdrCount());
+        assertEquals("AVAILABLE", shipper.getShiftStatus());
+
+        service.executeItemFieldAction("PKG-DB-0002",
+                ItemFieldActionRequest.builder().action("RETRY_NDR").build(),
+                shipperCtx);
+        assertEquals("OUT_FOR_DELIVERY", pkg2.getDispatchStatus());
+        assertEquals("ON_DELIVERY", shipper.getShiftStatus());
+
+        // 5. Submit Photo POD with handoverMethod & measuredTempC -> DELIVERED_POD & unlocks shift
+        service.submitItemTrackingAndPhotoPod("PKG-DB-0002",
+                SubmitPhotoPodRequest.builder()
+                        .dispatchStatus("DELIVERED_POD")
+                        .proofImageUrl("data:image/svg+xml;utf8,<svg/>")
+                        .recipientPodName("Thủ kho Tiên Sơn")
+                        .handoverMethod("COLD_DOCK_GATE")
+                        .measuredTempC(4.1)
+                        .build(),
+                shipperCtx);
+        assertEquals("DELIVERED_POD", pkg2.getDispatchStatus());
+        assertEquals("COLD_DOCK_GATE", pkg2.getHandoverMethod());
+        assertEquals(4.1, pkg2.getMeasuredTempC());
+        assertEquals("AVAILABLE", shipper.getShiftStatus());
+        assertEquals(149, shipper.getCompletedOrdersMonth());
+
+        // 6. Settle shift POD calculates base(38k) + weight(12k) + cold(22k) + gem(120k) = 192,000 VND
+        var settlement = service.settleShiftPod(
+                SettleShiftPodRequest.builder().hubCode("HUB-DINHBANG-BN").shipperCode("SHP-BN-001").build(),
+                shipperCtx);
+        assertEquals(1, settlement.getDeliveredPodCount());
+        assertEquals(192_000L, settlement.getTotalEarnedVnd());
+        assertEquals("SETTLED", settlement.getSettlementStatus());
+    }
+
+    @Test
+    void spxThreeCallRuleCodRemittanceHubReturnAndThreeGateEndShiftWorkAccurately() {
+        HubLocalShipper shipper = HubLocalShipper.builder()
+                .shipperCode("SHP-BN-001")
+                .hubCode("HUB-DINHBANG-BN")
+                .fullName("Nguyễn Văn Bắc")
+                .shiftStatus("ON_DELIVERY")
+                .codHoldingVnd(0L)
+                .build();
+
+        ContainerCargoManifestItem codItem = ContainerCargoManifestItem.builder()
+                .itemCode("PKG-DB-0002")
+                .hubCode("HUB-DINHBANG-BN")
+                .assignedShipperCode("SHP-BN-001")
+                .consigneeName("Nhà máy Tiên Sơn")
+                .consigneePhone("0222 3839 405")
+                .codAmountVnd(1_680_000L)
+                .codStatus("PENDING")
+                .deliveryAttemptCount(1)
+                .maxDeliveryAttempts(3)
+                .callAttemptsCount(1)
+                .recipientOtpCode("6824")
+                .dispatchStatus("OUT_FOR_DELIVERY")
+                .build();
+
+        ContainerCargoManifestItem rtsItem = ContainerCargoManifestItem.builder()
+                .itemCode("PKG-DB-0003")
+                .hubCode("HUB-DINHBANG-BN")
+                .assignedShipperCode("SHP-BN-001")
+                .consigneeName("Nhà thuốc Phố Mới")
+                .consigneePhone("0222 3833 555")
+                .codAmountVnd(0L)
+                .deliveryAttemptCount(3)
+                .maxDeliveryAttempts(3)
+                .callAttemptsCount(2)
+                .dispatchStatus("OUT_FOR_DELIVERY")
+                .build();
+
+        HubShipperPolicy policy = HubShipperPolicy.builder().hubCode("HUB-DINHBANG-BN").requirePhotoPod(true).build();
+        HubAuthContext shipperCtx = HubAuthContext.builder()
+                .username("shipper")
+                .scope("ROLE_HUB_SHIPPER POD_PHOTO_SUBMIT")
+                .assignedHubCode("HUB-DINHBANG-BN")
+                .assignedShipperCode("SHP-BN-001")
+                .build();
+
+        when(shipperRepository.findByShipperCode("SHP-BN-001")).thenReturn(Optional.of(shipper));
+        when(shipperRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(manifestItemRepository.findByItemCode("PKG-DB-0002")).thenReturn(Optional.of(codItem));
+        when(manifestItemRepository.findByItemCode("PKG-DB-0003")).thenReturn(Optional.of(rtsItem));
+        when(manifestItemRepository.findByHubCodeOrderByItemCodeAsc("HUB-DINHBANG-BN"))
+                .thenReturn(List.of(codItem, rtsItem));
+        when(manifestItemRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(manifestItemRepository.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));
+        when(policyRepository.findByHubCode("HUB-DINHBANG-BN")).thenReturn(Optional.of(policy));
+
+        // 1. SPX 3-Call Rule: Unreachable reason rejected when callAttemptsCount < 3 (currently 2)
+        assertThrows(IllegalArgumentException.class, () ->
+                service.executeItemFieldAction("PKG-DB-0003",
+                        ItemFieldActionRequest.builder()
+                                .action("REPORT_ON_HOLD")
+                                .reason("Không liên lạc được người nhận")
+                                .build(),
+                        shipperCtx));
+
+        // Log 3rd call -> now 3/3 calls -> attempt 3/3 automatically escalates to RETURN_PENDING (Hoàn kho)!
+        service.executeItemFieldAction("PKG-DB-0003",
+                ItemFieldActionRequest.builder().action("LOG_CALL").build(),
+                shipperCtx);
+        assertEquals(3, rtsItem.getCallAttemptsCount());
+
+        service.executeItemFieldAction("PKG-DB-0003",
+                ItemFieldActionRequest.builder()
+                        .action("REPORT_ON_HOLD")
+                        .reason("Không liên lạc được người nhận")
+                        .build(),
+                shipperCtx);
+        assertEquals("RETURN_PENDING", rtsItem.getDispatchStatus());
+        assertEquals("RETURN_TO_HUB", rtsItem.getExceptionType());
+
+        // 2. Deliver PKG-DB-0002 with wrong OTP fails; right OTP + Cash COD adds 1,680,000 to shipper.codHoldingVnd
+        assertThrows(IllegalArgumentException.class, () ->
+                service.submitItemTrackingAndPhotoPod("PKG-DB-0002",
+                        SubmitPhotoPodRequest.builder()
+                                .dispatchStatus("DELIVERED_POD")
+                                .proofImageUrl("data:image/svg+xml;utf8,<svg/>")
+                                .recipientOtpInput("0000")
+                                .build(),
+                        shipperCtx));
+
+        service.submitItemTrackingAndPhotoPod("PKG-DB-0002",
+                SubmitPhotoPodRequest.builder()
+                        .dispatchStatus("DELIVERED_POD")
+                        .proofImageUrl("data:image/svg+xml;utf8,<svg/>")
+                        .recipientOtpInput("6824")
+                        .codCollectionMethod("COLLECTED_CASH")
+                        .build(),
+                shipperCtx);
+        assertEquals(1_680_000L, shipper.getCodHoldingVnd());
+
+        // 3. End-Shift Gate 2 blocks checkout because PKG-DB-0003 (RETURN_PENDING) hasn't been scanned back to Hub
+        assertThrows(IllegalArgumentException.class, () -> service.endShiftCheckout("SHP-BN-001", shipperCtx));
+
+        // Scan PKG-DB-0003 back to Hub warehouse -> RETURNED_TO_HUB
+        service.executeItemFieldAction("PKG-DB-0003",
+                ItemFieldActionRequest.builder().action("SCAN_HUB_RETURN").build(),
+                shipperCtx);
+        assertEquals("RETURNED_TO_HUB", rtsItem.getDispatchStatus());
+
+        // 4. End-Shift Gate 3 blocks checkout because 1,680,000 COD cash is still unremitted
+        assertThrows(IllegalArgumentException.class, () -> service.endShiftCheckout("SHP-BN-001", shipperCtx));
+
+        // Remit COD cash -> codHoldingVnd drops to 0 and item codStatus becomes REMITTED
+        var receipt = service.remitCodCash(
+                RemitCodCashRequest.builder()
+                        .hubCode("HUB-DINHBANG-BN")
+                        .shipperCode("SHP-BN-001")
+                        .paymentChannel("HUB_CASHIER")
+                        .build(),
+                shipperCtx);
+        assertEquals(1_680_000L, receipt.getRemittedAmountVnd());
+        assertEquals(0L, shipper.getCodHoldingVnd());
+        assertEquals("REMITTED", codItem.getCodStatus());
+
+        // 5. All 3 SPX End-Shift Gates green -> End Shift succeeds!
+        var ended = service.endShiftCheckout("SHP-BN-001", shipperCtx);
+        assertEquals("OFF_SHIFT", ended.getShiftStatus());
+        assertNotNull(ended.getShiftEndedAt());
     }
 }
 

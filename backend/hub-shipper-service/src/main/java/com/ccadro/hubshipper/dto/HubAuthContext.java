@@ -20,7 +20,9 @@ public record HubAuthContext(
     }
 
     public boolean isManager() {
-        return scope != null && (tokens().contains("ROLE_HUB_MANAGER") || tokens().contains("HUB_TASK_RANGE_ASSIGN"));
+        return scope != null && (tokens().contains("ROLE_OPERATOR")
+                || tokens().contains("ROLE_HUB_MANAGER")
+                || tokens().contains("HUB_TASK_RANGE_ASSIGN"));
     }
 
     public boolean isAuditorOnly() {
@@ -29,7 +31,9 @@ public record HubAuthContext(
 
     public boolean isShipperScoped() {
         return scope != null
-                && (tokens().contains("ROLE_HUB_SHIPPER") || tokens().contains("ROLE_SHIPPER"))
+                && (tokens().contains("ROLE_DRIVER")
+                        || tokens().contains("ROLE_HUB_SHIPPER")
+                        || tokens().contains("ROLE_SHIPPER"))
                 && !isAdmin()
                 && !isManager();
     }

@@ -94,6 +94,112 @@ public class HubLocalShipper {
     @Column(name = "assigned_code_range_to", length = 50)
     String assignedCodeRangeTo;
 
+    @Column(name = "cccd_masked", length = 24)
+    String cccdMasked;
+
+    @Column(name = "cccd_issued_by", length = 140)
+    String cccdIssuedBy;
+
+    @Column(name = "cccd_issued_date", length = 20)
+    String cccdIssuedDate;
+
+    @Column(name = "kyc_status", nullable = false, length = 32)
+    @Builder.Default
+    String kycStatus = "PENDING_REVIEW";
+
+    @Column(name = "kyc_verified_at")
+    Instant kycVerifiedAt;
+
+    @Column(name = "kyc_verified_by", length = 80)
+    String kycVerifiedBy;
+
+    @Column(name = "kyc_note", length = 500)
+    String kycNote;
+
+    @Column(name = "permanent_address", length = 255)
+    String permanentAddress;
+
+    @Column(name = "emergency_contact_name", length = 120)
+    String emergencyContactName;
+
+    @Column(name = "emergency_contact_phone", length = 40)
+    String emergencyContactPhone;
+
+    @Column(name = "criminal_record_code", length = 60)
+    String criminalRecordCode;
+
+    @Column(name = "criminal_record_status", length = 30)
+    String criminalRecordStatus;
+
+    @Column(name = "health_check_expiry_date", length = 20)
+    String healthCheckExpiryDate;
+
+    @Column(name = "driver_license_class", length = 16)
+    String driverLicenseClass;
+
+    @Column(name = "driver_license_masked", length = 32)
+    String driverLicenseMasked;
+
+    @Column(name = "driver_license_expiry_date", length = 20)
+    String driverLicenseExpiryDate;
+
+    @Column(name = "cold_chain_certified", nullable = false)
+    @Builder.Default
+    Boolean coldChainCertified = false;
+
+    @Column(name = "vehicle_registration_no", length = 40)
+    String vehicleRegistrationNo;
+
+    @Column(name = "inspection_expiry_date", length = 20)
+    String inspectionExpiryDate;
+
+    @Column(name = "insurance_expiry_date", length = 20)
+    String insuranceExpiryDate;
+
+    @Column(name = "gps_device_code", length = 40)
+    String gpsDeviceCode;
+
+    @Column(name = "on_time_rate_pct", nullable = false)
+    @Builder.Default
+    Double onTimeRatePct = 98.0;
+
+    @Column(name = "pod_compliance_pct", nullable = false)
+    @Builder.Default
+    Double podCompliancePct = 100.0;
+
+    @Column(name = "completed_orders_month", nullable = false)
+    @Builder.Default
+    Integer completedOrdersMonth = 0;
+
+    @Column(name = "cod_limit_vnd", nullable = false)
+    @Builder.Default
+    Long codLimitVnd = 20000000L;
+
+    @Column(name = "avatar_url", columnDefinition = "TEXT")
+    String avatarUrl;
+
+    @Column(name = "last_telemetry_at")
+    @Builder.Default
+    Instant lastTelemetryAt = Instant.now();
+
+    @Column(name = "shift_checked_in_at")
+    Instant shiftCheckedInAt;
+
+    @Column(name = "shift_ended_at")
+    Instant shiftEndedAt;
+
+    @Builder.Default
+    @Column(name = "cod_holding_vnd", nullable = false)
+    Long codHoldingVnd = 0L;
+
+    @Builder.Default
+    @Column(name = "cod_collected_qr_today_vnd", nullable = false)
+    Long codCollectedQrTodayVnd = 0L;
+
+    @Builder.Default
+    @Column(name = "cod_remitted_today_vnd", nullable = false)
+    Long codRemittedTodayVnd = 0L;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     @Builder.Default
     Instant createdAt = Instant.now();

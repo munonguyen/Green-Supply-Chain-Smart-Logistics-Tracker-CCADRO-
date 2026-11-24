@@ -6,6 +6,7 @@ import {
   Camera,
   CheckCircle2,
   ClipboardList,
+  Clock,
   Compass,
   Cpu,
   Lock,
@@ -28,23 +29,31 @@ import {
   Trash2,
   Truck,
   Users,
+  Wallet,
   Webhook
 } from 'lucide-react';
 import { useAuth } from '../../../../context/AuthContext';
 import { useTheme } from '../../../../context/ThemeContext';
 import { api } from '../../../../services/api';
-import CcadroLogo from '../../../../shared/components/CcadroLogo';
-import UserAccountMenu from '../../../../shared/components/UserAccountMenu';
-import AccountSettingsModal from '../../../../shared/components/AccountSettingsModal';
-import SidebarAccountCard from '../../../../shared/components/SidebarAccountCard';
+import CcadroLogo from '../../../../shared/components/ui/CcadroLogo';
+import UserAccountMenu from '../../../../shared/components/account/UserAccountMenu';
+import AccountSettingsModal from '../../../../shared/components/account/AccountSettingsModal';
+import SidebarAccountCard from '../../../../shared/components/account/SidebarAccountCard';
 import { getRoleHeaderMeta } from '../../../../utils/userSettings';
-import ElasticSearchBar from '../../../../shared/components/ElasticSearchBar';
+import { formatVnd } from '../../../../utils/formatters';
+import SearchToolbar from '../../../../shared/components/search/SearchToolbar';
 import { elasticSearchMatch } from '../../../../utils/elasticSearch';
-import GrabDriverAvatar from '../../../../shared/components/GrabDriverAvatar';
+import GrabDriverAvatar from '../../../../shared/components/account/GrabDriverAvatar';
 import HubShipperIsolationPanel from '../isolation/HubShipperIsolationPanel';
 import HubIamAccountsTab from '../iam/HubIamAccountsTab';
+import ShipperDossierPanel from '../shippers/ShipperDossierPanel';
+import ShipperAvatar from '../shippers/ShipperAvatar';
+import ShipperFieldCockpit from '../cockpit/ShipperFieldCockpit';
+import ShipperEarningsAndSlaPanel from '../earnings/ShipperEarningsAndSlaPanel';
 import PhotoPodModal from '../../shared/PhotoPodModal';
 import MessengerWorkspaceModal from '../../../../shared/chat/MessengerWorkspaceModal';
+import RoleNotificationBell from '../../../../shared/notifications/RoleNotificationBell';
+import { publishCrossRoleNotification } from '../../../../utils/roleNotificationSync';
 import {
     DINHBANG_HANDOVER,
     DINHBANG_HUB,
@@ -863,8 +872,26 @@ const DISPATCH_STATUS_META = {
         color: '#7c3aed',
         bg: 'rgba(124, 58, 237, 0.15)'
     },
+    NDR_RESCHEDULED: {
+        label: 'Giao không thành công — Hẹn giao lại',
+        shortLabel: 'Hẹn giao lại',
+        color: '#dc2626',
+        bg: 'rgba(239, 68, 68, 0.15)'
+    },
+    RETURN_PENDING: {
+        label: 'Chờ hoàn về Bưu cục',
+        shortLabel: 'Chờ hoàn Hub',
+        color: '#ea580c',
+        bg: 'rgba(234, 88, 12, 0.15)'
+    },
+    RETURNED_TO_HUB: {
+        label: 'Đã hoàn về Bưu cục — Đã quét trả kho',
+        shortLabel: 'Đã trả kho',
+        color: '#64748b',
+        bg: 'rgba(100, 116, 139, 0.15)'
+    },
     DELIVERED_POD: {
-        label: 'Shipper đã giao hoàn tất (POD)',
+        label: 'Shipper đã giao hoàn tất — Có ảnh chứng từ',
         shortLabel: 'Đã giao POD',
         color: '#059669',
         bg: 'rgba(16, 185, 129, 0.16)'
@@ -873,58 +900,66 @@ const DISPATCH_STATUS_META = {
 
 const SHIPPER_SIDEBAR_SECTIONS = [
     {
-        group: 'ĐIỀU PHỐI TRỤ SỞ & SHIPPER',
+        group: 'ĐIỀU PHỐI BƯU CỤC & SHIPPER',
         items: [
             {
                 id: 'dispatch',
-                label: 'Điều Phối Hàng & Tracking POD',
+                label: 'Điều phối & POD',
                 shortLabel: 'Điều Phối & POD',
                 icon: Compass
             },
             {
+                id: 'earnings',
+                label: 'Thu nhập & Đối soát',
+                shortLabel: 'Thu Nhập & Đối Soát',
+                icon: Wallet
+            },
+            {
                 id: 'policy',
-                label: 'Chính Sách & Giao Dải Mã',
-                shortLabel: 'Chính Sách & Dải Mã',
+                label: 'Chính sách & Dải đơn',
+                shortLabel: 'Chính Sách & Dải Đơn',
                 icon: ShieldCheck
             },
             {
                 id: 'shippers',
-                label: 'Đội Ngũ & Phạm Vi Hôm Nay',
-                shortLabel: 'Đội Ngũ & Phạm Vi',
+                label: 'Hồ sơ tài xế',
+                shortLabel: 'Hồ Sơ Tài Xế',
                 icon: Users
             }
         ]
     },
     {
-        group: 'CONTAINER & HỆ THỐNG TRỤ SỞ',
+        group: 'CONTAINER & MẠNG LƯỚI BƯU CỤC',
         items: [
             {
                 id: 'containers',
-                label: 'Container Cập Bãi & Manifest',
-                shortLabel: 'Container & Manifest',
+                label: 'Container cập bãi',
+                shortLabel: 'Container Cập Bãi',
                 icon: Truck
             },
             {
                 id: 'hubs',
-                label: 'Mạng Lưới Trụ Sở Khu Vực',
-                shortLabel: 'Mạng Lưới Trụ Sở',
-                icon: Building2
+                label: 'Mạng lưới bưu cục',
+                shortLabel: 'Mạng Lưới Bưu Cục',
+                icon: Building2,
+                allowedRoles: ['ADMIN', 'OPERATOR', 'HUB_MANAGER', 'HUB_AUDITOR']
             },
             {
                 id: 'iam',
-                label: 'Kho Tài khoản & Bảo mật IAM',
-                shortLabel: 'Tài khoản & IAM',
+                label: 'Kho tài khoản & IAM',
+                shortLabel: 'Tài Khoản & IAM',
                 icon: Lock,
-                allowedRoles: ['ADMIN', 'HUB_MANAGER']
+                allowedRoles: ['ADMIN', 'OPERATOR', 'HUB_MANAGER']
             }
         ]
     }
 ];
 
-const STORAGE_KEY_HANDOVERS = 'ccadro_third_party_shipper_handovers_v3';
-const STORAGE_KEY_MANIFEST_ITEMS = 'ccadro_hub_manifest_items_v3';
-const STORAGE_KEY_HUB_SHIPPERS = 'ccadro_hub_local_shippers_v3';
-const STORAGE_KEY_TASK_RANGES = 'ccadro_hub_task_ranges_v3';
+const STORAGE_KEY_HANDOVERS = 'ccadro_third_party_shipper_handovers_v4';
+const STORAGE_KEY_MANIFEST_ITEMS = 'ccadro_hub_manifest_items_v4';
+const STORAGE_KEY_HUB_SHIPPERS = 'ccadro_hub_local_shippers_v4';
+const STORAGE_KEY_TASK_RANGES = 'ccadro_hub_task_ranges_v4';
+const STORAGE_KEY_COD_REMITTANCES = 'ccadro_hub_cod_remittances_v4';
 
 function loadStoredJson(key, fallback) {
     try {
@@ -963,8 +998,8 @@ export default function ShipperPortalPage() {
 
     const userRole = user?.role || 'HUB_SHIPPER';
     const isAdminRole = userRole === 'ADMIN';
-    const isHubManager = userRole === 'HUB_MANAGER';
-    const isHubShipper = userRole === 'HUB_SHIPPER' || userRole === 'SHIPPER';
+    const isHubManager = userRole === 'HUB_MANAGER' || (userRole === 'OPERATOR' && !user?.assignedShipperCode);
+    const isHubShipper = userRole === 'HUB_SHIPPER' || userRole === 'SHIPPER' || userRole === 'DRIVER' || (userRole === 'OPERATOR' && !!user?.assignedShipperCode);
     const isReadOnlyAuditor = userRole === 'HUB_AUDITOR';
     const canIngestAndDispatch = isAdminRole || isHubManager;
     const canAssignCodeRange = isAdminRole || isHubManager;
@@ -1045,6 +1080,13 @@ export default function ShipperPortalPage() {
     const [rangeAssignments, setRangeAssignments] = useState(() =>
         loadStoredJson(STORAGE_KEY_TASK_RANGES, INITIAL_TASK_RANGE_BATCHES)
     );
+    const [shiftSettlements, setShiftSettlements] = useState([]);
+    const [codRemittances, setCodRemittances] = useState(() =>
+        loadStoredJson(STORAGE_KEY_COD_REMITTANCES, [])
+    );
+    const [dbConnected, setDbConnected] = useState(false);
+    const [sseConnected, setSseConnected] = useState(false);
+    const [lastDbSyncAt, setLastDbSyncAt] = useState(null);
     const [photoPodModalItem, setPhotoPodModalItem] = useState(null);
     const [zoomedPhotoItem, setZoomedPhotoItem] = useState(null);
 
@@ -1078,7 +1120,8 @@ export default function ShipperPortalPage() {
                 Promise.resolve(
                     api.getHubShipperWorkspace?.({
                         username: user?.username,
-                        hubCode: selectedHubCode
+                        hubCode: selectedHubCode === 'ALL' ? undefined : selectedHubCode,
+                        includeDeleted: true
                     })
                 ).catch(() => null)
             ]);
@@ -1098,38 +1141,150 @@ export default function ShipperPortalPage() {
                     return merged;
                 });
             }
-            const shipperList = shipperRes?.result ?? shipperRes?.data;
-            if (Array.isArray(shipperList) && shipperList.length > 0) {
-                setShippers(shipperList);
-                saveStoredJson(STORAGE_KEY_HUB_SHIPPERS, shipperList);
-            }
-            const itemList = itemRes?.result ?? itemRes?.data;
-            if (Array.isArray(itemList) && itemList.length > 0) {
-                setManifestItems(itemList);
-                saveStoredJson(STORAGE_KEY_MANIFEST_ITEMS, itemList);
-            }
+
             const workspaceData = workspaceRes?.result ?? workspaceRes?.data;
+            if (workspaceData) {
+                setDbConnected(true);
+                setLastDbSyncAt(new Date().toLocaleTimeString('vi-VN'));
+            } else if (Array.isArray(shipperRes?.result ?? shipperRes?.data)) {
+                setDbConnected(true);
+                setLastDbSyncAt(new Date().toLocaleTimeString('vi-VN'));
+            }
+
+            // Merge asset-service base lists first, then overlay authoritative hub-shipper-service PostgreSQL rows
+            const shipperList = shipperRes?.result ?? shipperRes?.data;
+            const wsShippers = workspaceData?.hubShippers;
+            if ((Array.isArray(shipperList) && shipperList.length > 0) || (Array.isArray(wsShippers) && wsShippers.length > 0)) {
+                setShippers((prev) => {
+                    const byCode = new Map(prev.map((s) => [s.shipperCode, s]));
+                    if (Array.isArray(shipperList)) {
+                        shipperList.forEach((dbS) => {
+                            const seed = INITIAL_HUB_LOCAL_SHIPPERS.find((x) => x.shipperCode === dbS.shipperCode) || {};
+                            byCode.set(dbS.shipperCode, { ...seed, ...(byCode.get(dbS.shipperCode) || {}), ...dbS });
+                        });
+                    }
+                    if (Array.isArray(wsShippers)) {
+                        wsShippers.forEach((wsS) => {
+                            const seed = INITIAL_HUB_LOCAL_SHIPPERS.find((x) => x.shipperCode === wsS.shipperCode) || {};
+                            byCode.set(wsS.shipperCode, { ...seed, ...(byCode.get(wsS.shipperCode) || {}), ...wsS });
+                        });
+                    }
+                    const next = Array.from(byCode.values());
+                    saveStoredJson(STORAGE_KEY_HUB_SHIPPERS, next);
+                    return next;
+                });
+            }
+
+            const itemList = itemRes?.result ?? itemRes?.data;
+            const wsItems = workspaceData?.manifestItems;
+            if ((Array.isArray(itemList) && itemList.length > 0) || (Array.isArray(wsItems) && wsItems.length > 0)) {
+                setManifestItems((prev) => {
+                    const byCode = new Map(prev.map((i) => [i.itemCode, i]));
+                    if (Array.isArray(itemList)) {
+                        itemList.forEach((dbI) => {
+                            const seed = INITIAL_MANIFEST_ITEMS.find((x) => x.itemCode === dbI.itemCode) || {};
+                            byCode.set(dbI.itemCode, { ...seed, ...(byCode.get(dbI.itemCode) || {}), ...dbI });
+                        });
+                    }
+                    if (Array.isArray(wsItems)) {
+                        wsItems.forEach((wsI) => {
+                            const seed = INITIAL_MANIFEST_ITEMS.find((x) => x.itemCode === wsI.itemCode) || {};
+                            byCode.set(wsI.itemCode, { ...seed, ...(byCode.get(wsI.itemCode) || {}), ...wsI });
+                        });
+                    }
+                    const next = Array.from(byCode.values());
+                    saveStoredJson(STORAGE_KEY_MANIFEST_ITEMS, next);
+                    return next;
+                });
+            }
+
+            if (workspaceData?.hub) {
+                setHubs((prev) =>
+                    prev.map((h) => (h.hubCode === workspaceData.hub.hubCode ? { ...h, ...workspaceData.hub } : h))
+                );
+            }
             if (workspaceData?.policy) {
                 setHubPolicies((prev) => ({
                     ...prev,
                     [workspaceData.policy.hubCode]: workspaceData.policy
                 }));
             }
-            if (Array.isArray(workspaceData?.rangeAssignments) && workspaceData.rangeAssignments.length > 0) {
+            if (Array.isArray(workspaceData?.rangeAssignments)) {
                 setRangeAssignments(workspaceData.rangeAssignments);
                 saveStoredJson(STORAGE_KEY_TASK_RANGES, workspaceData.rangeAssignments);
+            }
+            if (Array.isArray(workspaceData?.shiftSettlements)) {
+                setShiftSettlements(workspaceData.shiftSettlements);
+            }
+            if (Array.isArray(workspaceData?.codRemittances)) {
+                setCodRemittances(workspaceData.codRemittances);
+                saveStoredJson(STORAGE_KEY_COD_REMITTANCES, workspaceData.codRemittances);
             }
             if (workspaceData?.isolatedHubCode && strictHubIsolationEnforced) {
                 setSelectedHubCode(workspaceData.isolatedHubCode);
             }
         } catch {
-            // fallback to local seeded state
+            // fallback to local seeded state when offline
         }
     }, [selectedHubCode, strictHubIsolationEnforced, user?.username]);
 
     useEffect(() => {
         refreshHubEcosystem();
+        const pollTimer = setInterval(() => {
+            refreshHubEcosystem();
+        }, 12000);
+        return () => clearInterval(pollTimer);
     }, [refreshHubEcosystem]);
+
+    // Real-time Server-Sent Events (SSE) subscription directly from hub-shipper-service (:8089 via API Gateway)
+    useEffect(() => {
+        if (typeof window === 'undefined' || typeof window.EventSource !== 'function') return undefined;
+        let token = '';
+        try {
+            token = window.localStorage?.getItem?.('ccadro_token') || '';
+        } catch {
+            token = '';
+        }
+        if (
+            !token ||
+            token.startsWith('iam-jwt-') ||
+            token.startsWith('customer-jwt-') ||
+            token.startsWith('test-token-') ||
+            typeof api.getHubShipperStreamUrl !== 'function'
+        ) {
+            return undefined;
+        }
+
+        let es = null;
+        try {
+            es = new window.EventSource(
+                api.getHubShipperStreamUrl({
+                    hubCode: selectedHubCode,
+                    token
+                })
+            );
+            es.addEventListener('hub-stream-connected', () => {
+                setSseConnected(true);
+                setDbConnected(true);
+            });
+            es.addEventListener('hub-heartbeat', () => {
+                setSseConnected(true);
+            });
+            es.addEventListener('hub-workspace-update', () => {
+                setSseConnected(true);
+                refreshHubEcosystem();
+            });
+            es.onerror = () => {
+                setSseConnected(false);
+            };
+        } catch {
+            setSseConnected(false);
+        }
+
+        return () => {
+            es?.close();
+        };
+    }, [selectedHubCode, refreshHubEcosystem]);
 
     useEffect(() => {
         const unsub = subscribeDriverChat((nextMap) => {
@@ -1244,6 +1399,82 @@ export default function ShipperPortalPage() {
         },
         [showToast]
     );
+
+    const handleUpdateShipperProfile = useCallback(
+        async (shipperCode, payload) => {
+            try {
+                const res = await api.updateHubShipperProfile?.(shipperCode, payload).catch(() => null);
+                const serverShipper = res?.result ?? res?.data;
+                setShippers((prev) => {
+                    const updated = prev.map((s) =>
+                        s.shipperCode === shipperCode ? { ...s, ...payload, ...(serverShipper || {}) } : s
+                    );
+                    saveStoredJson(STORAGE_KEY_HUB_SHIPPERS, updated);
+                    return updated;
+                });
+                showToast(`Đã cập nhật hồ sơ xác thực & phương tiện cho ${shipperCode}.`);
+            } catch (err) {
+                showToast(err?.message || 'Không cập nhật được hồ sơ Shipper.');
+            }
+        },
+        [showToast]
+    );
+
+    const handleVerifyShipperKyc = useCallback(
+        async (shipperCode, payload) => {
+            try {
+                const res = await api.verifyHubShipperKyc?.(shipperCode, payload).catch(() => null);
+                const serverShipper = res?.result ?? res?.data;
+                const verifiedAt = payload.kycStatus === 'VERIFIED' ? new Date().toISOString() : null;
+                setShippers((prev) => {
+                    const updated = prev.map((s) =>
+                        s.shipperCode === shipperCode
+                            ? {
+                                ...s,
+                                kycStatus: payload.kycStatus,
+                                kycNote: payload.kycNote,
+                                kycVerifiedBy: user?.username || 'hub_manager',
+                                kycVerifiedAt: verifiedAt,
+                                ...(serverShipper || {})
+                            }
+                            : s
+                    );
+                    saveStoredJson(STORAGE_KEY_HUB_SHIPPERS, updated);
+                    return updated;
+                });
+                showToast(
+                    payload.kycStatus === 'VERIFIED'
+                        ? `Đã phê duyệt xác thực eKYC chuẩn cho ${shipperCode}.`
+                        : `Đã cập nhật trạng thái hồ sơ ${shipperCode}.`
+                );
+            } catch (err) {
+                showToast(err?.message || 'Không phê duyệt được hồ sơ Shipper.');
+            }
+        },
+        [showToast, user?.username]
+    );
+
+    const cockpitRouteItems = useMemo(() => {
+        return manifestItems
+            .filter((item) => {
+                if (item.isDeleted) return false;
+                if (selectedHubCode !== 'ALL' && item.hubCode !== selectedHubCode) return false;
+                if (isHubShipper && boundShipperDefault.shipperCode) {
+                    return item.assignedShipperCode === boundShipperDefault.shipperCode;
+                }
+                if (selectedShipperFilter !== 'ALL') {
+                    return item.assignedShipperCode === selectedShipperFilter;
+                }
+                return Boolean(item.assignedShipperCode);
+            })
+            .map((raw) => enrichSenderMetadata(raw));
+    }, [
+        manifestItems,
+        selectedHubCode,
+        isHubShipper,
+        boundShipperDefault.shipperCode,
+        selectedShipperFilter
+    ]);
 
     const scopedManifestItemsBase = useMemo(() => {
         return manifestItems.filter((item) => {
@@ -1554,25 +1785,49 @@ export default function ShipperPortalPage() {
         );
     };
 
-    // Step 3: Shipper Last-Mile Status Progression
+    // Step 3: Shipper Last-Mile Status Progression (Persisted directly to PostgreSQL)
     const handleUpdateItemStatus = async (item, nextStatus) => {
         const podName =
             nextStatus === 'DELIVERED_POD' ? `${item.consigneeName} (Ký nhận POD)` : undefined;
-        await Promise.resolve(
-            api.updateManifestItemStatus?.(item.itemCode, nextStatus, podName)
-        ).catch(() => null);
+        const [fieldRes] = await Promise.all([
+            nextStatus === 'OUT_FOR_DELIVERY'
+                ? Promise.resolve(
+                    api.executeHubItemFieldAction?.(item.itemCode, { action: 'PICKUP_DEPART' })
+                ).catch(() => null)
+                : Promise.resolve(null),
+            Promise.resolve(
+                api.updateManifestItemStatus?.(item.itemCode, nextStatus, podName)
+            ).catch(() => null)
+        ]);
+        const dbSavedItem = fieldRes?.result ?? fieldRes?.data;
+        if (dbSavedItem?.itemCode) {
+            setLastDbSyncAt(new Date().toLocaleTimeString('vi-VN'));
+        }
 
+        const timeLabel = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
         setManifestItems((prev) => {
-            const next = prev.map((m) =>
-                m.itemCode === item.itemCode
-                    ? {
-                        ...m,
-                        dispatchStatus: nextStatus,
-                        recipientPodName: podName || m.recipientPodName,
-                        deliveredAt: nextStatus === 'DELIVERED_POD' ? new Date().toISOString() : m.deliveredAt
-                    }
-                    : m
-            );
+            const next = prev.map((m) => {
+                if (m.itemCode !== item.itemCode) return m;
+                if (dbSavedItem?.itemCode) return { ...m, ...dbSavedItem };
+                const timeline = parseTrackingTimeline(m);
+                return {
+                    ...m,
+                    dispatchStatus: nextStatus,
+                    recipientPodName: podName || m.recipientPodName,
+                    deliveredAt: nextStatus === 'DELIVERED_POD' ? new Date().toISOString() : m.deliveredAt,
+                    trackingHistoryJson: JSON.stringify([
+                        ...timeline,
+                        {
+                            time: timeLabel,
+                            status: nextStatus,
+                            note:
+                                nextStatus === 'OUT_FOR_DELIVERY'
+                                    ? `Đã quét nhận kiện tại Trụ sở & xuất phát đi giao tới ${item.consigneeName}`
+                                    : `Cập nhật trạng thái giao nhận: ${nextStatus}`
+                        }
+                    ])
+                };
+            });
             saveStoredJson(STORAGE_KEY_MANIFEST_ITEMS, next);
 
             const containerItems = next.filter((i) => i.containerCode === item.containerCode);
@@ -1599,10 +1854,20 @@ export default function ShipperPortalPage() {
             return next;
         });
 
+        if (nextStatus === 'OUT_FOR_DELIVERY' && item.assignedShipperCode) {
+            setShippers((sPrev) => {
+                const sNext = sPrev.map((s) =>
+                    s.shipperCode === item.assignedShipperCode ? { ...s, shiftStatus: 'ON_DELIVERY' } : s
+                );
+                saveStoredJson(STORAGE_KEY_HUB_SHIPPERS, sNext);
+                return sNext;
+            });
+        }
+
         showToast(
             nextStatus === 'DELIVERED_POD'
                 ? `Shipper ${item.assignedShipperName || ''} đã giao hoàn tất kiện ${item.itemCode} & ký POD!`
-                : `Shipper ${item.assignedShipperName || ''} đã xuất phát giao kiện ${item.itemCode}!`
+                : `Đã quét nhận xuất trạm & bắt đầu đi giao kiện ${item.itemCode}!`
         );
     };
 
@@ -1707,43 +1972,80 @@ export default function ShipperPortalPage() {
             return next;
         });
 
+        publishCrossRoleNotification({
+            eventType: 'HUB_RANGE_ASSIGNED',
+            severity: 'INFO',
+            senderRole: userRole,
+            senderUsername: user?.username,
+            senderName: user?.fullName || 'Điều hành Bưu cục',
+            targetRoles: ['DRIVER', 'OPERATOR'],
+            hubCode,
+            shipperCode: shipper.shipperCode,
+            title: `Giao dải đơn ${fromItemCode} → ${toItemCode} (${matchedItems.length} kiện)`,
+            message: `Điều hành bưu cục đã phân công ${matchedItems.length} kiện hàng cho ${shipper.fullName}. Vui lòng quét nhận kiện tại trạm trước khi xuất phát.`
+        });
         showToast(
             `Đã giao dải mã ${fromItemCode} → ${toItemCode} (${matchedItems.length} kiện) cho Shipper ${shipper.fullName}`
         );
     };
 
-    // Hub-shipper-service (:8089): Submit Item Tracking & Mandatory Photo POD
+    // Hub-shipper-service (:8089): Submit Item Tracking, Handover Method, Cold-Chain Temp & Mandatory Photo POD to PostgreSQL
     const handleConfirmPhotoPod = async ({
         itemCode,
         dispatchStatus,
         proofImageUrl,
         proofImageCaption,
-        recipientPodName
+        recipientPodName,
+        handoverMethod,
+        measuredTempC,
+        codCollectionMethod,
+        recipientOtpInput,
+        podSignatureNote
     }) => {
         const res = await Promise.resolve(
             api.submitItemPhotoPod?.(itemCode, {
                 dispatchStatus,
                 proofImageUrl,
                 proofImageCaption,
-                recipientPodName
+                recipientPodName,
+                handoverMethod,
+                measuredTempC,
+                codCollectionMethod,
+                recipientOtpInput,
+                podSignatureNote
             })
         ).catch(() => null);
 
         const podUpdated = res?.result ?? res?.data;
+        if (podUpdated?.itemCode) {
+            setLastDbSyncAt(new Date().toLocaleTimeString('vi-VN'));
+        }
         const nowIso = new Date().toISOString();
+        let deliveredCoords = null;
+        let shipperOwnerCode = null;
+        let remainingInTransit = 0;
+        let itemCodAmount = 0;
+
         setManifestItems((prev) => {
             const next = prev.map((m) => {
                 if (m.itemCode !== itemCode) return m;
+                shipperOwnerCode = m.assignedShipperCode;
+                itemCodAmount = Number(m.codAmountVnd || 0);
+                if (m.deliveryLat != null && m.deliveryLng != null) {
+                    deliveredCoords = [m.deliveryLat, m.deliveryLng];
+                }
                 if (podUpdated?.itemCode) return podUpdated;
                 const timeline = parseTrackingTimeline(m);
                 return {
                     ...m,
                     dispatchStatus,
+                    arrivedAtStop: true,
                     proofImageUrl,
                     proofImageCaption,
                     proofUploadedAt: nowIso,
                     deliveredAt: nowIso,
                     recipientPodName,
+                    codStatus: codCollectionMethod || m.codStatus,
                     trackingHistoryJson: JSON.stringify([
                         ...timeline,
                         {
@@ -1754,13 +2056,602 @@ export default function ShipperPortalPage() {
                     ])
                 };
             });
+            remainingInTransit = next.filter(
+                (i) =>
+                    !i.isDeleted &&
+                    i.assignedShipperCode === shipperOwnerCode &&
+                    i.dispatchStatus === 'OUT_FOR_DELIVERY'
+            ).length;
             saveStoredJson(STORAGE_KEY_MANIFEST_ITEMS, next);
             return next;
         });
 
+        if (shipperOwnerCode) {
+            setShippers((prev) => {
+                const next = prev.map((s) => {
+                    if (s.shipperCode !== shipperOwnerCode) return s;
+                    let nextCodHolding = Number(s.codHoldingVnd || 0);
+                    let nextCodQr = Number(s.codCollectedQrTodayVnd || 0);
+                    if (itemCodAmount > 0) {
+                        if (codCollectionMethod === 'COLLECTED_QR') {
+                            nextCodQr += itemCodAmount;
+                        } else {
+                            nextCodHolding += itemCodAmount;
+                        }
+                    }
+                    return {
+                        ...s,
+                        currentLat: deliveredCoords ? deliveredCoords[0] : s.currentLat,
+                        currentLng: deliveredCoords ? deliveredCoords[1] : s.currentLng,
+                        shiftStatus: remainingInTransit > 0 ? 'ON_DELIVERY' : 'AVAILABLE',
+                        codHoldingVnd: nextCodHolding,
+                        codCollectedQrTodayVnd: nextCodQr
+                    };
+                });
+                saveStoredJson(STORAGE_KEY_HUB_SHIPPERS, next);
+                return next;
+            });
+        }
+
         setPhotoPodModalItem(null);
+        publishCrossRoleNotification({
+            eventType: 'LAST_MILE_POD_COMPLETED',
+            severity: 'INFO',
+            senderRole: userRole,
+            senderUsername: user?.username,
+            senderName: activeShipperProfile?.fullName || user?.fullName || 'Shipper Bưu cục',
+            targetRoles: ['OPERATOR', 'CUSTOMER', 'ADMIN'],
+            hubCode: selectedHubCode,
+            title: `Đã giao thành công kiện ${itemCode} (Có ảnh POD)`,
+            message: `Người nhận ${recipientPodName || 'tại điểm giao'} đã nhận đủ hàng và xác thực ảnh chứng từ giao nhận.`
+        });
         showToast(`Đã lưu Ảnh xác thực POD & hoàn tất giao kiện ${itemCode}!`);
     };
+
+    // GrabDriver / SPX Field Operations: Direct PostgreSQL Persistence + Real-time SSE Sync
+    const handleChangeShiftStatus = useCallback(
+        async (shipperCode, nextShiftStatus) => {
+            if (!shipperCode) return;
+            const activeInTransit = manifestItems.filter(
+                (m) =>
+                    !m.isDeleted &&
+                    m.assignedShipperCode === shipperCode &&
+                    m.dispatchStatus === 'OUT_FOR_DELIVERY'
+            ).length;
+            if (activeInTransit > 0 && nextShiftStatus !== 'ON_DELIVERY') {
+                showToast(
+                    `Không thể chuyển trạng thái khi đang giữ ${activeInTransit} kiện Đang đi giao trên xe — vui lòng hoàn tất giao hàng hoặc lập biên bản sự cố trước!`
+                );
+                return;
+            }
+            const res = await Promise.resolve(
+                api.updateHubShipperTelemetry
+                    ? api.updateHubShipperTelemetry(shipperCode, { shiftStatus: nextShiftStatus })
+                    : api.updateHubShipperProfile?.(shipperCode, { shiftStatus: nextShiftStatus })
+            ).catch(() => null);
+            const savedShipper = res?.result ?? res?.data;
+            if (savedShipper?.shipperCode) {
+                setLastDbSyncAt(new Date().toLocaleTimeString('vi-VN'));
+            }
+            setShippers((prev) => {
+                const next = prev.map((s) =>
+                    s.shipperCode === shipperCode
+                        ? { ...s, shiftStatus: nextShiftStatus, ...(savedShipper || {}) }
+                        : s
+                );
+                saveStoredJson(STORAGE_KEY_HUB_SHIPPERS, next);
+                return next;
+            });
+            const labelMap = {
+                AVAILABLE: 'Đang nhận tuyến (Trực tuyến)',
+                ON_DELIVERY: 'Đang đi giao trên tuyến',
+                OFF_SHIFT: 'Tạm nghỉ ca'
+            };
+            showToast(`Đã cập nhật trạng thái: ${labelMap[nextShiftStatus] || nextShiftStatus}`);
+        },
+        [manifestItems, showToast]
+    );
+
+    const handleCheckInStopArrival = useCallback(
+        async (item) => {
+            if (!item?.itemCode) return;
+            const timeLabel = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+            const res = await Promise.resolve(
+                api.executeHubItemFieldAction?.(item.itemCode, {
+                    action: 'CHECKIN_ARRIVAL',
+                    currentLat: item.deliveryLat,
+                    currentLng: item.deliveryLng
+                })
+            ).catch(() => null);
+            const dbItem = res?.result ?? res?.data;
+            if (dbItem?.itemCode) {
+                setLastDbSyncAt(new Date().toLocaleTimeString('vi-VN'));
+            }
+
+            setManifestItems((prev) => {
+                const next = prev.map((m) => {
+                    if (m.itemCode !== item.itemCode) return m;
+                    if (dbItem?.itemCode) return { ...m, ...dbItem };
+                    const timeline = parseTrackingTimeline(m);
+                    if (timeline.some((t) => t.status === 'ARRIVED_AT_STOP')) {
+                        return { ...m, arrivedAtStop: true };
+                    }
+                    return {
+                        ...m,
+                        arrivedAtStop: true,
+                        trackingHistoryJson: JSON.stringify([
+                            ...timeline,
+                            {
+                                time: timeLabel,
+                                status: 'ARRIVED_AT_STOP',
+                                note: `Check-in GPS tại điểm giao ${item.consigneeName} (sai số < 35m)`
+                            }
+                        ])
+                    };
+                });
+                saveStoredJson(STORAGE_KEY_MANIFEST_ITEMS, next);
+                return next;
+            });
+
+            if (item.assignedShipperCode && item.deliveryLat != null && item.deliveryLng != null) {
+                setShippers((prev) => {
+                    const next = prev.map((s) =>
+                        s.shipperCode === item.assignedShipperCode
+                            ? { ...s, currentLat: item.deliveryLat, currentLng: item.deliveryLng }
+                            : s
+                    );
+                    saveStoredJson(STORAGE_KEY_HUB_SHIPPERS, next);
+                    return next;
+                });
+            }
+            showToast(`Đã ghi nhận đến điểm giao kiện ${item.itemCode} thành công!`);
+        },
+        [showToast]
+    );
+
+    const handleBatchPickupScan = useCallback(
+        async (readyItems = []) => {
+            if (!readyItems.length) return;
+            const itemCodes = readyItems.map((r) => r.itemCode);
+            const codes = new Set(itemCodes);
+            const timeLabel = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+
+            const [batchRes] = await Promise.all([
+                Promise.resolve(api.batchPickupHubItems?.(itemCodes)).catch(() => null),
+                ...readyItems.map((it) =>
+                    Promise.resolve(api.updateManifestItemStatus?.(it.itemCode, 'OUT_FOR_DELIVERY')).catch(
+                        () => null
+                    )
+                )
+            ]);
+            const dbItems = batchRes?.result ?? batchRes?.data;
+            const dbMap = new Map(Array.isArray(dbItems) ? dbItems.map((d) => [d.itemCode, d]) : []);
+            if (dbMap.size > 0) {
+                setLastDbSyncAt(new Date().toLocaleTimeString('vi-VN'));
+            }
+
+            setManifestItems((prev) => {
+                const next = prev.map((m) => {
+                    if (!codes.has(m.itemCode)) return m;
+                    if (dbMap.has(m.itemCode)) return { ...m, ...dbMap.get(m.itemCode) };
+                    const timeline = parseTrackingTimeline(m);
+                    return {
+                        ...m,
+                        dispatchStatus: 'OUT_FOR_DELIVERY',
+                        trackingHistoryJson: JSON.stringify([
+                            ...timeline,
+                            {
+                                time: timeLabel,
+                                status: 'OUT_FOR_DELIVERY',
+                                note: 'Quét mã vạch nhận hàng xuất trạm đồng loạt'
+                            }
+                        ])
+                    };
+                });
+                saveStoredJson(STORAGE_KEY_MANIFEST_ITEMS, next);
+                return next;
+            });
+
+            if (activeShipperProfile?.shipperCode) {
+                setShippers((prev) => {
+                    const next = prev.map((s) =>
+                        s.shipperCode === activeShipperProfile.shipperCode
+                            ? { ...s, shiftStatus: 'ON_DELIVERY' }
+                            : s
+                    );
+                    saveStoredJson(STORAGE_KEY_HUB_SHIPPERS, next);
+                    return next;
+                });
+            }
+
+            showToast(
+                `Đã quét nhận xuất trạm ${readyItems.length} kiện hàng & cập nhật lộ trình giao!`
+            );
+        },
+        [activeShipperProfile?.shipperCode, showToast]
+    );
+
+    const handleScanSingleCode = useCallback(
+        (code) => {
+            const normalized = String(code || '').trim().toUpperCase();
+            if (!normalized) return;
+            const found = cockpitRouteItems.find((i) => i.itemCode.toUpperCase() === normalized);
+            if (!found) {
+                showToast(`Không tìm thấy mã kiện ${normalized} trong lộ trình phân công của ca trực này.`);
+                return;
+            }
+            if (found.dispatchStatus === 'ASSIGNED_TO_SHIPPER') {
+                handleUpdateItemStatus(found, 'OUT_FOR_DELIVERY');
+                return;
+            }
+            if (found.dispatchStatus === 'OUT_FOR_DELIVERY') {
+                setPhotoPodModalItem(found);
+                showToast(`Đã quét mã ${found.itemCode} tại điểm giao — Vui lòng xác thực Ảnh POD.`);
+                return;
+            }
+            showToast(`Kiện ${found.itemCode} đã hoàn tất giao hàng (POD).`);
+        },
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [cockpitRouteItems, showToast]
+    );
+
+    const handleReportNdrException = useCallback(
+        async (item, reason, mode = 'ON_HOLD') => {
+            if (!item?.itemCode) return;
+            const currentAttempt = (item.deliveryAttemptCount || 1);
+            const maxAttempts = item.maxDeliveryAttempts || 3;
+            const isAutoRts = mode === 'ON_HOLD' && currentAttempt >= maxAttempts;
+            const effectiveMode = isAutoRts ? 'RTS' : mode;
+            const targetStatus = effectiveMode === 'RTS' ? 'RETURN_PENDING' : 'NDR_RESCHEDULED';
+            const actionName = effectiveMode === 'RTS' ? 'REPORT_RETURN_TO_HUB' : 'REPORT_NDR';
+            const timeLabel = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+            const res = await Promise.resolve(
+                api.executeHubItemFieldAction?.(item.itemCode, {
+                    action: actionName,
+                    reason
+                })
+            ).catch(() => null);
+            const dbItem = res?.result ?? res?.data;
+            if (dbItem?.itemCode) {
+                setLastDbSyncAt(new Date().toLocaleTimeString('vi-VN'));
+            }
+
+            let remainingInTransit = 0;
+            setManifestItems((prev) => {
+                const next = prev.map((m) => {
+                    if (m.itemCode !== item.itemCode) return m;
+                    if (dbItem?.itemCode) return { ...m, ...dbItem, deliveryAttemptCount: currentAttempt + (effectiveMode === 'RTS' ? 0 : 1) };
+                    const timeline = parseTrackingTimeline(m);
+                    return {
+                        ...m,
+                        dispatchStatus: targetStatus,
+                        deliveryAttemptCount: currentAttempt + (effectiveMode === 'RTS' ? 0 : 1),
+                        ndrCount: (m.ndrCount || 0) + 1,
+                        ndrReason: reason,
+                        slaWindow: effectiveMode === 'RTS'
+                            ? (isAutoRts ? `Hết ${maxAttempts} lần phát — Tự động hoàn Bưu cục` : 'Chờ hoàn về Bưu cục')
+                            : `Hẹn giao lại (Lần ${currentAttempt}/${maxAttempts})`,
+                        trackingHistoryJson: JSON.stringify([
+                            ...timeline,
+                            {
+                                time: timeLabel,
+                                status: targetStatus,
+                                note: isAutoRts
+                                    ? `Đã hết ${maxAttempts} lần phát — Hệ thống tự động chuyển hoàn Bưu cục: ${reason}`
+                                    : `${effectiveMode === 'RTS' ? 'Chờ hoàn Bưu cục' : `Sự cố giao hàng lần ${currentAttempt} / Hẹn giao lại`}: ${reason}`
+                            }
+                        ])
+                    };
+                });
+                remainingInTransit = next.filter(
+                    (i) =>
+                        !i.isDeleted &&
+                        i.assignedShipperCode === item.assignedShipperCode &&
+                        i.dispatchStatus === 'OUT_FOR_DELIVERY'
+                ).length;
+                saveStoredJson(STORAGE_KEY_MANIFEST_ITEMS, next);
+                return next;
+            });
+
+            if (item.assignedShipperCode && remainingInTransit === 0) {
+                setShippers((prev) => {
+                    const next = prev.map((s) =>
+                        s.shipperCode === item.assignedShipperCode ? { ...s, shiftStatus: 'AVAILABLE' } : s
+                    );
+                    saveStoredJson(STORAGE_KEY_HUB_SHIPPERS, next);
+                    return next;
+                });
+            }
+            publishCrossRoleNotification({
+                eventType: effectiveMode === 'RTS' ? 'HUB_RETURN_PENDING' : 'LAST_MILE_NDR',
+                severity: 'HIGH',
+                senderRole: userRole,
+                senderUsername: user?.username,
+                senderName: activeShipperProfile?.fullName || user?.fullName || 'Shipper Bưu cục',
+                targetRoles: ['OPERATOR', 'CUSTOMER', 'ADMIN'],
+                hubCode: selectedHubCode,
+                title:
+                    effectiveMode === 'RTS'
+                        ? `Chờ hoàn bưu cục kiện ${item.itemCode}`
+                        : `Hẹn giao lại kiện ${item.itemCode} (Lần ${currentAttempt}/${maxAttempts})`,
+                message: `Lý do ghi nhận hiện trường: ${reason}`
+            });
+            showToast(
+                isAutoRts
+                    ? `⚠️ Kiện ${item.itemCode} đã hết ${maxAttempts} lần phát hàng — Hệ thống tự động chuyển Hoàn Bưu cục!`
+                    : effectiveMode === 'RTS'
+                        ? `Đã chuyển kiện ${item.itemCode} sang Chờ hoàn Bưu cục.`
+                        : `Đã ghi nhận biên bản hẹn giao lại kiện ${item.itemCode} (Lần ${currentAttempt}/${maxAttempts}) & chuyển điểm dừng kế tiếp.`
+            );
+        },
+        [activeShipperProfile?.fullName, selectedHubCode, showToast, user?.fullName, user?.username, userRole]
+    );
+
+    const handleLogCall = useCallback(
+        async (item) => {
+            if (!item?.itemCode) return;
+            const res = await Promise.resolve(
+                api.executeHubItemFieldAction?.(item.itemCode, { action: 'LOG_CALL' })
+            ).catch(() => null);
+            const dbItem = res?.result ?? res?.data;
+            if (dbItem?.itemCode) {
+                setLastDbSyncAt(new Date().toLocaleTimeString('vi-VN'));
+            }
+            const timeLabel = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+            let currentCallCount = 1;
+            setManifestItems((prev) => {
+                const next = prev.map((m) => {
+                    if (m.itemCode !== item.itemCode) return m;
+                    currentCallCount = (m.callAttemptsCount || 0) + 1;
+                    const timeline = parseTrackingTimeline(m);
+                    return {
+                        ...m,
+                        ...(dbItem || {}),
+                        callAttemptsCount: currentCallCount,
+                        lastCalledAt: new Date().toISOString(),
+                        trackingHistoryJson: JSON.stringify([
+                            ...timeline,
+                            {
+                                time: timeLabel,
+                                status: 'OUT_FOR_DELIVERY',
+                                note: `Gọi điện liên hệ người nhận (Cuộc gọi #${currentCallCount})`
+                            }
+                        ])
+                    };
+                });
+                saveStoredJson(STORAGE_KEY_MANIFEST_ITEMS, next);
+                return next;
+            });
+            showToast(`Đã ghi nhận cuộc gọi #${currentCallCount} cho kiện ${item.itemCode}.`);
+        },
+        [showToast]
+    );
+
+    const handleScanHubReturn = useCallback(
+        async (item) => {
+            if (!item?.itemCode) return;
+            const nowIso = new Date().toISOString();
+            const timeLabel = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+            const res = await Promise.resolve(
+                api.executeHubItemFieldAction?.(item.itemCode, {
+                    action: 'SCAN_HUB_RETURN',
+                    receivedBy: 'Thủ kho Hub'
+                })
+            ).catch(() => null);
+            const dbItem = res?.result ?? res?.data;
+            if (dbItem?.itemCode) {
+                setLastDbSyncAt(new Date().toLocaleTimeString('vi-VN'));
+            }
+            setManifestItems((prev) => {
+                const next = prev.map((m) => {
+                    if (m.itemCode !== item.itemCode) return m;
+                    const timeline = parseTrackingTimeline(m);
+                    return {
+                        ...m,
+                        ...(dbItem || {}),
+                        dispatchStatus: 'RETURNED_TO_HUB',
+                        returnedToHubAt: nowIso,
+                        hubReturnReceivedBy: 'Thủ kho Hub',
+                        trackingHistoryJson: JSON.stringify([
+                            ...timeline,
+                            {
+                                time: timeLabel,
+                                status: 'RETURNED_TO_HUB',
+                                note: 'Đã quét trả kho Bưu cục — Thủ kho ký nhận kiểm đếm nhập kho'
+                            }
+                        ])
+                    };
+                });
+                saveStoredJson(STORAGE_KEY_MANIFEST_ITEMS, next);
+                return next;
+            });
+            showToast(`Đã quét trả kho Bưu cục cho kiện ${item.itemCode} thành công!`);
+        },
+        [showToast]
+    );
+
+    const handleCheckInShift = useCallback(
+        async (shipperCode) => {
+            if (!shipperCode) return;
+            const res = await Promise.resolve(
+                api.checkInHubShipperShift?.(shipperCode)
+            ).catch(() => null);
+            const dbShipper = res?.result ?? res?.data;
+            const nowIso = new Date().toISOString();
+            setShippers((prev) => {
+                const next = prev.map((s) =>
+                    s.shipperCode === shipperCode
+                        ? {
+                              ...s,
+                              ...(dbShipper || {}),
+                              shiftStatus: 'AVAILABLE',
+                              shiftCheckedInAt: nowIso
+                          }
+                        : s
+                );
+                saveStoredJson(STORAGE_KEY_HUB_SHIPPERS, next);
+                return next;
+            });
+            showToast('Đã điểm danh nhận ca làm việc tại Bưu cục thành công!');
+        },
+        [showToast]
+    );
+
+    const handleEndShift = useCallback(
+        async (shipperCode) => {
+            if (!shipperCode) return;
+            const res = await Promise.resolve(
+                api.endHubShipperShift?.(shipperCode)
+            ).catch(() => null);
+            const dbShipper = res?.result ?? res?.data;
+            const nowIso = new Date().toISOString();
+            setShippers((prev) => {
+                const next = prev.map((s) =>
+                    s.shipperCode === shipperCode
+                        ? {
+                              ...s,
+                              ...(dbShipper || {}),
+                              shiftStatus: 'OFF_SHIFT',
+                              shiftEndedAt: nowIso
+                          }
+                        : s
+                );
+                saveStoredJson(STORAGE_KEY_HUB_SHIPPERS, next);
+                return next;
+            });
+            showToast('Đã hoàn tất kiểm tra 3 cổng và Kết ca làm việc tại Bưu cục!');
+        },
+        [showToast]
+    );
+
+    const handleRemitCodCash = useCallback(
+        async (payload) => {
+            const res = await Promise.resolve(
+                api.remitHubShipperCod?.(payload)
+            ).catch(() => null);
+            const dbRemit = res?.result ?? res?.data;
+            const remittedAmount = Number(payload.remittedAmountVnd || 0);
+
+            if (dbRemit?.remittanceCode) {
+                setCodRemittances((prev) => {
+                    const next = [dbRemit, ...prev];
+                    saveStoredJson(STORAGE_KEY_COD_REMITTANCES, next);
+                    return next;
+                });
+            } else {
+                const localRemit = {
+                    id: Date.now(),
+                    remittanceCode: `REMIT-${payload.shipperCode}-${Date.now().toString().slice(-4)}`,
+                    hubCode: payload.hubCode,
+                    shipperCode: payload.shipperCode,
+                    remittedAmountVnd: remittedAmount,
+                    remittanceMethod: payload.remittanceMethod,
+                    cashierName: payload.cashierName,
+                    status: 'CONFIRMED',
+                    remittedAt: new Date().toISOString()
+                };
+                setCodRemittances((prev) => {
+                    const next = [localRemit, ...prev];
+                    saveStoredJson(STORAGE_KEY_COD_REMITTANCES, next);
+                    return next;
+                });
+            }
+
+            setShippers((prev) => {
+                const next = prev.map((s) => {
+                    if (s.shipperCode !== payload.shipperCode) return s;
+                    const prevHolding = Number(s.codHoldingVnd || 0);
+                    const newHolding = Math.max(0, prevHolding - remittedAmount);
+                    return {
+                        ...s,
+                        codHoldingVnd: newHolding
+                    };
+                });
+                saveStoredJson(STORAGE_KEY_HUB_SHIPPERS, next);
+                return next;
+            });
+
+            showToast(
+                `Đã nộp ${formatVnd(remittedAmount)} COD về Bưu cục thành công! Số dư COD tiền mặt đã được cập nhật.`
+            );
+        },
+        [showToast]
+    );
+
+    const handleRetryNdrDelivery = useCallback(
+        async (item) => {
+            if (!item?.itemCode) return;
+            const timeLabel = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+            const res = await Promise.resolve(
+                api.executeHubItemFieldAction?.(item.itemCode, { action: 'RETRY_NDR' })
+            ).catch(() => null);
+            const dbItem = res?.result ?? res?.data;
+            if (dbItem?.itemCode) {
+                setLastDbSyncAt(new Date().toLocaleTimeString('vi-VN'));
+            }
+
+            setManifestItems((prev) => {
+                const next = prev.map((m) => {
+                    if (m.itemCode !== item.itemCode) return m;
+                    if (dbItem?.itemCode) return { ...m, ...dbItem };
+                    const timeline = parseTrackingTimeline(m);
+                    return {
+                        ...m,
+                        dispatchStatus: 'OUT_FOR_DELIVERY',
+                        slaWindow: 'Đang giao lại lần 2 trong ca',
+                        trackingHistoryJson: JSON.stringify([
+                            ...timeline,
+                            {
+                                time: timeLabel,
+                                status: 'OUT_FOR_DELIVERY',
+                                note: 'Người nhận xác nhận nhận hàng — Shipper mở lại lộ trình giao kiện'
+                            }
+                        ])
+                    };
+                });
+                saveStoredJson(STORAGE_KEY_MANIFEST_ITEMS, next);
+                return next;
+            });
+            if (item.assignedShipperCode) {
+                setShippers((prev) => {
+                    const next = prev.map((s) =>
+                        s.shipperCode === item.assignedShipperCode ? { ...s, shiftStatus: 'ON_DELIVERY' } : s
+                    );
+                    saveStoredJson(STORAGE_KEY_HUB_SHIPPERS, next);
+                    return next;
+                });
+            }
+            showToast(`Đã kích hoạt lại lộ trình giao kiện ${item.itemCode}!`);
+        },
+        [showToast]
+    );
+
+    const handleSettleShiftPod = useCallback(
+        async (shipper, calc) => {
+            if (!shipper?.shipperCode) return;
+            const res = await Promise.resolve(
+                api.settleHubShipperShift?.({
+                    hubCode: shipper.hubCode,
+                    shipperCode: shipper.shipperCode,
+                    note: `Đối soát cuối ca ${calc.deliveredCount}/${calc.totalStops} chứng từ POD`
+                })
+            ).catch(() => null);
+            const dbSettlement = res?.result ?? res?.data;
+            if (dbSettlement?.settlementCode) {
+                setLastDbSyncAt(new Date().toLocaleTimeString('vi-VN'));
+                setShiftSettlements((prev) => [
+                    dbSettlement,
+                    ...prev.filter((s) => s.settlementCode !== dbSettlement.settlementCode)
+                ]);
+            }
+            showToast(
+                dbSettlement?.settlementCode
+                    ? `Đã xác nhận phiếu đối soát ${dbSettlement.settlementCode} cho ${shipper.fullName}!`
+                    : `Đã nộp đối soát chứng từ cuối ca cho ${shipper.fullName} (${calc.deliveredCount} POD hợp lệ)!`
+            );
+        },
+        [showToast]
+    );
 
     // Container Driver Chat helpers
     const activeChatHandover = useMemo(
@@ -1940,11 +2831,12 @@ export default function ShipperPortalPage() {
                                     textTransform: 'uppercase'
                                 }}
                             >
-                                ● TRỤ SỞ ĐANG TRỰC: {activeHub?.hubCode}
+                                ● BƯU CỤC ĐANG TRỰC
                             </div>
                             <div
+                                title={activeHub?.hubName}
                                 style={{
-                                    fontSize: '0.82rem',
+                                    fontSize: '0.84rem',
                                     fontWeight: 800,
                                     marginTop: 2,
                                     whiteSpace: 'nowrap',
@@ -1954,8 +2846,9 @@ export default function ShipperPortalPage() {
                             >
                                 {activeHub?.shortName || activeHub?.hubName}
                             </div>
-                            <div style={{ fontSize: '0.72rem', opacity: 0.72, marginTop: 2 }}>
-                                Tài khoản: <code>@{user?.username || 'shipper'}</code>
+                            <div style={{ fontSize: '0.72rem', opacity: 0.72, marginTop: 2, display: 'flex', justifyContent: 'space-between' }}>
+                                <span>Mã: <code>{activeHub?.hubCode}</code></span>
+                                <span><code>@{user?.username || 'shipper'}</code></span>
                             </div>
                         </div>
                     ) : (
@@ -2082,11 +2975,13 @@ export default function ShipperPortalPage() {
                                                                     fontWeight: 800,
                                                                     padding: '1px 7px',
                                                                     borderRadius: 999,
-                                                                    background: 'rgba(2, 132, 199, 0.16)',
-                                                                    color: '#0284c7'
+                                                                    background: isHubShipper
+                                                                        ? 'rgba(16, 185, 129, 0.16)'
+                                                                        : 'rgba(2, 132, 199, 0.16)',
+                                                                    color: isHubShipper ? '#059669' : '#0284c7'
                                                                 }}
                                                             >
-                                                                {hubShippers.length} người
+                                                                {isHubShipper ? 'Cá nhân' : `${hubShippers.length} người`}
                                                             </span>
                                                         )}
                                                         {item.id === 'containers' && (
@@ -2123,8 +3018,8 @@ export default function ShipperPortalPage() {
                         </div>
                     ))}
 
-                    {/* Quick Hub Switcher inside Sidebar */}
-                    {!isSidebarCollapsed && (
+                    {/* Hub Switcher (ADMIN only) or Quick Verified Shipper Dossier Card (Isolated Roles) */}
+                    {!isSidebarCollapsed && !strictHubIsolationEnforced && (
                         <div style={{ marginTop: 4 }}>
                             <div
                                 style={{
@@ -2184,6 +3079,64 @@ export default function ShipperPortalPage() {
                             </div>
                         </div>
                     )}
+
+                    {!isSidebarCollapsed && strictHubIsolationEnforced && activeShipperProfile && (
+                        <div
+                            style={{
+                                marginTop: 4,
+                                padding: '11px 12px',
+                                borderRadius: 12,
+                                background: subtleBg,
+                                border: cardBorder,
+                                display: 'grid',
+                                gap: 6
+                            }}
+                        >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
+                                <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#059669', letterSpacing: '0.06em' }}>
+                                    HỒ SƠ XÁC THỰC eKYC
+                                </span>
+                                <span
+                                    style={{
+                                        fontSize: '0.65rem',
+                                        fontWeight: 800,
+                                        color: activeShipperProfile.kycStatus === 'VERIFIED' ? '#059669' : '#d97706'
+                                    }}
+                                >
+                                    {activeShipperProfile.kycStatus === 'VERIFIED' ? '✓ Đạt chuẩn' : 'Chờ duyệt'}
+                                </span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <ShipperAvatar shipper={activeShipperProfile} size={38} showBadge />
+                                <div style={{ minWidth: 0 }}>
+                                    <div style={{ fontSize: '0.8rem', fontWeight: 800, color: textPrimary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                        {activeShipperProfile.fullName}
+                                    </div>
+                                    <div style={{ fontSize: '0.71rem', color: textMuted }}>
+                                        {activeShipperProfile.shipperCode} · {activeShipperProfile.vehiclePlate} · Hạng {activeShipperProfile.driverLicenseClass || 'B2'}
+                                    </div>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => selectShipperTab('shippers')}
+                                style={{
+                                    marginTop: 2,
+                                    padding: '6px 9px',
+                                    borderRadius: 8,
+                                    border: '1px solid rgba(16, 185, 129, 0.35)',
+                                    background: 'rgba(16, 185, 129, 0.1)',
+                                    color: '#059669',
+                                    fontSize: '0.73rem',
+                                    fontWeight: 800,
+                                    cursor: 'pointer',
+                                    textAlign: 'center'
+                                }}
+                            >
+                                Xem chi tiết hồ sơ xác thực →
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 {/* Sidebar Bottom Summary & Account Card */}
@@ -2208,12 +3161,26 @@ export default function ShipperPortalPage() {
                             }}
                         >
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                                <span style={{ opacity: 0.75 }}>Kết nối Hệ thống Trụ sở:</span>
-                                <strong style={{ color: '#10b981' }}>● Real-time</strong>
+                                <span style={{ opacity: 0.75 }}>Trạng thái kết nối:</span>
+                                <strong style={{ color: sseConnected || dbConnected ? '#10b981' : '#d97706' }}>
+                                    ● {sseConnected || dbConnected ? 'Trực tuyến (Thời gian thực)' : 'Đang kết nối'}
+                                </strong>
                             </div>
+                            {lastDbSyncAt && (
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, fontSize: '0.69rem', color: textMuted }}>
+                                    <span>Cập nhật lúc:</span>
+                                    <strong>{lastDbSyncAt}</strong>
+                                </div>
+                            )}
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span style={{ opacity: 0.75 }}>Shipper đang trực:</span>
-                                <strong>{hubShippers.length} Shipper</strong>
+                                <span style={{ opacity: 0.75 }}>
+                                    {isHubShipper ? 'Phương tiện trực:' : 'Shipper đang trực:'}
+                                </span>
+                                <strong>
+                                    {isHubShipper
+                                        ? activeShipperProfile?.vehiclePlate || '99C-182.68'
+                                        : `${hubShippers.length} Shipper`}
+                                </strong>
                             </div>
                         </div>
                     ) : (
@@ -2247,7 +3214,7 @@ export default function ShipperPortalPage() {
                     style={{
                         position: 'sticky',
                         top: 0,
-                        zIndex: 30,
+                        zIndex: 50,
                         background: isDark ? 'rgba(4, 15, 12, 0.92)' : 'rgba(255, 255, 255, 0.94)',
                         backdropFilter: 'blur(20px)',
                         WebkitBackdropFilter: 'blur(20px)',
@@ -2301,7 +3268,7 @@ export default function ShipperPortalPage() {
                                     className="topbar-title"
                                     title={`${currentNavMeta.label} — ${activeHub?.shortName || activeHub?.hubName}`}
                                 >
-                                    {currentNavMeta.label} — {activeHub?.shortName || activeHub?.hubName}
+                                    {currentNavMeta.label}
                                 </h1>
                             </div>
                         </div>
@@ -2311,6 +3278,13 @@ export default function ShipperPortalPage() {
                             <span
                                 data-testid="hub-rbac-scope-badge"
                                 className="topbar-status-pill"
+                                title={
+                                    isReadOnlyAuditor
+                                        ? `CHỈ ĐỌC (AUDITOR) • ${selectedHubCode}`
+                                        : strictHubIsolationEnforced
+                                            ? `Tài xế Bưu cục • ${selectedHubCode}${boundShipperDefault.shipperCode ? ` • ${boundShipperDefault.shipperCode}` : ''}`
+                                            : `QUẢN TRỊ TOÀN HUB (${userRole})`
+                                }
                                 style={{
                                     borderColor: strictHubIsolationEnforced
                                         ? 'rgba(5, 150, 105, 0.55)'
@@ -2329,10 +3303,10 @@ export default function ShipperPortalPage() {
                             >
                                 <Lock size={13} />
                                 {isReadOnlyAuditor
-                                    ? `CHỈ ĐỌC (AUDITOR) • ${selectedHubCode}`
+                                    ? `AUDITOR • ${selectedHubCode}`
                                     : strictHubIsolationEnforced
-                                        ? `RBAC ${userRole} • ${selectedHubCode}${boundShipperDefault.shipperCode ? ` • ${boundShipperDefault.shipperCode}` : ''}`
-                                        : `QUẢN TRỊ TOÀN HUB (${userRole})`}
+                                        ? `${boundShipperDefault.shipperCode || userRole} • ${selectedHubCode}`
+                                        : `TOÀN HUB (${userRole})`}
                             </span>
 
                             <div
@@ -2395,7 +3369,7 @@ export default function ShipperPortalPage() {
                                 type="button"
                                 className="topbar-btn topbar-btn-messenger"
                                 onClick={() => setMessengerOpen(true)}
-                                title="Mở CCADRO Messenger (Chat đa người & nhóm)"
+                                title="Mở Tin nhắn Điều phối & Bưu cục"
                             >
                                 <MessageCircle size={15} />
                                 <span className="topbar-label">Messenger</span>
@@ -2405,6 +3379,13 @@ export default function ShipperPortalPage() {
                                     </span>
                                 )}
                             </button>
+
+                            <RoleNotificationBell
+                                user={user}
+                                isDark={isDark}
+                                compactLabel="Thông báo"
+                                panelTitle="Thông báo Bưu cục & Giao nhận"
+                            />
 
                             <button
                                 type="button"
@@ -2547,7 +3528,7 @@ export default function ShipperPortalPage() {
                             position: 'fixed',
                             bottom: 24,
                             right: 24,
-                            zIndex: 90,
+                            zIndex: 3500,
                             padding: '13px 20px',
                             borderRadius: 12,
                             background: '#059669',
@@ -2863,7 +3844,35 @@ export default function ShipperPortalPage() {
           ══════════════════════════════════════════════════════════════════ */}
                     {activeTab === 'dispatch' && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-                            {/* Horizontal Strip of Assigned Local Shippers in this Hub (Clean 3-Card Row) */}
+                            {/* SPX Express / GrabDriver Field Cockpit: Shift Toggle, Barcode Batch Scan, Multi-Stop Map & Next-Stop Card */}
+                            <ShipperFieldCockpit
+                                activeHub={activeHub}
+                                activeShipper={
+                                    activeShipperProfile ||
+                                    shippers.find((s) => s.shipperCode === selectedShipperFilter) ||
+                                    hubShippers[0] ||
+                                    null
+                                }
+                                items={cockpitRouteItems}
+                                isHubShipper={isHubShipper}
+                                canAct={canUpdateDeliveryPod && !isReadOnlyAuditor}
+                                isDark={isDark}
+                                onChangeShiftStatus={handleChangeShiftStatus}
+                                onBatchPickupScan={handleBatchPickupScan}
+                                onScanSingleCode={handleScanSingleCode}
+                                onStartItemDelivery={(it) => handleUpdateItemStatus(it, 'OUT_FOR_DELIVERY')}
+                                onCheckInStopArrival={handleCheckInStopArrival}
+                                onOpenPhotoPod={(it) => setPhotoPodModalItem(it)}
+                                onReportNdrException={handleReportNdrException}
+                                onRetryNdrDelivery={handleRetryNdrDelivery}
+                                onLogCall={handleLogCall}
+                                onScanHubReturn={handleScanHubReturn}
+                                onCheckInShift={handleCheckInShift}
+                                onEndShift={handleEndShift}
+                            />
+
+                            {/* Horizontal Strip of Assigned Local Shippers in this Hub (Manager / Auditor View Only) */}
+                            {!isHubShipper && (
                             <section
                                 style={{
                                     background: cardBg,
@@ -2922,7 +3931,7 @@ export default function ShipperPortalPage() {
                                 <div
                                     style={{
                                         display: 'grid',
-                                        gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))',
+                                        gridTemplateColumns: 'repeat(auto-fit, minmax(310px, 1fr))',
                                         gap: 12
                                     }}
                                 >
@@ -2931,6 +3940,7 @@ export default function ShipperPortalPage() {
                                             (m) => m.assignedShipperCode === shipper.shipperCode
                                         );
                                         const isSelected = selectedShipperFilter === shipper.shipperCode;
+                                        const verified = shipper.kycStatus === 'VERIFIED';
                                         return (
                                             <div
                                                 key={shipper.shipperCode}
@@ -2938,7 +3948,7 @@ export default function ShipperPortalPage() {
                                                     setSelectedShipperFilter(isSelected ? 'ALL' : shipper.shipperCode)
                                                 }
                                                 style={{
-                                                    padding: '13px 15px',
+                                                    padding: '14px 16px',
                                                     borderRadius: 13,
                                                     border: isSelected
                                                         ? '2px solid #10b981'
@@ -2949,34 +3959,35 @@ export default function ShipperPortalPage() {
                                                             : 'rgba(16, 185, 129, 0.06)'
                                                         : subtleBg,
                                                     cursor: 'pointer',
-                                                    transition: 'all 0.16s ease'
+                                                    transition: 'all 0.16s ease',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    gap: 7
                                                 }}
                                             >
-                                                <div
-                                                    style={{
-                                                        display: 'flex',
-                                                        justifyContent: 'space-between',
-                                                        alignItems: 'center',
-                                                        gap: 8
-                                                    }}
-                                                >
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                                                        <span style={{ fontWeight: 800, fontSize: '0.88rem' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 9, minWidth: 0 }}>
+                                                        <ShipperAvatar shipper={shipper} size={36} showBadge />
+                                                        <span style={{ fontWeight: 800, fontSize: '0.92rem', color: textPrimary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                                             {shipper.fullName}
                                                         </span>
-                                                        <span
-                                                            style={{
-                                                                fontSize: '0.68rem',
-                                                                fontWeight: 800,
-                                                                padding: '2px 7px',
-                                                                borderRadius: 6,
-                                                                background: 'rgba(16, 185, 129, 0.15)',
-                                                                color: '#059669'
-                                                            }}
-                                                        >
-                                                            {shipper.shipperCode}
-                                                        </span>
                                                     </div>
+                                                    <span
+                                                        style={{
+                                                            fontSize: '0.68rem',
+                                                            fontWeight: 800,
+                                                            padding: '2px 8px',
+                                                            borderRadius: 6,
+                                                            background: 'rgba(16, 185, 129, 0.15)',
+                                                            color: '#059669',
+                                                            flexShrink: 0
+                                                        }}
+                                                    >
+                                                        {shipper.shipperCode}
+                                                    </span>
+                                                </div>
+
+                                                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
                                                     <span
                                                         style={{
                                                             fontSize: '0.68rem',
@@ -2991,11 +4002,25 @@ export default function ShipperPortalPage() {
                                                     >
                                                         {shipper.coldChainCapable ? '❄ Xe Bảo Ôn Lạnh' : 'Xe Hàng Khô'}
                                                     </span>
+                                                    <span
+                                                        style={{
+                                                            fontSize: '0.68rem',
+                                                            fontWeight: 800,
+                                                            padding: '2px 8px',
+                                                            borderRadius: 999,
+                                                            background: verified ? 'rgba(16, 185, 129, 0.14)' : 'rgba(245, 158, 11, 0.15)',
+                                                            color: verified ? '#059669' : '#d97706'
+                                                        }}
+                                                    >
+                                                        {verified ? '✓ Đã xác thực eKYC' : 'Chờ duyệt eKYC'}
+                                                    </span>
+                                                    <span style={{ fontSize: '0.7rem', color: textMuted, fontWeight: 650 }}>
+                                                        {shipper.vehiclePlate} · Hạng {shipper.driverLicenseClass || 'B2'}
+                                                    </span>
                                                 </div>
 
                                                 <div
                                                     style={{
-                                                        marginTop: 7,
                                                         fontSize: '0.76rem',
                                                         fontWeight: 700,
                                                         color: '#059669',
@@ -3004,32 +4029,49 @@ export default function ShipperPortalPage() {
                                                         gap: 5
                                                     }}
                                                 >
-                                                    <MapPin size={13} />
+                                                    <MapPin size={13} style={{ flexShrink: 0 }} />
                                                     <span>{shipper.assignedZoneName}</span>
                                                 </div>
 
                                                 <div
                                                     style={{
-                                                        marginTop: 5,
                                                         display: 'flex',
                                                         justifyContent: 'space-between',
+                                                        alignItems: 'center',
                                                         fontSize: '0.72rem',
-                                                        color: textMuted
+                                                        color: textMuted,
+                                                        paddingTop: 4,
+                                                        borderTop: `1px dashed ${isDark ? 'rgba(148,163,184,0.18)' : '#cbd5e1'}`
                                                     }}
                                                 >
                                                     <span>
-                                                        Tọa độ chốt: ({shipper.assignedLat.toFixed(4)},{' '}
-                                                        {shipper.assignedLng.toFixed(4)}) • R={shipper.coverageRadiusKm}km
+                                                        {assignedItems.length} kiện · ★ {shipper.rating} · OTD {shipper.onTimeRatePct ?? 98.5}%
                                                     </span>
-                                                    <strong style={{ color: '#0284c7' }}>
-                                                        {assignedItems.length} kiện được giao
-                                                    </strong>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            selectShipperTab('shippers');
+                                                        }}
+                                                        style={{
+                                                            border: 'none',
+                                                            background: 'transparent',
+                                                            color: '#059669',
+                                                            fontSize: '0.73rem',
+                                                            fontWeight: 800,
+                                                            cursor: 'pointer',
+                                                            padding: 0
+                                                        }}
+                                                    >
+                                                        Hồ sơ xác thực →
+                                                    </button>
                                                 </div>
                                             </div>
                                         );
                                     })}
                                 </div>
                             </section>
+                            )}
 
                             {/* Cargo Manifest Dispatch List & Filter Toolbar */}
                             <section
@@ -3060,10 +4102,14 @@ export default function ShipperPortalPage() {
                                                 letterSpacing: '0.06em'
                                             }}
                                         >
-                                            DANH MỤC HÀNG HÓA TỪ CONTAINER & PHÂN CÔNG SHIPPER GẦN NHẤT
+                                            {isHubShipper
+                                                ? 'DANH SÁCH VẬN ĐƠN PHÂN CÔNG THEO TUYẾN GIAO HÀNG'
+                                                : 'DANH MỤC HÀNG HÓA TỪ CONTAINER & PHÂN CÔNG SHIPPER GẦN NHẤT'}
                                         </div>
                                         <div style={{ fontSize: '0.95rem', fontWeight: 800, marginTop: 2 }}>
-                                            So sánh khoảng cách từ điểm giao của từng món hàng tới vị trí phân công của các Shipper
+                                            {isHubShipper
+                                                ? 'Kiểm tra phiếu gửi, điều kiện chuỗi lạnh, khung giờ cam kết SLA và xác thực Ảnh POD tại điểm giao'
+                                                : 'So sánh khoảng cách từ điểm giao của từng món hàng tới vị trí phân công của các Shipper'}
                                         </div>
                                     </div>
 
@@ -3082,9 +4128,17 @@ export default function ShipperPortalPage() {
                                         >
                                             {[
                                                 { id: 'ALL', label: 'Tất cả' },
-                                                { id: 'IN_CONTAINER', label: 'Trong Container' },
-                                                { id: 'SYNCED_TO_HUB', label: 'Đã sang Trụ sở' },
-                                                { id: 'ASSIGNED_TO_SHIPPER', label: 'Đã chia Shipper' },
+                                                ...(!isHubShipper
+                                                    ? [
+                                                        { id: 'IN_CONTAINER', label: 'Trong Container' },
+                                                        { id: 'SYNCED_TO_HUB', label: 'Đã sang Trụ sở' }
+                                                    ]
+                                                    : []),
+                                                { id: 'ASSIGNED_TO_SHIPPER', label: isHubShipper ? 'Chờ lấy tại Hub' : 'Đã chia Shipper' },
+                                                { id: 'OUT_FOR_DELIVERY', label: 'Đang đi giao' },
+                                                { id: 'NDR_RESCHEDULED', label: 'Giữ On-Hold' },
+                                                { id: 'RETURN_PENDING', label: 'Chờ hoàn Hub' },
+                                                { id: 'RETURNED_TO_HUB', label: 'Đã trả kho' },
                                                 { id: 'DELIVERED_POD', label: 'Đã giao POD' }
                                             ].map((f) => (
                                                 <button
@@ -3110,18 +4164,16 @@ export default function ShipperPortalPage() {
                                             ))}
                                         </div>
 
-                                        <ElasticSearchBar
+                                        <SearchToolbar
                                             value={searchQuery}
                                             onChange={setSearchQuery}
-                                            placeholder="Elastic search: mã kiện, hàng hóa, người nhận, shipper..."
+                                            label="Tìm hàng hóa"
+                                            placeholder="Mã kiện, hàng hóa, người nhận hoặc shipper…"
                                             totalCount={activeOrDeletedManifestItems.length}
                                             matchedCount={enrichedManifestItems.length}
-                                            tookMs={elasticManifestResult.tookMs}
                                             showDeleted={showDeletedManifest}
                                             onToggleDeleted={() => setShowDeletedManifest((prev) => !prev)}
                                             deletedCount={deletedManifestCount}
-                                            minWidth={260}
-                                            rounded={9}
                                         />
                                     </div>
                                 </div>
@@ -3204,6 +4256,24 @@ export default function ShipperPortalPage() {
                                                         >
                                                             {statusMeta.label}
                                                         </span>
+                                                        {(item.deliveryAttemptCount || 1) > 1 && item.dispatchStatus !== 'DELIVERED_POD' && (
+                                                            <span
+                                                                style={{
+                                                                    fontSize: '0.68rem',
+                                                                    fontWeight: 800,
+                                                                    padding: '3px 8px',
+                                                                    borderRadius: 999,
+                                                                    background: (item.deliveryAttemptCount || 1) >= (item.maxDeliveryAttempts || 3)
+                                                                        ? 'rgba(239, 68, 68, 0.15)'
+                                                                        : 'rgba(245, 158, 11, 0.15)',
+                                                                    color: (item.deliveryAttemptCount || 1) >= (item.maxDeliveryAttempts || 3)
+                                                                        ? '#dc2626'
+                                                                        : '#d97706'
+                                                                }}
+                                                            >
+                                                                Lần phát {item.deliveryAttemptCount || 1}/{item.maxDeliveryAttempts || 3}
+                                                            </span>
+                                                        )}
                                                         {canUpdateDeliveryPod &&
                                                             (item.isDeleted ? (
                                                                 <button
@@ -3308,7 +4378,67 @@ export default function ShipperPortalPage() {
                                                         </div>
                                                     </div>
 
-                                                    {/* Distance comparison to each Shipper's assigned zone */}
+                                                    {/* Right Column: SPX Waybill SLA Box for Field Shipper OR 3-Shipper Proximity Matrix for Manager */}
+                                                    {isHubShipper ? (
+                                                        <div
+                                                            style={{
+                                                                padding: '11px 13px',
+                                                                borderRadius: 11,
+                                                                background: cardBg,
+                                                                border: cardBorder,
+                                                                fontSize: '0.76rem',
+                                                                display: 'grid',
+                                                                gap: 8
+                                                            }}
+                                                        >
+                                                            <div
+                                                                style={{
+                                                                    fontSize: '0.68rem',
+                                                                    fontWeight: 800,
+                                                                    color: '#059669',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'space-between',
+                                                                    gap: 6
+                                                                }}
+                                                            >
+                                                                <span>
+                                                                    <Navigation size={12} style={{ verticalAlign: '-2px', marginRight: 4 }} />
+                                                                    PHIẾU ĐIỀU VẬN &amp; CAM KẾT KHUNG GIỜ GIAO HÀNG
+                                                                </span>
+                                                                <span style={{ color: '#d97706' }}>
+                                                                    <Clock size={12} style={{ verticalAlign: '-2px', marginRight: 3 }} />
+                                                                    {item.slaWindow || 'Giao trong ca trực'}
+                                                                </span>
+                                                            </div>
+                                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
+                                                                <div style={{ padding: '7px 9px', borderRadius: 8, background: subtleBg, border: cardBorder }}>
+                                                                    <div style={{ fontSize: '0.66rem', color: textMuted, fontWeight: 700 }}>CỰ LY TỪ CHỐT TRỰC</div>
+                                                                    <div style={{ fontWeight: 800, color: '#059669', marginTop: 2 }}>
+                                                                        {item.proximityDistanceKm != null ? `${item.proximityDistanceKm} km` : 'Nội khu Trụ sở'}
+                                                                    </div>
+                                                                </div>
+                                                                <div style={{ padding: '7px 9px', borderRadius: 8, background: subtleBg, border: cardBorder }}>
+                                                                    <div style={{ fontSize: '0.66rem', color: textMuted, fontWeight: 700 }}>CHẾ ĐỘ BẢO QUẢN</div>
+                                                                    <div
+                                                                        style={{
+                                                                            fontWeight: 800,
+                                                                            color: item.requiresColdChain ? '#0284c7' : textPrimary,
+                                                                            marginTop: 2
+                                                                        }}
+                                                                    >
+                                                                        {item.requiresColdChain
+                                                                            ? `Thùng lạnh ${item.requiredTempC}°C`
+                                                                            : 'Hàng khô tiêu chuẩn'}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div style={{ fontSize: '0.71rem', color: textMuted }}>
+                                                                <strong>Quy chuẩn bàn giao:</strong> Kiểm đếm đủ {item.parcelCount} kiện ({item.weightKg} kg), chụp rõ tem{' '}
+                                                                <code>{item.itemCode}</code> trước khi bấm Hoàn tất POD.
+                                                            </div>
+                                                        </div>
+                                                    ) : (
                                                     <div>
                                                         <div
                                                             style={{
@@ -3416,6 +4546,7 @@ export default function ShipperPortalPage() {
                                                             })}
                                                         </div>
                                                     </div>
+                                                    )}
                                                 </div>
 
                                                 {/* Footer row: Assigned Shipper Summary & Action Buttons */}
@@ -3506,25 +4637,26 @@ export default function ShipperPortalPage() {
                                                                 style={{
                                                                     padding: '6px 12px',
                                                                     borderRadius: 8,
-                                                                    border: '1px solid rgba(124, 58, 237, 0.4)',
-                                                                    background: 'rgba(124, 58, 237, 0.14)',
-                                                                    color: '#7c3aed',
+                                                                    border: '1px solid rgba(2, 132, 199, 0.45)',
+                                                                    background: 'rgba(2, 132, 199, 0.14)',
+                                                                    color: '#0284c7',
                                                                     fontSize: '0.74rem',
                                                                     fontWeight: 800,
                                                                     cursor: 'pointer'
                                                                 }}
                                                             >
-                                                                Shipper xuất phát đi giao
+                                                                Quét nhận tại Hub & Xuất phát đi giao
                                                             </button>
                                                         )}
 
-                                                        {canUpdateDeliveryPod &&
-                                                            (item.dispatchStatus === 'ASSIGNED_TO_SHIPPER' ||
-                                                                item.dispatchStatus === 'OUT_FOR_DELIVERY') && (
+                                                        {canUpdateDeliveryPod && item.dispatchStatus === 'OUT_FOR_DELIVERY' && (
                                                                 <button
                                                                     type="button"
                                                                     data-testid={`btn-open-pod-${item.itemCode}`}
-                                                                    onClick={() => setPhotoPodModalItem(item)}
+                                                                    onClick={() => {
+                                                                        handleCheckInStopArrival(item);
+                                                                        setPhotoPodModalItem(item);
+                                                                    }}
                                                                     style={{
                                                                         padding: '6px 12px',
                                                                         borderRadius: 8,
@@ -3542,6 +4674,25 @@ export default function ShipperPortalPage() {
                                                                     <Camera size={13} /> Chụp Ảnh POD & Hoàn tất giao
                                                                 </button>
                                                             )}
+
+                                                        {canUpdateDeliveryPod && item.dispatchStatus === 'NDR_RESCHEDULED' && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleRetryNdrDelivery(item)}
+                                                                style={{
+                                                                    padding: '6px 12px',
+                                                                    borderRadius: 8,
+                                                                    border: '1px solid rgba(220, 38, 38, 0.4)',
+                                                                    background: 'rgba(239, 68, 68, 0.12)',
+                                                                    color: '#dc2626',
+                                                                    fontSize: '0.74rem',
+                                                                    fontWeight: 800,
+                                                                    cursor: 'pointer'
+                                                                }}
+                                                            >
+                                                                Giao lại trong ca
+                                                            </button>
+                                                        )}
 
                                                         {isReadOnlyAuditor && (
                                                             <span
@@ -3652,6 +4803,25 @@ export default function ShipperPortalPage() {
                     )}
 
                     {/* ══════════════════════════════════════════════════════════════════
+              TAB: THU NHẬP, THƯỞNG SLA & ĐỐI SOÁT CHỨNG TỪ (CHUẨN GRABDRIVER / SPX)
+          ══════════════════════════════════════════════════════════════════ */}
+                    {activeTab === 'earnings' && (
+                        <ShipperEarningsAndSlaPanel
+                            activeHub={activeHub}
+                            activeShipper={activeShipperProfile}
+                            hubShippers={hubShippers}
+                            manifestItems={manifestItems}
+                            shiftSettlements={shiftSettlements}
+                            codRemittances={codRemittances}
+                            isHubShipper={isHubShipper}
+                            isReadOnlyAuditor={isReadOnlyAuditor}
+                            isDark={isDark}
+                            onSettleShiftPod={handleSettleShiftPod}
+                            onRemitCodCash={handleRemitCodCash}
+                        />
+                    )}
+
+                    {/* ══════════════════════════════════════════════════════════════════
               TAB: CHÍNH SÁCH TRỤ SỞ, PHẠM VI & GIAO NHIỆM VỤ THEO DẢI MÃ
           ══════════════════════════════════════════════════════════════════ */}
                     {activeTab === 'policy' && (
@@ -3672,171 +4842,21 @@ export default function ShipperPortalPage() {
                     )}
 
                     {/* ══════════════════════════════════════════════════════════════════
-              TAB 2: ĐỘI NGŨ SHIPPER NỘI KHU
+              TAB 2: HỒ SƠ CHI TIẾT & XÁC THỰC SHIPPER
           ══════════════════════════════════════════════════════════════════ */}
                     {activeTab === 'shippers' && (
-                        <section
-                            style={{
-                                background: cardBg,
-                                border: cardBorder,
-                                borderRadius: 16,
-                                padding: '20px 22px'
-                            }}
-                        >
-                            <div style={{ marginBottom: 16 }}>
-                                <div
-                                    style={{
-                                        fontSize: '0.7rem',
-                                        fontWeight: 800,
-                                        color: '#059669',
-                                        textTransform: 'uppercase'
-                                    }}
-                                >
-                                    DANH BẠ SHIPPER NỘI KHU & VỊ TRÍ ĐƯỢC PHÂN CÔNG
-                                </div>
-                                <div style={{ fontSize: '1rem', fontWeight: 800, marginTop: 2 }}>
-                                    Đội ngũ Shipper thuộc {activeHub?.hubName} ({hubShippers.length} nhân sự)
-                                </div>
-                            </div>
-
-                            <div
-                                style={{
-                                    display: 'grid',
-                                    gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 290px), 1fr))',
-                                    gap: 16
-                                }}
-                            >
-                                {hubShippers.map((shipper) => {
-                                    const assignedItems = manifestItems.filter(
-                                        (m) => m.assignedShipperCode === shipper.shipperCode
-                                    );
-                                    const loadPct = Math.min(
-                                        100,
-                                        Math.round(
-                                            ((shipper.currentLoadKg || 0) / (shipper.maxCapacityKg || 1500)) * 100
-                                        )
-                                    );
-                                    return (
-                                        <div
-                                            key={shipper.shipperCode}
-                                            style={{
-                                                padding: 18,
-                                                borderRadius: 15,
-                                                background: subtleBg,
-                                                border: cardBorder,
-                                                display: 'flex',
-                                                flexDirection: 'column',
-                                                gap: 10
-                                            }}
-                                        >
-                                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                <div>
-                                                    <div style={{ fontSize: '0.96rem', fontWeight: 800 }}>
-                                                        {shipper.fullName} ({shipper.shipperCode})
-                                                    </div>
-                                                    <div style={{ fontSize: '0.76rem', color: textMuted, marginTop: 2 }}>
-                                                        {shipper.vehicleType} • Biển số {shipper.vehiclePlate} • SĐT:{' '}
-                                                        {shipper.phone}
-                                                    </div>
-                                                </div>
-                                                <span
-                                                    style={{
-                                                        fontSize: '0.72rem',
-                                                        fontWeight: 800,
-                                                        padding: '3px 9px',
-                                                        borderRadius: 999,
-                                                        background: 'rgba(16, 185, 129, 0.16)',
-                                                        color: '#059669',
-                                                        height: 'fit-content'
-                                                    }}
-                                                >
-                                                    ★ {shipper.rating}
-                                                </span>
-                                            </div>
-
-                                            <div
-                                                style={{
-                                                    padding: '10px 12px',
-                                                    borderRadius: 11,
-                                                    background: cardBg,
-                                                    border: cardBorder,
-                                                    fontSize: '0.78rem'
-                                                }}
-                                            >
-                                                <div style={{ fontWeight: 800, color: '#059669' }}>
-                                                    Vị trí được phân công: {shipper.assignedZoneName}
-                                                </div>
-                                                {shipper.todayDeliveryScope && (
-                                                    <div style={{ fontSize: '0.73rem', color: textPrimary, marginTop: 4 }}>
-                                                        <strong>Phạm vi giao hôm nay:</strong> {shipper.todayDeliveryScope}
-                                                    </div>
-                                                )}
-                                                {shipper.assignedCodeRangeFrom && (
-                                                    <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#0284c7', marginTop: 4 }}>
-                                                        Dải mã đơn được giao: {shipper.assignedCodeRangeFrom} →{' '}
-                                                        {shipper.assignedCodeRangeTo || shipper.assignedCodeRangeFrom}
-                                                    </div>
-                                                )}
-                                                <div style={{ fontSize: '0.72rem', color: textMuted, marginTop: 3 }}>
-                                                    Tọa độ chốt: ({shipper.assignedLat.toFixed(4)},{' '}
-                                                    {shipper.assignedLng.toFixed(4)}) • Bán kính phụ trách:{' '}
-                                                    <strong>{shipper.coverageRadiusKm} km</strong>
-                                                </div>
-                                                <div style={{ fontSize: '0.72rem', color: textMuted, marginTop: 3 }}>
-                                                    Tải trọng hiện tại: {shipper.currentLoadKg}/{shipper.maxCapacityKg} kg (
-                                                    {loadPct}%)
-                                                </div>
-                                            </div>
-
-                                            <div>
-                                                <div style={{ fontSize: '0.72rem', fontWeight: 800, color: textMuted }}>
-                                                    ĐƠN HÀNG ĐƯỢC GIAO GẦN VỊ TRÍ PHÂN CÔNG ({assignedItems.length}):
-                                                </div>
-                                                {assignedItems.length === 0 ? (
-                                                    <div style={{ fontSize: '0.75rem', color: textMuted, marginTop: 4 }}>
-                                                        Chưa có kiện hàng nào được gán trong ca này.
-                                                    </div>
-                                                ) : (
-                                                    <div
-                                                        style={{
-                                                            display: 'flex',
-                                                            flexDirection: 'column',
-                                                            gap: 6,
-                                                            marginTop: 6
-                                                        }}
-                                                    >
-                                                        {assignedItems.map((it) => (
-                                                            <div
-                                                                key={it.itemCode}
-                                                                style={{
-                                                                    padding: '7px 10px',
-                                                                    borderRadius: 8,
-                                                                    background: cardBg,
-                                                                    border: cardBorder,
-                                                                    fontSize: '0.74rem',
-                                                                    display: 'flex',
-                                                                    justifyContent: 'space-between',
-                                                                    alignItems: 'center'
-                                                                }}
-                                                            >
-                                                                <span>
-                                                                    <strong>{it.itemCode}</strong> • {it.consigneeName}
-                                                                </span>
-                                                                <span style={{ color: '#059669', fontWeight: 800 }}>
-                                                                    {it.proximityDistanceKm != null
-                                                                        ? `${it.proximityDistanceKm} km`
-                                                                        : ''}
-                                                                </span>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </section>
+                        <ShipperDossierPanel
+                            activeHub={activeHub}
+                            hubShippers={hubShippers}
+                            activeShipperProfile={activeShipperProfile}
+                            manifestItems={manifestItems}
+                            isHubShipper={isHubShipper}
+                            canVerifyKyc={canManageHubIam}
+                            isReadOnlyAuditor={isReadOnlyAuditor}
+                            isDark={isDark}
+                            onSaveProfile={handleUpdateShipperProfile}
+                            onVerifyKyc={handleVerifyShipperKyc}
+                        />
                     )}
 
                     {/* ══════════════════════════════════════════════════════════════════
@@ -4086,7 +5106,7 @@ export default function ShipperPortalPage() {
                     style={{
                         position: 'fixed',
                         inset: 0,
-                        zIndex: 80,
+                        zIndex: 3150,
                         background: 'rgba(2, 6, 23, 0.72)',
                         backdropFilter: 'blur(6px)',
                         display: 'flex',
@@ -4256,7 +5276,7 @@ export default function ShipperPortalPage() {
                     style={{
                         position: 'fixed',
                         inset: 0,
-                        zIndex: 96,
+                        zIndex: 3350,
                         background: 'rgba(2, 6, 23, 0.8)',
                         display: 'flex',
                         alignItems: 'center',

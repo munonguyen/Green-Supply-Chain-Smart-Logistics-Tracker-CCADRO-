@@ -1,0 +1,371 @@
+/* ==========================================================================
+   SPX Express / GrabDriver Inspired Last-Mile Shipper Cockpit (CCADRO 3PL)
+   Real Leaflet MapView + Strict 3-Step Stop Execution Workflow
+   ========================================================================== */
+
+.spx-cockpit {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* 1. Top Shift Status + Quick Barcode Scan Bar */
+.spx-shift-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+}
+
+.spx-cockpit.is-dark .spx-shift-bar,
+.spx-cockpit.is-dark .spx-map-card,
+.spx-cockpit.is-dark .spx-next-stop-card {
+  background: rgba(15, 23, 42, 0.88);
+  border-color: rgba(148, 163, 184, 0.18);
+  color: #f8fafc;
+}
+
+.spx-shift-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.spx-shift-toggle-group {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+}
+
+.spx-cockpit.is-dark .spx-shift-toggle-group {
+  background: rgba(30, 41, 59, 0.85);
+  border-color: rgba(148, 163, 184, 0.2);
+}
+
+.spx-shift-pill {
+  border: 0;
+  background: transparent;
+  padding: 6px 13px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  cursor: pointer;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.16s ease;
+}
+
+.spx-shift-pill:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.spx-shift-pill[aria-pressed='true'].is-online {
+  background: #10b981;
+  color: #ffffff;
+  box-shadow: 0 3px 10px rgba(16, 185, 129, 0.35);
+}
+
+.spx-shift-pill[aria-pressed='true'].is-delivering {
+  background: #0284c7;
+  color: #ffffff;
+  box-shadow: 0 3px 10px rgba(2, 132, 199, 0.35);
+}
+
+.spx-shift-pill[aria-pressed='true'].is-offline {
+  background: #475569;
+  color: #ffffff;
+}
+
+.spx-progress-inline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.spx-progress-track {
+  width: 120px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.24);
+  overflow: hidden;
+}
+
+.spx-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #10b981, #0ea5e9);
+  transition: width 0.3s ease;
+}
+
+.spx-scan-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.spx-scan-input-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+}
+
+.spx-cockpit.is-dark .spx-scan-input-wrap {
+  background: rgba(30, 41, 59, 0.7);
+  border-color: rgba(148, 163, 184, 0.25);
+}
+
+.spx-scan-input-wrap input {
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  width: 175px;
+}
+
+/* 2. Split Route Map + Next Stop Action Card */
+.spx-split-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.32fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: stretch;
+}
+
+.spx-map-card,
+.spx-next-stop-card {
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  padding: 15px 17px;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.spx-real-map-shell {
+  position: relative;
+  isolation: isolate;
+  z-index: 1;
+  border-radius: 13px;
+  overflow: hidden;
+  min-height: 365px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+}
+
+/* Compact MapView HUD overrides inside Cockpit so map streets stay 100% clear */
+.spx-real-map-shell .map-view-layer-dock {
+  padding: 3px 5px !important;
+  gap: 4px !important;
+}
+
+.spx-real-map-shell .map-view-layer-dock button {
+  padding: 3px 8px !important;
+  font-size: 0.68rem !important;
+}
+
+.spx-real-map-shell .map-view-camera-dock {
+  bottom: 10px !important;
+  left: 10px !important;
+  padding: 4px 6px !important;
+}
+
+.spx-real-map-shell .map-view-camera-dock button {
+  padding: 4px 8px !important;
+  font-size: 0.68rem !important;
+}
+
+.spx-stop-sequence {
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.spx-stop-chip {
+  flex-shrink: 0;
+  border-radius: 10px;
+  padding: 6px 10px;
+  font-size: 0.73rem;
+  font-weight: 750;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #334155;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.spx-cockpit.is-dark .spx-stop-chip {
+  background: rgba(30, 41, 59, 0.72);
+  border-color: rgba(148, 163, 184, 0.2);
+  color: #e2e8f0;
+}
+
+.spx-stop-chip.is-current {
+  border-color: #0284c7;
+  background: rgba(2, 132, 199, 0.12);
+  color: #0284c7;
+}
+
+.spx-stop-chip.is-done {
+  border-color: rgba(16, 185, 129, 0.45);
+  color: #059669;
+}
+
+.spx-stop-chip.is-ndr {
+  border-color: rgba(220, 38, 38, 0.45);
+  background: rgba(239, 68, 68, 0.08);
+  color: #dc2626;
+}
+
+/* Next-Stop Spotlight Card */
+.spx-next-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(2, 132, 199, 0.14);
+  color: #0284c7;
+}
+
+.spx-sla-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.15);
+  color: #d97706;
+}
+
+/* 3-Step Field SOP Progress Stepper */
+.spx-sop-stepper {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.spx-sop-step {
+  padding: 6px 8px;
+  border-radius: 9px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  font-size: 0.68rem;
+  font-weight: 750;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.spx-cockpit.is-dark .spx-sop-step {
+  background: rgba(30, 41, 59, 0.6);
+  border-color: rgba(148, 163, 184, 0.18);
+  color: #94a3b8;
+}
+
+.spx-sop-step.is-done {
+  border-color: rgba(16, 185, 129, 0.45);
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+}
+
+.spx-sop-step.is-active {
+  border-color: rgba(2, 132, 199, 0.55);
+  background: rgba(2, 132, 199, 0.12);
+  color: #0284c7;
+  font-weight: 850;
+}
+
+.spx-address-box {
+  padding: 11px 13px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  display: grid;
+  gap: 6px;
+}
+
+.spx-cockpit.is-dark .spx-address-box {
+  background: rgba(30, 41, 59, 0.6);
+  border-color: rgba(148, 163, 184, 0.16);
+}
+
+.spx-cta-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: auto;
+}
+
+/* NDR Exception Drawer */
+.spx-ndr-box {
+  padding: 11px 13px;
+  border-radius: 12px;
+  border: 1px solid rgba(239, 68, 68, 0.38);
+  background: rgba(239, 68, 68, 0.07);
+  display: grid;
+  gap: 8px;
+}
+
+.spx-ndr-reasons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.spx-ndr-chip {
+  padding: 5px 9px;
+  border-radius: 8px;
+  font-size: 0.71rem;
+  font-weight: 700;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: #ffffff;
+  color: #b91c1c;
+  cursor: pointer;
+  text-align: left;
+}
+
+.spx-cockpit.is-dark .spx-ndr-chip {
+  background: rgba(15, 23, 42, 0.8);
+  color: #fca5a5;
+}
+
+.spx-ndr-chip[aria-pressed='true'] {
+  background: #dc2626;
+  color: #ffffff;
+  border-color: #dc2626;
+}
+
+@media (max-width: 1024px) {
+  .spx-split-grid {
+    grid-template-columns: 1fr;
+  }
+}
