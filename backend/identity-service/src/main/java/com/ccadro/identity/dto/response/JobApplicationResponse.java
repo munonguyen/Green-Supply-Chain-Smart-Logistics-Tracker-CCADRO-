@@ -19,6 +19,7 @@ public class JobApplicationResponse {
     String email;
     String phone;
     String nationalId;
+    LocalDate dateOfBirth;
     String appliedRoleCode;
     UUID preferredBranchId;
     String preferredBranchCode;
@@ -29,6 +30,7 @@ public class JobApplicationResponse {
     String resumeSummary;
     String licenseNumber;
     String licenseClass;
+    LocalDate licenseIssueDate;
     LocalDate licenseExpiryDate;
     Boolean healthCheckDeclared;
     Boolean safetyTrainingDeclared;

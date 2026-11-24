@@ -29,7 +29,7 @@ public class ProvisionHubAccountRequest {
 
     String phone;
 
-    @NotBlank(message = "Vai trò chức năng không được để trống (HUB_MANAGER, HUB_SHIPPER, HUB_AUDITOR)")
+    @NotBlank(message = "Vai trò chức năng không được để trống (OPERATOR, DRIVER, HUB_MANAGER, HUB_SHIPPER, HUB_AUDITOR)")
     String functionalRole;
 
     @NotBlank(message = "Mã Trụ sở (assignedHubCode) là bắt buộc để cô lập dữ liệu")

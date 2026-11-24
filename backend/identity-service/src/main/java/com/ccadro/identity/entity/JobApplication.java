@@ -39,6 +39,9 @@ public class JobApplication {
     @Column(name = "national_id", nullable = false, length = 30)
     String nationalId;
 
+    @Column(name = "date_of_birth")
+    LocalDate dateOfBirth;
+
     @Column(name = "applied_role_code", nullable = false, length = 40)
     String appliedRoleCode;
 
@@ -70,6 +73,9 @@ public class JobApplication {
 
     @Column(name = "license_expiry_date")
     LocalDate licenseExpiryDate;
+
+    @Column(name = "license_issue_date")
+    LocalDate licenseIssueDate;
 
     @Builder.Default
     @Column(name = "health_check_declared", nullable = false)

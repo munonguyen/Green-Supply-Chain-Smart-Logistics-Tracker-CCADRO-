@@ -30,16 +30,16 @@ public class JobApplicationController {
     private void requireReviewer(String callerScope) {
         CallerAuthUtils.requireAnyRole(
                 callerScope,
-                "Chỉ ADMIN, SAFETY_MANAGER hoặc HUB_MANAGER mới có quyền xem & thẩm định hồ sơ ứng tuyển.",
-                "ROLE_ADMIN", "ROLE_SAFETY_MANAGER", "ROLE_HUB_MANAGER"
+                "Chỉ Quản trị viên hoặc Điều hành mới có quyền xem & thẩm định hồ sơ ứng tuyển.",
+                "ROLE_ADMIN", "ROLE_OPERATOR", "ROLE_SAFETY_MANAGER", "ROLE_HUB_MANAGER"
         );
     }
 
     private void requireApprover(String callerScope) {
         CallerAuthUtils.requireAnyRole(
                 callerScope,
-                "Chỉ Quản trị viên (ADMIN) hoặc HUB_MANAGER mới có quyền xác nhận tiếp nhận & cấp tài khoản IAM.",
-                "ROLE_ADMIN", "ROLE_HUB_MANAGER"
+                "Chỉ Quản trị viên hoặc Điều hành Trụ sở mới có quyền xác nhận tiếp nhận & cấp tài khoản.",
+                "ROLE_ADMIN", "ROLE_OPERATOR", "ROLE_HUB_MANAGER"
         );
     }
 

@@ -132,6 +132,31 @@ class AuthenticationAndHubIamServiceTest {
     }
 
     @Test
+    void authenticate_shouldSupportDispatcherEmailAndCaseInsensitiveUsername() {
+        User dispatcherUser = User.builder()
+                .id(UUID.randomUUID())
+                .username("dispatcher")
+                .password(passwordEncoder.encode("123"))
+                .email("dispatcher@ccadro.com")
+                .status("ACTIVE")
+                .roles(Set.of(Role.builder().name("DISPATCHER").build()))
+                .build();
+
+        when(userRepository.findByUsername("dispatcher@ccadro.com")).thenReturn(Optional.empty());
+        when(userRepository.findByUsernameIgnoreCaseOrEmailIgnoreCase("dispatcher@ccadro.com", "dispatcher@ccadro.com"))
+                .thenReturn(Optional.of(dispatcherUser));
+        when(hubIamAccountRepository.findByUsernameIgnoreCase("dispatcher")).thenReturn(Optional.empty());
+        when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        AuthenticationResponse res = authService.authenticate(
+                AuthenticationRequest.builder().username("dispatcher@ccadro.com").password("123").build()
+        );
+        assertEquals("DISPATCHER", res.getRole());
+        assertEquals("dispatcher", res.getUsername());
+        assertNotNull(res.getToken());
+    }
+
+    @Test
     void provisionAccount_shouldBlockCrossHubCreationAndWeakPasswords() {
         // Cross-hub attempt by Dinh Bang Manager to create account in Amata must fail
         assertThrows(AppException.class, () ->

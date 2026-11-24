@@ -79,7 +79,7 @@ eureka:
   client:
     enabled: ${EUREKA_CLIENT_ENABLED:false}
     register-with-eureka: true
-    fetch-registry: false
+    fetch-registry: true
     service-url:
       defaultZone: ${EUREKA_SERVER_URL:http://127.0.0.1:8761/eureka/}
     healthcheck:

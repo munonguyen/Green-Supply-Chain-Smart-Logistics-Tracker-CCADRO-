@@ -38,7 +38,7 @@ public class CompanyController {
         CallerAuthUtils.requireAnyRole(
                 callerScope,
                 "Không đủ quyền truy cập danh mục doanh nghiệp.",
-                "ROLE_ADMIN", "ROLE_DISPATCHER", "ROLE_SAFETY_MANAGER"
+                "ROLE_ADMIN", "ROLE_OPERATOR", "ROLE_DISPATCHER", "ROLE_SAFETY_MANAGER"
         );
         return ApiResponse.success(companyService.getCompanies(q, includeDeleted));
     }

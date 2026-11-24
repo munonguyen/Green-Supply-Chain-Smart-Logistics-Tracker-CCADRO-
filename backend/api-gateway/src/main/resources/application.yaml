@@ -56,7 +56,7 @@ spring:
       routes:
         # Swagger OpenAPI Doc Aggregation Routes
         - id: doc-identity-service
-          uri: http://localhost:8080
+          uri: ${IDENTITY_SERVICE_URL:http://localhost:8080}
           predicates:
             - Path=/services/identity/v3/api-docs
           filters:
@@ -138,15 +138,19 @@ spring:
 
         # Microservice API Routes
         - id: identity-service-auth
-          uri: http://localhost:8080
+          uri: ${IDENTITY_SERVICE_URL:http://localhost:8080}
           predicates:
             - Path=${app.api-prefix}/auth/**,${app.api-prefix}/users/**,${app.api-prefix}/roles/**,${app.api-prefix}/permissions/**,${app.api-prefix}/hub-iam/**,${app.api-prefix}/companies/**,${app.api-prefix}/branches/**,${app.api-prefix}/staff/**,${app.api-prefix}/careers/**,${app.api-prefix}/applications/**
         - id: identity-service-health
-          uri: http://localhost:8080
+          uri: ${IDENTITY_SERVICE_URL:http://localhost:8080}
           predicates:
             - Path=${app.api-prefix}/health
+        - id: identity-service-admin-system
+          uri: ${IDENTITY_SERVICE_URL:http://localhost:8080}
+          predicates:
+            - Path=${app.api-prefix}/admin/system/**
         - id: identity-service-actuator
-          uri: http://localhost:8080
+          uri: ${IDENTITY_SERVICE_URL:http://localhost:8080}
           predicates:
             - Path=/actuator/**,${app.api-prefix}/actuator/**
         - id: asset-service

@@ -52,12 +52,14 @@ public class StaffProfileRequest {
 
     // Hồ sơ định danh & kiểm duyệt nghiệp vụ (Lái xe / Kiểm soát)
     String nationalId;
+    LocalDate dateOfBirth;
     String staffCategory;
     String verificationStatus;
     String verificationNotes;
     Boolean backgroundCheckPassed;
     String licenseNumber;
     String licenseClass;
+    LocalDate licenseIssueDate;
     LocalDate licenseExpiryDate;
     Boolean healthCheckPassed;
     LocalDate healthCheckDate;

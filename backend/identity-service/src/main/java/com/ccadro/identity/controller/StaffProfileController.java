@@ -35,15 +35,15 @@ public class StaffProfileController {
         CallerAuthUtils.requireAnyRole(
                 callerScope,
                 "Không đủ quyền truy cập danh sách nhân viên.",
-                "ROLE_ADMIN", "ROLE_DISPATCHER", "ROLE_SAFETY_MANAGER", "ROLE_ESG_AUDITOR"
+                "ROLE_ADMIN", "ROLE_OPERATOR", "ROLE_DISPATCHER", "ROLE_SAFETY_MANAGER", "ROLE_ESG_AUDITOR"
         );
     }
 
     private void requireComplianceVerifier(String callerScope) {
         CallerAuthUtils.requireAnyRole(
                 callerScope,
-                "Chỉ ADMIN hoặc SAFETY_MANAGER mới có quyền thẩm định & phê duyệt nghiệp vụ nhân sự.",
-                "ROLE_ADMIN", "ROLE_SAFETY_MANAGER"
+                "Chỉ Quản trị viên hoặc Điều hành An toàn mới có quyền thẩm định & phê duyệt nghiệp vụ nhân sự.",
+                "ROLE_ADMIN", "ROLE_OPERATOR", "ROLE_SAFETY_MANAGER"
         );
     }
 

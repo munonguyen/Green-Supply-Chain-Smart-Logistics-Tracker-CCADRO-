@@ -48,7 +48,7 @@ public class UserController {
         CallerAuthUtils.requireAnyRole(
                 callerScope,
                 "Không đủ quyền truy cập danh sách tài khoản hệ thống.",
-                "ROLE_ADMIN", "ROLE_DISPATCHER", "ROLE_SAFETY_MANAGER"
+                "ROLE_ADMIN", "ROLE_OPERATOR", "ROLE_DISPATCHER", "ROLE_SAFETY_MANAGER"
         );
         return ApiResponse.success(userService.getUsers(q, includeDeleted));
     }

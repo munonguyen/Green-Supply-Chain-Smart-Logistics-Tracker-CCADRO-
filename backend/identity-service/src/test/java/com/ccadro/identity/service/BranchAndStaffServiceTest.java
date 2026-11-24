@@ -47,7 +47,7 @@ class BranchAndStaffServiceTest {
         StaffComplianceValidator complianceValidator = new StaffComplianceValidator();
         StaffOrganizationValidator organizationValidator = new StaffOrganizationValidator(branchRepository, staffProfileRepository);
         branchService = new BranchService(branchMapper, branchRepository, staffProfileRepository);
-        staffProfileService = new StaffProfileService(staffMapper, staffProfileRepository, complianceValidator, organizationValidator);
+        staffProfileService = new StaffProfileService(staffMapper, staffProfileRepository, complianceValidator, organizationValidator, org.mockito.Mockito.mock(StaffDriverLink.class));
     }
 
     @Test
@@ -215,6 +215,8 @@ class BranchAndStaffServiceTest {
                 .branchId(hqId)
                 .backgroundCheckPassed(true)
                 .licenseNumber("790145111222")
+                .dateOfBirth(java.time.LocalDate.of(1980, 1, 1))
+                .licenseIssueDate(java.time.LocalDate.of(2020, 1, 1))
                 .licenseClass("FC")
                 .licenseExpiryDate(java.time.LocalDate.now().plusYears(2))
                 .healthCheckPassed(false)

@@ -130,6 +130,7 @@ public class AuthenticationService {
         String cleanUsername = request.getUsername() != null ? request.getUsername().trim() : "";
         log.info("Authenticating user: {}", cleanUsername);
         User user = userRepository.findByUsername(cleanUsername)
+                .or(() -> userRepository.findByUsernameIgnoreCaseOrEmailIgnoreCase(cleanUsername, cleanUsername))
                 .orElseThrow(() -> {
                     writeAudit(cleanUsername, null, null, "LOGIN_FAILED", 404, "Tài khoản không tồn tại");
                     return new AppException(ErrorCode.UNAUTHENTICATED);
@@ -870,7 +871,7 @@ public class AuthenticationService {
         if (user.getRoles() == null || user.getRoles().isEmpty()) {
             return "CUSTOMER";
         }
-        List<String> priority = List.of("ADMIN", "HUB_MANAGER", "HUB_AUDITOR", "HUB_SHIPPER", "DISPATCHER", "SAFETY_MANAGER", "DRIVER", "ESG_AUDITOR", "SHIPPER", "CUSTOMER");
+        List<String> priority = List.of("ADMIN", "OPERATOR", "HUB_MANAGER", "HUB_AUDITOR", "HUB_SHIPPER", "DISPATCHER", "SAFETY_MANAGER", "DRIVER", "ESG_AUDITOR", "SHIPPER", "CUSTOMER");
         Set<String> roleNames = user.getRoles().stream().map(Role::getName).collect(java.util.stream.Collectors.toSet());
         return priority.stream().filter(roleNames::contains).findFirst().orElseGet(() -> roleNames.iterator().next());
     }

@@ -32,6 +32,7 @@ public class StaffProfileResponse {
     String status;
     String notes;
     String nationalId;
+    LocalDate dateOfBirth;
     String staffCategory;
     String verificationStatus;
     String verifiedBy;
@@ -40,6 +41,7 @@ public class StaffProfileResponse {
     Boolean backgroundCheckPassed;
     String licenseNumber;
     String licenseClass;
+    LocalDate licenseIssueDate;
     LocalDate licenseExpiryDate;
     Boolean healthCheckPassed;
     LocalDate healthCheckDate;

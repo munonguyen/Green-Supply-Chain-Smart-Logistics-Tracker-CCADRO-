@@ -26,28 +26,23 @@ public class SystemStatusController {
     @GetMapping
     @Operation(summary = "CCADRO Health and Capabilities", description = "Verifies DB, PostGIS version, and modular monolith status")
     public ResponseEntity<Map<String, Object>> checkHealth() {
-        String postgisVersion = "UNKNOWN";
+        String postgisVersion;
+        String status;
         try {
             postgisVersion = jdbcTemplate.queryForObject("SELECT PostGIS_Version()", String.class);
+            status = "UP";
         } catch (Exception e) {
-            postgisVersion = "ERROR: " + e.getMessage();
+            postgisVersion = "UNAVAILABLE";
+            status = "DOWN";
         }
 
         return ResponseEntity.ok(Map.of(
-                "status", "UP",
-                "system", "CCADRO - Smart Green Logistics Tracker",
+                "status", status,
+                "service", "identity-service",
                 "version", "0.1.0-SNAPSHOT",
                 "timestamp", Instant.now().toString(),
                 "postgisVersion", postgisVersion,
-                "modules", Map.of(
-                        "identity", "UP",
-                        "asset", "UP",
-                        "shipment", "UP",
-                        "routing", "UP",
-                        "tracking", "UP",
-                        "carbon", "UP",
-                        "incident", "UP"
-                )
+                "dependencies", Map.of("postgresqlPostgis", status)
         ));
     }
 }
