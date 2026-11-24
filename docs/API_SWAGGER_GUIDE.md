@@ -42,3 +42,4 @@ Tài liệu hướng dẫn truy cập **Swagger UI tập trung qua API Gateway**
    - `Authentication Management`: `POST /api/v1/auth/token` để lấy JWT (`result.token`).
 4. Nhấn nút **Authorize** trên thanh công cụ Swagger -> dán JWT token vừa nhận -> **Authorize**.
 5. Chuyển chọn bất kỳ service nào trong 11 service (ví dụ `Identity`, `Payment`, `Hub & Last-Mile`, `Chat`) với server mặc định `http://localhost:8888` và nhấn **Try it out**.
+
