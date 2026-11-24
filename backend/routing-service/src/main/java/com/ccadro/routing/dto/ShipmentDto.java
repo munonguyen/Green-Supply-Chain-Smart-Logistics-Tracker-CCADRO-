@@ -25,4 +25,5 @@ public class ShipmentDto {
     Double destinationLongitude;
     BigDecimal cargoWeightTons;
     String status;
+    java.time.Instant pickupTimePlanned;
 }

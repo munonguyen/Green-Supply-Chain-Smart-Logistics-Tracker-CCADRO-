@@ -5,6 +5,7 @@ import com.ccadro.routing.dto.ApiResponse;
 import com.ccadro.routing.dto.ShipmentDto;
 import com.ccadro.routing.dto.request.RerouteVersionRequest;
 import com.ccadro.routing.entity.*;
+import com.ccadro.routing.exception.AppException;
 import com.ccadro.routing.mapper.RouteDecisionMapper;
 import com.ccadro.routing.mapper.RoutingMapper;
 import com.ccadro.routing.repository.RouteCandidateRepository;
@@ -108,7 +109,177 @@ class RoutePlanningAndDecisionServiceTest {
         assertTrue(persisted.get(0).getDurationSeconds().doubleValue() > 4000.0);
         assertEquals(0, new BigDecimal("0.3500").compareTo(persisted.get(0).getRiskScore()));
         assertTrue(persisted.stream().allMatch(c -> c.getCompositeScore() != null));
-        assertTrue(persisted.stream().anyMatch(RouteCandidate::isSelected));
+        assertTrue(persisted.stream().noneMatch(RouteCandidate::isSelected),
+                "A scoring recommendation is not an approved route until a dispatcher selects it");
+    }
+
+    @Test
+    void routeDecisionMustUseCandidateBelongingToSelectedShipment() {
+        RouteCandidate candidate = new RouteCandidate();
+        candidate.setId(UUID.randomUUID());
+        candidate.setShipmentId(UUID.randomUUID());
+        when(routeCandidateRepository.findById(candidate.getId())).thenReturn(java.util.Optional.of(candidate));
+
+        RouteDecisionService decisionService = new RouteDecisionService(
+                routeCandidateRepository,
+                routeDecisionRepository,
+                routeVersionRepository,
+                routeDecisionMapper
+        );
+
+        AppException failure = assertThrows(AppException.class, () -> decisionService.selectRoute(
+                com.ccadro.routing.dto.request.RouteDecisionRequest.builder()
+                        .shipmentId(UUID.randomUUID())
+                        .selectedCandidateId(candidate.getId())
+                        .build()
+        ));
+
+        assertEquals("Phương án lộ trình không thuộc vận đơn đang được chọn", failure.getMessage());
+        verify(routeDecisionRepository, never()).save(any());
+        verify(routeVersionRepository, never()).save(any());
+    }
+
+    @Test
+    void routeDecisionMustNotPromoteMockCandidateToOfficialRoute() {
+        UUID shipmentId = UUID.randomUUID();
+        RouteCandidate candidate = new RouteCandidate();
+        candidate.setId(UUID.randomUUID());
+        candidate.setShipmentId(shipmentId);
+        candidate.setProviderName("MOCK");
+        when(routeCandidateRepository.findById(candidate.getId())).thenReturn(java.util.Optional.of(candidate));
+
+        RouteDecisionService decisionService = new RouteDecisionService(
+                routeCandidateRepository,
+                routeDecisionRepository,
+                routeVersionRepository,
+                routeDecisionMapper
+        );
+
+        AppException failure = assertThrows(AppException.class, () -> decisionService.selectRoute(
+                com.ccadro.routing.dto.request.RouteDecisionRequest.builder()
+                        .shipmentId(shipmentId)
+                        .selectedCandidateId(candidate.getId())
+                        .build()
+        ));
+
+        assertEquals("Không thể chốt lộ trình mô phỏng làm tuyến vận hành chính thức", failure.getMessage());
+        verify(routeDecisionRepository, never()).save(any());
+        verify(routeVersionRepository, never()).save(any());
+    }
+
+    @Test
+    void roadCandidatesKeepProviderEtaAndUseRoadDistanceWithoutDoubleAdjustment() throws Exception {
+        CcadroProperties props = new CcadroProperties();
+        props.getRouting().setProvider("osrm");
+        var service = new RoutePlanningService(routeCandidateRepository, shipmentClient, props,
+            applicationContext, routingMapper, trafficProvider, weatherProvider);
+        UUID shipmentId = UUID.randomUUID();
+        ShipmentDto shipment = new ShipmentDto();
+        shipment.setCargoWeightTons(BigDecimal.TEN);
+        shipment.setOriginLatitude(10.8);
+        shipment.setOriginLongitude(106.7);
+        shipment.setDestinationLatitude(10.9);
+        shipment.setDestinationLongitude(106.8);
+        when(shipmentClient.getShipmentById(shipmentId)).thenReturn(ApiResponse.success(shipment));
+        var provider = mock(RoutingProvider.class);
+        when(applicationContext.containsBean("osrmRoutingProvider")).thenReturn(true);
+        when(applicationContext.getBean("osrmRoutingProvider", RoutingProvider.class)).thenReturn(provider);
+        when(provider.getRoutes(any())).thenReturn(List.of(
+            new RouteCandidateData("Short", "OSRM", BigDecimal.valueOf(30000), BigDecimal.valueOf(2400), null, null, null, null, List.of()),
+            new RouteCandidateData("Fast", "OSRM", BigDecimal.valueOf(40000), BigDecimal.valueOf(1800), null, null, null, null, List.of()),
+            new RouteCandidateData("Dominated", "OSRM", BigDecimal.valueOf(45000), BigDecimal.valueOf(3000), null, null, null, null, List.of())));
+        when(routingMapper.toEntity(any())).thenAnswer(inv -> {
+            RouteCandidateData data = inv.getArgument(0);
+            var entity = new RouteCandidate();
+            entity.setCandidateName(data.getCandidateName());
+            entity.setProviderName(data.getProviderName());
+            entity.setDistanceMeters(data.getDistanceMeters());
+            entity.setDurationSeconds(data.getDurationSeconds());
+            return entity;
+        });
+        when(routeCandidateRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+        var results = service.calculateRoutesForShipment(shipmentId, 5, 3, 2);
+        verifyNoInteractions(trafficProvider, weatherProvider);
+        var shortRoute = results.stream().filter(route -> route.getCandidateName().equals("Short")).findFirst().orElseThrow();
+        assertEquals(0, shortRoute.getDurationSeconds().compareTo(BigDecimal.valueOf(2400)));
+        assertEquals(0, shortRoute.getEstimatedCo2Kg().compareTo(BigDecimal.valueOf(24)));
+        var metadata = new com.fasterxml.jackson.databind.ObjectMapper().readTree(shortRoute.getRoutingMetadataJson());
+        assertEquals("NOT_AVAILABLE", metadata.path("trafficSource").asText());
+        assertTrue(metadata.path("paretoOptimal").asBoolean());
+        assertTrue(metadata.path("shortestCandidate").asBoolean());
+        assertEquals(0.5, metadata.path("wCo2").asDouble());
+        var dominated = results.stream().filter(route -> route.getCandidateName().equals("Dominated")).findFirst().orElseThrow();
+        assertFalse(new com.fasterxml.jackson.databind.ObjectMapper().readTree(dominated.getRoutingMetadataJson()).path("paretoOptimal").asBoolean());
+    }
+
+    @Test
+    void fuelModelCanPreferLongerRouteWithLessFuelAndRequiresConfiguredFactor() throws Exception {
+        var props = new CcadroProperties();
+        props.getRouting().setProvider("tomtom");
+        props.getCarbon().setFuelKgCo2PerLiter(3.0); // Test factor, not a fleet default.
+        var service = new RoutePlanningService(routeCandidateRepository, shipmentClient, props,
+            applicationContext, routingMapper, trafficProvider, weatherProvider);
+        UUID shipmentId = UUID.randomUUID();
+        var shipment = new ShipmentDto();
+        shipment.setCargoWeightTons(BigDecimal.TEN);
+        shipment.setOriginLatitude(10.8); shipment.setOriginLongitude(106.7);
+        shipment.setDestinationLatitude(10.9); shipment.setDestinationLongitude(106.8);
+        when(shipmentClient.getShipmentById(shipmentId)).thenReturn(ApiResponse.success(shipment));
+        var provider = mock(RoutingProvider.class);
+        when(applicationContext.getBean("tomTomRoutingProvider", RoutingProvider.class)).thenReturn(provider);
+        when(provider.getRoutes(any())).thenReturn(List.of(
+            new RouteCandidateData("Short congested", "TOMTOM", new BigDecimal("30000"), new BigDecimal("3600"),
+                new BigDecimal("14"), null, null, null, List.of()),
+            new RouteCandidateData("Eco flowing", "TOMTOM", new BigDecimal("35000"), new BigDecimal("2400"),
+                new BigDecimal("10"), null, null, null, List.of())));
+        when(routingMapper.toEntity(any())).thenAnswer(inv -> {
+            RouteCandidateData data = inv.getArgument(0);
+            var entity = new RouteCandidate();
+            entity.setCandidateName(data.getCandidateName()); entity.setProviderName(data.getProviderName());
+            entity.setDistanceMeters(data.getDistanceMeters()); entity.setDurationSeconds(data.getDurationSeconds());
+            return entity;
+        });
+        when(routeCandidateRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+        var routes = service.calculateRoutesForShipment(shipmentId, 1, 0, 0);
+        assertEquals("Eco flowing", routes.get(0).getCandidateName());
+        assertEquals(new BigDecimal("30.00"), routes.get(0).getEstimatedCo2Kg());
+        var metadata = new com.fasterxml.jackson.databind.ObjectMapper().readTree(routes.get(0).getRoutingMetadataJson());
+        assertEquals("PROVIDER_FUEL_ESTIMATE", metadata.path("carbonModel").asText());
+        assertTrue(metadata.path("lowestEstimatedCarbonCandidate").asBoolean());
+        assertFalse(metadata.path("shortestCandidate").asBoolean());
+        verifyNoInteractions(trafficProvider, weatherProvider);
+        props.getCarbon().setFuelKgCo2PerLiter(0);
+        assertThrows(AppException.class, () -> service.calculateRoutesForShipment(shipmentId));
+    }
+
+    @Test
+    void initialPlanningCannotReplaceAnInTransitTripsPinnedRoute() {
+        UUID shipmentId = UUID.randomUUID();
+        var candidate = new RouteCandidate();
+        candidate.setShipmentId(shipmentId);
+        candidate.setProviderName("OSRM");
+        candidate.setDistanceMeters(BigDecimal.valueOf(30000));
+        candidate.setDurationSeconds(BigDecimal.valueOf(2400));
+        candidate.setRouteGeometry(new org.locationtech.jts.geom.GeometryFactory().createLineString(
+            new org.locationtech.jts.geom.Coordinate[] {
+                new org.locationtech.jts.geom.Coordinate(106.7, 10.8), new org.locationtech.jts.geom.Coordinate(106.8, 10.9)}));
+        UUID candidateId = UUID.randomUUID();
+        when(routeCandidateRepository.findById(candidateId)).thenReturn(java.util.Optional.of(candidate));
+        var shipment = new ShipmentDto(); shipment.setStatus("IN_TRANSIT");
+        when(shipmentClient.getShipmentById(shipmentId)).thenReturn(ApiResponse.success(shipment));
+        var validator = new com.ccadro.routing.validate.RouteDecisionValidator(routeCandidateRepository, shipmentClient);
+        assertThrows(AppException.class, () -> validator.requireSelectedCandidate(candidateId, shipmentId));
+        shipment.setStatus("PLANNED");
+        assertSame(candidate, validator.requireSelectedCandidate(candidateId, shipmentId));
+    }
+
+    @Test
+    void rerouteWithoutNewRoadGeometryMustNotDeactivateCurrentRoute() {
+        var service = new RouteDecisionService(routeCandidateRepository, routeDecisionRepository,
+            routeVersionRepository, routeDecisionMapper);
+        assertThrows(AppException.class, () -> service.createDynamicRerouteVersion(RerouteVersionRequest.builder()
+            .shipmentId(UUID.randomUUID()).distanceMeters(BigDecimal.valueOf(25000)).build()));
+        verifyNoInteractions(routeVersionRepository);
     }
 
     @Test
@@ -134,10 +305,25 @@ class RoutePlanningAndDecisionServiceTest {
             if (rv.getId() == null) rv.setId(UUID.randomUUID());
             return rv;
         });
+        UUID candidateId = UUID.randomUUID(), proposalId = UUID.randomUUID();
+        var source = new RouteCandidate();
+        source.setId(candidateId);
+        source.setShipmentId(shipmentId);
+        source.setProviderName("OSRM");
+        source.setDistanceMeters(BigDecimal.valueOf(25600));
+        source.setDurationSeconds(BigDecimal.valueOf(1800));
+        source.setMetricsBreakdownJson("{\"trafficSource\":\"TOMTOM_AVAILABLE_LIVE_AND_HISTORICAL\",\"guidance\":{\"instructions\":[{\"message\":\"Rẽ phải\"}]}}");
+        source.setRouteGeometry(new org.locationtech.jts.geom.GeometryFactory().createLineString(
+            new org.locationtech.jts.geom.Coordinate[]{new org.locationtech.jts.geom.Coordinate(106.7,10.7),
+                new org.locationtech.jts.geom.Coordinate(106.8,10.8)}));
+        when(routeCandidateRepository.findById(candidateId)).thenReturn(java.util.Optional.of(source));
 
         RouteVersion v2 = decisionService.createDynamicRerouteVersion(RerouteVersionRequest.builder()
                 .shipmentId(shipmentId)
-                .distanceMeters(BigDecimal.valueOf(25600))
+                .selectedCandidateId(candidateId).proposalId(proposalId)
+                .distanceMeters(BigDecimal.ONE)
+                .durationSeconds(BigDecimal.ONE)
+                .routeGeoJson("not trusted client geometry")
                 .reason("REROUTE_CONGESTION")
                 .build());
 
@@ -145,6 +331,61 @@ class RoutePlanningAndDecisionServiceTest {
         assertTrue(v2.isActive());
         assertEquals(2, v2.getVersionNumber());
         assertEquals(BigDecimal.valueOf(25600), v2.getTotalDistanceMeters());
-        assertEquals("REROUTE_CONGESTION", v2.getReason());
+        assertSame(source.getRouteGeometry(), v2.getRouteGeometry());
+        assertEquals(BigDecimal.valueOf(1800), v2.getTotalDurationSeconds());
+        assertEquals("REROUTE_PROPOSAL_" + proposalId, v2.getReason());
+        assertEquals(source.getMetricsBreakdownJson(), v2.getRoutingMetadataJson());
+    }
+
+    @Test
+    void selectRoute_preservesRoutingMetadataJsonOnCreatedRouteVersion() {
+        RouteDecisionService decisionService = new RouteDecisionService(
+                routeCandidateRepository,
+                routeDecisionRepository,
+                routeVersionRepository,
+                routeDecisionMapper
+        );
+        UUID shipmentId = UUID.randomUUID();
+        UUID candidateId = UUID.randomUUID();
+        RouteCandidate selected = new RouteCandidate();
+        selected.setId(candidateId);
+        selected.setShipmentId(shipmentId);
+        selected.setProviderName("TOMTOM");
+        selected.setDistanceMeters(BigDecimal.valueOf(28500));
+        selected.setDurationSeconds(BigDecimal.valueOf(2100));
+        selected.setMetricsBreakdownJson("{\"trafficSource\":\"TOMTOM_AVAILABLE_LIVE_AND_HISTORICAL\",\"shortestCandidate\":true}");
+        selected.setRouteGeometry(new org.locationtech.jts.geom.GeometryFactory().createLineString(
+                new org.locationtech.jts.geom.Coordinate[]{
+                        new org.locationtech.jts.geom.Coordinate(106.7, 10.8),
+                        new org.locationtech.jts.geom.Coordinate(106.8, 10.9)}));
+
+        when(routeCandidateRepository.findById(candidateId)).thenReturn(java.util.Optional.of(selected));
+        when(routeCandidateRepository.findByShipmentId(shipmentId)).thenReturn(List.of(selected));
+        when(routeDecisionMapper.toEntity(any())).thenReturn(new RouteDecision());
+        when(routeDecisionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(routeVersionRepository.findByShipmentIdOrderByVersionNumberDesc(shipmentId)).thenReturn(List.of());
+        when(routeDecisionMapper.toResponse(any())).thenReturn(new com.ccadro.routing.dto.response.RouteDecisionResponse());
+
+        decisionService.selectRoute(com.ccadro.routing.dto.request.RouteDecisionRequest.builder()
+                .shipmentId(shipmentId)
+                .selectedCandidateId(candidateId)
+                .build());
+
+        ArgumentCaptor<RouteVersion> versionCaptor = ArgumentCaptor.forClass(RouteVersion.class);
+        verify(routeVersionRepository).save(versionCaptor.capture());
+        assertEquals(selected.getMetricsBreakdownJson(), versionCaptor.getValue().getRoutingMetadataJson());
+    }
+
+    @Test
+    void retriedRerouteApprovalUsesThePreviouslyActivatedVersion() {
+        var service = new RouteDecisionService(routeCandidateRepository, routeDecisionRepository, routeVersionRepository, routeDecisionMapper);
+        UUID shipmentId = UUID.randomUUID(), proposalId = UUID.randomUUID();
+        var version = new RouteVersion(); version.setActive(true);
+        when(routeVersionRepository.findByShipmentIdAndReason(shipmentId, "REROUTE_PROPOSAL_" + proposalId))
+            .thenReturn(java.util.Optional.of(version));
+        assertSame(version, service.createDynamicRerouteVersion(RerouteVersionRequest.builder().shipmentId(shipmentId)
+            .selectedCandidateId(UUID.randomUUID()).proposalId(proposalId).build()));
+        verify(routeVersionRepository, never()).save(any());
+        verifyNoInteractions(routeCandidateRepository);
     }
 }

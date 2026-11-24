@@ -72,6 +72,22 @@ public class AssetController {
     }
 
     // --- UC01: Drivers & Grab Driver Profile Operations ---
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.ccadro.asset.service.DriverDispatchEligibility driverEligibility;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbc;
+
+    @GetMapping("/drivers/dispatch-eligibility")
+    public ApiResponse<List<com.ccadro.asset.service.DriverDispatchEligibility.Assessment>> getDispatchDrivers() {
+        return ApiResponse.success(driverEligibility.list());
+    }
+
+    @GetMapping("/drivers/dispatch-eligibility/{id}")
+    public ApiResponse<com.ccadro.asset.service.DriverDispatchEligibility.Assessment> getDriverEligibility(@PathVariable UUID id) {
+        return ApiResponse.success(driverEligibility.get(id));
+    }
+
     @GetMapping("/drivers")
     @Operation(summary = "List all drivers with Elastic search (?q=), soft-delete, status and licenseClass filters (UC01)")
     public ApiResponse<List<DriverResponse>> getDrivers(
@@ -179,7 +195,13 @@ public class AssetController {
             @RequestParam(required = false) ContainerStatus status,
             @RequestParam(required = false) UUID driverId,
             @RequestParam(required = false) String q,
-            @RequestParam(required = false, defaultValue = "false") boolean includeDeleted) {
+            @RequestParam(required = false, defaultValue = "false") boolean includeDeleted,
+            @RequestHeader(value = "X-Auth-Username", required = false) String username,
+            @RequestHeader(value = "X-Auth-Scope", required = false) String scope) {
+        if (hasDriverScope(scope)) {
+            driverId = assetService.getCurrentDriverProfile(username, scope).getId();
+            includeDeleted = false;
+        }
         return ApiResponse.success(assetService.getAllContainersResponse(status, driverId, q, includeDeleted));
     }
 
@@ -207,6 +229,15 @@ public class AssetController {
     @Operation(summary = "Register new container (UC01, BRULE-02)")
     public ApiResponse<ContainerResponse> createContainer(@RequestBody @Valid ContainerCreateRequest request) {
         return ApiResponse.success("Đăng ký container thành công", assetService.createContainer(request));
+    }
+
+    @PutMapping("/containers/{containerCode}/csc")
+    @Operation(summary = "Update CSC safety plate and examination programme details")
+    public ApiResponse<ContainerResponse> updateContainerCscData(
+            @PathVariable String containerCode,
+            @RequestBody @Valid ContainerCscUpdateRequest request) {
+        return ApiResponse.success("Đã cập nhật thông tin biển CSC",
+                assetService.updateContainerCscData(containerCode, request));
     }
 
     @PutMapping("/containers/{containerCode}/telemetry")
@@ -271,7 +302,20 @@ public class AssetController {
     @PostMapping({"/inspections", "/inspections/pre-trip"})
     @Operation(summary = "Submit 6-point pre-trip safety inspection (UC03, BRULE-01)")
     public ApiResponse<PreTripInspectionResponse> inspection(
-            @RequestBody @Valid PreTripInspectionRequest preTripInspectionRequest) {
+            @RequestBody @Valid PreTripInspectionRequest preTripInspectionRequest,
+            @RequestHeader(value = "X-Auth-Username", required = false) String username,
+            @RequestHeader(value = "X-Auth-Scope", required = false) String scope) {
+        if (hasDriverScope(scope)) {
+            UUID driverId = assetService.getCurrentDriverProfile(username, scope).getId();
+            if (!driverId.equals(preTripInspectionRequest.getDriverId()) || !Boolean.TRUE.equals(jdbc.queryForObject("""
+                    SELECT EXISTS (SELECT 1 FROM dispatch_order WHERE driver_id = ? AND shipment_id = ?
+                        AND vehicle_id = ? AND status = 'ASSIGNED')
+                    """, Boolean.class, driverId, preTripInspectionRequest.getShipmentId(),
+                    preTripInspectionRequest.getVehicleId()))) {
+                throw new com.ccadro.asset.exception.AppException(com.ccadro.asset.exception.ErrorCode.UNAUTHORIZED,
+                        "Chỉ gửi biên bản cho xe và vận đơn đã phân công cho tài khoản này");
+            }
+        }
         return ApiResponse.success("Kiểm tra an toàn trước chuyến đạt yêu cầu",
                 assetService.submitPreTripInspection(preTripInspectionRequest));
     }
@@ -389,5 +433,8 @@ public class AssetController {
         return ApiResponse.success(
                 "Đã cập nhật trạng thái giao hàng chặng cuối (Last-Mile)",
                 assetService.updateManifestItemStatus(itemCode, request));
+    }
+    private boolean hasDriverScope(String scope) {
+        return scope != null && java.util.Arrays.asList(scope.trim().split("\s+")).contains("ROLE_DRIVER");
     }
 }

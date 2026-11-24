@@ -9,5 +9,7 @@ import java.util.UUID;
 
 @Repository
 public interface PreTripInspectionRepository extends JpaRepository<PreTripInspection, UUID> {
+    Optional<PreTripInspection> findFirstByVehicleIdAndDriverIdAndShipmentIdOrderByInspectionTimeDescCreatedAtDesc(
+            UUID vehicleId, UUID driverId, UUID shipmentId);
     Optional<PreTripInspection> findFirstByVehicleIdOrderByInspectionTimeDesc(UUID vehicleId);
 }

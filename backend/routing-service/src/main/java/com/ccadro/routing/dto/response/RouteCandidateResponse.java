@@ -25,4 +25,6 @@ public class RouteCandidateResponse {
     BigDecimal compositeScore;
     Boolean isSelected;
     Instant createdAt;
+    String geometryGeoJson;
+    String routingMetadataJson;
 }

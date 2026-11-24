@@ -25,9 +25,14 @@ import java.util.Set;
 @Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class RoleService {
+    public static final Set<String> CORE_ROLES = Set.of(
+            "ADMIN", "OPERATOR", "DRIVER", "CUSTOMER"
+    );
+
     public static final Set<String> SYSTEM_FIXED_ROLES = Set.of(
-            "ADMIN", "DISPATCHER", "SAFETY_MANAGER", "DRIVER", "ESG_AUDITOR",
-            "CUSTOMER", "SHIPPER", "HUB_MANAGER", "HUB_SHIPPER", "HUB_AUDITOR"
+            "ADMIN", "OPERATOR", "DRIVER", "CUSTOMER",
+            "DISPATCHER", "SAFETY_MANAGER", "ESG_AUDITOR",
+            "SHIPPER", "HUB_MANAGER", "HUB_SHIPPER", "HUB_AUDITOR"
     );
 
     RoleRepository roleRepository;

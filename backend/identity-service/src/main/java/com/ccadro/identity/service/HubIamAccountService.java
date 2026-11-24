@@ -31,7 +31,7 @@ import java.util.regex.Pattern;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class HubIamAccountService {
 
-    private static final Set<String> HUB_ROLES = Set.of("HUB_MANAGER", "HUB_SHIPPER", "HUB_AUDITOR");
+    private static final Set<String> HUB_ROLES = Set.of("OPERATOR", "DRIVER", "HUB_MANAGER", "HUB_SHIPPER", "HUB_AUDITOR");
     private static final int MIN_PASSWORD_LENGTH = 3;
 
     HubIamAccountRepository hubIamAccountRepository;
@@ -146,29 +146,29 @@ public class HubIamAccountService {
         if (!HUB_ROLES.contains(role)) {
             throw new AppException(
                     ErrorCode.INVALID_REQUEST_ARGUMENT,
-                    "Vai trò tài khoản Trụ sở phải thuộc: HUB_MANAGER, HUB_SHIPPER, HUB_AUDITOR");
+                    "Vai trò tài khoản Trụ sở phải thuộc: OPERATOR, DRIVER, HUB_MANAGER, HUB_SHIPPER, HUB_AUDITOR");
         }
 
         boolean isAdmin = isGlobalAdmin(callerScope);
-        boolean isManager = hasScope(callerScope, "ROLE_HUB_MANAGER") || hasScope(callerScope, "HUB_ACCOUNT_MANAGE");
+        boolean isManager = hasScope(callerScope, "ROLE_OPERATOR") || hasScope(callerScope, "ROLE_HUB_MANAGER") || hasScope(callerScope, "HUB_ACCOUNT_MANAGE");
         if (!isAdmin && !isManager) {
             throw new AppException(ErrorCode.UNAUTHORIZED,
-                    "Chỉ ADMIN hoặc HUB_MANAGER mới có quyền cấp phát tài khoản Trụ sở.");
+                    "Chỉ Quản trị viên hoặc Điều hành Trụ sở mới có quyền cấp phát tài khoản Trụ sở.");
         }
 
         String hubCode = request.getAssignedHubCode().trim().toUpperCase(Locale.ROOT);
         if (!isAdmin && callerHubCode != null && !callerHubCode.isBlank() && !callerHubCode.equalsIgnoreCase(hubCode)) {
             throw new AppException(
                     ErrorCode.UNAUTHORIZED,
-                    "Vi phạm cô lập Trụ sở: Trưởng Trụ sở " + callerHubCode + " không được cấp tài khoản cho Trụ sở "
+                    "Vi phạm cô lập Trụ sở: Điều hành Trụ sở " + callerHubCode + " không được cấp tài khoản cho Trụ sở "
                             + hubCode);
         }
 
-        if ("HUB_SHIPPER".equals(role)
+        if (("HUB_SHIPPER".equals(role) || "DRIVER".equals(role))
                 && (request.getAssignedShipperCode() == null || request.getAssignedShipperCode().isBlank())) {
             throw new AppException(
                     ErrorCode.INVALID_REQUEST_ARGUMENT,
-                    "Tài khoản HUB_SHIPPER bắt buộc gắn mã Shipper nội khu (ví dụ: SHP-BN-001).");
+                    "Tài khoản Shipper/Tài xế bưu cục bắt buộc gắn mã Shipper nội khu (ví dụ: SHP-BN-001).");
         }
 
         if (request.getPassword() == null || request.getPassword().trim().length() < MIN_PASSWORD_LENGTH) {
@@ -219,8 +219,8 @@ public class HubIamAccountService {
                         .toUpperCase(Locale.ROOT)
                 + "-" + String.format("%02d", (int) (Math.abs(System.currentTimeMillis()) % 99));
 
-        boolean isMgr = "HUB_MANAGER".equals(role);
-        boolean isShipper = "HUB_SHIPPER".equals(role);
+        boolean isMgr = "HUB_MANAGER".equals(role) || "OPERATOR".equals(role);
+        boolean isShipper = "HUB_SHIPPER".equals(role) || "DRIVER".equals(role);
         boolean isAuditor = "HUB_AUDITOR".equals(role);
 
         HubIamAccount iamAccount = hubIamAccountRepository.save(HubIamAccount.builder()
@@ -277,10 +277,10 @@ public class HubIamAccountService {
             throw new AppException(ErrorCode.UNAUTHORIZED, "Thiếu thông tin phân quyền xác thực (X-Auth-Scope).");
         }
         boolean isAdmin = isGlobalAdmin(callerScope);
-        boolean isManager = hasScope(callerScope, "ROLE_HUB_MANAGER") || hasScope(callerScope, "HUB_ACCOUNT_MANAGE");
+        boolean isManager = hasScope(callerScope, "ROLE_OPERATOR") || hasScope(callerScope, "ROLE_HUB_MANAGER") || hasScope(callerScope, "HUB_ACCOUNT_MANAGE");
         if (!isAdmin && !isManager) {
             throw new AppException(ErrorCode.UNAUTHORIZED,
-                    "Chỉ ADMIN hoặc HUB_MANAGER mới có quyền khóa/mở khóa tài khoản Trụ sở.");
+                    "Chỉ Quản trị viên hoặc Điều hành Trụ sở mới có quyền khóa/mở khóa tài khoản Trụ sở.");
         }
         if (!isAdmin && (callerHubCode == null || callerHubCode.isBlank()
                 || !callerHubCode.equalsIgnoreCase(account.getAssignedHubCode()))) {
@@ -416,9 +416,9 @@ public class HubIamAccountService {
             throw new AppException(ErrorCode.UNAUTHORIZED, "Thiếu thông tin phân quyền xác thực (X-Auth-Scope).");
         }
         boolean isAdmin = isGlobalAdmin(callerScope);
-        boolean isManager = hasScope(callerScope, "ROLE_HUB_MANAGER") || hasScope(callerScope, "HUB_ACCOUNT_MANAGE");
+        boolean isManager = hasScope(callerScope, "ROLE_OPERATOR") || hasScope(callerScope, "ROLE_HUB_MANAGER") || hasScope(callerScope, "HUB_ACCOUNT_MANAGE");
         if (!isAdmin && !isManager) {
-            throw new AppException(ErrorCode.UNAUTHORIZED, "Chỉ ADMIN hoặc HUB_MANAGER mới có quyền " + actionLabel + " tài khoản Trụ sở.");
+            throw new AppException(ErrorCode.UNAUTHORIZED, "Chỉ Quản trị viên hoặc Điều hành Trụ sở mới có quyền " + actionLabel + " tài khoản Trụ sở.");
         }
         if (!isAdmin && (callerHubCode == null || callerHubCode.isBlank()
                 || !callerHubCode.equalsIgnoreCase(account.getAssignedHubCode()))) {

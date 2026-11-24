@@ -1,5 +1,8 @@
 package com.ccadro.chat.entity;
 
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+
 import java.time.Instant;
 import java.util.*;
 import lombok.Data;
@@ -13,6 +16,8 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Document("messages")
 @TypeAlias("com.ccadro.chat.ChatDocuments$Message")
 @CompoundIndex(name="conversation_timeline", def="{'conversationId':1,'createdAt':-1,'_id':-1}")
+@NoArgsConstructor
+@AllArgsConstructor
 public class Message {
     @Id
     private String id;

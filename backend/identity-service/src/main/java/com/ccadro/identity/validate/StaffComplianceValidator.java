@@ -47,7 +47,9 @@ public class StaffComplianceValidator {
                 staff.getCertificationCode(),
                 staff.getInspectionScope(),
                 staff.getCertificateExpiryDate(),
-                staff.getCanSignOffCompliance()
+                staff.getCanSignOffCompliance(),
+                staff.getDateOfBirth(),
+                staff.getLicenseIssueDate()
         );
         if (!missing.isEmpty()) {
             throw new AppException(
@@ -68,13 +70,15 @@ public class StaffComplianceValidator {
             String certificationCode,
             String inspectionScope,
             LocalDate certificateExpiryDate,
-            Boolean canSignOffCompliance) {
+            Boolean canSignOffCompliance,
+            LocalDate dateOfBirth,
+            LocalDate licenseIssueDate) {
         List<String> missing = new ArrayList<>();
         if (!Boolean.TRUE.equals(backgroundCheckPassed)) {
             missing.add("Xác minh lý lịch / CCCD");
         }
         String role = MapperTextUtils.normalizeUpper(roleCode);
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
         if (role != null && DRIVER_ROLES.contains(role)) {
             if (isBlank(licenseNumber)) {
                 missing.add("Số Giấy phép lái xe (GPLX)");
@@ -84,6 +88,29 @@ public class StaffComplianceValidator {
             }
             if (licenseExpiryDate == null || licenseExpiryDate.isBefore(today)) {
                 missing.add("Hạn GPLX còn hiệu lực");
+            }
+            if ("DRIVER".equals(role)) {
+                String license = MapperTextUtils.normalizeUpper(licenseClass);
+                if (!"CE".equals(license) && !"FC".equals(license)) {
+                    missing.add("GPLX hạng CE kéo sơ mi rơ moóc (hoặc FC cũ thuộc diện chuyển tiếp)");
+                }
+                if (dateOfBirth == null) missing.add("Ngày sinh để xác minh tuổi cấp hạng CE");
+                if (licenseIssueDate == null) missing.add("Ngày cấp GPLX để xác minh hạng / chuyển tiếp");
+                if (licenseIssueDate != null && licenseExpiryDate != null && !licenseIssueDate.isBefore(licenseExpiryDate)) {
+                    missing.add("Ngày cấp GPLX trước ngày hết hạn");
+                }
+                if (licenseIssueDate != null && (licenseIssueDate.isAfter(today)
+                        || (dateOfBirth != null && !dateOfBirth.isBefore(licenseIssueDate)))) {
+                    missing.add("Ngày sinh và ngày cấp GPLX hợp lệ");
+                }
+                if ("FC".equals(license) && licenseIssueDate != null
+                        && !licenseIssueDate.isBefore(LocalDate.of(2025, 1, 1))) {
+                    missing.add("FC chuyển tiếp chỉ áp dụng cho GPLX cấp trước 01/01/2025");
+                }
+                if ("CE".equals(license) && dateOfBirth != null && licenseIssueDate != null
+                        && dateOfBirth.plusYears(24).isAfter(licenseIssueDate)) {
+                    missing.add("Đủ 24 tuổi tại thời điểm cấp hạng CE");
+                }
             }
             if (!Boolean.TRUE.equals(healthCheckPassed)) {
                 missing.add("Giấy khám sức khỏe đạt chuẩn");

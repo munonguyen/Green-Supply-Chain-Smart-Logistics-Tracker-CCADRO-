@@ -11,6 +11,10 @@ import java.util.UUID;
 
 @Repository
 public interface DriverRepository extends JpaRepository<Driver, UUID> {
+    @org.springframework.data.jpa.repository.Query(value = "SELECT * FROM driver WHERE id = :id FOR NO KEY UPDATE", nativeQuery = true)
+    Optional<Driver> findForAssignment(@org.springframework.data.repository.query.Param("id") UUID id);
+
+    Optional<Driver> findByAccountUsernameIgnoreCaseAndIsDeletedFalse(String accountUsername);
     Optional<Driver> findByDriverCode(String driverCode);
     Optional<Driver> findByAccountUsernameIgnoreCase(String accountUsername);
     Optional<Driver> findByEmailIgnoreCase(String email);

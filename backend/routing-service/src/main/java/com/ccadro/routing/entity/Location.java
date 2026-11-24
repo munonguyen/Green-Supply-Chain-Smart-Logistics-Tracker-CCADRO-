@@ -1,27 +1,20 @@
 package com.ccadro.routing.entity;
 
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class Location {
     private double latitude;
     private double longitude;
     private String name;
 
-    public Location() {}
-
     public Location(double latitude, double longitude) {
-        this.latitude = latitude;
-        this.longitude = longitude;
+        this(latitude, longitude, null);
     }
-
-    public Location(double latitude, double longitude, String name) {
-        this.latitude = latitude;
-        this.longitude = longitude;
-        this.name = name;
-    }
-
-    public double getLatitude() { return latitude; }
-    public void setLatitude(double latitude) { this.latitude = latitude; }
-    public double getLongitude() { return longitude; }
-    public void setLongitude(double longitude) { this.longitude = longitude; }
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
 }

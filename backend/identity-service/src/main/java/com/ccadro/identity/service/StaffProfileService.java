@@ -30,6 +30,7 @@ public class StaffProfileService {
     StaffProfileRepository staffProfileRepository;
     StaffComplianceValidator staffComplianceValidator;
     StaffOrganizationValidator staffOrganizationValidator;
+    StaffDriverLink staffDriverLink;
 
     public List<StaffProfileResponse> getStaff(
             String q,
@@ -124,6 +125,7 @@ public class StaffProfileService {
         StaffProfile entity = staffProfileMapper.toEntity(req);
         staffOrganizationValidator.resolveAndAssignBranch(entity, req.getBranchId(), req.getBranchCode());
         Instant now = Instant.now();
+        if ("DRIVER".equals(entity.getRoleCode())) entity.setVerificationStatus("PENDING_REVIEW");
         entity.setCreatedAt(now);
         entity.setUpdatedAt(now);
 
@@ -133,6 +135,15 @@ public class StaffProfileService {
     @Transactional
     public StaffProfileResponse updateStaff(UUID id, StaffProfileRequest req) {
         StaffProfile existing = findStaffOrThrow(id);
+        boolean qualificationChanged = "DRIVER".equalsIgnoreCase(existing.getRoleCode())
+                && ((req.getLicenseClass() != null && !Objects.equals(req.getLicenseClass(), existing.getLicenseClass()))
+                || (req.getLicenseNumber() != null && !Objects.equals(req.getLicenseNumber(), existing.getLicenseNumber()))
+                || (req.getLicenseIssueDate() != null && !Objects.equals(req.getLicenseIssueDate(), existing.getLicenseIssueDate()))
+                || (req.getLicenseExpiryDate() != null && !Objects.equals(req.getLicenseExpiryDate(), existing.getLicenseExpiryDate()))
+                || (req.getDateOfBirth() != null && !Objects.equals(req.getDateOfBirth(), existing.getDateOfBirth()))
+                || (req.getBackgroundCheckPassed() != null && !Objects.equals(req.getBackgroundCheckPassed(), existing.getBackgroundCheckPassed()))
+                || (req.getHealthCheckPassed() != null && !Objects.equals(req.getHealthCheckPassed(), existing.getHealthCheckPassed()))
+                || (req.getSafetyTrainingCertified() != null && !Objects.equals(req.getSafetyTrainingCertified(), existing.getSafetyTrainingCertified())));
 
         if (req.getEmployeeCode() != null && !req.getEmployeeCode().isBlank()) {
             String nextCode = staffOrganizationValidator.validateUniqueEmployeeCode(
@@ -143,7 +154,18 @@ public class StaffProfileService {
             staffOrganizationValidator.validateSystemRole(req.getRoleCode());
         }
 
+        String previousUsername = existing.getUsername();
+        String previousRole = existing.getRoleCode();
         staffProfileMapper.updateEntity(existing, req);
+        qualificationChanged = qualificationChanged
+                || ((!Objects.equals(previousUsername, existing.getUsername()) || !Objects.equals(previousRole, existing.getRoleCode()))
+                    && ("DRIVER".equals(previousRole) || "DRIVER".equals(existing.getRoleCode())));
+        if (qualificationChanged) {
+            existing.setVerificationStatus("PENDING_REVIEW");
+            existing.setVerifiedBy(null);
+            existing.setVerifiedAt(null);
+            existing.setVerificationNotes("Hồ sơ GPLX/ngày sinh thay đổi; cần thẩm định lại trước khi phân công.");
+        }
         if (req.getBranchId() != null || (req.getBranchCode() != null && !req.getBranchCode().isBlank())) {
             staffOrganizationValidator.resolveAndAssignBranch(existing, req.getBranchId(), req.getBranchCode());
         }
@@ -192,6 +214,10 @@ public class StaffProfileService {
 
         if ("APPROVED".equals(nextVerification)) {
             staffComplianceValidator.enforceApprovalComplianceRules(existing);
+            if ("DRIVER".equals(existing.getRoleCode())) {
+                staffProfileRepository.flush();
+                staffDriverLink.link(existing);
+            }
         }
 
         Instant now = Instant.now();

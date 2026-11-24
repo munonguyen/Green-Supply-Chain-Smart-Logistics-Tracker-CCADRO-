@@ -28,6 +28,7 @@ public class DriverResponse {
     String avatarUrl;
     String licenseClass;
     String licenseNumber;
+    String licenseIssueDate;
     String licenseExpiryDate;
     Integer experienceYears;
     Boolean verified;

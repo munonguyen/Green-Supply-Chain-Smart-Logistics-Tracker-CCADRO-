@@ -1,5 +1,10 @@
 package com.ccadro.tracking.entity;
 
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
+
 import jakarta.persistence.*;
 import org.locationtech.jts.geom.Point;
 
@@ -9,11 +14,17 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "telemetry_event")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class TelemetryEvent {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
+    @Column(name="external_event_id")
+    private UUID externalEventId;
 
     @Column(name = "trip_id", nullable = false)
     private UUID tripId;
@@ -57,35 +68,4 @@ public class TelemetryEvent {
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
-
-    public TelemetryEvent() {}
-
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-    public UUID getTripId() { return tripId; }
-    public void setTripId(UUID tripId) { this.tripId = tripId; }
-    public UUID getVehicleId() { return vehicleId; }
-    public void setVehicleId(UUID vehicleId) { this.vehicleId = vehicleId; }
-    public Instant getTimestamp() { return timestamp; }
-    public void setTimestamp(Instant timestamp) { this.timestamp = timestamp; }
-    public Point getLocationGeom() { return locationGeom; }
-    public void setLocationGeom(Point locationGeom) { this.locationGeom = locationGeom; }
-    public BigDecimal getSpeedKmh() { return speedKmh; }
-    public void setSpeedKmh(BigDecimal speedKmh) { this.speedKmh = speedKmh; }
-    public BigDecimal getHeadingDegrees() { return headingDegrees; }
-    public void setHeadingDegrees(BigDecimal headingDegrees) { this.headingDegrees = headingDegrees; }
-    public BigDecimal getDistanceFromRouteMeters() { return distanceFromRouteMeters; }
-    public void setDistanceFromRouteMeters(BigDecimal distanceFromRouteMeters) { this.distanceFromRouteMeters = distanceFromRouteMeters; }
-    public String getRawPayload() { return rawPayload; }
-    public void setRawPayload(String rawPayload) { this.rawPayload = rawPayload; }
-    public BigDecimal getAccuracyMeters() { return accuracyMeters; }
-    public void setAccuracyMeters(BigDecimal accuracyMeters) { this.accuracyMeters = accuracyMeters; }
-    public BigDecimal getBatteryPercentage() { return batteryPercentage; }
-    public void setBatteryPercentage(BigDecimal batteryPercentage) { this.batteryPercentage = batteryPercentage; }
-    public Boolean getIsOfflineBuffered() { return isOfflineBuffered; }
-    public void setIsOfflineBuffered(Boolean offlineBuffered) { isOfflineBuffered = offlineBuffered; }
-    public Boolean getQualityPassed() { return qualityPassed; }
-    public void setQualityPassed(Boolean qualityPassed) { this.qualityPassed = qualityPassed; }
-    public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 }

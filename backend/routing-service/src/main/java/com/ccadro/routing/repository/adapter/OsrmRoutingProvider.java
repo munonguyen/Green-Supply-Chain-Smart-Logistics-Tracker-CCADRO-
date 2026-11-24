@@ -54,12 +54,12 @@ public class OsrmRoutingProvider implements RoutingProvider {
     @Override
     public List<RouteCandidateData> getRoutes(RouteRequest request) {
         if (request == null || request.getOrigin() == null || request.getDestination() == null) {
-            return fallbackMockProvider.getRoutes(request);
+            throw new com.ccadro.routing.exception.AppException(com.ccadro.routing.exception.ErrorCode.ROUTING_PROVIDER_FAILED);
         }
 
         String path = String.format(
                 Locale.ROOT,
-                "/route/v1/driving/%.6f,%.6f;%.6f,%.6f?alternatives=3&overview=full&geometries=geojson",
+                "/route/v1/driving/%.6f,%.6f;%.6f,%.6f?alternatives=3&overview=full&geometries=geojson&radiuses=100;100&steps=true",
                 request.getOrigin().getLongitude(),
                 request.getOrigin().getLatitude(),
                 request.getDestination().getLongitude(),
@@ -73,11 +73,11 @@ public class OsrmRoutingProvider implements RoutingProvider {
                 return parsed;
             }
         } catch (Exception ex) {
-            log.warn("OSRM endpoint {} unreachable/failed ({}), falling back to deterministic mock routes",
-                    properties.getRouting().getBaseUrl(), ex.getMessage());
+            log.warn("OSRM route request failed; no synthetic fallback will be used");
         }
 
-        return fallbackMockProvider.getRoutes(request);
+        throw new com.ccadro.routing.exception.AppException(com.ccadro.routing.exception.ErrorCode.ROUTING_PROVIDER_FAILED,
+            "Không nhận được tuyến đường OSRM hợp lệ; hãy thử lại hoặc cấu hình nhà cung cấp khác");
     }
 
     List<RouteCandidateData> parseOsrmResponse(String rawJson, RouteRequest request) throws Exception {
@@ -85,6 +85,7 @@ public class OsrmRoutingProvider implements RoutingProvider {
             return List.of();
         }
         JsonNode root = objectMapper.readTree(rawJson);
+        if (!"Ok".equals(root.path("code").asText())) return List.of();
         JsonNode routes = root.path("routes");
         if (!routes.isArray() || routes.isEmpty()) {
             return List.of();
@@ -111,22 +112,25 @@ public class OsrmRoutingProvider implements RoutingProvider {
             if (coordsNode.isArray()) {
                 for (int idx = 0; idx < coordsNode.size(); idx++) {
                     JsonNode pt = coordsNode.get(idx);
-                    if (pt.isArray() && pt.size() >= 2) {
+                    if (pt.isArray() && pt.size() >= 2 && pt.get(0).isNumber() && pt.get(1).isNumber()
+                            && Math.abs(pt.get(0).asDouble()) <= 180 && Math.abs(pt.get(1).asDouble()) <= 90) {
                         waypoints.add(new RouteWaypoint(
                                 pt.get(1).asDouble(),
                                 pt.get(0).asDouble(),
                                 idx + 1,
                                 idx == 0 ? "Origin" : (idx == coordsNode.size() - 1 ? "Destination" : "OSRM Node " + idx)
                         ));
-                    }
+                    } else throw new IllegalArgumentException("Invalid route coordinate");
                 }
             }
 
+            if (waypoints.size() >= 2) RoadGeometryValidator.validate(waypoints, request, 100);
             BigDecimal distKm = distanceMeters.divide(BigDecimal.valueOf(1000), 3, RoundingMode.HALF_UP);
+            if (waypoints.size() < 2 || durationSeconds.signum() <= 0) continue;
             BigDecimal estimatedCo2 = distKm.multiply(payload).multiply(factor).setScale(2, RoundingMode.HALF_UP);
-            BigDecimal estimatedFuel = distKm.multiply(BigDecimal.valueOf(0.32)).setScale(2, RoundingMode.HALF_UP);
+            BigDecimal estimatedFuel = null;
 
-            results.add(new RouteCandidateData(
+            var candidate = new RouteCandidateData(
                     i == 0 ? "OSRM Primary Route" : "OSRM Alternative #" + (i + 1),
                     getProviderName(),
                     distanceMeters,
@@ -136,7 +140,49 @@ public class OsrmRoutingProvider implements RoutingProvider {
                     BigDecimal.ZERO,
                     routeNode.path("geometry").toString(),
                     waypoints
-            ));
+            );
+            var metadata = objectMapper.createObjectNode();
+            metadata.put("fetchedAt", java.time.Instant.now().toString());
+            metadata.put("routeType", "FASTEST_WITH_ALTERNATIVES");
+            metadata.put("trafficSource", "NOT_AVAILABLE");
+            metadata.put("snapRadiusMeters", 100);
+            var instructions = metadata.putObject("guidance").putArray("instructions");
+            double offset = 0;
+            for (var leg : routeNode.path("legs")) for (var step : leg.path("steps")) {
+                var maneuver = step.path("maneuver");
+                String action = switch (maneuver.path("type").asText()) {
+                    case "depart" -> "Xuất phát";
+                    case "arrive" -> "Đến điểm đích";
+                    case "turn", "end of road" -> "Rẽ";
+                    case "merge" -> "Nhập làn";
+                    case "on ramp" -> "Vào đường nhánh";
+                    case "off ramp" -> "Ra đường nhánh";
+                    case "roundabout", "rotary" -> "Vào vòng xuyến";
+                    case "exit roundabout", "exit rotary" -> "Ra khỏi vòng xuyến";
+                    case "fork" -> "Theo nhánh";
+                    default -> "Tiếp tục";
+                };
+                String direction = switch (maneuver.path("modifier").asText()) {
+                    case "uturn" -> "quay đầu";
+                    case "sharp right" -> "ngoặt phải";
+                    case "right" -> "phải";
+                    case "slight right" -> "chếch phải";
+                    case "straight" -> "thẳng";
+                    case "slight left" -> "chếch trái";
+                    case "left" -> "trái";
+                    case "sharp left" -> "ngoặt trái";
+                    default -> "";
+                };
+                var instruction = instructions.addObject();
+                instruction.put("message", action + (direction.isBlank() ? "" : " " + direction)
+                    + (step.path("name").asText().isBlank() ? "" : " · " + step.path("name").asText())
+                    + (maneuver.has("exit") ? " · lối ra " + maneuver.path("exit").asInt() : ""));
+                instruction.put("routeOffsetInMeters", offset);
+                instruction.put("distanceMeters", step.path("distance").asDouble());
+                offset += step.path("distance").asDouble();
+            }
+            candidate.setRoutingMetadataJson(objectMapper.writeValueAsString(metadata));
+            results.add(candidate);
         }
         return results;
     }

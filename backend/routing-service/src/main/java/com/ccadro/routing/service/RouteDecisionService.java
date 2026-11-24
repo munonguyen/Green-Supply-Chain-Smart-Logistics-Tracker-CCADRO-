@@ -73,7 +73,8 @@ public class RouteDecisionService {
      */
     @Transactional
     public RouteDecisionResponse selectRoute(RouteDecisionRequest request) {
-        RouteCandidate selectedCandidate = routeDecisionValidator.requireSelectedCandidate(request.getSelectedCandidateId());
+        RouteCandidate selectedCandidate = routeDecisionValidator.requireSelectedCandidate(
+                request.getSelectedCandidateId(), request.getShipmentId());
 
         // Cập nhật cờ isSelected cho tập ứng viên của đơn hàng
         List<RouteCandidate> allCandidates = routeCandidateRepository.findByShipmentId(request.getShipmentId());
@@ -105,6 +106,7 @@ public class RouteDecisionService {
         newVersion.setTotalDurationSeconds(selectedCandidate.getDurationSeconds());
         newVersion.setActive(true);
         newVersion.setReason(nextVersionNumber == 1 ? "INITIAL_PLANNING" : "DISPATCHER_RESELECTION");
+        newVersion.setRoutingMetadataJson(selectedCandidate.getMetricsBreakdownJson());
         newVersion.setCreatedAt(Instant.now());
         routeVersionRepository.save(newVersion);
 
@@ -126,37 +128,37 @@ public class RouteDecisionService {
      */
     @Transactional
     public RouteVersion createDynamicRerouteVersion(RerouteVersionRequest request) {
+        if (request.getSelectedCandidateId() == null || request.getProposalId() == null) {
+            throw new AppException(ErrorCode.ROUTING_PROVIDER_FAILED,
+                "Đổi tuyến cần phương án đường đã lưu từ nhà cung cấp và mã đề xuất phê duyệt");
+        }
+        String reason = "REROUTE_PROPOSAL_" + request.getProposalId();
+        var priorActivation = routeVersionRepository.findByShipmentIdAndReason(request.getShipmentId(), reason);
+        if (priorActivation.isPresent()) {
+            if (!priorActivation.get().isActive())
+                throw new AppException(ErrorCode.INVALID_REQUEST_ARGUMENT, "Đề xuất này đã được thay thế bằng phiên bản tuyến mới hơn");
+            return priorActivation.get();
+        }
+        RouteCandidate source = routeDecisionValidator.requireRoadCandidate(request.getSelectedCandidateId(), request.getShipmentId());
+        if (source.getCreatedAt() == null || source.getCreatedAt().isBefore(Instant.now().minusSeconds(600)))
+            throw new AppException(ErrorCode.INVALID_REQUEST_ARGUMENT, "Phương án đổi tuyến đã cũ; cần tính lại từ GPS hiện tại");
         List<RouteVersion> existingVersions = routeVersionRepository
                 .findByShipmentIdOrderByVersionNumberDesc(request.getShipmentId());
         int nextVersionNumber = existingVersions.isEmpty() ? 1 : existingVersions.get(0).getVersionNumber() + 1;
-        LineString fallbackGeometry = existingVersions.stream()
-                .map(RouteVersion::getRouteGeometry)
-                .filter(java.util.Objects::nonNull)
-                .findFirst()
-                .orElse(null);
-
         for (RouteVersion oldVersion : existingVersions) {
             oldVersion.setActive(false);
         }
         routeVersionRepository.saveAll(existingVersions);
 
-        BigDecimal dist = request.getDistanceMeters() != null && request.getDistanceMeters().compareTo(BigDecimal.ZERO) > 0
-                ? request.getDistanceMeters()
-                : existingVersions.stream().map(RouteVersion::getTotalDistanceMeters).findFirst().orElse(BigDecimal.valueOf(15000));
-        BigDecimal dur = request.getDurationSeconds() != null && request.getDurationSeconds().compareTo(BigDecimal.ZERO) > 0
-                ? request.getDurationSeconds()
-                : dist.divide(BigDecimal.valueOf(12.5), 2, RoundingMode.HALF_UP);
-
         RouteVersion newVersion = new RouteVersion();
         newVersion.setShipmentId(request.getShipmentId());
         newVersion.setVersionNumber(nextVersionNumber);
-        newVersion.setRouteGeometry(fallbackGeometry);
-        newVersion.setTotalDistanceMeters(dist);
-        newVersion.setTotalDurationSeconds(dur);
+        newVersion.setRouteGeometry(source.getRouteGeometry());
+        newVersion.setTotalDistanceMeters(source.getDistanceMeters());
+        newVersion.setTotalDurationSeconds(source.getDurationSeconds());
         newVersion.setActive(true);
-        newVersion.setReason(request.getReason() != null && !request.getReason().isBlank()
-                ? request.getReason()
-                : "REROUTE_DEVIATION");
+        newVersion.setReason(reason);
+        newVersion.setRoutingMetadataJson(source.getMetricsBreakdownJson());
         newVersion.setCreatedAt(Instant.now());
         return routeVersionRepository.save(newVersion);
     }

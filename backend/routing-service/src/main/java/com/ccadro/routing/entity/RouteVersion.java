@@ -1,5 +1,10 @@
 package com.ccadro.routing.entity;
 
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
+
 import jakarta.persistence.*;
 import org.locationtech.jts.geom.LineString;
 
@@ -9,6 +14,10 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "route_version")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class RouteVersion {
 
     @Id
@@ -36,27 +45,18 @@ public class RouteVersion {
     @Column(name = "reason", nullable = false, length = 100)
     private String reason = "INITIAL_PLANNING";
 
+    @Column(name = "routing_metadata_json", columnDefinition = "TEXT")
+    private String routingMetadataJson;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
-    public RouteVersion() {}
-
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-    public UUID getShipmentId() { return shipmentId; }
-    public void setShipmentId(UUID shipmentId) { this.shipmentId = shipmentId; }
-    public int getVersionNumber() { return versionNumber; }
-    public void setVersionNumber(int versionNumber) { this.versionNumber = versionNumber; }
-    public LineString getRouteGeometry() { return routeGeometry; }
-    public void setRouteGeometry(LineString routeGeometry) { this.routeGeometry = routeGeometry; }
-    public BigDecimal getTotalDistanceMeters() { return totalDistanceMeters; }
-    public void setTotalDistanceMeters(BigDecimal totalDistanceMeters) { this.totalDistanceMeters = totalDistanceMeters; }
-    public BigDecimal getTotalDurationSeconds() { return totalDurationSeconds; }
-    public void setTotalDurationSeconds(BigDecimal totalDurationSeconds) { this.totalDurationSeconds = totalDurationSeconds; }
-    public boolean isActive() { return isActive; }
-    public void setActive(boolean active) { isActive = active; }
-    public String getReason() { return reason; }
-    public void setReason(String reason) { this.reason = reason; }
-    public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
+    @com.fasterxml.jackson.annotation.JsonProperty("routeGeoJson")
+    public java.util.Map<String, Object> getRouteGeoJson() {
+        if (routeGeometry == null) return null;
+        var coordinates = java.util.Arrays.stream(routeGeometry.getCoordinates())
+                .map(point -> java.util.List.of(point.getX(), point.getY()))
+                .toList();
+        return java.util.Map.of("type", "LineString", "coordinates", coordinates);
+    }
 }

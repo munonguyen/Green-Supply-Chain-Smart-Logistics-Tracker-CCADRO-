@@ -78,12 +78,19 @@ public class FleetTelemetryService {
             }
         }
 
+        // Include fallback trip identities too, so the same container is never listed twice.
+        Set<String> trackedContainerCodes = new HashSet<>();
+        for (var item : snapshots) {
+            if (item.getShipmentId() != null) trackedShipmentIds.add(item.getShipmentId());
+            if (item.getContainerCode() != null) trackedContainerCodes.add(item.getContainerCode());
+        }
         try {
             List<Object[]> containerRows = tripRepository.findActiveContainerTelemetryRows();
             if (containerRows != null) {
                 for (Object[] row : containerRows) {
                     LiveFleetTelemetryResponse containerItem = mapActiveContainerRow(row);
-                    if (containerItem != null && (containerItem.getShipmentId() == null
+                    if (containerItem != null && !trackedContainerCodes.contains(containerItem.getContainerCode())
+                            && (containerItem.getShipmentId() == null
                             || !trackedShipmentIds.contains(containerItem.getShipmentId()))) {
                         snapshots.add(containerItem);
                     }
@@ -170,11 +177,14 @@ public class FleetTelemetryService {
         double arrivalRadius = ccadroProperties.getArrival().getArrivalRadiusMeters();
         double totalKm = plannedMeters != null && plannedMeters > 0
                 ? round2(plannedMeters / 1000.0)
-                : 27.3;
+                : 0.0;
         double traveledKm = trip.getActualDistanceMeters() != null
                 ? round2(trip.getActualDistanceMeters().doubleValue() / 1000.0)
                 : 0.0;
         double remainingKm = round2(Math.max(0.0, totalKm - traveledKm));
+        Double remainingRoadMeters = latest != null && latest.getLatitude() != null && latest.getLongitude() != null
+            ? tripRepository.findRemainingRouteDistanceMeters(trip.getId(), latest.getLatitude(), latest.getLongitude()).orElse(null) : null;
+        if (remainingRoadMeters != null) remainingKm = round2(remainingRoadMeters / 1000.0);
         int progress = "COMPLETED".equalsIgnoreCase(trip.getStatus())
                 ? 100
                 : computeProgressPercent(traveledKm, totalKm);
@@ -216,15 +226,15 @@ public class FleetTelemetryService {
                 .shipmentId(trip.getShipmentId())
                 .vehicleId(trip.getVehicleId())
                 .driverId(trip.getDriverId())
-                .latitude(latest != null ? latest.getLatitude() : null)
-                .longitude(latest != null ? latest.getLongitude() : null)
+                .latitude(latest != null && validPosition(latest.getLatitude(), latest.getLongitude()) ? latest.getLatitude() : null)
+                .longitude(latest != null && validPosition(latest.getLatitude(), latest.getLongitude()) ? latest.getLongitude() : null)
                 .speedKmh(round1(speedKmh))
                 .headingDegrees(round1(heading))
-                .totalDistanceKm(totalKm)
+                .totalDistanceKm(totalKm > 0 ? totalKm : null)
                 .traveledDistanceKm(traveledKm)
-                .remainingDistanceKm(remainingKm)
+                .remainingDistanceKm(arrived ? Double.valueOf(0) : remainingRoadMeters != null ? Double.valueOf(remainingKm) : null)
                 .progressPercent(progress)
-                .etaMinutes(etaMinutes)
+                .etaMinutes(arrived ? Integer.valueOf(0) : remainingRoadMeters != null && speedKmh >= 5 ? Integer.valueOf(etaMinutes) : null)
                 .deviationMeters(deviationMeters)
                 .deviationStatus(resolveDeviationStatus(deviationMeters))
                 .batteryPercentage(latest != null && latest.getBatteryPercentage() != null
@@ -233,7 +243,7 @@ public class FleetTelemetryService {
                 .co2SavedKg(co2SavedKg)
                 .tripStatus(trip.getStatus())
                 .dataSource(latest != null ? "LIVE_TELEMETRY_DB" : "TRIP_SCHEDULED")
-                .lastTelemetryAt(latest != null ? latest.getTimestamp() : trip.getUpdatedAt())
+                .lastTelemetryAt(latest != null ? latest.getTimestamp() : null)
                 .distanceToDestinationMeters(distToDestMeters)
                 .arrivalRadiusMeters(arrivalRadius)
                 .arrivedAtDestination(arrived)
@@ -290,26 +300,29 @@ public class FleetTelemetryService {
         String routeGeoJson = r.length > 40 ? str(r[40]) : null;
         List<List<Double>> routeWaypoints = routeWaypointDecoder.decode(routeGeoJson);
 
-        Double curLat = teLat != null ? teLat : (cLat != null ? cLat : originLat);
-        Double curLon = teLon != null ? teLon : (cLon != null ? cLon : originLon);
-        String source = teLat != null
-                ? "LIVE_TELEMETRY_DB"
-                : (cLat != null ? "CONTAINER_IOT_DB" : "TRIP_ORIGIN");
+        Instant containerPositionAt = r.length > 41 ? toInstant(r[41]) : null;
+        UUID containerId = r.length > 42 ? toUuid(r[42]) : null;
+        String routingMetadataJson = r.length > 43 ? str(r[43]) : null;
+        boolean validTripPosition = validPosition(teLat, teLon);
+        boolean useContainer = validPosition(cLat, cLon) && (!validTripPosition
+            || (containerPositionAt != null && (teTs == null || containerPositionAt.isAfter(teTs))));
+        Double curLat = useContainer ? cLat : validTripPosition ? teLat : null;
+        Double curLon = useContainer ? cLon : validTripPosition ? teLon : null;
+        String source = useContainer ? "CONTAINER_IOT_DB" : validTripPosition ? "LIVE_TELEMETRY_DB" : "GPS_NOT_AVAILABLE";
+        Instant positionAt = useContainer ? containerPositionAt : validTripPosition ? teTs : null;
 
         double totalKm = routeDistMeters > 0
                 ? round2(routeDistMeters / 1000.0)
-                : (originLat != null && originLon != null && destLat != null && destLon != null
-                        ? round2(haversineKm(originLat, originLon, destLat, destLon) * ROAD_TORTUOSITY_FACTOR)
-                        : 27.3);
+                : 0.0;
 
-        double speedKmh = teSpeed != null ? teSpeed : (cSpeed != null ? cSpeed : 0.0);
+        double speedKmh = useContainer ? (cSpeed != null ? cSpeed : 0.0) : (teSpeed != null ? teSpeed : 0.0);
+        Double projectedRemaining = curLat != null && curLon != null
+            ? tripRepository.findRemainingRouteDistanceMeters(tripId, curLat, curLon).orElse(null) : null;
         double remainingKm;
         if ("COMPLETED".equalsIgnoreCase(tripStatus)) {
             remainingKm = 0.0;
-        } else if (curLat != null && curLon != null && destLat != null && destLon != null) {
-            remainingKm = round2(Math.min(totalKm, haversineKm(curLat, curLon, destLat, destLon) * 1.15));
-        } else if (cProgress != null && cProgress > 0) {
-            remainingKm = round2(Math.max(0.0, totalKm * (1.0 - cProgress / 100.0)));
+        } else if (projectedRemaining != null) {
+            remainingKm = round2(projectedRemaining / 1000.0);
         } else {
             remainingKm = round2(Math.max(0.0, totalKm - (actualDistMeters / 1000.0)));
         }
@@ -334,11 +347,9 @@ public class FleetTelemetryService {
 
         int etaMinutes = arrival.arrived()
                 ? 0
-                : ((cEta != null && teLat == null && cEta > 0)
-                        ? cEta
-                        : computeEtaMinutes(tripStatus, remainingKm, speedKmh));
+                : computeEtaMinutes(tripStatus, remainingKm, speedKmh);
 
-        double heading = teHeading != null
+        double heading = !useContainer && teHeading != null
                 ? teHeading
                 : (curLat != null && curLon != null && destLat != null && destLon != null
                         ? computeBearingDegrees(curLat, curLon, destLat, destLon)
@@ -362,6 +373,7 @@ public class FleetTelemetryService {
                 .driverId(driverId)
                 .driverName(driverName)
                 .containerCode(containerCode)
+                .containerId(containerId)
                 .originName(originName)
                 .originLat(originLat)
                 .originLon(originLon)
@@ -373,11 +385,11 @@ public class FleetTelemetryService {
                 .currentLocationName(cLocName)
                 .speedKmh(round1(speedKmh))
                 .headingDegrees(round1(heading))
-                .totalDistanceKm(totalKm)
+                .totalDistanceKm(totalKm > 0 ? totalKm : null)
                 .traveledDistanceKm(traveledKm)
-                .remainingDistanceKm(remainingKm)
+                .remainingDistanceKm(arrival.arrived() ? Double.valueOf(0) : projectedRemaining != null ? Double.valueOf(remainingKm) : null)
                 .progressPercent(progress)
-                .etaMinutes(etaMinutes)
+                .etaMinutes(arrival.arrived() ? Integer.valueOf(0) : projectedRemaining != null && speedKmh >= 5 ? Integer.valueOf(etaMinutes) : null)
                 .deviationMeters(deviationMeters)
                 .deviationStatus(resolveDeviationStatus(deviationMeters))
                 .temperatureC(cTemp)
@@ -385,7 +397,7 @@ public class FleetTelemetryService {
                 .co2SavedKg(co2SavedKg)
                 .tripStatus(tripStatus)
                 .dataSource(source)
-                .lastTelemetryAt(teTs)
+                .lastTelemetryAt(positionAt)
                 .distanceToDestinationMeters(arrival.distanceToDestinationMeters())
                 .arrivalRadiusMeters(arrival.arrivalRadiusMeters())
                 .arrivedAtDestination(arrival.arrived())
@@ -393,6 +405,7 @@ public class FleetTelemetryService {
                 .arrivedAt(arrival.arrivedAt())
                 .routeWaypoints(routeWaypoints.isEmpty() ? null : routeWaypoints)
                 .routeSource(routeWaypoints.isEmpty() ? "NONE" : "POSTGIS_ROUTE_VERSION")
+                .routingMetadataJson(routingMetadataJson)
                 .build();
     }
 
@@ -414,13 +427,14 @@ public class FleetTelemetryService {
         String destName = str(r[11]);
         Double lat = numObj(r[12]);
         Double lon = numObj(r[13]);
+        if (!validPosition(lat, lon)) { lat = null; lon = null; }
         String locName = str(r[14]);
         double speedKmh = num(r[15], 0.0);
         double progressPct = num(r[16], 0.0);
         int etaMins = r[17] instanceof Number n ? Math.max(0, n.intValue()) : 0;
         Double tempC = r.length > 18 ? numObj(r[18]) : null;
         Double battery = r.length > 19 ? numObj(r[19]) : null;
-        Instant updatedAt = r.length > 20 ? toInstant(r[20]) : null;
+        Instant positionReceivedAt = r.length > 20 ? toInstant(r[20]) : null;
         Double originLat = r.length > 21 ? numObj(r[21]) : null;
         Double originLon = r.length > 22 ? numObj(r[22]) : null;
         Double destLat = r.length > 23 ? numObj(r[23]) : null;
@@ -428,13 +442,20 @@ public class FleetTelemetryService {
         UUID linkedTripId = r.length > 25 ? toUuid(r[25]) : null;
         Instant arrivedAt = r.length > 26 ? toInstant(r[26]) : null;
         String routeGeoJson = r.length > 27 ? str(r[27]) : null;
+        String routingMetadataJson = r.length > 28 ? str(r[28]) : null;
         List<List<Double>> routeWaypoints = routeWaypointDecoder.decode(routeGeoJson);
 
-        double totalKm = (originLat != null && originLon != null && destLat != null && destLon != null)
-                ? round2(haversineKm(originLat, originLon, destLat, destLon) * ROAD_TORTUOSITY_FACTOR)
-                : 32.0;
+        double totalKm = 0;
+        for (int index = 1; index < routeWaypoints.size(); index++) {
+            var previous = routeWaypoints.get(index - 1); var current = routeWaypoints.get(index);
+            totalKm += haversineKm(previous.get(0), previous.get(1), current.get(0), current.get(1));
+        }
+        totalKm = round2(totalKm);
+        Double projectedRemaining = linkedTripId != null && lat != null && lon != null
+            ? tripRepository.findRemainingRouteDistanceMeters(linkedTripId, lat, lon).orElse(null) : null;
         double traveledKm = round2(totalKm * (progressPct / 100.0));
         double remainingKm = round2(Math.max(0.0, totalKm - traveledKm));
+        if (projectedRemaining != null) remainingKm = round2(projectedRemaining / 1000.0);
         int roundedProgress = (int) Math.round(Math.min(100.0, Math.max(0.0, progressPct)));
 
         ArrivalEvaluation arrival = evaluateArrival(
@@ -446,13 +467,13 @@ public class FleetTelemetryService {
         }
         int computedEta = arrival.arrived()
                 ? 0
-                : (etaMins > 0 ? etaMins : computeEtaMinutes(status, remainingKm, speedKmh));
+                : computeEtaMinutes(status, remainingKm, speedKmh);
         double heading = (lat != null && lon != null && destLat != null && destLon != null)
                 ? computeBearingDegrees(lat, lon, destLat, destLon)
                 : 0.0;
 
         return LiveFleetTelemetryResponse.builder()
-                .tripId(linkedTripId != null ? linkedTripId : containerId)
+                .tripId(linkedTripId)
                 .tripCode(containerCode)
                 .shipmentId(shipmentId)
                 .shipmentCode(shipmentCode)
@@ -463,6 +484,7 @@ public class FleetTelemetryService {
                 .driverId(driverId)
                 .driverName(driverName)
                 .containerCode(containerCode)
+                .containerId(containerId)
                 .originName(originName)
                 .originLat(originLat)
                 .originLon(originLon)
@@ -474,11 +496,11 @@ public class FleetTelemetryService {
                 .currentLocationName(locName)
                 .speedKmh(round1(speedKmh))
                 .headingDegrees(round1(heading))
-                .totalDistanceKm(totalKm)
+                .totalDistanceKm(totalKm > 0 ? totalKm : null)
                 .traveledDistanceKm(traveledKm)
-                .remainingDistanceKm(remainingKm)
+                .remainingDistanceKm(arrival.arrived() ? Double.valueOf(0) : projectedRemaining != null ? Double.valueOf(remainingKm) : null)
                 .progressPercent(roundedProgress)
-                .etaMinutes(computedEta)
+                .etaMinutes(arrival.arrived() ? Integer.valueOf(0) : projectedRemaining != null && speedKmh >= 5 ? Integer.valueOf(computedEta) : null)
                 .deviationMeters(0.0)
                 .deviationStatus("ON_ROUTE")
                 .temperatureC(tempC)
@@ -486,7 +508,7 @@ public class FleetTelemetryService {
                 .co2SavedKg(computeCo2SavedKg(traveledKm, DEFAULT_CARGO_TONS, vehicleLabel))
                 .tripStatus(status)
                 .dataSource("CONTAINER_IOT_DB")
-                .lastTelemetryAt(updatedAt)
+                .lastTelemetryAt(positionReceivedAt)
                 .distanceToDestinationMeters(arrival.distanceToDestinationMeters())
                 .arrivalRadiusMeters(arrival.arrivalRadiusMeters())
                 .arrivedAtDestination(arrival.arrived())
@@ -494,7 +516,13 @@ public class FleetTelemetryService {
                 .arrivedAt(arrival.arrivedAt())
                 .routeWaypoints(routeWaypoints.isEmpty() ? null : routeWaypoints)
                 .routeSource(routeWaypoints.isEmpty() ? "NONE" : "POSTGIS_ROUTE_VERSION")
+                .routingMetadataJson(routingMetadataJson)
                 .build();
+    }
+
+    private boolean validPosition(Double latitude, Double longitude) {
+        return latitude != null && longitude != null && Double.isFinite(latitude) && Double.isFinite(longitude)
+            && Math.abs(latitude) <= 90 && Math.abs(longitude) <= 180;
     }
 
     ArrivalEvaluation evaluateArrival(

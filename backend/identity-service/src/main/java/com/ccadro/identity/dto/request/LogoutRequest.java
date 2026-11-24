@@ -13,6 +13,6 @@ public class LogoutRequest {
     String refreshToken;
 
     public LogoutRequest(String token) {
-        this.token = token;
+        this(token, null);
     }
 }

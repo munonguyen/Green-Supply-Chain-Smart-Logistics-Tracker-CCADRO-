@@ -29,6 +29,7 @@ public class LiveFleetTelemetryResponse {
     UUID driverId;
     String driverName;
 
+    UUID containerId;
     String containerCode;
     String originName;
     Double originLat;
@@ -67,5 +68,6 @@ public class LiveFleetTelemetryResponse {
 
     java.util.List<java.util.List<Double>> routeWaypoints;
     String routeSource;
+    String routingMetadataJson;
 }
 

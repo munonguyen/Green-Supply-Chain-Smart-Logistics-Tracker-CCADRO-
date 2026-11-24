@@ -1,5 +1,10 @@
 package com.ccadro.carbon.entity;
 
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
+
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -7,6 +12,10 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "carbon_benchmark")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class CarbonBenchmark {
 
     @Id
@@ -33,23 +42,4 @@ public class CarbonBenchmark {
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
-
-    public CarbonBenchmark() {}
-
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-    public String getBenchmarkName() { return benchmarkName; }
-    public void setBenchmarkName(String benchmarkName) { this.benchmarkName = benchmarkName; }
-    public String getOriginZone() { return originZone; }
-    public void setOriginZone(String originZone) { this.originZone = originZone; }
-    public String getDestinationZone() { return destinationZone; }
-    public void setDestinationZone(String destinationZone) { this.destinationZone = destinationZone; }
-    public BigDecimal getAverageCo2ePerTonneKm() { return averageCo2ePerTonneKm; }
-    public void setAverageCo2ePerTonneKm(BigDecimal averageCo2ePerTonneKm) { this.averageCo2ePerTonneKm = averageCo2ePerTonneKm; }
-    public BigDecimal getBestInClassCo2ePerTonneKm() { return bestInClassCo2ePerTonneKm; }
-    public void setBestInClassCo2ePerTonneKm(BigDecimal bestInClassCo2ePerTonneKm) { this.bestInClassCo2ePerTonneKm = bestInClassCo2ePerTonneKm; }
-    public String getPeriodMonth() { return periodMonth; }
-    public void setPeriodMonth(String periodMonth) { this.periodMonth = periodMonth; }
-    public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 }

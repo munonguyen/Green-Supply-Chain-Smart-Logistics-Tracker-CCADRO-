@@ -1,5 +1,10 @@
 package com.ccadro.routing.entity;
 
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
+
 import jakarta.persistence.*;
 import org.locationtech.jts.geom.LineString;
 
@@ -9,6 +14,10 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "route_candidate")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class RouteCandidate {
 
     @Id
@@ -58,37 +67,4 @@ public class RouteCandidate {
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
-
-    public RouteCandidate() {}
-
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-    public UUID getShipmentId() { return shipmentId; }
-    public void setShipmentId(UUID shipmentId) { this.shipmentId = shipmentId; }
-    public String getCandidateName() { return candidateName; }
-    public void setCandidateName(String candidateName) { this.candidateName = candidateName; }
-    public String getProviderName() { return providerName; }
-    public void setProviderName(String providerName) { this.providerName = providerName; }
-    public BigDecimal getDistanceMeters() { return distanceMeters; }
-    public void setDistanceMeters(BigDecimal distanceMeters) { this.distanceMeters = distanceMeters; }
-    public BigDecimal getDurationSeconds() { return durationSeconds; }
-    public void setDurationSeconds(BigDecimal durationSeconds) { this.durationSeconds = durationSeconds; }
-    public BigDecimal getEstimatedFuelLiters() { return estimatedFuelLiters; }
-    public void setEstimatedFuelLiters(BigDecimal estimatedFuelLiters) { this.estimatedFuelLiters = estimatedFuelLiters; }
-    public BigDecimal getEstimatedCo2Kg() { return estimatedCo2Kg; }
-    public void setEstimatedCo2Kg(BigDecimal estimatedCo2Kg) { this.estimatedCo2Kg = estimatedCo2Kg; }
-    public BigDecimal getCompositeScore() { return compositeScore; }
-    public void setCompositeScore(BigDecimal compositeScore) { this.compositeScore = compositeScore; }
-    public LineString getRouteGeometry() { return routeGeometry; }
-    public void setRouteGeometry(LineString routeGeometry) { this.routeGeometry = routeGeometry; }
-    public String getWaypointsJson() { return waypointsJson; }
-    public void setWaypointsJson(String waypointsJson) { this.waypointsJson = waypointsJson; }
-    public BigDecimal getRiskScore() { return riskScore; }
-    public void setRiskScore(BigDecimal riskScore) { this.riskScore = riskScore; }
-    public String getMetricsBreakdownJson() { return metricsBreakdownJson; }
-    public void setMetricsBreakdownJson(String metricsBreakdownJson) { this.metricsBreakdownJson = metricsBreakdownJson; }
-    public boolean isSelected() { return isSelected; }
-    public void setSelected(boolean selected) { isSelected = selected; }
-    public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 }

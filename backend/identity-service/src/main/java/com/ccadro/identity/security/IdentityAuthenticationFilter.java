@@ -55,7 +55,7 @@ public class IdentityAuthenticationFilter extends OncePerRequestFilter {
             boolean userMutation = path.startsWith("/api/v1/users") && !path.equals("/api/v1/users/me") && !"GET".equals(request.getMethod());
             boolean company = path.equals("/api/v1/companies") || path.startsWith("/api/v1/companies/");
             boolean directory = path.equals("/api/v1/users") || company;
-            boolean staff = admin || scope.contains("ROLE_DISPATCHER") || scope.contains("ROLE_SAFETY_MANAGER");
+            boolean staff = admin || scope.contains("ROLE_OPERATOR") || scope.contains("ROLE_DISPATCHER") || scope.contains("ROLE_SAFETY_MANAGER");
             if ((catalog && !admin) || (userMutation && !admin) || (company && !"GET".equals(request.getMethod()) && !admin)
                     || (directory && !staff)) { reject(response, 403); return; }
             trusted.put("x-auth-username", actor.getUsername());

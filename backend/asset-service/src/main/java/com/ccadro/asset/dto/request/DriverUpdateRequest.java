@@ -20,6 +20,7 @@ public class DriverUpdateRequest {
     String avatarUrl;
     String licenseClass;
     String licenseNumber;
+    String licenseIssueDate;
     String licenseExpiryDate;
     Integer experienceYears;
     Integer hosContinuousMin;

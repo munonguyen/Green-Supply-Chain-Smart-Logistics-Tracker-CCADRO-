@@ -11,6 +11,7 @@ import com.ccadro.tracking.dto.response.TelemetryResponse;
 import com.ccadro.tracking.entity.Trip;
 import com.ccadro.tracking.mapper.TrackingMapper;
 import com.ccadro.tracking.service.TrackingService;
+import com.ccadro.tracking.service.DriverTripAccess;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -33,10 +34,14 @@ public class TrackingController {
 
     TrackingService trackingService;
     TrackingMapper trackingMapper;
+    DriverTripAccess driverAccess;
 
     @PostMapping("/telemetry")
     @Operation(summary = "Ingest GPS Telemetry Point with Quality Gate, Deviation State Machine & Arrival Geofence (UC08, UC09, BRULE-10)")
-    public ApiResponse<TelemetryResponse> ingestTelemetry(@Valid @RequestBody IngestTelemetryRequest request) {
+    public ApiResponse<TelemetryResponse> ingestTelemetry(@Valid @RequestBody IngestTelemetryRequest request,
+            @RequestHeader(value = "X-Auth-Username", required = false) String username,
+            @RequestHeader(value = "X-Auth-Scope", required = false) String scope) {
+        if (driverAccess.isDriver(scope)) driverAccess.requireOwner(request.getTripId(), username);
         TelemetryResponse response = trackingMapper.toTelemetryResponse(trackingService.ingestTelemetry(request));
         trackingService.findTripById(request.getTripId()).ifPresent(trip -> {
             if (trip.getDistanceToDestinationMeters() != null) {
@@ -61,7 +66,10 @@ public class TrackingController {
     public ApiResponse<List<Trip>> getAllTrips(
             @RequestParam(required = false) String q,
             @RequestParam(required = false, defaultValue = "false") boolean includeDeleted,
-            @RequestParam(required = false) UUID driverId) {
+            @RequestParam(required = false) UUID driverId,
+            @RequestHeader(value = "X-Auth-Username", required = false) String username,
+            @RequestHeader(value = "X-Auth-Scope", required = false) String scope) {
+        if (driverAccess.isDriver(scope)) return ApiResponse.success(trackingService.getAllTrips(q, false, driverAccess.resolve(username)));
         return ApiResponse.success(trackingService.getAllTrips(q, includeDeleted, driverId));
     }
 
@@ -84,13 +92,19 @@ public class TrackingController {
     public ApiResponse<List<LiveFleetTelemetryResponse>> getLiveFleetTelemetry(
             @RequestParam(required = false) String customerId,
             @RequestParam(required = false) String q,
-            @RequestParam(required = false) UUID driverId) {
+            @RequestParam(required = false) UUID driverId,
+            @RequestHeader(value = "X-Auth-Username", required = false) String username,
+            @RequestHeader(value = "X-Auth-Scope", required = false) String scope) {
+        if (driverAccess.isDriver(scope)) driverId = driverAccess.resolve(username);
         return ApiResponse.success(trackingService.getLiveFleetTelemetry(customerId, q, driverId));
     }
 
     @GetMapping("/trips/{tripId}/live")
     @Operation(summary = "Get real-time telemetry state, ETA, progress & deviation for a single Trip")
-    public ApiResponse<LiveFleetTelemetryResponse> getLiveTripTelemetry(@PathVariable UUID tripId) {
+    public ApiResponse<LiveFleetTelemetryResponse> getLiveTripTelemetry(@PathVariable UUID tripId,
+            @RequestHeader(value = "X-Auth-Username", required = false) String username,
+            @RequestHeader(value = "X-Auth-Scope", required = false) String scope) {
+        if (driverAccess.isDriver(scope)) driverAccess.requireOwner(tripId, username);
         return ApiResponse.success(trackingService.getLiveTripTelemetry(tripId));
     }
 
@@ -102,25 +116,36 @@ public class TrackingController {
 
     @GetMapping("/trips/{tripId}")
     @Operation(summary = "Get trip tracking state (UC07, UC08)")
-    public ApiResponse<Trip> getTrip(@PathVariable UUID tripId) {
+    public ApiResponse<Trip> getTrip(@PathVariable UUID tripId,
+            @RequestHeader(value = "X-Auth-Username", required = false) String username,
+            @RequestHeader(value = "X-Auth-Scope", required = false) String scope) {
+        if (driverAccess.isDriver(scope)) driverAccess.requireOwner(tripId, username);
         return ApiResponse.success(trackingService.getTripById(tripId));
     }
 
     @PutMapping("/trips/{tripId}/start")
     @Operation(summary = "Start trip execution (UC07)")
-    public ApiResponse<Trip> startTrip(@PathVariable UUID tripId) {
-        return ApiResponse.success("Chuyến xe đã bắt đầu lăn bánh (EN_ROUTE)", trackingService.startTrip(tripId));
+    public ApiResponse<Trip> startTrip(@PathVariable UUID tripId,
+            @RequestHeader(value = "X-Auth-Username", required = false) String username,
+            @RequestHeader(value = "X-Auth-Scope", required = false) String scope) {
+        return ApiResponse.success("Chuyến xe đã bắt đầu lăn bánh (EN_ROUTE)", driverAccess.start(tripId, username, scope));
     }
 
     @PutMapping("/trips/{tripId}/complete")
     @Operation(summary = "Complete trip execution (UC07)")
-    public ApiResponse<Trip> completeTrip(@PathVariable UUID tripId) {
+    public ApiResponse<Trip> completeTrip(@PathVariable UUID tripId,
+            @RequestHeader(value = "X-Auth-Username", required = false) String username,
+            @RequestHeader(value = "X-Auth-Scope", required = false) String scope) {
+        if (driverAccess.isDriver(scope)) driverAccess.requireOwner(tripId, username);
         return ApiResponse.success("Chuyến xe đã hoàn thành hành trình (COMPLETED)", trackingService.completeTrip(tripId));
     }
 
     @GetMapping("/trips/{tripId}/telemetry")
     @Operation(summary = "Get historical GPS telemetry track for trip (UC08)")
-    public ApiResponse<List<TelemetryResponse>> getTelemetryHistory(@PathVariable UUID tripId) {
+    public ApiResponse<List<TelemetryResponse>> getTelemetryHistory(@PathVariable UUID tripId,
+            @RequestHeader(value = "X-Auth-Username", required = false) String username,
+            @RequestHeader(value = "X-Auth-Scope", required = false) String scope) {
+        if (driverAccess.isDriver(scope)) driverAccess.requireOwner(tripId, username);
         return ApiResponse.success(trackingService.getTelemetryHistory(tripId).stream()
                 .map(trackingMapper::toTelemetryResponse)
                 .toList());
@@ -128,13 +153,19 @@ public class TrackingController {
 
     @GetMapping("/trips/{tripId}/alerts")
     @Operation(summary = "Get deviation alerts for trip (UC09)")
-    public ApiResponse<List<DeviationAlertResponse>> getAlerts(@PathVariable UUID tripId) {
+    public ApiResponse<List<DeviationAlertResponse>> getAlerts(@PathVariable UUID tripId,
+            @RequestHeader(value = "X-Auth-Username", required = false) String username,
+            @RequestHeader(value = "X-Auth-Scope", required = false) String scope) {
+        if (driverAccess.isDriver(scope)) driverAccess.requireOwner(tripId, username);
         return ApiResponse.success(trackingMapper.toDeviationAlertResponseList(trackingService.getAlerts(tripId)));
     }
 
     @GetMapping("/trips/{tripId}/proposals")
     @Operation(summary = "Get dynamic reroute proposals for trip (UC10)")
-    public ApiResponse<List<RerouteProposalResponse>> getProposals(@PathVariable UUID tripId) {
+    public ApiResponse<List<RerouteProposalResponse>> getProposals(@PathVariable UUID tripId,
+            @RequestHeader(value = "X-Auth-Username", required = false) String username,
+            @RequestHeader(value = "X-Auth-Scope", required = false) String scope) {
+        if (driverAccess.isDriver(scope)) driverAccess.requireOwner(tripId, username);
         return ApiResponse.success(trackingService.getProposalResponses(tripId));
     }
 
@@ -146,12 +177,23 @@ public class TrackingController {
             @RequestHeader(value = "X-Auth-Scope", required = false) String callerScope) {
         if (callerScope == null || callerScope.isBlank()
                 || (!callerScope.contains("ROLE_ADMIN")
+                && !callerScope.contains("ROLE_OPERATOR")
                 && !callerScope.contains("ROLE_DISPATCHER"))) {
             throw new com.ccadro.tracking.exception.AppException(
                     com.ccadro.tracking.exception.ErrorCode.UNAUTHORIZED,
-                    "Chỉ Điều phối viên (DISPATCHER) hoặc ADMIN mới có quyền phê duyệt đổi tuyến (BRULE-09).");
+                    "Chỉ Điều hành viên hoặc Quản trị viên mới có quyền phê duyệt đổi tuyến hành trình.");
         }
-        return ApiResponse.success("Đã ghi nhận quyết định phê duyệt đổi tuyến của Điều phối viên",
+        return ApiResponse.success("Đã ghi nhận quyết định phê duyệt đổi tuyến của Điều hành viên",
                 trackingService.decideRerouteProposal(proposalId, request));
+    }
+
+    @PostMapping("/trips/{tripId}/proposals/calculate")
+    public ApiResponse<RerouteProposalResponse> calculateRoadReroute(@PathVariable UUID tripId,
+            @RequestHeader(value = "X-Auth-Scope", required = false) String scope) {
+        if (scope == null || (!scope.contains("ROLE_OPERATOR") && !scope.contains("ROLE_DISPATCHER") && !scope.contains("ROLE_ADMIN")))
+            throw new com.ccadro.tracking.exception.AppException(com.ccadro.tracking.exception.ErrorCode.UNAUTHORIZED);
+        var proposal = trackingService.calculateRoadReroute(tripId);
+        return ApiResponse.success(proposal.isPresent() ? "Đã tính đề xuất từ đường thực" : "Chưa có phương án đạt ngưỡng lợi ích hoặc chuyến chưa chạy",
+            proposal.orElse(null));
     }
 }

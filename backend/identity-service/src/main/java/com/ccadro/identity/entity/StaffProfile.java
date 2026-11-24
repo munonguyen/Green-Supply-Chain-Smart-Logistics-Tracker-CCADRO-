@@ -77,6 +77,9 @@ public class StaffProfile {
     @Column(name = "national_id", length = 30)
     String nationalId;
 
+    @Column(name = "date_of_birth")
+    LocalDate dateOfBirth;
+
     @Builder.Default
     @Column(name = "staff_category", nullable = false, length = 30)
     String staffCategory = "OPS_DISPATCH";
@@ -106,6 +109,9 @@ public class StaffProfile {
 
     @Column(name = "license_expiry_date")
     LocalDate licenseExpiryDate;
+
+    @Column(name = "license_issue_date")
+    LocalDate licenseIssueDate;
 
     @Builder.Default
     @Column(name = "health_check_passed", nullable = false)

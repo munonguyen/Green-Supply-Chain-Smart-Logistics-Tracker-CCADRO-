@@ -1,5 +1,8 @@
 package com.ccadro.chat.entity;
 
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+
 import java.time.Instant;
 import java.util.*;
 import lombok.Data;
@@ -13,6 +16,8 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Data
 @Document("conversations")
 @TypeAlias("com.ccadro.chat.ChatDocuments$Conversation")
+@NoArgsConstructor
+@AllArgsConstructor
 public class Conversation {
     @Id
     private String id;

@@ -8,6 +8,7 @@ import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Getter
@@ -38,6 +39,24 @@ public class Container extends BaseEntity {
     @Column(name = "owner_name", length = 100)
     @Builder.Default
     String ownerName = "Tân Cảng Sài Gòn (SNP Logistics)";
+
+    @Column(name = "csc_approval_country", length = 100)
+    String cscApprovalCountry;
+
+    @Column(name = "csc_approval_reference", length = 100)
+    String cscApprovalReference;
+
+    @Column(name = "csc_manufacture_date")
+    LocalDate cscManufactureDate;
+
+    @Column(name = "csc_inspection_scheme", length = 30)
+    String cscInspectionScheme;
+
+    @Column(name = "csc_acep_program_number", length = 100)
+    String cscAcepProgramNumber;
+
+    @Column(name = "csc_next_examination_date")
+    LocalDate cscNextExaminationDate;
 
     @Column(name = "responsible_company_id")
     UUID responsibleCompanyId;
@@ -90,6 +109,12 @@ public class Container extends BaseEntity {
     @Column(name = "return_air_temp_c", precision = 5, scale = 2)
     BigDecimal returnAirTempC;
 
+    @Column(name = "reefer_set_point_temp_c", precision = 5, scale = 2)
+    BigDecimal reeferSetPointTempC;
+
+    @Column(name = "reefer_temperature_alarm_status", length = 50)
+    String reeferTemperatureAlarmStatus;
+
     @Column(name = "humidity_pct", precision = 5, scale = 2)
     BigDecimal humidityPct;
 
@@ -124,6 +149,57 @@ public class Container extends BaseEntity {
     @Column(name = "eta_minutes")
     @Builder.Default
     Integer etaMinutes = 0;
+
+    // Server receipt time; never use generic updatedAt as a connectivity heartbeat.
+    @Column(name = "last_telemetry_received_at")
+    Instant lastTelemetryReceivedAt;
+
+    @Column(name = "last_location_name_at")
+    Instant lastLocationNameAt;
+
+    @Column(name = "last_progress_at")
+    Instant lastProgressAt;
+
+    @Column(name = "last_speed_at")
+    Instant lastSpeedAt;
+
+    // Field-level receipt times prevent partial packets from making other readings look fresh.
+    @Column(name = "last_supply_air_temp_at")
+    Instant lastSupplyAirTempAt;
+
+    @Column(name = "last_return_air_temp_at")
+    Instant lastReturnAirTempAt;
+
+    @Column(name = "last_reefer_set_point_at")
+    Instant lastReeferSetPointAt;
+
+    @Column(name = "last_reefer_alarm_at")
+    Instant lastReeferAlarmAt;
+
+    @Column(name = "last_humidity_at")
+    Instant lastHumidityAt;
+
+    @Column(name = "last_shock_at")
+    Instant lastShockAt;
+
+    @Column(name = "last_solar_power_at")
+    Instant lastSolarPowerAt;
+
+    @Column(name = "last_battery_at")
+    Instant lastBatteryAt;
+
+    @Column(name = "last_eta_at")
+    Instant lastEtaAt;
+
+    @Column(name = "last_seal_at")
+    Instant lastSealAt;
+
+    // Only a telemetry packet carrying both coordinates can refresh position freshness.
+    @Column(name = "last_position_received_at")
+    Instant lastPositionReceivedAt;
+
+    @Column(name = "last_position_observed_at")
+    Instant lastPositionObservedAt;
 
     // Operational Assignment (Shipment, Driver, Vehicle)
     @Column(name = "assigned_shipment_id")

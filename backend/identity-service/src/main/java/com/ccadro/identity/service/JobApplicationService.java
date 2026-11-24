@@ -19,11 +19,9 @@ import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestClient;
 
 import java.security.SecureRandom;
 import java.time.Instant;
@@ -354,6 +352,7 @@ public class JobApplicationService {
                 .phone(app.getPhone())
                 .nationalId(app.getNationalId())
                 .roleCode(roleCode)
+                .dateOfBirth(app.getDateOfBirth())
                 .department(resolveDepartment(roleCode, decision))
                 .jobTitle(resolveJobTitle(roleCode, decision))
                 .branchId(branchId)
@@ -372,6 +371,7 @@ public class JobApplicationService {
                 .backgroundCheckPassed(bgPassed)
                 .licenseNumber(app.getLicenseNumber())
                 .licenseClass(app.getLicenseClass())
+                .licenseIssueDate(app.getLicenseIssueDate())
                 .licenseExpiryDate(app.getLicenseExpiryDate())
                 .healthCheckPassed(healthPassed)
                 .healthCheckDate(decision != null && decision.getHealthCheckDate() != null
@@ -390,10 +390,16 @@ public class JobApplicationService {
                 .build();
         StaffProfileResponse createdStaff = staffProfileService.createStaff(staffReq);
 
-        // 3. Đồng bộ sang asset-service (best-effort) nếu ứng viên là DRIVER
+        if ("DRIVER".equals(roleCode) && approveComplianceNow) {
+            createdStaff = staffProfileService.verifyStaff(createdStaff.getId(),
+                    com.ccadro.identity.dto.request.StaffVerificationRequest.builder().verificationStatus("APPROVED").build(),
+                    approverUsername);
+        }
+
+        // Staff verification links approved drivers. Pending drivers can link when approved.
         String assetSyncStatus = "NOT_APPLICABLE";
         if ("DRIVER".equals(roleCode)) {
-            assetSyncStatus = syncDriverToAssetServiceBestEffort(app, generatedEmployeeCode);
+            assetSyncStatus = approveComplianceNow ? "SYNCED_TO_ASSET_SERVICE" : "PENDING_REVIEW";
         }
 
         // 4. Đóng hồ sơ ứng tuyển & ghi Audit Log
@@ -446,33 +452,6 @@ public class JobApplicationService {
         return mapToResponse(jobApplicationRepository.save(app));
     }
 
-    private String syncDriverToAssetServiceBestEffort(JobApplication app, String employeeCode) {
-        try {
-            RestClient client = RestClient.builder().baseUrl(assetServiceUrl).build();
-            Map<String, Object> body = new LinkedHashMap<>();
-            body.put("driverCode", employeeCode);
-            body.put("fullName", app.getFullName());
-            body.put("phone", app.getPhone());
-            body.put("email", app.getEmail());
-            body.put("nationalId", app.getNationalId());
-            body.put("licenseClass", app.getLicenseClass() != null ? app.getLicenseClass() : "FC");
-            body.put("licenseNumber", app.getLicenseNumber());
-            body.put("licenseExpiryDate", app.getLicenseExpiryDate() != null ? app.getLicenseExpiryDate().toString() : null);
-            body.put("experienceYears", app.getExperienceYears() != null ? app.getExperienceYears() : 1);
-            body.put("verified", true);
-
-            client.post()
-                    .uri("/api/v1/assets/drivers")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(body)
-                    .retrieve()
-                    .toBodilessEntity();
-            return "SYNCED_TO_ASSET_SERVICE";
-        } catch (Exception ex) {
-            log.warn("Không thể đồng bộ Driver {} sang asset-service (non-blocking): {}", employeeCode, ex.getMessage());
-            return "DEFERRED_ASSET_SYNC";
-        }
-    }
 
     private JobApplication findOrThrow(UUID id) {
         return jobApplicationRepository.findById(id)

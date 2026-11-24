@@ -1,8 +1,17 @@
 package com.ccadro.tracking.configuration;
 
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "ccadro")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class CcadroProperties {
 
     private Routing routing = new Routing();
@@ -13,109 +22,73 @@ public class CcadroProperties {
     private Security security = new Security();
     private Arrival arrival = new Arrival();
 
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class Routing {
         private String provider = "mock";
         private String baseUrl = "http://router.project-osrm.org";
         private int connectTimeoutMs = 5000;
         private int readTimeoutMs = 10000;
-
-        public String getProvider() { return provider; }
-        public void setProvider(String provider) { this.provider = provider; }
-        public String getBaseUrl() { return baseUrl; }
-        public void setBaseUrl(String baseUrl) { this.baseUrl = baseUrl; }
-        public int getConnectTimeoutMs() { return connectTimeoutMs; }
-        public void setConnectTimeoutMs(int connectTimeoutMs) { this.connectTimeoutMs = connectTimeoutMs; }
-        public int getReadTimeoutMs() { return readTimeoutMs; }
-        public void setReadTimeoutMs(int readTimeoutMs) { this.readTimeoutMs = readTimeoutMs; }
     }
 
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class Deviation {
         private double yellowMeters = 50.0;
         private double redMeters = 200.0;
         private int consecutivePointsRequired = 3;
         private double maxValidSpeedKmh = 150.0;
-
-        public double getYellowMeters() { return yellowMeters; }
-        public void setYellowMeters(double yellowMeters) { this.yellowMeters = yellowMeters; }
-        public double getRedMeters() { return redMeters; }
-        public void setRedMeters(double redMeters) { this.redMeters = redMeters; }
-        public int getConsecutivePointsRequired() { return consecutivePointsRequired; }
-        public void setConsecutivePointsRequired(int consecutivePointsRequired) { this.consecutivePointsRequired = consecutivePointsRequired; }
-        public double getMaxValidSpeedKmh() { return maxValidSpeedKmh; }
-        public void setMaxValidSpeedKmh(double maxValidSpeedKmh) { this.maxValidSpeedKmh = maxValidSpeedKmh; }
     }
 
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class Reroute {
         private long cooldownSeconds = 300L;
         private double minimumBenefitRatio = 0.1000;
         private double detourSavingsEstimateRatio = 0.82;
-
-        public long getCooldownSeconds() { return cooldownSeconds; }
-        public void setCooldownSeconds(long cooldownSeconds) { this.cooldownSeconds = cooldownSeconds; }
-        public double getMinimumBenefitRatio() { return minimumBenefitRatio; }
-        public void setMinimumBenefitRatio(double minimumBenefitRatio) { this.minimumBenefitRatio = minimumBenefitRatio; }
-        public double getDetourSavingsEstimateRatio() { return detourSavingsEstimateRatio; }
-        public void setDetourSavingsEstimateRatio(double detourSavingsEstimateRatio) { this.detourSavingsEstimateRatio = detourSavingsEstimateRatio; }
     }
 
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class Carbon {
         private double defaultTonneKmFactor = 0.080000;
         private double distanceAdjustmentFactor = 1.05;
         private boolean applyDafOnActualGps = false;
         private String factorVersion = "GLEC_v3.0";
-
-        public double getDefaultTonneKmFactor() { return defaultTonneKmFactor; }
-        public void setDefaultTonneKmFactor(double defaultTonneKmFactor) { this.defaultTonneKmFactor = defaultTonneKmFactor; }
-        public double getDistanceAdjustmentFactor() { return distanceAdjustmentFactor; }
-        public void setDistanceAdjustmentFactor(double distanceAdjustmentFactor) { this.distanceAdjustmentFactor = distanceAdjustmentFactor; }
-        public boolean isApplyDafOnActualGps() { return applyDafOnActualGps; }
-        public void setApplyDafOnActualGps(boolean applyDafOnActualGps) { this.applyDafOnActualGps = applyDafOnActualGps; }
-        public String getFactorVersion() { return factorVersion; }
-        public void setFactorVersion(String factorVersion) { this.factorVersion = factorVersion; }
     }
 
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class Demerit {
         private int warningThreshold = 10;
         private int reviewRequiredThreshold = 20;
-
-        public int getWarningThreshold() { return warningThreshold; }
-        public void setWarningThreshold(int warningThreshold) { this.warningThreshold = warningThreshold; }
-        public int getReviewRequiredThreshold() { return reviewRequiredThreshold; }
-        public void setReviewRequiredThreshold(int reviewRequiredThreshold) { this.reviewRequiredThreshold = reviewRequiredThreshold; }
     }
 
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class Security {
         private String jwtSecret = "";
         private long jwtExpirationMs = 86400000;
-
-        public String getJwtSecret() { return jwtSecret; }
-        public void setJwtSecret(String jwtSecret) { this.jwtSecret = jwtSecret; }
-        public long getJwtExpirationMs() { return jwtExpirationMs; }
-        public void setJwtExpirationMs(long jwtExpirationMs) { this.jwtExpirationMs = jwtExpirationMs; }
     }
 
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class Arrival {
         private double arrivalRadiusMeters = 250.0;
         private double approachingRadiusMeters = 2000.0;
-
-        public double getArrivalRadiusMeters() { return arrivalRadiusMeters; }
-        public void setArrivalRadiusMeters(double arrivalRadiusMeters) { this.arrivalRadiusMeters = arrivalRadiusMeters; }
-        public double getApproachingRadiusMeters() { return approachingRadiusMeters; }
-        public void setApproachingRadiusMeters(double approachingRadiusMeters) { this.approachingRadiusMeters = approachingRadiusMeters; }
     }
-
-    public Routing getRouting() { return routing; }
-    public void setRouting(Routing routing) { this.routing = routing; }
-    public Deviation getDeviation() { return deviation; }
-    public void setDeviation(Deviation deviation) { this.deviation = deviation; }
-    public Reroute getReroute() { return reroute; }
-    public void setReroute(Reroute reroute) { this.reroute = reroute; }
-    public Carbon getCarbon() { return carbon; }
-    public void setCarbon(Carbon carbon) { this.carbon = carbon; }
-    public Demerit getDemerit() { return demerit; }
-    public void setDemerit(Demerit demerit) { this.demerit = demerit; }
-    public Security getSecurity() { return security; }
-    public void setSecurity(Security security) { this.security = security; }
-    public Arrival getArrival() { return arrival; }
-    public void setArrival(Arrival arrival) { this.arrival = arrival; }
 }

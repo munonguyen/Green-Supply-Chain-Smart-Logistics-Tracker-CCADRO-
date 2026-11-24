@@ -15,6 +15,10 @@ import java.util.UUID;
 public class RerouteVersionRequest {
     @NotNull(message = "shipmentId must not be null")
     UUID shipmentId;
+    @NotNull
+    UUID selectedCandidateId;
+    @NotNull
+    UUID proposalId;
     BigDecimal distanceMeters;
     BigDecimal durationSeconds;
     String reason;

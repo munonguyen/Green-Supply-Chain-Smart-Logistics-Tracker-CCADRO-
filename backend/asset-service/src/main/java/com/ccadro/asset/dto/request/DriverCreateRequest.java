@@ -27,9 +27,11 @@ public class DriverCreateRequest {
     String avatarUrl;
     String licenseClass;
     String licenseNumber;
+    String licenseIssueDate;
     String licenseExpiryDate;
     Integer experienceYears;
     String assignedVehiclePlate;
     String assignedVehicleType;
     List<String> safetyCerts;
+    String accountUsername;
 }

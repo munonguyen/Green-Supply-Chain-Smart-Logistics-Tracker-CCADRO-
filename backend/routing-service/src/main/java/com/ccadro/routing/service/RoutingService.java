@@ -48,6 +48,16 @@ public class RoutingService {
     }
 
     @Transactional
+    public List<RouteCandidateData> calculateRoutesForShipment(UUID shipmentId, double weightEmission, double weightDuration, double weightDistance) {
+        return routePlanningService.calculateRoutesForShipment(shipmentId, weightEmission, weightDuration, weightDistance);
+    }
+
+    @Transactional
+    public List<RouteCandidateData> calculateRemainingRoutes(UUID shipmentId, double latitude, double longitude) {
+        return routePlanningService.calculateRemainingRoutes(shipmentId, latitude, longitude);
+    }
+
+    @Transactional
     public RouteDecisionResponse selectRoute(RouteDecisionRequest request) {
         return routeDecisionService.selectRoute(request);
     }

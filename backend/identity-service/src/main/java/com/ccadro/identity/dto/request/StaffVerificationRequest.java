@@ -16,6 +16,7 @@ public class StaffVerificationRequest {
     String verificationStatus;
 
     String verificationNotes;
+    LocalDate dateOfBirth;
     Boolean backgroundCheckPassed;
     Boolean healthCheckPassed;
     LocalDate healthCheckDate;
@@ -23,6 +24,7 @@ public class StaffVerificationRequest {
     Boolean canSignOffCompliance;
     String licenseNumber;
     String licenseClass;
+    LocalDate licenseIssueDate;
     LocalDate licenseExpiryDate;
     String certificationCode;
     LocalDate certificateExpiryDate;

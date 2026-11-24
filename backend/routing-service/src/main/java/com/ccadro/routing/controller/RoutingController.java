@@ -17,6 +17,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.web.bind.annotation.*;
+import java.math.BigDecimal;
 
 import java.util.List;
 import java.util.UUID;
@@ -40,15 +41,28 @@ public class RoutingController {
 
     @PostMapping("/calculate/{shipmentId}")
     @Operation(summary = "Calculate route candidates for shipment (UC05)")
-    public ApiResponse<List<RouteCandidateData>> calculateRoutes(@PathVariable UUID shipmentId) {
+    public ApiResponse<List<RouteCandidateData>> calculateRoutes(
+            @PathVariable UUID shipmentId,
+            @RequestParam(required = false) BigDecimal weightEmission,
+            @RequestParam(required = false) BigDecimal weightDuration,
+            @RequestParam(required = false) BigDecimal weightDistance) {
+        double emission = weightEmission != null ? weightEmission.doubleValue() : 0.50;
+        double duration = weightDuration != null ? weightDuration.doubleValue() : 0.30;
+        double distance = weightDistance != null ? weightDistance.doubleValue() : 0.20;
         return ApiResponse.success("Tính toán các phương án lộ trình thành công",
-                routingService.calculateRoutesForShipment(shipmentId));
+                routingService.calculateRoutesForShipment(shipmentId, emission, duration, distance));
     }
 
     @GetMapping("/candidates/{shipmentId}")
     @Operation(summary = "Get saved candidate routes for shipment (UC05)")
     public ApiResponse<List<RouteCandidateResponse>> getCandidates(@PathVariable UUID shipmentId) {
         return ApiResponse.success(routingMapper.toResponseList(routingService.getSavedCandidates(shipmentId)));
+    }
+
+    @PostMapping("/reroute/calculate/{shipmentId}")
+    public ApiResponse<List<RouteCandidateData>> calculateRemainingRoutes(@PathVariable UUID shipmentId,
+            @RequestParam double latitude, @RequestParam double longitude) {
+        return ApiResponse.success(routingService.calculateRemainingRoutes(shipmentId, latitude, longitude));
     }
 
     @PostMapping("/select")

@@ -34,7 +34,7 @@ management:
 ccadro:
   routing:
     provider: ${ROUTING_PROVIDER:osrm}
-    baseUrl: ${ROUTING_BASE_URL:http://router.project-osrm.org}
+    baseUrl: ${ROUTING_BASE_URL:https://router.project-osrm.org}
     connectTimeoutMs: 3000
     readTimeoutMs: 6000
   deviation:
@@ -42,6 +42,7 @@ ccadro:
     redMeters: ${CCADRO_DEVIATION_RED_METERS:200}
     consecutivePointsRequired: 3
   carbon:
+    fuelKgCo2PerLiter: ${CCADRO_CARBON_FUEL_KG_CO2_PER_LITER:0}
     defaultTonneKmFactor: ${CCADRO_CARBON_DEFAULT_TONNE_KM_FACTOR:0.080000}
     distanceAdjustmentFactor: ${CCADRO_CARBON_DAF:1.05}
     applyDafOnActualGps: ${CCADRO_CARBON_APPLY_DAF_ON_ACTUAL_GPS:false}

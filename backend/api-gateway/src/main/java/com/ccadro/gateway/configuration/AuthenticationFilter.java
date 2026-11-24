@@ -62,6 +62,7 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
 
     @NonFinal
     String[] publicEndpoints = {
+            "/assets/device-ingest/[a-zA-Z0-9_.:-]{1,100}",
             "/auth/token",
             "/auth/refresh",
             "/auth/logout",
@@ -101,7 +102,8 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
             }
             token = authHeader.get(0).substring(7).trim();
         } else if (path.equals(apiPrefix + "/notifications/stream")
-                || path.equals(apiPrefix + "/tracking/stream")) {
+                || path.equals(apiPrefix + "/tracking/stream")
+                || path.equals(apiPrefix + "/hub-shipper/stream")) {
             // Browser EventSource cannot set Authorization headers, so SSE stream allows ?token=<jwt>
             String queryToken = sanitizedRequest.getQueryParams().getFirst("token");
             if (queryToken != null && !queryToken.isBlank()) {
@@ -213,14 +215,20 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
         if (roles.contains("ADMIN")) return true;
         String verb = method != null ? method.name() : "GET";
 
+        if (path.startsWith(apiPrefix + "/admin/system/")) return roles.contains("ADMIN");
+
+        boolean isOps = roles.contains("OPERATOR") || roles.contains("DISPATCHER");
+        boolean isSafety = roles.contains("OPERATOR") || roles.contains("SAFETY_MANAGER");
+        boolean isAuditor = roles.contains("OPERATOR") || roles.contains("ESG_AUDITOR");
+        boolean isHubMgr = roles.contains("OPERATOR") || roles.contains("HUB_MANAGER");
+
         if (path.startsWith(apiPrefix + "/users") || path.startsWith(apiPrefix + "/roles")
                 || path.startsWith(apiPrefix + "/permissions") || path.startsWith(apiPrefix + "/companies")
                 || path.startsWith(apiPrefix + "/branches") || path.startsWith(apiPrefix + "/staff")) {
-            return path.equals(apiPrefix + "/users/me") || roles.contains("DISPATCHER")
-                    || roles.contains("SAFETY_MANAGER") || roles.contains("ESG_AUDITOR");
+            return path.equals(apiPrefix + "/users/me") || isOps || isSafety || isAuditor;
         }
         if (path.startsWith(apiPrefix + "/auth/hub-accounts")) {
-            return roles.contains("HUB_MANAGER") || roles.contains("HUB_AUDITOR");
+            return isHubMgr || roles.contains("HUB_AUDITOR");
         }
         if (path.startsWith(apiPrefix + "/shipments")) {
             if (path.contains("/customer/")) {
@@ -229,61 +237,59 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
                         && requestedCustomer.equalsIgnoreCase(customerId);
             }
             if (verb.equals("POST") && path.equals(apiPrefix + "/shipments"))
-                return roles.contains("CUSTOMER") || roles.contains("DISPATCHER");
+                return roles.contains("CUSTOMER") || isOps;
             return verb.equals("GET")
-                    ? roles.contains("DISPATCHER") || roles.contains("ESG_AUDITOR") || roles.contains("DRIVER")
-                    : roles.contains("DISPATCHER");
+                    ? isOps || isAuditor || roles.contains("DRIVER")
+                    : isOps;
         }
         if (path.startsWith(apiPrefix + "/routing") || path.startsWith(apiPrefix + "/routes")) {
             if (verb.equals("GET")) {
-                return roles.contains("DISPATCHER") || roles.contains("ESG_AUDITOR") || roles.contains("DRIVER");
+                return isOps || isAuditor || roles.contains("DRIVER");
             }
-            return roles.contains("DISPATCHER") || roles.contains("ESG_AUDITOR");
+            return isOps || isAuditor;
         }
         if (path.startsWith(apiPrefix + "/tracking")) {
-            if (path.contains("/reroute-proposals/") && path.endsWith("/decision")) return roles.contains("DISPATCHER");
+            if (path.endsWith("/stream") && roles.contains("DRIVER") && !isOps) return false;
+            if (path.contains("/reroute-proposals/") && path.endsWith("/decision")) return isOps;
             if (path.contains("/telemetry")) {
                 return verb.equals("GET")
-                        ? roles.contains("DISPATCHER") || roles.contains("SAFETY_MANAGER")
-                                || roles.contains("ESG_AUDITOR") || roles.contains("DRIVER")
+                        ? isOps || isSafety || isAuditor || roles.contains("DRIVER")
                         : roles.contains("DRIVER");
             }
-            if (path.endsWith("/start") || path.endsWith("/complete")) {
-                return roles.contains("DISPATCHER") || roles.contains("DRIVER");
-            }
-            return roles.contains("DISPATCHER") || roles.contains("SAFETY_MANAGER")
-                    || roles.contains("ESG_AUDITOR") || roles.contains("DRIVER");
+            if (path.endsWith("/start")) return roles.contains("DRIVER");
+            if (path.endsWith("/complete")) return isOps || roles.contains("DRIVER");
+            if (!verb.equals("GET")) return isOps;
+            return isOps || isSafety || isAuditor || roles.contains("DRIVER");
         }
         if (path.startsWith(apiPrefix + "/assets")) return authorizeAssets(path, verb, roles);
         if (path.startsWith(apiPrefix + "/incidents")) {
             if (path.endsWith("/resolve") || path.contains("/demerits/") && path.endsWith("/review"))
-                return roles.contains("SAFETY_MANAGER");
-            if (verb.equals("POST")) return roles.contains("DRIVER");
-            if (verb.equals("GET")) return roles.contains("DISPATCHER") || roles.contains("SAFETY_MANAGER")
-                    || roles.contains("DRIVER");
-            return roles.contains("DISPATCHER") || roles.contains("SAFETY_MANAGER");
+                return isSafety;
+            if (verb.equals("POST")) return roles.contains("DRIVER") || isOps || isSafety;
+            if (verb.equals("GET")) return isOps || isSafety || roles.contains("DRIVER");
+            return isOps || isSafety;
         }
         if (path.startsWith(apiPrefix + "/carbon")) {
-            if (verb.equals("GET")) return roles.contains("DISPATCHER") || roles.contains("ESG_AUDITOR")
+            if (verb.equals("GET")) return isOps || isAuditor
                     || roles.contains("CUSTOMER") || roles.contains("DRIVER");
-            return roles.contains("DISPATCHER") || roles.contains("ESG_AUDITOR") || roles.contains("DRIVER");
+            return isOps || isAuditor || roles.contains("DRIVER");
         }
         if (path.startsWith(apiPrefix + "/notifications")) {
-            if (path.endsWith("/broadcast")) return roles.contains("DISPATCHER") || roles.contains("SAFETY_MANAGER");
-            if (path.endsWith("/acknowledge")) return roles.contains("DISPATCHER");
+            if (path.endsWith("/broadcast")) return isOps || isSafety;
+            if (path.endsWith("/acknowledge")) return isOps || isSafety;
             if (path.equals(apiPrefix + "/notifications/email")) return false;
-            return roles.contains("DISPATCHER") || roles.contains("SAFETY_MANAGER") || roles.contains("DRIVER");
+            return isOps || isSafety || roles.contains("DRIVER");
         }
         if (path.startsWith(apiPrefix + "/payments") || path.startsWith(apiPrefix + "/contracts")) {
-            return roles.contains("CUSTOMER") || roles.contains("DISPATCHER");
+            return roles.contains("CUSTOMER") || isOps;
         }
         if (path.startsWith(apiPrefix + "/hub-shipper")) {
-            return roles.contains("HUB_MANAGER") || roles.contains("HUB_SHIPPER")
+            return isHubMgr || roles.contains("DRIVER") || roles.contains("HUB_SHIPPER")
                     || roles.contains("HUB_AUDITOR") || roles.contains("SHIPPER");
         }
         if (path.startsWith(apiPrefix + "/chat")) {
-            return roles.contains("CUSTOMER") || roles.contains("DRIVER") || roles.contains("DISPATCHER")
-                    || roles.contains("HUB_MANAGER") || roles.contains("HUB_SHIPPER") || roles.contains("SHIPPER");
+            return roles.contains("CUSTOMER") || roles.contains("DRIVER") || isOps
+                    || isHubMgr || roles.contains("HUB_SHIPPER") || roles.contains("SHIPPER");
         }
         if (path.equals(apiPrefix + "/health")) return verb.equals("GET") && !roles.isEmpty();
         if (path.startsWith(apiPrefix + "/auth/")) {
@@ -293,35 +299,74 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
         }
         if (path.equals(apiPrefix + "/applications") || path.startsWith(apiPrefix + "/applications/")) return false;
         if (path.equals(apiPrefix + "/hub-iam") || path.startsWith(apiPrefix + "/hub-iam/")) {
-            return roles.contains("HUB_MANAGER") || (verb.equals("GET") && roles.contains("HUB_AUDITOR"));
+            return isHubMgr || (verb.equals("GET") && roles.contains("HUB_AUDITOR"));
         }
         return false;
     }
 
     private boolean authorizeAssets(String path, String verb, Set<String> roles) {
-        if (path.contains("/shipper-hubs") || path.contains("/shipper-handovers")) {
-            if (verb.equals("GET")) return roles.contains("SHIPPER") || roles.contains("HUB_MANAGER")
-                    || roles.contains("HUB_SHIPPER") || roles.contains("HUB_AUDITOR");
-            return roles.contains("SHIPPER") || roles.contains("HUB_MANAGER") || roles.contains("HUB_SHIPPER");
+        boolean isOps = roles.contains("OPERATOR") || roles.contains("DISPATCHER");
+        boolean isSafety = roles.contains("OPERATOR") || roles.contains("SAFETY_MANAGER");
+        boolean isAuditor = roles.contains("OPERATOR") || roles.contains("ESG_AUDITOR");
+        boolean isHubMgr = roles.contains("OPERATOR") || roles.contains("HUB_MANAGER");
+
+        if (path.equals(apiPrefix + "/assets/vehicle-fuels")
+                || path.equals(apiPrefix + "/assets/vehicle-fuels/batch-optimize")
+                || path.matches(apiPrefix + "/assets/vehicles/[^/]+/fuel-(profile|assessment)")) {
+            boolean reader = isOps || isSafety || isAuditor;
+            return (verb.equals("GET") || (verb.equals("POST") && (path.endsWith("/fuel-assessment") || path.endsWith("/batch-optimize")))) ? reader
+                : verb.equals("PUT") && (isOps || isSafety);
         }
+        if (path.equals(apiPrefix + "/assets/fuel-stations")
+                || path.matches(apiPrefix + "/assets/fuel-stations/[^/]+/(authorize|transactions)")
+                || path.equals(apiPrefix + "/assets/fuel-transactions")
+                || path.equals(apiPrefix + "/assets/container-fuel-units")) {
+            if (verb.equals("GET")) {
+                return isOps || isSafety || isAuditor;
+            }
+            return verb.equals("POST") && (isOps || isSafety);
+        }
+
+        if (path.matches(apiPrefix + "/assets/(containers|drivers|staff-drivers)/[^/]+/transport-history")) {
+            return verb.equals("GET") && (isOps || isSafety);
+        }
+        // Container management needs the destination catalogue and manifest, not hub dispatch powers.
+        if (verb.equals("GET")
+                && (path.equals(apiPrefix + "/assets/shipper-hubs")
+                    || path.equals(apiPrefix + "/assets/shipper-hubs/manifest-items"))
+                && (isOps || isSafety)) {
+            return true;
+        }
+        if (path.contains("/shipper-hubs") || path.contains("/shipper-handovers")) {
+            if (verb.equals("GET")) return roles.contains("SHIPPER") || isHubMgr
+                    || roles.contains("DRIVER") || roles.contains("HUB_SHIPPER") || roles.contains("HUB_AUDITOR");
+            return roles.contains("SHIPPER") || isHubMgr || roles.contains("DRIVER") || roles.contains("HUB_SHIPPER");
+        }
+        if (path.matches(apiPrefix + "/assets/containers/[^/]+/device-connection")) {
+            return isOps || isSafety;
+        }
+        if (path.startsWith(apiPrefix + "/assets/drivers/dispatch-eligibility")) {
+            return verb.equals("GET") && (isOps || isSafety);
+        }
+        if (path.equals(apiPrefix + "/assets/drivers") && verb.equals("POST")) return false;
         if (path.contains("/inspections")) return verb.equals("GET")
-                ? roles.contains("SAFETY_MANAGER") || roles.contains("DRIVER") : roles.contains("DRIVER");
-        if (path.contains("/maintenances")) return roles.contains("SAFETY_MANAGER");
+                ? isSafety || roles.contains("DRIVER") : roles.contains("DRIVER");
+        if (path.contains("/maintenances")) return isSafety;
         if (path.contains("/messages")) return roles.contains("CUSTOMER") || roles.contains("DRIVER")
-                || roles.contains("DISPATCHER");
-        if (path.contains("/reviews")) return roles.contains("CUSTOMER") || roles.contains("DISPATCHER");
+                || isOps;
+        if (path.contains("/reviews")) return roles.contains("CUSTOMER") || isOps;
         if (path.contains("/containers") || path.contains("/drivers")) {
-            if (!verb.equals("GET")) return roles.contains("DISPATCHER") || roles.contains("SAFETY_MANAGER")
+            if (!verb.equals("GET")) return isOps || isSafety
                     || (roles.contains("DRIVER") && path.contains("/containers")
                             && (path.contains("/epod") || path.contains("/telemetry")))
                     || (roles.contains("DRIVER") && path.contains("/drivers") && path.endsWith("/status"));
-            return roles.contains("DISPATCHER") || roles.contains("SAFETY_MANAGER") || roles.contains("DRIVER")
-                    || roles.contains("CUSTOMER") || roles.contains("ESG_AUDITOR");
+            return isOps || isSafety || roles.contains("DRIVER")
+                    || roles.contains("CUSTOMER") || isAuditor;
         }
         if (verb.equals("GET")) {
-            return roles.contains("DISPATCHER") || roles.contains("SAFETY_MANAGER") || roles.contains("DRIVER");
+            return isOps || isSafety || roles.contains("DRIVER");
         }
-        return roles.contains("DISPATCHER") || roles.contains("SAFETY_MANAGER");
+        return isOps || isSafety;
     }
 
     @Override

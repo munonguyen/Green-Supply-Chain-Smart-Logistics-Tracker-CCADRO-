@@ -12,4 +12,5 @@ import java.util.UUID;
 public interface RouteVersionRepository extends JpaRepository<RouteVersion, UUID> {
     List<RouteVersion> findByShipmentIdOrderByVersionNumberDesc(UUID shipmentId);
     Optional<RouteVersion> findByShipmentIdAndIsActiveTrue(UUID shipmentId);
+    Optional<RouteVersion> findByShipmentIdAndReason(UUID shipmentId, String reason);
 }

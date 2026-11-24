@@ -234,6 +234,33 @@ class AuthenticationFilterTest {
         }
 
         @Test
+        void containerManagementCanReadDestinationsAndManifestsWithoutHubWriteAccess() {
+                when(identityService.introspect("dispatcher-token")).thenReturn(Mono.just(
+                        ApiResponse.<IntrospectResponse>builder().result(IntrospectResponse.builder()
+                                .valid(true).username("dispatcher").scope("ROLE_DISPATCHER").build()).build()));
+                when(filterChain.filter(any())).thenReturn(Mono.empty());
+                for (String path : new String[] {"/api/v1/assets/shipper-hubs",
+                        "/api/v1/assets/shipper-hubs/manifest-items?containerCode=TEST"}) {
+                    var exchange = MockServerWebExchange.from(MockServerHttpRequest.get(path)
+                            .header(HttpHeaders.AUTHORIZATION, "Bearer dispatcher-token").build());
+                    StepVerifier.create(filter.filter(exchange, filterChain)).verifyComplete();
+                    assertNull(exchange.getResponse().getStatusCode());
+                }
+                String[][] forbidden = {{"GET", "/api/v1/assets/shipper-hubs/shippers"},
+                        {"POST", "/api/v1/assets/shipper-hubs/auto-dispatch"},
+                        {"DELETE", "/api/v1/assets/shipper-hubs/manifest-items/TEST"},
+                        {"PUT", "/api/v1/assets/shipper-handovers/TEST/status"}};
+                for (String[] request : forbidden) {
+                    var exchange = MockServerWebExchange.from(MockServerHttpRequest
+                            .method(HttpMethod.valueOf(request[0]), request[1])
+                            .header(HttpHeaders.AUTHORIZATION, "Bearer dispatcher-token").build());
+                    StepVerifier.create(filter.filter(exchange, filterChain)).verifyComplete();
+                    assertEquals(HttpStatus.FORBIDDEN, exchange.getResponse().getStatusCode());
+                }
+                verify(filterChain, times(2)).filter(any());
+        }
+
+        @Test
         @SuppressWarnings("unchecked")
         void filter_shouldRejectBlacklistedJwtViaRedisWithoutCallingIdentityService() {
                 ReactiveStringRedisTemplate redisTemplate = mock(ReactiveStringRedisTemplate.class);
@@ -311,4 +338,48 @@ class AuthenticationFilterTest {
                 verify(filterChain, times(allowedRequests.length)).filter(any());
         }
 
+
+        @Test
+        void deviceGpsPostUsesDeviceAuthenticationAndStripsSpoofedIdentityHeaders() {
+                when(filterChain.filter(any())).thenReturn(Mono.empty());
+                var exchange=MockServerWebExchange.from(MockServerHttpRequest
+                        .post("/api/v1/assets/device-ingest/IMEI_123")
+                        .header("X-Device-Key","device-key")
+                        .header("X-Auth-Scope","ROLE_ADMIN").header("X-Auth-Username","admin"));
+                StepVerifier.create(filter.filter(exchange,filterChain)).verifyComplete();
+                var capture=ArgumentCaptor.forClass(ServerWebExchange.class);
+                verify(filterChain).filter(capture.capture());
+                assertNull(capture.getValue().getRequest().getHeaders().getFirst("X-Auth-Scope"));
+                assertEquals("device-key",capture.getValue().getRequest().getHeaders().getFirst("X-Device-Key"));
+                verifyNoInteractions(identityService);
+        }
+
+        @Test
+        void deviceConfigurationStillRequiresAccountAuthentication() {
+                var exchange=MockServerWebExchange.from(MockServerHttpRequest
+                        .put("/api/v1/assets/containers/TEST/device-connection")
+                        .header("X-Device-Key","device-key").header("X-Auth-Scope","ROLE_ADMIN"));
+                StepVerifier.create(filter.filter(exchange,filterChain)).verifyComplete();
+                assertEquals(HttpStatus.UNAUTHORIZED,exchange.getResponse().getStatusCode());
+                verifyNoInteractions(filterChain);
+        }
+        @Test
+        void fuelPlannerAllowsAuditorAssessmentButRestrictsProfileWritesAndExternalRoles() throws Exception {
+                var method = AuthenticationFilter.class.getDeclaredMethod("authorizeAssets", String.class, String.class, java.util.Set.class);
+                method.setAccessible(true);
+                String profile = "/api/v1/assets/vehicles/vehicle-id/fuel-profile";
+                String assessment = "/api/v1/assets/vehicles/vehicle-id/fuel-assessment";
+                assertEquals(true, method.invoke(filter, "/api/v1/assets/vehicle-fuels", "GET", java.util.Set.of("ESG_AUDITOR")));
+                assertEquals(true, method.invoke(filter, "/api/v1/assets/fuel-stations", "GET", java.util.Set.of("ESG_AUDITOR")));
+                assertEquals(true, method.invoke(filter, "/api/v1/assets/vehicle-fuels/batch-optimize", "POST", java.util.Set.of("ESG_AUDITOR")));
+                assertEquals(false, method.invoke(filter, "/api/v1/assets/fuel-stations/DEPOT-01/authorize", "POST", java.util.Set.of("ESG_AUDITOR")));
+                assertEquals(true, method.invoke(filter, "/api/v1/assets/fuel-stations/DEPOT-01/authorize", "POST", java.util.Set.of("DISPATCHER")));
+                assertEquals(true, method.invoke(filter, "/api/v1/assets/fuel-stations/DEPOT-01/transactions", "POST", java.util.Set.of("SAFETY_MANAGER")));
+                assertEquals(true, method.invoke(filter, assessment, "POST", java.util.Set.of("ESG_AUDITOR")));
+                assertEquals(false, method.invoke(filter, profile, "PUT", java.util.Set.of("ESG_AUDITOR")));
+                assertEquals(true, method.invoke(filter, profile, "PUT", java.util.Set.of("DISPATCHER")));
+                assertEquals(true, method.invoke(filter, profile, "PUT", java.util.Set.of("SAFETY_MANAGER")));
+                assertEquals(false, method.invoke(filter, assessment, "POST", java.util.Set.of("DRIVER")));
+                assertEquals(false, method.invoke(filter, "/api/v1/assets/vehicle-fuels", "GET", java.util.Set.of("CUSTOMER")));
+        }
 }

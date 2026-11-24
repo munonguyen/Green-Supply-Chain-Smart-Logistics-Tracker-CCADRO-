@@ -1,8 +1,17 @@
 package com.ccadro.routing.entity;
 
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.math.BigDecimal;
 import java.util.UUID;
 
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class RouteRequest {
     private UUID shipmentId;
     private Location origin;
@@ -10,28 +19,10 @@ public class RouteRequest {
     private BigDecimal cargoWeightTons;
     private String vehicleFuelType;
     private String euroStandard;
+    private java.time.Instant departureTime;
 
-    public RouteRequest() {}
-
-    public RouteRequest(UUID shipmentId, Location origin, Location destination, BigDecimal cargoWeightTons, String vehicleFuelType, String euroStandard) {
-        this.shipmentId = shipmentId;
-        this.origin = origin;
-        this.destination = destination;
-        this.cargoWeightTons = cargoWeightTons;
-        this.vehicleFuelType = vehicleFuelType;
-        this.euroStandard = euroStandard;
+    public RouteRequest(UUID shipmentId, Location origin, Location destination, BigDecimal cargoWeightTons,
+            String vehicleFuelType, String euroStandard) {
+        this(shipmentId, origin, destination, cargoWeightTons, vehicleFuelType, euroStandard, java.time.Instant.now());
     }
-
-    public UUID getShipmentId() { return shipmentId; }
-    public void setShipmentId(UUID shipmentId) { this.shipmentId = shipmentId; }
-    public Location getOrigin() { return origin; }
-    public void setOrigin(Location origin) { this.origin = origin; }
-    public Location getDestination() { return destination; }
-    public void setDestination(Location destination) { this.destination = destination; }
-    public BigDecimal getCargoWeightTons() { return cargoWeightTons; }
-    public void setCargoWeightTons(BigDecimal cargoWeightTons) { this.cargoWeightTons = cargoWeightTons; }
-    public String getVehicleFuelType() { return vehicleFuelType; }
-    public void setVehicleFuelType(String vehicleFuelType) { this.vehicleFuelType = vehicleFuelType; }
-    public String getEuroStandard() { return euroStandard; }
-    public void setEuroStandard(String euroStandard) { this.euroStandard = euroStandard; }
 }

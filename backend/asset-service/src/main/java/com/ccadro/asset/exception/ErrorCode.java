@@ -25,6 +25,8 @@ public enum ErrorCode {
     CONTAINER_NOT_FOUND(1107, "Không tìm thấy container", HttpStatus.NOT_FOUND),
     PRE_TRIP_INSPECTION_FAILED(1108, "Kiểm tra an toàn tiền xuất bến (Pre-trip Inspection) không đạt", HttpStatus.UNPROCESSABLE_ENTITY),
 
+    CONTAINER_CONTROL_CONFLICT(1109, "Xung đột kiểm soát container", HttpStatus.CONFLICT),
+
     // 2100 - 2999: Shipment Module
     SHIPMENT_NOT_FOUND(2101, "Không tìm thấy đơn vận tải", HttpStatus.NOT_FOUND),
     SHIPMENT_CODE_EXISTS(2102, "Mã đơn hàng vận tải đã tồn tại", HttpStatus.CONFLICT),

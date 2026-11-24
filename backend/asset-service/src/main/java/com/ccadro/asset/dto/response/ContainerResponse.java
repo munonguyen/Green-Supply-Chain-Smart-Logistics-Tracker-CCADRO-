@@ -5,6 +5,7 @@ import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Data
@@ -18,6 +19,12 @@ public class ContainerResponse {
     String containerType;
     String isoType;
     String ownerName;
+    String cscApprovalCountry;
+    String cscApprovalReference;
+    LocalDate cscManufactureDate;
+    String cscInspectionScheme;
+    String cscAcepProgramNumber;
+    LocalDate cscNextExaminationDate;
     UUID responsibleCompanyId;
     String responsibleCompanyCode;
     String responsibleCompanyName;
@@ -36,6 +43,8 @@ public class ContainerResponse {
     String telematicsModel;
     BigDecimal supplyAirTempC;
     BigDecimal returnAirTempC;
+    BigDecimal reeferSetPointTempC;
+    String reeferTemperatureAlarmStatus;
     BigDecimal humidityPct;
     BigDecimal shockG;
     BigDecimal solarPowerWatts;
@@ -48,6 +57,23 @@ public class ContainerResponse {
     BigDecimal progressPct;
     BigDecimal speedKmh;
     Integer etaMinutes;
+
+    Instant lastTelemetryReceivedAt;
+    Instant lastLocationNameAt;
+    Instant lastProgressAt;
+    Instant lastSpeedAt;
+    Instant lastPositionReceivedAt;
+    Instant lastPositionObservedAt;
+    Instant lastSupplyAirTempAt;
+    Instant lastReturnAirTempAt;
+    Instant lastReeferSetPointAt;
+    Instant lastReeferAlarmAt;
+    Instant lastHumidityAt;
+    Instant lastShockAt;
+    Instant lastSolarPowerAt;
+    Instant lastBatteryAt;
+    Instant lastEtaAt;
+    Instant lastSealAt;
 
     // Operational Assignment (Shipment, Driver, Vehicle)
     UUID assignedShipmentId;

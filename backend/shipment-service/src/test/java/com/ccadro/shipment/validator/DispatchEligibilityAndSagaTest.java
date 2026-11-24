@@ -81,11 +81,9 @@ class DispatchEligibilityAndSagaTest {
         MockRestServiceServer s3 = MockRestServiceServer.bindTo(b3).build();
         s3.expect(requestTo("http://asset-service/api/v1/assets/vehicles/" + vehicleId))
                 .andRespond(withSuccess("{\"code\":1000,\"result\":{\"status\":\"AVAILABLE\",\"maxPayloadTons\":22.0}}", MediaType.APPLICATION_JSON));
-        s3.expect(requestTo("http://asset-service/api/v1/assets/drivers/" + driverId))
-                .andRespond(withSuccess("{\"code\":1000,\"result\":{\"status\":\"AVAILABLE\",\"licenseExpiry\":\"2029-12-31\"}}", MediaType.APPLICATION_JSON));
-        s3.expect(requestTo("http://asset-service/api/v1/assets/vehicles/" + vehicleId + "/inspections/latest"))
-                .andRespond(withSuccess("{\"code\":1000,\"result\":{\"isPassed\":true,\"vehicleId\":\"" + vehicleId
-                        + "\",\"driverId\":\"" + driverId + "\"}}", MediaType.APPLICATION_JSON));
+        s3.expect(requestTo("http://asset-service/api/v1/assets/drivers/dispatch-eligibility/" + driverId))
+                .andRespond(withSuccess("{\"code\":1000,\"result\":{\"status\":\"AVAILABLE\",\"eligible\":true}}", MediaType.APPLICATION_JSON));
+
 
         DispatchEligibilityValidator v3 = new DispatchEligibilityValidator(b3.build(), true);
         assertDoesNotThrow(() -> v3.validateVehicleAndDriverEligibility(heavyShipment, vehicleId, driverId));
@@ -99,7 +97,7 @@ class DispatchEligibilityAndSagaTest {
                 dispatchOrderRepository,
                 sagaStateLogRepository,
                 outboxEventRepository,
-                mock(DispatchEligibilityValidator.class),
+                mock(com.ccadro.shipment.saga.DispatchReservation.class),
                 dispatchOrderMapper,
                 new ObjectMapper()
         );
@@ -110,7 +108,7 @@ class DispatchEligibilityAndSagaTest {
                 .shipmentCode("SHP-2026-001")
                 .status("DISPATCHED")
                 .build();
-        when(shipmentRepository.findById(shipmentId)).thenReturn(Optional.of(alreadyDispatched));
+        when(shipmentRepository.findForDispatch(shipmentId)).thenReturn(Optional.of(alreadyDispatched));
 
         AppException ex = assertThrows(AppException.class, () -> orchestrator.executeDispatchSaga(
                 DispatchOrderRequest.builder()
@@ -130,7 +128,7 @@ class DispatchEligibilityAndSagaTest {
                 dispatchOrderRepository,
                 sagaStateLogRepository,
                 outboxEventRepository,
-                mock(DispatchEligibilityValidator.class),
+                mock(com.ccadro.shipment.saga.DispatchReservation.class),
                 dispatchOrderMapper,
                 new ObjectMapper()
         );
@@ -142,7 +140,7 @@ class DispatchEligibilityAndSagaTest {
                 .status("PLANNED")
                 .isDeleted(false)
                 .build();
-        when(shipmentRepository.findById(shipmentId)).thenReturn(Optional.of(planned));
+        when(shipmentRepository.findForDispatch(shipmentId)).thenReturn(Optional.of(planned));
         when(dispatchOrderRepository.existsByShipmentIdAndStatusNotIn(
                 shipmentId, java.util.List.of("FAILED", "CANCELLED"))).thenReturn(false);
         when(dispatchOrderRepository.existsByDispatchCode("DSP-DUP-CHECK")).thenReturn(true);

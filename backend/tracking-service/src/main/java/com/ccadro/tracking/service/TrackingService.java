@@ -141,6 +141,11 @@ public class TrackingService {
     }
 
     @Transactional
+    public Optional<RerouteProposalResponse> calculateRoadReroute(UUID tripId) {
+        return rerouteProposalService.evaluateDynamicRerouteForTrip(tripId, "DISPATCHER_REQUEST");
+    }
+
+    @Transactional
     public RerouteProposalResponse decideRerouteProposal(UUID proposalId, RerouteApprovalRequest request) {
         return rerouteProposalService.decideRerouteProposal(proposalId, request);
     }

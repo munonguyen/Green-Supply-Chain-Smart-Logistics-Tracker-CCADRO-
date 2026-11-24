@@ -27,6 +27,7 @@ public class JobApplicationSubmitRequest {
 
     @NotBlank(message = "Số CCCD/CMND không được để trống")
     String nationalId;
+    LocalDate dateOfBirth;
 
     @NotBlank(message = "Vị trí / Role ứng tuyển không được để trống")
     String appliedRoleCode;
@@ -46,6 +47,7 @@ public class JobApplicationSubmitRequest {
     // Hồ sơ dành cho ứng viên Lái xe / Shipper
     String licenseNumber;
     String licenseClass;
+    LocalDate licenseIssueDate;
     LocalDate licenseExpiryDate;
     Boolean healthCheckDeclared;
     Boolean safetyTrainingDeclared;

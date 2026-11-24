@@ -107,7 +107,7 @@ class JobApplicationServiceTest {
         StaffComplianceValidator complianceValidator = new StaffComplianceValidator();
         StaffOrganizationValidator orgValidator = new StaffOrganizationValidator(branchRepository, staffProfileRepository);
         StaffProfileService staffService = new StaffProfileService(
-                Mappers.getMapper(StaffProfileMapper.class), staffProfileRepository, complianceValidator, orgValidator);
+                Mappers.getMapper(StaffProfileMapper.class), staffProfileRepository, complianceValidator, orgValidator, org.mockito.Mockito.mock(StaffDriverLink.class));
         JobApplicationValidator appValidator = new JobApplicationValidator(
                 jobApplicationRepository, userRepository, staffProfileRepository, complianceValidator);
         PasswordEncoder encoder = new BCryptPasswordEncoder();
@@ -147,7 +147,9 @@ class JobApplicationServiceTest {
                         .appliedRoleCode("driver")
                         .preferredBranchId(hqId)
                         .licenseNumber("790155667788")
-                        .licenseClass("FC")
+                        .dateOfBirth(java.time.LocalDate.of(1980, 1, 1))
+                .licenseIssueDate(java.time.LocalDate.of(2020, 1, 1))
+                .licenseClass("FC")
                         .licenseExpiryDate(LocalDate.now().plusYears(3))
                         .healthCheckDeclared(true)
                         .safetyTrainingDeclared(true)
@@ -173,7 +175,9 @@ class JobApplicationServiceTest {
                         .nationalId("079093009999")
                         .appliedRoleCode("DRIVER")
                         .licenseNumber("790155667799")
-                        .licenseClass("FC")
+                        .dateOfBirth(java.time.LocalDate.of(1980, 1, 1))
+                .licenseIssueDate(java.time.LocalDate.of(2020, 1, 1))
+                .licenseClass("FC")
                         .build()));
     }
 

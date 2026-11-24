@@ -33,7 +33,7 @@ public class BranchController {
         CallerAuthUtils.requireAnyRole(
                 callerScope,
                 "Không đủ quyền xem danh sách chi nhánh.",
-                "ROLE_ADMIN", "ROLE_DISPATCHER", "ROLE_SAFETY_MANAGER", "ROLE_ESG_AUDITOR"
+                "ROLE_ADMIN", "ROLE_OPERATOR", "ROLE_DISPATCHER", "ROLE_SAFETY_MANAGER", "ROLE_ESG_AUDITOR"
         );
     }
 

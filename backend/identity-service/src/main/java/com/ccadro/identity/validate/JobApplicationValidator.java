@@ -30,7 +30,7 @@ import java.util.Set;
 public class JobApplicationValidator {
 
     public static final Set<String> PUBLIC_APPLICABLE_ROLES = Set.of(
-            "DRIVER", "HUB_SHIPPER", "DISPATCHER", "SAFETY_MANAGER", "ESG_AUDITOR", "HUB_MANAGER", "HUB_AUDITOR"
+            "OPERATOR", "DRIVER", "HUB_SHIPPER", "DISPATCHER", "SAFETY_MANAGER", "ESG_AUDITOR", "HUB_MANAGER", "HUB_AUDITOR"
     );
     public static final Set<String> ALLOWED_STAGE_STATUSES = Set.of(
             "SUBMITTED", "SCREENING", "INTERVIEW_OR_DRIVE_TEST", "COMPLIANCE_CHECKING",
@@ -97,6 +97,11 @@ public class JobApplicationValidator {
                 throw new AppException(ErrorCode.INVALID_REQUEST_ARGUMENT,
                         "Giấy phép lái xe đã hết hạn, vui lòng gia hạn trước khi nộp hồ sơ.");
             }
+            if ("DRIVER".equals(normalizedRole)
+                    && (request.getDateOfBirth() == null || request.getLicenseIssueDate() == null)) {
+                throw new AppException(ErrorCode.INVALID_REQUEST_ARGUMENT,
+                        "Tài xế đầu kéo cần ngày sinh và ngày cấp GPLX để xác minh tuổi/hạng trước khi nộp hồ sơ.");
+            }
         }
     }
 
@@ -158,7 +163,9 @@ public class JobApplicationValidator {
                     application.getCertificationCode(),
                     application.getInspectionScope(),
                     application.getCertificateExpiryDate(),
-                    signOff
+                    signOff,
+                    application.getDateOfBirth(),
+                    application.getLicenseIssueDate()
             );
             if (!missing.isEmpty()) {
                 throw new AppException(
