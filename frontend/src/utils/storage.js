@@ -54,3 +54,4 @@ export function removeStorageKey(key) {
     // ignore storage cleanup failure
   }
 }
+

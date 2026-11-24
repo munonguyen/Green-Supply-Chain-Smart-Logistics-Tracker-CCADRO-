@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { motion } from 'motion/react';
 import { Truck, CheckCircle2, Wrench } from 'lucide-react';
-import { CountingNumber } from '../components/CountingNumber';
+import { CountingNumber } from '../effects/CountingNumber';
 
 export default function FleetStatusDonutChart({ vehicles = [] }) {
   const [activeSegment, setActiveSegment] = useState(null);
@@ -27,7 +27,7 @@ export default function FleetStatusDonutChart({ vehicles = [] }) {
         icon: CheckCircle2
       },
       {
-        name: 'Bảo Dưỡng & Khám Xe (UC01)',
+        name: 'Bảo Dưỡng & Khám Xe',
         count: maintenanceCount,
         color: '#f59e0b',
         percent: Number(((maintenanceCount / denom) * 100).toFixed(1)),
@@ -62,7 +62,7 @@ export default function FleetStatusDonutChart({ vehicles = [] }) {
         <div>
           <div className="chart-title">
             <Truck size={18} color="#0ea5e9" />
-            <span>Phân Bổ Hạm Đội & Kiểm Soát Tải Trọng (BRULE-01)</span>
+            <span>Phân Bổ Hạm Đội & Kiểm Soát Tải Trọng</span>
           </div>
           <div className="chart-subtitle">
             Trạng thái trực ban hạm đội, chuẩn khí thải Euro 5 và Van điện EV

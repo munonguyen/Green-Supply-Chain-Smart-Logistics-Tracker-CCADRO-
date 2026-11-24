@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { motion } from 'motion/react';
 import { Activity, Gauge } from 'lucide-react';
-import { CountingNumber } from '../components/CountingNumber';
+import { CountingNumber } from '../effects/CountingNumber';
 
 export default function CorridorEfficiencyBarChart({ liveFleet = [], shipments = [] }) {
   const { corridors, isLiveBackend } = useMemo(() => {
@@ -40,7 +40,7 @@ export default function CorridorEfficiencyBarChart({ liveFleet = [], shipments =
               : Math.min(98, Math.max(84, 72 + Math.round(avgSpeed * 0.35)));
           const color = isHigh ? '#ef4444' : isMed ? '#0ea5e9' : '#10b981';
           const statusText = isHigh
-            ? `Lệch ${Math.round(maxDev)}m / tốc độ chậm • Sẵn sàng UC10`
+            ? `Lệch ${Math.round(maxDev)}m / tốc độ chậm • Khuyến nghị đổi tuyến`
             : isMed
               ? `${g.vehicleCount} xe • Cảnh báo lưu lượng trung bình`
               : `${g.vehicleCount} xe • Lưu thông thông thoáng`;
@@ -90,18 +90,18 @@ export default function CorridorEfficiencyBarChart({ liveFleet = [], shipments =
         <div>
           <div className="chart-title">
             <Gauge size={18} color="#f59e0b" />
-            <span>Hiệu Suất Vận Hành &amp; Rủi Ro Hành Lang (UC10)</span>
+            <span>Hiệu Suất Vận Hành &amp; Rủi Ro Hành Lang</span>
           </div>
           <div className="chart-subtitle">
             {isLiveBackend
-              ? 'Vận tốc đo thực tế & Eco-Score theo từng hành lang từ luồng Telemetry DB/SSE'
-              : 'Tổng hợp theo danh sách Vận đơn (chờ Telemetry GPS thực từ :8888)'}
+              ? 'Vận tốc đo thực tế & Eco-Score theo từng hành lang từ luồng giám sát thời gian thực'
+              : 'Tổng hợp theo danh sách Vận đơn hiện hành'}
           </div>
         </div>
 
         <div className={`badge ${isLiveBackend ? 'badge-green' : 'badge-amber'}`}>
           <Activity size={13} />
-          <span>{isLiveBackend ? 'Telemetry Live' : 'Chờ GPS DB'}</span>
+          <span>{isLiveBackend ? 'Trực tuyến' : 'Đang đồng bộ'}</span>
         </div>
       </div>
 

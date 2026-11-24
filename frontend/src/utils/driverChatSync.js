@@ -81,9 +81,9 @@ export const SEEDED_PEOPLE_CONTACTS = [
   {
     id: 'NOC-ADMIN-CSKH',
     username: 'admin',
-    fullName: 'Nguyễn Minh Quân (CSKH / Admin)',
+    fullName: 'Nguyễn Minh Quân',
     role: 'ADMIN',
-    roleLabel: 'Quản trị & Hỗ trợ B2B',
+    roleLabel: 'Quản trị & Hỗ trợ B2B 24/7',
     companyName: 'CCADRO Logistics Nội Bộ',
     department: 'Ban Điều hành & Chăm sóc Khách hàng 24/7',
     phone: '1900 6868 (Nhánh 0)',
@@ -100,7 +100,7 @@ export const SEEDED_PEOPLE_CONTACTS = [
     department: 'Phòng An toàn & Kiểm định Kỹ thuật',
     phone: '0901 234 555',
     online: true,
-    statusText: 'Đang kiểm soát cảnh báo lệch tuyến UC09'
+    statusText: 'Đang kiểm soát cảnh báo lệch tuyến'
   },
   {
     id: 'CUST-VINAMILK-01',
@@ -645,13 +645,13 @@ export function buildMessengerContacts({ drivers = [], accounts = [], currentUse
       contactMap.set(p.id, {
         ...p,
         type: 'DM',
-        category: ['ADMIN', 'DISPATCHER', 'SAFETY_MANAGER'].includes(p.role)
+        category: ['ADMIN', 'OPERATOR', 'DISPATCHER', 'SAFETY_MANAGER'].includes(p.role)
           ? 'OPS'
           : ['HUB_MANAGER', 'HUB_SHIPPER', 'HUB_AUDITOR'].includes(p.role)
             ? 'HUB'
             : 'CUSTOMER',
         avatarColor:
-          p.role === 'DISPATCHER'
+          p.role === 'DISPATCHER' || p.role === 'OPERATOR'
             ? '#0084ff'
             : p.role === 'ADMIN'
               ? '#7c3aed'
@@ -672,17 +672,21 @@ export function buildMessengerContacts({ drivers = [], accounts = [], currentUse
       );
       if (existsByUsername) return;
       const id = `USR-${acc.username.toUpperCase()}`;
+      const isHubScopedOperator = acc.role === 'OPERATOR' && Boolean(acc.assignedHubCode);
+      const isHubScopedDriver = acc.role === 'DRIVER' && Boolean(acc.assignedShipperCode || acc.assignedHubCode);
       contactMap.set(id, {
         id,
         type: 'DM',
         category:
-          acc.role === 'DRIVER'
-            ? 'DRIVER'
-            : ['ADMIN', 'DISPATCHER', 'SAFETY_MANAGER', 'ESG_AUDITOR'].includes(acc.role)
-              ? 'OPS'
-              : ['HUB_MANAGER', 'HUB_SHIPPER', 'HUB_AUDITOR', 'SHIPPER'].includes(acc.role)
-                ? 'HUB'
-                : 'CUSTOMER',
+          isHubScopedOperator || isHubScopedDriver
+            ? 'HUB'
+            : acc.role === 'DRIVER'
+              ? 'DRIVER'
+              : ['ADMIN', 'OPERATOR', 'DISPATCHER', 'SAFETY_MANAGER', 'ESG_AUDITOR'].includes(acc.role)
+                ? 'OPS'
+                : ['HUB_MANAGER', 'HUB_SHIPPER', 'HUB_AUDITOR', 'SHIPPER'].includes(acc.role)
+                  ? 'HUB'
+                  : 'CUSTOMER',
         username: acc.username,
         fullName: acc.fullName || acc.username,
         role: acc.role,

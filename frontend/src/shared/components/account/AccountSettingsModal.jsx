@@ -23,16 +23,16 @@ import {
   Volume2,
   X
 } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
-import { api } from '../../services/api';
+import { useAuth } from '../../../context/AuthContext';
+import { useTheme } from '../../../context/ThemeContext';
+import { api } from '../../../services/api';
 import {
   getDefaultLandingOptionsForRole,
   getRoleHeaderMeta,
   loadUserSettings,
   resetUserSettings,
   saveUserSettings
-} from '../../utils/userSettings';
+} from '../../../utils/userSettings';
 
 function getInitials(user) {
   const source = (user?.fullName || user?.username || 'U').trim();

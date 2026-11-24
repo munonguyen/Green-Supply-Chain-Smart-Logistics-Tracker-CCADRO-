@@ -16,12 +16,24 @@ export const ROLE_HEADER_META = Object.freeze({
     roleOpsTabLabel: 'Vận hành Hệ thống',
     roleOpsDescription: 'Cấu hình bảo mật IAM, kiểm toán tự động & luồng cảnh báo Kafka toàn mạng'
   },
+  OPERATOR: {
+    badgeLabel: 'ĐIỀU HÀNH & VẬN HÀNH LOGISTICS',
+    shortBadge: 'VẬN HÀNH',
+    accentColor: '#0ea5e9',
+    statusTitle: 'Điều hành Live',
+    statusSub: 'NOC & Bưu cục',
+    canBroadcastAlert: true,
+    canSimulateAlert: true,
+    alertLabel: 'Khẩn Cấp',
+    roleOpsTabLabel: 'Nghiệp vụ Vận hành',
+    roleOpsDescription: 'Điều phối vận tải container đường dài, quản trị bưu cục, phân bổ dải mã và đối soát COD'
+  },
   DISPATCHER: {
     badgeLabel: 'TRUNG TÂM NOC • ĐIỀU PHỐI VIÊN',
     shortBadge: 'ĐIỀU PHỐI NOC',
     accentColor: '#0ea5e9',
     statusTitle: 'Điều phối Live',
-    statusSub: 'Pareto UC05',
+    statusSub: 'Tối ưu lộ trình',
     canBroadcastAlert: true,
     canSimulateAlert: true,
     alertLabel: 'Khẩn Cấp',
@@ -29,11 +41,11 @@ export const ROLE_HEADER_META = Object.freeze({
     roleOpsDescription: 'Tối ưu lộ trình đa mục tiêu Pareto, ngưỡng lệch GPS & cảnh báo trễ SLA'
   },
   SAFETY_MANAGER: {
-    badgeLabel: 'GIÁM SÁT AN TOÀN • HSE / UC16',
-    shortBadge: 'AN TOÀN UC16',
+    badgeLabel: 'GIÁM SÁT AN TOÀN • HSE',
+    shortBadge: 'AN TOÀN HSE',
     accentColor: '#f59e0b',
     statusTitle: 'An toàn Đội xe',
-    statusSub: 'Cảm biến UC16',
+    statusSub: 'Cảm biến an toàn',
     canBroadcastAlert: true,
     canSimulateAlert: true,
     alertLabel: 'Sự Cố HSE',
@@ -148,6 +160,13 @@ export function getDefaultLandingOptionsForRole(role) {
       { value: 'shippers', label: 'Đội ngũ Shipper & Geofence' }
     ];
   }
+  if (r === 'OPERATOR') {
+    return [
+      { value: 'overview', label: 'Trung tâm Giám sát & Điều phối NOC' },
+      { value: 'shipments', label: 'Quản lý Vận đơn & Tuyến xe' },
+      { value: 'dispatch', label: 'Điều phối & Giao nhận Bưu cục' }
+    ];
+  }
   if (r === 'DRIVER') {
     return [
       { value: 'navigation', label: 'Bản đồ Dẫn đường & Telemetry' },
@@ -164,7 +183,7 @@ export function getDefaultLandingOptionsForRole(role) {
   }
   if (r === 'SAFETY_MANAGER') {
     return [
-      { value: 'governance', label: 'An toàn Đội xe & Kỷ luật UC16' },
+      { value: 'governance', label: 'An toàn Đội xe & Kỷ luật' },
       { value: 'overview', label: 'Trung tâm Giám sát NOC' },
       { value: 'shipments', label: 'Danh sách Vận đơn & GPS' }
     ];
@@ -172,7 +191,7 @@ export function getDefaultLandingOptionsForRole(role) {
   return [
     { value: 'overview', label: 'Trung tâm Giám sát NOC Real-time' },
     { value: 'shipments', label: 'Quản lý Vận đơn & Điều phối' },
-    { value: 'governance', label: 'Quản trị IAM & An toàn UC16' }
+    { value: 'governance', label: 'Quản trị IAM & Giám sát An toàn' }
   ];
 }
 

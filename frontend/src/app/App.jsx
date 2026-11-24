@@ -1,9 +1,12 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import '../shared/effects/halvi-effects.css';
 import { AuthProvider } from '../context/AuthContext';
 import { ThemeProvider } from '../context/ThemeContext';
 import ConsoleLayout from '../shared/layout/ConsoleLayout';
-import NotFoundPage from '../shared/components/NotFoundPage';
+import NotFoundPage from '../shared/components/feedback/NotFoundPage';
+import SystemErrorPage from '../shared/components/feedback/SystemErrorPage';
+import AppErrorBoundary from '../shared/components/feedback/AppErrorBoundary';
 import RequireRole from './RequireRole';
 import LandingPage from '../systems/public/features/marketing/LandingPage';
 import NetZeroPage from '../systems/public/features/marketing/NetZeroPage';
@@ -21,20 +24,24 @@ import ShipmentsPage from '../systems/operations/features/shipments/ShipmentsPag
 import NewShipmentPage from '../systems/operations/features/shipments/NewShipmentPage';
 import PlanningPage from '../systems/operations/features/planning/PlanningPage';
 import DispatchPage from '../systems/operations/features/dispatch/DispatchPage';
+import VehicleFuelPage from '../systems/operations/features/fuels/VehicleFuelPage';
+import ContainerInspectionPage from '../systems/operations/features/containers/ContainerInspectionPage';
 import ContainerManagementPage from '../systems/operations/features/containers/ContainerManagementPage';
 import TripTrackingPage from '../systems/operations/features/tracking/TripTrackingPage';
 import TripCarbonPage from '../systems/operations/features/carbon/TripCarbonPage';
 import BenchmarkPage from '../systems/operations/features/carbon/BenchmarkPage';
 import GovernanceAndSafetyPage from '../systems/admin/features/governance/GovernanceAndSafetyPage';
+import DataManagementPage from '../systems/admin/features/data/DataManagementPage';
 import OperationSelectionPage from '../systems/operations/shared/OperationSelectionPage';
 
-const INTERNAL_CONSOLE_ROLES = ['ADMIN', 'DISPATCHER', 'SAFETY_MANAGER', 'ESG_AUDITOR'];
+const INTERNAL_CONSOLE_ROLES = ['ADMIN', 'OPERATOR', 'DISPATCHER', 'SAFETY_MANAGER', 'ESG_AUDITOR'];
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <BrowserRouter>
+    <AppErrorBoundary>
+      <ThemeProvider>
+        <AuthProvider>
+          <BrowserRouter>
           <Routes>
             {/* 1. Public Corporate Pages (Separated by Menu) */}
             <Route path="/" element={<LandingPage />} />
@@ -63,7 +70,7 @@ export default function App() {
             <Route
               path="/shipper"
               element={
-                <RequireRole external allowedRoles={['HUB_MANAGER', 'HUB_SHIPPER', 'HUB_AUDITOR', 'SHIPPER']}>
+                <RequireRole external allowedRoles={['HUB_MANAGER', 'HUB_SHIPPER', 'HUB_AUDITOR', 'SHIPPER', 'OPERATOR', 'DRIVER', 'ADMIN']}>
                   <ShipperPortalPage />
                 </RequireRole>
               }
@@ -107,10 +114,20 @@ export default function App() {
                 </RequireRole>
               }
             />
+            <Route path="/vehicle-fuels" element={
+              <RequireRole allowedRoles={['ADMIN', 'DISPATCHER', 'SAFETY_MANAGER', 'ESG_AUDITOR']}>
+                <ConsoleLayout><VehicleFuelPage /></ConsoleLayout>
+              </RequireRole>
+            } />
+            <Route path="/container-inspections" element={
+              <RequireRole allowedRoles={['ADMIN', 'DISPATCHER', 'SAFETY_MANAGER']}>
+                <ConsoleLayout><ContainerInspectionPage /></ConsoleLayout>
+              </RequireRole>
+            } />
             <Route
               path="/containers"
               element={
-                <RequireRole allowedRoles={['ADMIN', 'DISPATCHER']}>
+                <RequireRole allowedRoles={['ADMIN', 'DISPATCHER', 'SAFETY_MANAGER']}>
                   <ConsoleLayout><ContainerManagementPage /></ConsoleLayout>
                 </RequireRole>
               }
@@ -206,6 +223,14 @@ export default function App() {
               }
             />
             <Route
+              path="/admin/data"
+              element={
+                <RequireRole allowedRoles={['ADMIN']}>
+                  <ConsoleLayout><DataManagementPage /></ConsoleLayout>
+                </RequireRole>
+              }
+            />
+            <Route
               path="/admin/drivers"
               element={
                 <RequireRole allowedRoles={['ADMIN']}>
@@ -267,11 +292,18 @@ export default function App() {
             />
             <Route path="/users" element={<Navigate to="/admin/users" replace />} />
 
+            {/* System Status & Error Recovery Pages */}
+            <Route path="/system-status" element={<SystemErrorPage />} />
+            <Route path="/error/500" element={<SystemErrorPage errorCode="500" errorTitle="Lỗi Máy Chủ Nội Bộ (Internal Server Error)" />} />
+            <Route path="/error/502" element={<SystemErrorPage errorCode="502" errorTitle="Lỗi Cổng Kết Nối (Bad Gateway)" />} />
+            <Route path="/error/503" element={<SystemErrorPage errorCode="503" errorTitle="Dịch Vụ Đang Bảo Trì (Service Unavailable)" />} />
+
             {/* Fallback */}
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>
     </ThemeProvider>
+  </AppErrorBoundary>
   );
 }

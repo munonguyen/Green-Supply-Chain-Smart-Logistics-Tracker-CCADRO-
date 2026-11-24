@@ -3,6 +3,7 @@ import { Megaphone, Send, X } from 'lucide-react';
 import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
+import { publishCrossRoleNotification } from '../../utils/roleNotificationSync';
 
 export default function BroadcastEmergencyModal({ isOpen, onClose, onBroadcastSuccess }) {
   const { isDark } = useTheme();
@@ -55,17 +56,34 @@ export default function BroadcastEmergencyModal({ isOpen, onClose, onBroadcastSu
 
     setLoading(true);
     try {
-      const res = await api.broadcastEmergencyNotification({
-        ...formData,
+      const localAlert = publishCrossRoleNotification({
+        eventType: 'MANUAL_DIRECTIVE',
+        severity: formData.severity,
         senderRole: user?.role || formData.senderRole,
         senderUsername: user?.username || formData.senderUsername,
-        radiusMeters: Number(formData.radiusMeters) || 5000,
+        senderName: user?.fullName || 'Trung tâm Điều hành Vận tải',
+        targetAudience: formData.targetAudience,
+        title: formData.title.trim(),
+        message: formData.message.trim(),
+        actionDirective: formData.actionDirective?.trim() || null,
         latitude: Number(formData.latitude) || null,
         longitude: Number(formData.longitude) || null
       });
 
-      if (onBroadcastSuccess && res?.result) {
-        onBroadcastSuccess(res.result);
+      const res = await api
+        .broadcastEmergencyNotification({
+          ...formData,
+          senderRole: user?.role || formData.senderRole,
+          senderUsername: user?.username || formData.senderUsername,
+          radiusMeters: Number(formData.radiusMeters) || 5000,
+          latitude: Number(formData.latitude) || null,
+          longitude: Number(formData.longitude) || null
+        })
+        .catch(() => null);
+
+      const resolvedAlert = res?.result || localAlert;
+      if (onBroadcastSuccess && resolvedAlert) {
+        onBroadcastSuccess(resolvedAlert);
       }
       onClose();
     } catch (err) {
@@ -131,7 +149,7 @@ export default function BroadcastEmergencyModal({ isOpen, onClose, onBroadcastSu
                 Phát Lệnh Cảnh Báo Khẩn Cấp
               </h2>
               <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                Kênh điều hành trực tiếp từ Safety Manager / Dispatcher tới Đội xe
+                Kênh điều hành trực tiếp từ Ban An toàn &amp; Điều phối viên tới Đội xe và Chủ hàng
               </span>
             </div>
           </div>

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft, LogOut, ShieldAlert, Lock } from 'lucide-react';
-import { useAuth, getDefaultPortalPath } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
-import CcadroLogo from './CcadroLogo';
+import { ArrowLeft, LogOut, ShieldAlert } from 'lucide-react';
+import { useAuth, getDefaultPortalPath } from '../../../context/AuthContext';
+import { useTheme } from '../../../context/ThemeContext';
+import CcadroLogo from '../ui/CcadroLogo';
 
 /**
  * Cảnh báo 404 Xác thực Phân hệ khi tài khoản của một hệ thống (vd: ADMIN)
@@ -83,9 +83,9 @@ export default function RoleIsolation404Page({ allowedRoles = [] }) {
 
           <span
             className="badge badge-red"
-            style={{ fontSize: '0.78rem', fontWeight: 800, padding: '6px 12px' }}
+            style={{ fontSize: '0.85rem', fontWeight: 900, padding: '6px 14px' }}
           >
-            <Lock size={14} /> HTTP 404 • AUTH ERROR
+            404
           </span>
         </div>
 
@@ -104,8 +104,11 @@ export default function RoleIsolation404Page({ allowedRoles = [] }) {
           <ShieldAlert size={28} color="#ef4444" style={{ flexShrink: 0, marginTop: 2 }} />
           <div>
             <h1 style={{ fontSize: '1.28rem', fontWeight: 900, margin: '0 0 6px', color: '#ef4444' }}>
-              404 — Không Tìm Thấy Phiên Xác Thực Phù Hợp
+              Không tìm thấy trang
             </h1>
+            <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#f87171', marginBottom: 6 }}>
+              Phân Hệ Bị Cô Lập Theo Vai Trò (Role Isolation Warning)
+            </div>
             <p style={{ fontSize: '0.88rem', margin: 0, lineHeight: 1.55, opacity: 0.92 }}>
               Bạn đang đăng nhập bằng tài khoản <code>@{user?.username || 'unknown'}</code> (vai trò{' '}
               <strong>{user?.role || 'UNKNOWN'}</strong>) nên không có quyền xác thực để truy cập phân hệ{' '}

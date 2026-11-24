@@ -333,7 +333,7 @@ export const STANDARD_FLEET_CATALOG = [
     modelName: 'Hyundai HD320 / Daewoo Maximus Diesel',
     powertrainId: 'diesel',
     vehicleTypeLabel: 'Xe diesel thông thường',
-    category: 'Đầu kéo Diesel truyền thống (Áp dụng tối ưu lộ trình xanh UC05)',
+    category: 'Đầu kéo Diesel truyền thống (Áp dụng tối ưu lộ trình xanh)',
     maxPayloadTons: 30,
     batteryOrTank: 'Bình Diesel 380L (Mốc đối chứng Baseline)',
     consumptionSpec: '33.8 Lít Diesel / 100 km',
@@ -352,7 +352,7 @@ export const STANDARD_FLEET_CATALOG = [
 ];
 
 /**
- * 3. PHƯƠNG ÁN TỐI ƯU HÓA LỘ TRÌNH ĐA TIÊU CHÍ PARETO (UC05)
+ * 3. PHƯƠNG ÁN TỐI ƯU HÓA LỘ TRÌNH ĐA TIÊU CHÍ PARETO
  */
 export const PARETO_ROUTING_MODES = [
   {

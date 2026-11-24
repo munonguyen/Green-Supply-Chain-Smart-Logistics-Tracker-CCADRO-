@@ -1,13 +1,15 @@
 import React from 'react';
 import CcadroLogo from './CcadroLogo';
-import CountingNumber from './CountingNumber';
-import ElasticSearchBar from './ElasticSearchBar';
-import GrabDriverAvatar from './GrabDriverAvatar';
-import Reveal from './Reveal';
-import ShimmeringText from './ShimmeringText';
-import SidebarAccountCard from './SidebarAccountCard';
-import UserAccountMenu from './UserAccountMenu';
-import AccountSettingsModal from './AccountSettingsModal';
+import CountingNumber from '../../effects/CountingNumber';
+import ElasticSearchBar from '../search/ElasticSearchBar';
+import SearchField from '../search/SearchField';
+import SearchToolbar from '../search/SearchToolbar';
+import GrabDriverAvatar from '../account/GrabDriverAvatar';
+import Reveal from '../../effects/Reveal';
+import ShimmeringText from '../../effects/ShimmeringText';
+import SidebarAccountCard from '../account/SidebarAccountCard';
+import UserAccountMenu from '../account/UserAccountMenu';
+import AccountSettingsModal from '../account/AccountSettingsModal';
 
 /**
  * Representative shared UI module:
@@ -155,6 +157,8 @@ export {
   CcadroLogo,
   CountingNumber,
   ElasticSearchBar,
+  SearchField,
+  SearchToolbar,
   GrabDriverAvatar,
   Reveal,
   ShimmeringText,
@@ -162,3 +166,4 @@ export {
   UserAccountMenu,
   AccountSettingsModal
 };
+

@@ -1,3 +1,4 @@
+import SearchField from '../components/search/SearchField';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
@@ -14,7 +15,6 @@ import {
   Pin,
   PlusCircle,
   RefreshCw,
-  Search,
   Send,
   ShieldCheck,
   Smile,
@@ -114,7 +114,7 @@ function formatChatError(rawError) {
     lower.includes('status 503') ||
     lower.includes('service unavailable')
   ) {
-    return 'Không thể kết nối máy chủ Chat (:8888 / chat-service). Kiểm tra API Gateway hoặc bật Chat Cục Bộ để trải nghiệm.';
+    return 'Đang tạm gián đoạn kết nối máy chủ tin nhắn. Bạn có thể bấm Kết nối lại hoặc bật Trò chuyện Nội bộ để tiếp tục trao đổi.';
   }
   return msg;
 }
@@ -744,35 +744,14 @@ export default function MessengerWorkspaceModal({
             {!composeOpen && (
               <>
                 {/* Search Bar */}
-                <div style={{ position: 'relative' }}>
-                  <Search
-                    size={14}
-                    color={textMuted}
-                    style={{
-                      position: 'absolute',
-                      left: 11,
-                      top: '50%',
-                      transform: 'translateY(-50%)'
-                    }}
-                  />
-                  <input
-                    type="text"
-                    value={threadSearch}
-                    onChange={(e) => setThreadSearch(e.target.value)}
-                    placeholder="Tìm kiếm trên Messenger..."
-                    style={{
-                      width: '100%',
-                      boxSizing: 'border-box',
-                      padding: '8px 12px 8px 32px',
-                      borderRadius: 999,
-                      border: `1px solid ${borderColor}`,
-                      background: inputBg,
-                      color: textMain,
-                      fontSize: '0.78rem',
-                      outline: 'none'
-                    }}
-                  />
-                </div>
+                <SearchField
+                  label="Tìm cuộc trò chuyện"
+                  hideLabel
+                  value={threadSearch}
+                  onValueChange={setThreadSearch}
+                  placeholder="Tìm cuộc trò chuyện…"
+                  tone="blue"
+                />
 
                 {/* Active Now Horizontal Avatar Strip */}
                 <div>

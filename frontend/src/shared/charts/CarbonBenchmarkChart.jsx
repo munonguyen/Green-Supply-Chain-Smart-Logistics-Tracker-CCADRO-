@@ -117,7 +117,7 @@ export default function CarbonBenchmarkChart({
         <div>
           <div className="chart-title">
             <Leaf size={18} color="#10b981" />
-            <span>Định Mức Phát Thải Hành Lang GLEC v3 (UC13)</span>
+            <span>Định Mức Phát Thải Hành Lang GLEC v3</span>
           </div>
           <div className="chart-subtitle">
             {isLiveBackend

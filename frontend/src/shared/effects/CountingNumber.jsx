@@ -29,13 +29,27 @@ export function CountingNumber({
   const effectiveTarget = targetNumeric + liveOffset;
 
   const [display, setDisplay] = useState(() => (startOnView ? 0 : effectiveTarget));
+  const [tickDirection, setTickDirection] = useState(null);
   const currentValRef = useRef(startOnView ? 0 : effectiveTarget);
+  const prevTargetRef = useRef(effectiveTarget);
   const hasStartedRef = useRef(!startOnView);
 
   // Reset liveOffset if base value prop changes
   useEffect(() => {
     setLiveOffset(0);
   }, [targetNumeric]);
+
+  useEffect(() => {
+    const prev = prevTargetRef.current;
+    if (prev !== effectiveTarget && hasStartedRef.current) {
+      setTickDirection(effectiveTarget > prev ? 'up' : 'down');
+      const timer = window.setTimeout(() => setTickDirection(null), 920);
+      prevTargetRef.current = effectiveTarget;
+      return () => window.clearTimeout(timer);
+    }
+    prevTargetRef.current = effectiveTarget;
+    return undefined;
+  }, [effectiveTarget]);
 
   // Optional live micro-tick for real-time telemetry counters
   useEffect(() => {
@@ -96,10 +110,17 @@ export function CountingNumber({
     maximumFractionDigits: decimals
   });
 
+  const tickClass =
+    tickDirection === 'up'
+      ? 'halvi-tick-up'
+      : tickDirection === 'down'
+        ? 'halvi-tick-down'
+        : '';
+
   return (
     <span
       ref={ref}
-      className={`ccadro-counter ${className}`.trim()}
+      className={`ccadro-counter ${tickClass} ${className}`.trim()}
       style={{
         fontVariantNumeric: 'tabular-nums',
         display: 'inline-block',

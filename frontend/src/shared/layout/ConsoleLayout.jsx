@@ -4,22 +4,25 @@ import Header from './Header';
 import Sidebar from './Sidebar';
 
 export function getConsolePageTitle(pathname) {
+  if (pathname === '/vehicle-fuels') return 'Nhiên Liệu & Dự Toán CO₂ Đội Xe';
+  if (pathname === '/container-inspections') return 'Kiểm Tra Kỹ Thuật & An Toàn Container';
   if (pathname === '/dashboard') return 'Tổng Quan Hệ Thống (Dashboard NOC)';
-  if (pathname === '/shipments') return 'Vận Đơn & Điều Hành (UC03–UC11)';
-  if (pathname === '/shipments/new') return 'Tạo Đơn Hàng Mới (UC03)';
+  if (pathname === '/shipments') return 'Vận Đơn & Quản Lý Đơn Hàng';
+  if (pathname === '/shipments/new') return 'Tạo Đơn Hàng Vận Chuyển Mới';
   if (pathname.startsWith('/planning/') || pathname === '/operations/planning')
-    return 'Hoạch Định Lộ Trình Đa Mục Tiêu Pareto (UC05)';
+    return 'Hoạch Định Tuyến Đường Xanh & Chi Phí Tối Ưu';
   if (pathname.startsWith('/dispatch/') || pathname === '/operations/dispatch')
-    return 'Điều Phối Đội Xe & Ghép Tải (UC06–UC07)';
+    return 'Điều Phối Đội Xe & Ghép Tải Trọng';
   if (pathname.startsWith('/trips/') && pathname.endsWith('/tracking'))
-    return 'Giám Sát Lệch Tuyến GPS & Đổi Tuyến Đỏ (UC09–UC10)';
+    return 'Giám Sát Lệch Tuyến GPS & Cảnh Báo An Toàn';
   if (pathname.startsWith('/trips/') && pathname.endsWith('/carbon'))
-    return 'Kiểm Toán Phát Thải Carbon GLEC v3 (UC12)';
-  if (pathname === '/operations/tracking') return 'Giám Sát Hành Trình Thời Gian Thực (UC08–UC10)';
-  if (pathname === '/operations/carbon') return 'Kiểm Toán Phát Thải Carbon GLEC v3 (UC12)';
-  if (pathname === '/analytics/benchmark') return 'So Sánh Hiệu Suất Hành Lang (UC13)';
+    return 'Kiểm Toán Phát Thải Carbon Chuẩn GLEC v3';
+  if (pathname === '/operations/tracking') return 'Giám Sát Hành Trình Đội Xe Thời Gian Thực';
+  if (pathname === '/operations/carbon') return 'Kiểm Toán Phát Thải Khí Nhà Kính Đội Xe';
+  if (pathname === '/analytics/benchmark') return 'Đối Sánh Hiệu Suất Hành Lang Xanh';
   if (pathname === '/admin/users')
     return 'Quản Lý Tài Khoản, Nhân Sự & Phân Quyền Hệ Thống (Admin IAM)';
+  if (pathname === '/admin/data') return 'Kiểm Kê Dữ Liệu & Tình Trạng Service';
   if (pathname === '/admin/drivers')
     return 'Danh Sách Nhân Viên Lái Xe & Kiểm Duyệt Pháp Lý GPLX';
   if (pathname === '/admin/controllers')
@@ -68,8 +71,11 @@ export default function ConsoleLayout({ children }) {
           sidebarCollapsed={sidebarCollapsed}
           onToggleSidebar={() => setSidebarCollapsed((v) => !v)}
         />
-        {children}
+        <div key={pathname} className="halvi-route-stage">
+          {children}
+        </div>
       </main>
     </div>
   );
 }
+

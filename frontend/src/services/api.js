@@ -1,4 +1,7 @@
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8888';
+const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:8888').replace(/\/+$/, '');
+
+export const gatewayUrl = (path) => `${API_BASE}${path}`;
+const identityTimeout = () => AbortSignal.timeout?.(12000);
 
 function getStoredToken() {
   try {
@@ -72,41 +75,67 @@ function notifyAuthSessionExpired(reason = 'TOKEN_EXPIRED_OR_BLACKLISTED') {
 
 let inFlightRefreshPromise = null;
 
-async function refreshSessionSingleFlight() {
+async function performTokenRefresh(refreshToken) {
+  const currentToken = getStoredToken();
+  const res = await fetch(gatewayUrl('/api/v1/auth/refresh'), {
+    signal: identityTimeout(),
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(currentToken && !isLocalSyntheticToken(currentToken)
+        ? { Authorization: `Bearer ${currentToken}` }
+        : {})
+    },
+    body: JSON.stringify({ refreshToken })
+  });
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const error = new Error(payload.message || `API request failed with status ${res.status}`);
+    error.status = res.status;
+    throw error;
+  }
+  const result = payload?.result || payload;
+  if (!result?.token) {
+    throw new Error('Máy chủ chưa cấp lại phiên đăng nhập.');
+  }
+  persistRefreshedTokens(result);
+  return result;
+}
+
+async function refreshSessionSingleFlight(requestedRefreshToken) {
   if (inFlightRefreshPromise) {
     return inFlightRefreshPromise;
   }
-  const currentToken = getStoredToken();
-  const currentRefreshToken = getStoredRefreshToken();
-  if (!currentRefreshToken && (!currentToken || isLocalSyntheticToken(currentToken))) {
+  const initialRefreshToken = getStoredRefreshToken() || requestedRefreshToken;
+  if (!initialRefreshToken) {
     return null;
   }
 
   inFlightRefreshPromise = (async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/v1/auth/refresh`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(currentToken && !isLocalSyntheticToken(currentToken)
-            ? { Authorization: `Bearer ${currentToken}` }
-            : {})
-        },
-        body: JSON.stringify(currentRefreshToken ? { refreshToken: currentRefreshToken } : {})
-      });
-      if (!res.ok) {
-        return null;
+      const refresh = async () => {
+        const latestRefreshToken = getStoredRefreshToken() || requestedRefreshToken || initialRefreshToken;
+        if (!latestRefreshToken) return null;
+        return performTokenRefresh(latestRefreshToken);
+      };
+      const locks = typeof navigator !== 'undefined' ? navigator.locks : undefined;
+      if (locks?.request) {
+        return await locks.request('ccadro-auth-refresh', async () => {
+          const latestRefreshToken = getStoredRefreshToken();
+          // Another tab may have completed rotation while this tab waited for the lock.
+          if (latestRefreshToken && latestRefreshToken !== initialRefreshToken) {
+            const latestToken = getStoredToken();
+            if (latestToken) {
+              const result = { token: latestToken, refreshToken: latestRefreshToken };
+              persistRefreshedTokens(result);
+              return result;
+            }
+          }
+          return refresh();
+        });
       }
-      const payload = await res.json().catch(() => null);
-      const result = payload?.result || payload;
-      if (result?.token) {
-        persistRefreshedTokens(result);
-        return result.token;
-      }
-      return null;
-    } catch (_) {
-      return null;
+      return await refresh();
     } finally {
       inFlightRefreshPromise = null;
     }
@@ -116,7 +145,7 @@ async function refreshSessionSingleFlight() {
 }
 
 async function fetchJson(endpoint, options = {}) {
-  const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
+  const url = gatewayUrl(endpoint);
   const token = getStoredToken();
   const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
   const { headers: customHeaders = {}, _retriedAfterRefresh = false, ...restOptions } = options;
@@ -145,20 +174,29 @@ async function fetchJson(endpoint, options = {}) {
     !endpoint.includes('/api/v1/auth/introspect')
   ) {
     if (!_retriedAfterRefresh) {
-      const nextToken = await refreshSessionSingleFlight();
-      if (nextToken) {
+      let refreshed = null;
+      let shouldExpireSession = false;
+      try {
+        refreshed = await refreshSessionSingleFlight();
+      } catch (refreshError) {
+        shouldExpireSession = refreshError?.status === 401 || refreshError?.status === 403;
+      }
+      if (refreshed?.token) {
         return fetchJson(endpoint, {
           ...options,
           _retriedAfterRefresh: true,
           headers: {
             ...customHeaders,
-            Authorization: `Bearer ${nextToken}`
+            Authorization: `Bearer ${refreshed.token}`
           }
         });
       }
-    }
-    if (token && !isLocalSyntheticToken(token) && import.meta.env.VITE_DEMO_MODE !== 'true') {
-      notifyAuthSessionExpired('SESSION_EXPIRED_OR_BLACKLISTED');
+      if (!refreshed && !shouldExpireSession && !getStoredRefreshToken()) {
+        shouldExpireSession = true;
+      }
+      if (shouldExpireSession && token && !isLocalSyntheticToken(token) && import.meta.env.VITE_DEMO_MODE !== 'true') {
+        notifyAuthSessionExpired('SESSION_EXPIRED_OR_BLACKLISTED');
+      }
     }
   }
 
@@ -176,7 +214,7 @@ async function fetchJson(endpoint, options = {}) {
   return text ? JSON.parse(text) : null;
 }
 
-export const chatSocketUrl = () => import.meta.env.VITE_CHAT_SOCKET_URL || API_BASE;
+export const chatSocketUrl = () => API_BASE;
 export const chatSocketPath = () => new URL('/api/v1/chat/socket.io/', API_BASE).pathname;
 
 export const chatApi = {
@@ -228,6 +266,7 @@ export const api = {
   login: (username, password) =>
     fetchJson('/api/v1/auth/token', {
       method: 'POST',
+      signal: identityTimeout(),
       body: JSON.stringify({ username, password })
     }),
   introspect: (token) =>
@@ -235,11 +274,7 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ token })
     }),
-  refreshToken: (refreshToken) =>
-    fetchJson('/api/v1/auth/refresh', {
-      method: 'POST',
-      body: JSON.stringify(refreshToken ? { refreshToken } : {})
-    }),
+  refreshToken: (refreshToken) => refreshSessionSingleFlight(refreshToken),
   logout: (token, refreshToken) =>
     fetchJson('/api/v1/auth/logout', {
       method: 'POST',
@@ -267,6 +302,7 @@ export const api = {
     }),
   getOwnProfile: (token) =>
     fetchJson('/api/v1/users/me', {
+      signal: identityTimeout(),
       headers: token ? { Authorization: `Bearer ${token}` } : {}
     }),
   getUsers: (params = {}) => {
@@ -385,6 +421,8 @@ export const api = {
   // Health
   getHealth: () => fetchJson('/api/v1/health'),
   getSystemHealth: () => fetchJson('/api/v1/health'),
+  getDataInventory: () => fetchJson("/api/v1/admin/system/data"),
+  getDiscoveredServiceHealth: () => fetchJson('/api/v1/admin/system/health'),
   getActuatorHealth: () => fetchJson('/actuator/health'),
 
   // Assets, Drivers, Containers & Pre-Trip Safety (Port 8081)
@@ -404,6 +442,7 @@ export const api = {
     const queryString = query.toString();
     return fetchJson(`/api/v1/assets/drivers${queryString ? `?${queryString}` : ''}`);
   },
+  getDispatchDrivers: () => fetchJson("/api/v1/assets/drivers/dispatch-eligibility"),
   getMyDriverProfile: () => fetchJson('/api/v1/assets/drivers/me'),
   getDriverById: (id) => fetchJson(`/api/v1/assets/drivers/${id}`),
   createDriver: (data) =>
@@ -454,12 +493,12 @@ export const api = {
     fetchJson(
       `/api/v1/assets/shipper-hubs/shippers${hubCode ? `?hubCode=${encodeURIComponent(hubCode)}` : ''}`
     ),
-  getContainerManifestItems: (params = {}) => {
+  getContainerManifestItems: (params = {}, options) => {
     const query = new URLSearchParams();
     if (params.hubCode) query.append('hubCode', params.hubCode);
     if (params.containerCode) query.append('containerCode', params.containerCode);
     const qs = query.toString();
-    return fetchJson(`/api/v1/assets/shipper-hubs/manifest-items${qs ? `?${qs}` : ''}`);
+    return fetchJson(`/api/v1/assets/shipper-hubs/manifest-items${qs ? `?${qs}` : ''}`, options);
   },
   createContainerManifestItem: (containerCode, data) =>
     fetchJson(`/api/v1/assets/containers/${encodeURIComponent(containerCode)}/manifest-items`, {
@@ -492,17 +531,76 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify({ dispatchStatus, recipientPodName })
     }),
-  getContainers: (params = {}) => {
+  getContainers: (params = {}, options) => {
     const query = new URLSearchParams();
     if (params.status) query.append('status', params.status);
     if (params.driverId) query.append('driverId', params.driverId);
     const queryString = query.toString();
-    return fetchJson(`/api/v1/assets/containers${queryString ? `?${queryString}` : ''}`);
+    return fetchJson(`/api/v1/assets/containers${queryString ? `?${queryString}` : ''}`, options);
   },
   getContainerByCode: (containerCode) => fetchJson(`/api/v1/assets/containers/${containerCode}`),
+  getTransportHistory: (resource, id, { page = 0, query = '' } = {}) =>
+    fetchJson(`/api/v1/assets/${resource}/${encodeURIComponent(id)}/transport-history?${new URLSearchParams({ page, q: query })}`),
+  getContainerControl: (containerCode) =>
+    fetchJson(`/api/v1/assets/containers/${encodeURIComponent(containerCode)}/control`),
+  startContainerControlRound: (containerCode, expectedRoundNumber) =>
+    fetchJson(`/api/v1/assets/containers/${encodeURIComponent(containerCode)}/control/rounds`, {
+      method: 'POST',
+      body: JSON.stringify({ expectedRoundNumber })
+    }),
+  confirmContainerControlStage: (containerCode, stage, data) =>
+    fetchJson(`/api/v1/assets/containers/${encodeURIComponent(containerCode)}/control/stages/${stage}`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+  getVehicleFuelCatalog: () => fetchJson('/api/v1/assets/vehicle-fuels'),
+  saveVehicleFuelProfile: (id, body) => fetchJson(`/api/v1/assets/vehicles/${encodeURIComponent(id)}/fuel-profile`, { method: 'PUT', body: JSON.stringify(body) }),
+  assessVehicleFuel: (id, body) => fetchJson(`/api/v1/assets/vehicles/${encodeURIComponent(id)}/fuel-assessment`, { method: 'POST', body: JSON.stringify(body) }),
+  getFuelStations: () => fetchJson('/api/v1/assets/fuel-stations'),
+  createFuelStation: (body) => fetchJson('/api/v1/assets/fuel-stations', { method: 'POST', body: JSON.stringify(body) }),
+  authorizeFuelPump: (stationCode, body) => fetchJson(`/api/v1/assets/fuel-stations/${encodeURIComponent(stationCode)}/authorize`, { method: 'POST', body: JSON.stringify(body) }),
+  ingestFuelTransactions: (stationCode, batch) => fetchJson(`/api/v1/assets/fuel-stations/${encodeURIComponent(stationCode)}/transactions`, { method: 'POST', body: JSON.stringify(batch) }),
+  getFuelTransactions: () => fetchJson('/api/v1/assets/fuel-transactions'),
+  getContainerFuelUnits: () => fetchJson('/api/v1/assets/container-fuel-units'),
+  batchOptimizeVehicleFuels: (body) => fetchJson('/api/v1/assets/vehicle-fuels/batch-optimize', { method: 'POST', body: JSON.stringify(body) }),
+  getContainerInspectionOverview: () => fetchJson('/api/v1/assets/container-inspections'),
+  getContainerSafetyInspection: (containerCode) =>
+    fetchJson(`/api/v1/assets/containers/${encodeURIComponent(containerCode)}/safety-inspections`),
+  submitContainerSafetyInspection: (containerCode, data) =>
+    fetchJson(`/api/v1/assets/containers/${encodeURIComponent(containerCode)}/safety-inspections`, {
+      method: 'POST', body: JSON.stringify(data)
+    }),
   createContainer: (data) =>
     fetchJson('/api/v1/assets/containers', {
       method: 'POST',
+      body: JSON.stringify(data)
+    }),
+  linkContainerDeviceTrip: (code, data) =>
+    fetchJson(`/api/v1/assets/containers/${encodeURIComponent(code)}/device-connection/link-trip`, {
+      method: 'POST', body: JSON.stringify(data)
+    }),
+  getContainerDeviceConnection: (code) =>
+    fetchJson(`/api/v1/assets/containers/${encodeURIComponent(code)}/device-connection`),
+  configureContainerDevice: (code, data) =>
+    fetchJson(`/api/v1/assets/containers/${encodeURIComponent(code)}/device-connection`, {
+      method: 'PUT', body: JSON.stringify(data)
+    }),
+  disableContainerDevice: (code) =>
+    fetchJson(`/api/v1/assets/containers/${encodeURIComponent(code)}/device-connection`, { method: 'DELETE' }),
+  getContainerDispatchNotes: (containerCode) =>
+    fetchJson(`/api/v1/assets/containers/${encodeURIComponent(containerCode)}/dispatch-notes`),
+  createContainerDispatchNote: (containerCode, data) =>
+    fetchJson(`/api/v1/assets/containers/${encodeURIComponent(containerCode)}/dispatch-notes`, {
+      method: 'POST', body: JSON.stringify(data)
+    }),
+  updateContainerProfile: (containerCode, data) =>
+    fetchJson(`/api/v1/assets/containers/${encodeURIComponent(containerCode)}/profile`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    }),
+  updateContainerCscData: (containerCode, data) =>
+    fetchJson(`/api/v1/assets/containers/${encodeURIComponent(containerCode)}/csc`, {
+      method: 'PUT',
       body: JSON.stringify(data)
     }),
   updateContainerTelemetry: (containerCode, telemetryData) =>
@@ -555,6 +653,8 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(data)
     }),
+  getShipmentDispatchOrder: (shipmentId) =>
+    fetchJson(`/api/v1/shipments/${encodeURIComponent(shipmentId)}/dispatch`),
   createDispatchOrder: (data) =>
     fetchJson('/api/v1/shipments/dispatch', {
       method: 'POST',
@@ -562,10 +662,13 @@ export const api = {
     }),
 
   // Routing (Port 8083)
-  calculateRoutes: (shipmentId) =>
-    fetchJson(`/api/v1/routing/calculate/${shipmentId}`, {
+  calculateRoutes: (shipmentId, params = {}) => {
+    const query = new URLSearchParams(params);
+    const qs = query.toString();
+    return fetchJson(`/api/v1/routing/calculate/${encodeURIComponent(shipmentId)}${qs ? `?${qs}` : ''}`, {
       method: 'POST'
-    }),
+    });
+  },
   planRoutes: (data) =>
     fetchJson('/api/v1/routing/plan', {
       method: 'POST',
@@ -574,6 +677,8 @@ export const api = {
   getRouteCandidates: (shipmentId) => fetchJson(`/api/v1/routing/candidates/${shipmentId}`),
   getActiveRouteVersion: (shipmentId) =>
     fetchJson(`/api/v1/routing/versions/${encodeURIComponent(shipmentId)}/active`),
+  getRouteVersions: (shipmentId) =>
+    fetchJson(`/api/v1/routing/versions/${encodeURIComponent(shipmentId)}`),
   selectRoute: (data) =>
     fetchJson('/api/v1/routing/select', {
       method: 'POST',
@@ -581,13 +686,13 @@ export const api = {
     }),
 
   // Tracking (Port 8084)
-  getLiveFleetTelemetry: (params = {}) => {
+  getLiveFleetTelemetry: (params = {}, options = {}) => {
     const query = new URLSearchParams();
     if (params.customerId) query.append('customerId', params.customerId);
     if (params.driverId) query.append('driverId', params.driverId);
     if (params.q) query.append('q', params.q);
     const qs = query.toString();
-    return fetchJson(`/api/v1/tracking/fleet/live${qs ? `?${qs}` : ''}`);
+    return fetchJson(`/api/v1/tracking/fleet/live${qs ? `?${qs}` : ''}`, options);
   },
   getLiveTripTelemetry: (tripId) =>
     fetchJson(`/api/v1/tracking/trips/${encodeURIComponent(tripId)}/live`),
@@ -612,6 +717,7 @@ export const api = {
   getTripTelemetry: (tripId) => fetchJson(`/api/v1/tracking/trips/${tripId}/telemetry`),
   getTripAlerts: (tripId) => fetchJson(`/api/v1/tracking/trips/${tripId}/alerts`),
   getTripProposals: (tripId) => fetchJson(`/api/v1/tracking/trips/${tripId}/proposals`),
+  calculateTripReroute: (tripId) => fetchJson(`/api/v1/tracking/trips/${encodeURIComponent(tripId)}/proposals/calculate`, { method: 'POST' }),
   decideRerouteProposal: (proposalId, decision) =>
     fetchJson(`/api/v1/tracking/reroute-proposals/${encodeURIComponent(proposalId)}/decision`, {
       method: 'PUT',
@@ -775,7 +881,14 @@ export const api = {
       body: JSON.stringify(payload)
     }),
 
-  // Hub & Last-Mile Shipper Service (port 8089 via API Gateway)
+  // Hub & Last-Mile Shipper Service (port 8089 via API Gateway — Real-time PostgreSQL + SSE)
+  getHubShipperStreamUrl: ({ hubCode, token } = {}) => {
+    const params = new URLSearchParams();
+    if (hubCode && hubCode !== 'ALL') params.set('hubCode', hubCode);
+    if (token) params.set('token', token);
+    const qs = params.toString();
+    return gatewayUrl(`/api/v1/hub-shipper/stream${qs ? `?${qs}` : ''}`);
+  },
   getHubShipperWorkspace: ({ username, hubCode, shipperCode, q, includeDeleted } = {}) => {
     const params = new URLSearchParams();
     if (username) params.set('username', username);
@@ -786,6 +899,39 @@ export const api = {
     const qs = params.toString();
     return fetchJson(`/api/v1/hub-shipper/workspace${qs ? `?${qs}` : ''}`);
   },
+  batchPickupHubItems: (itemCodes = [], packageCondition = 'INTACT') =>
+    fetchJson('/api/v1/hub-shipper/batch-pickup', {
+      method: 'POST',
+      body: JSON.stringify({ itemCodes, packageCondition })
+    }),
+  checkInHubShipperShift: (shipperCode) =>
+    fetchJson(`/api/v1/hub-shipper/shippers/${encodeURIComponent(shipperCode)}/check-in-shift`, {
+      method: 'POST'
+    }),
+  endHubShipperShift: (shipperCode) =>
+    fetchJson(`/api/v1/hub-shipper/shippers/${encodeURIComponent(shipperCode)}/end-shift`, {
+      method: 'POST'
+    }),
+  remitHubShipperCod: (payload) =>
+    fetchJson('/api/v1/hub-shipper/cod-remittances', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    }),
+  executeHubItemFieldAction: (itemCode, payload) =>
+    fetchJson(`/api/v1/hub-shipper/items/${encodeURIComponent(itemCode)}/field-action`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    }),
+  updateHubShipperTelemetry: (shipperCode, payload) =>
+    fetchJson(`/api/v1/hub-shipper/shippers/${encodeURIComponent(shipperCode)}/telemetry`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    }),
+  settleHubShipperShift: (payload) =>
+    fetchJson('/api/v1/hub-shipper/settlements', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    }),
   softDeleteHubManifestItem: (itemCode) =>
     fetchJson(`/api/v1/hub-shipper/items/${encodeURIComponent(itemCode)}`, { method: 'DELETE' }),
   restoreHubManifestItem: (itemCode) =>
@@ -799,6 +945,16 @@ export const api = {
     }),
   submitItemPhotoPod: (itemCode, payload) =>
     fetchJson(`/api/v1/hub-shipper/items/${encodeURIComponent(itemCode)}/photo-pod`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    }),
+  updateHubShipperProfile: (shipperCode, payload) =>
+    fetchJson(`/api/v1/hub-shipper/shippers/${encodeURIComponent(shipperCode)}/profile`, {
+      method: 'PUT',
+      body: JSON.stringify(payload)
+    }),
+  verifyHubShipperKyc: (shipperCode, payload) =>
+    fetchJson(`/api/v1/hub-shipper/shippers/${encodeURIComponent(shipperCode)}/verify`, {
       method: 'POST',
       body: JSON.stringify(payload)
     }),
