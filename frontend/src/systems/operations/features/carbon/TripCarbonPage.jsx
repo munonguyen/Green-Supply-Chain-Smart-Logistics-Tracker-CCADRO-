@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api } from '../../../../services/api';
 import { elasticSearchMatch } from '../../../../utils/elasticSearch';
-import ElasticSearchBar from '../../../../shared/components/ElasticSearchBar';
+import SearchToolbar from '../../../../shared/components/search/SearchToolbar';
 import { Leaf, Award, FileText, CheckCircle, ArrowLeft, Calculator } from 'lucide-react';
 
 const FALLBACK_EMISSION_FACTORS = [
@@ -118,7 +118,7 @@ export default function TripCarbonPage() {
   return (
     <div className="page-body">
       <Link to={`/trips/${tripId}`} className="btn btn-secondary" style={{ marginBottom: 18 }}>
-        <ArrowLeft size={16} /> Quay Lại Bản Đồ Giám Sát 3D (UC09)
+        <ArrowLeft size={16} /> Quay Lại Bản Đồ Giám Sát Vệ Tinh 3D
       </Link>
 
       <div
@@ -142,7 +142,7 @@ export default function TripCarbonPage() {
               marginBottom: 4
             }}
           >
-            UC12 • KIỂM KÊ &amp; HẠCH TOÁN KHÍ NHÀ KÍNH SAU CHUYẾN ĐI
+            KIỂM KÊ &amp; HẠCH TOÁN KHÍ NHÀ KÍNH SAU CHUYẾN ĐI
           </div>
           <h2 style={{ fontSize: '1.45rem', fontWeight: 800, margin: 0 }}>
             Sổ Cái Hạch Toán Phát Thải Carbon Chuẩn GLEC v3
@@ -303,14 +303,15 @@ export default function TripCarbonPage() {
           <h3 style={{ fontSize: '1.08rem', fontWeight: 800, margin: 0 }}>
             Bảng Hệ Số Phát Thải Chuẩn GLEC v3 Đang Áp Dụng Trong Hệ Thống
           </h3>
-          <div style={{ minWidth: 260, flex: '0 1 340px' }}>
-            <ElasticSearchBar
+          <div style={{ minWidth: 0, flex: '0 1 340px', width: '100%' }}>
+            <SearchToolbar
               value={searchQuery}
               onChange={setSearchQuery}
-              placeholder="Tìm mã hệ số, nhiên liệu, Euro..."
+              label="Tìm hệ số phát thải"
+              loading={loading}
+              placeholder="Mã hệ số, nhiên liệu hoặc chuẩn Euro…"
               totalCount={factors.length}
               matchedCount={elasticFactors.items.length}
-              tookMs={elasticFactors.tookMs}
             />
           </div>
         </div>

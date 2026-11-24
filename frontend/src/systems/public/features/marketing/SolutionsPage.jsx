@@ -13,27 +13,27 @@ import {
 import '../../../../styles/landing.css';
 import LandingNavbar from '../../shared/LandingNavbar';
 import LandingFooter from '../../shared/LandingFooter';
-import Reveal from '../../../../shared/components/Reveal';
+import Reveal from '../../../../shared/effects/Reveal';
 import { IMAGES, VIDEOS } from '../../shared/landingContent';
 
 const WORKFLOW_STEPS = [
   {
-    code: 'UC05',
+    code: '01',
     title: 'Lập Lộ Trình Xanh Đa Mục Tiêu Pareto',
     desc: 'Phân tích đồng thời 4 trọng số: Phát thải CO2e (40%), Thời gian hành trình (30%), Chi phí vận hành (20%) và Rủi ro ùn tắc (10%) để đề xuất 3 phương án tối ưu: Greenest, Fastest và Balanced.'
   },
   {
-    code: 'UC09',
-    title: 'Giám Sát Đệm Không Gian PostGIS (50m / 200m)',
+    code: '02',
+    title: 'Giám Sát Hành Lang An Toàn GPS (50m / 200m)',
     desc: 'Mỗi chuyến xe đang chạy được đối chiếu tọa độ GPS từng giây với hành lang tuyến đã duyệt. Tự động kích hoạt cảnh báo vàng ở ngưỡng 50m và báo động đỏ ở ngưỡng 200m sau 3 bản tin liên tiếp.'
   },
   {
-    code: 'UC10',
+    code: '03',
     title: 'Tái Định Tuyến Động Có Phê Duyệt (Human-in-the-Loop)',
     desc: 'Khi phát hiện ùn tắc nghiêm trọng hoặc lệch tuyến, hệ thống chỉ sinh đề xuất lộ trình mới nếu mức cải thiện đạt tối thiểu 10% và chờ Điều phối viên phê duyệt (ACCEPTED).'
   },
   {
-    code: 'UC12 & UC13',
+    code: '04',
     title: 'Kiểm Toán Carbon GLEC v3 & Định Mức Hành Lang',
     desc: 'Tự động quyết toán phát thải thực tế sau chuyến đi dựa trên tải trọng thực và quãng đường GPS, đồng thời so sánh hiệu suất giữa các hành lang vận tải.'
   }
@@ -69,7 +69,7 @@ export default function SolutionsPage() {
               </h1>
               <p className="lp-lead" style={{ color: 'rgba(255,255,255,0.82)' }}>
                 Tích hợp liền mạch từ khâu lập kế hoạch tuyến đường đa tiêu chí, giám sát hành lang
-                địa lý PostGIS thời gian thực đến quyết toán phát thải chuẩn quốc tế cho 6 vai trò
+                địa lý không gian thời gian thực đến quyết toán phát thải chuẩn quốc tế cho các vai trò
                 vận hành.
               </p>
             </Reveal>
@@ -110,11 +110,11 @@ export default function SolutionsPage() {
                   <strong>40 / 30 / 20 / 10</strong>
                 </div>
                 <div className="lp-live__row">
-                  <span>Hành lang đệm PostGIS</span>
+                  <span>Hành lang an toàn vệ tinh</span>
                   <strong>50m Vàng • 200m Đỏ</strong>
                 </div>
                 <div className="lp-live__row">
-                  <span>Tần suất cập nhật luồng SSE</span>
+                  <span>Tần suất cập nhật trực tuyến</span>
                   <strong>1 Hz (&lt; 2 giây)</strong>
                 </div>
                 <div className="lp-live__row">
@@ -151,7 +151,7 @@ export default function SolutionsPage() {
               <div className="lp-bento__icon">
                 <Activity size={24} />
               </div>
-              <h3 className="lp-bento__title">Lập Lộ Trình Xanh Đa Mục Tiêu Pareto (UC05)</h3>
+              <h3 className="lp-bento__title">Lập Lộ Trình Xanh Đa Mục Tiêu Pareto</h3>
               <p className="lp-bento__desc">
                 Phân tích đồng thời 4 tiêu chí: <strong>Phát thải CO2e (40%)</strong>,{' '}
                 <strong>Thời gian (30%)</strong>, <strong>Chi phí (20%)</strong> và{' '}
@@ -165,15 +165,15 @@ export default function SolutionsPage() {
               </div>
             </Reveal>
 
-            {/* Card 2: span 5 — UC09 GPS Buffer Deviation */}
+            {/* Card 2: span 5 — GPS Buffer Deviation */}
             <Reveal delay={0.1} className="lp-bento__card lp-bento__card--5 lp-bento__card--image">
               <img src={IMAGES.containers} alt="Container freight corridor" loading="lazy" />
               <div className="lp-bento__icon">
                 <Radio size={24} />
               </div>
-              <h3 className="lp-bento__title">Đệm Vi Phân GPS 50m / 200m (UC09)</h3>
+              <h3 className="lp-bento__title">Đệm An Toàn Hành Lang GPS 50m / 200m</h3>
               <p className="lp-bento__desc">
-                Hành lang an toàn PostGIS: cảnh báo vàng 50m, báo động đỏ 200m qua 3 điểm định vị
+                Hành lang an toàn vệ tinh: cảnh báo vàng 50m, báo động đỏ 200m qua 3 điểm định vị
                 liên tiếp với tần suất cập nhật 1 Hz.
               </p>
               <div className="lp-bento__chips">
@@ -182,12 +182,12 @@ export default function SolutionsPage() {
               </div>
             </Reveal>
 
-            {/* Card 3: span 4 — UC10 Rerouting */}
+            {/* Card 3: span 4 — Rerouting */}
             <Reveal delay={0.05} className="lp-bento__card lp-bento__card--4">
               <div className="lp-bento__icon">
                 <Cpu size={24} />
               </div>
-              <h3 className="lp-bento__title">Điều Hướng Tránh Ùn Tắc Động (UC10)</h3>
+              <h3 className="lp-bento__title">Điều Hướng Tránh Ùn Tắc Động</h3>
               <p className="lp-bento__desc">
                 Tự động tính phương án thay thế khi phát hiện sự cố. Chỉ kích hoạt đề xuất khi lợi
                 ích &gt; 10% và có xác nhận của Điều phối viên.

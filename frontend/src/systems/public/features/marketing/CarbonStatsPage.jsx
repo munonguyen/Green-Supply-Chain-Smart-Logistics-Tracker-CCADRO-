@@ -5,8 +5,8 @@ import '../../../../styles/landing.css';
 import LandingNavbar from '../../shared/LandingNavbar';
 import LandingFooter from '../../shared/LandingFooter';
 import CarbonSavingsHub from '../../shared/CarbonSavingsHub';
-import Reveal from '../../../../shared/components/Reveal';
-import { CountingNumber } from '../../../../shared/components/CountingNumber';
+import Reveal from '../../../../shared/effects/Reveal';
+import { CountingNumber } from '../../../../shared/effects/CountingNumber';
 import { CARBON_SUMMARY, IMAGES, VIDEOS } from '../../shared/landingContent';
 
 const AUDIT_METRICS = [
@@ -21,7 +21,7 @@ const AUDIT_METRICS = [
     desc: 'Phát thải khi lập kế hoạch (Planning Carbon) được tách biệt hoàn toàn với phát thải quyết toán sau chuyến đi (Post-trip Accounting) dựa trên quãng đường GPS và tải trọng thực.'
   },
   {
-    code: 'Corridor Benchmark (UC13)',
+    code: 'Corridor Benchmark',
     title: 'Định Mức Phát Thải Theo Hành Lang',
     desc: 'So sánh cường độ carbon (gCO2e/tấn.km) giữa các tuyến cảng biển – khu công nghiệp để ưu tiên phân bổ xe tải điện vào các hành lang có mật độ hàng hóa cao nhất.'
   }
@@ -66,7 +66,7 @@ export default function CarbonStatsPage() {
                   className="lp-btn lp-btn--ghost"
                   onClick={() => navigate('/login')}
                 >
-                  Truy Cập Sổ Cái Nội Bộ (UC12)
+                  Truy Cập Sổ Cái Phát Thải
                 </button>
               </div>
             </Reveal>

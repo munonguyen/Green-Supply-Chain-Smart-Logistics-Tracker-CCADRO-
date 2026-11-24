@@ -4,7 +4,7 @@ import { ArrowRight, Calendar, CheckCircle2, Plus, Send, X } from 'lucide-react'
 import '../../../../styles/landing.css';
 import LandingNavbar from '../../shared/LandingNavbar';
 import LandingFooter from '../../shared/LandingFooter';
-import Reveal from '../../../../shared/components/Reveal';
+import Reveal from '../../../../shared/effects/Reveal';
 import { FAQS, IMAGES, NEWS, VIDEOS } from '../../shared/landingContent';
 
 export default function NewsPage() {
@@ -378,7 +378,7 @@ export default function NewsPage() {
                 >
                   <strong>Điểm nhấn kiểm toán ESG &amp; GLEC v3:</strong> Hệ thống định tuyến đa mục
                   tiêu Pareto của CCADRO kết hợp dữ liệu độ dốc địa hình SRTM 3D, tắc nghẽn giao thông
-                  thời gian thực và vùng đệm PostGIS để kiểm chứng từng gram CO2e Well-to-Wheel theo
+                  thời gian thực và vùng đệm an toàn không gian địa lý để kiểm chứng từng gram CO2e Well-to-Wheel theo
                   chuẩn ISO 14083:2023 cho doanh nghiệp xuất nhập khẩu tại Đông Nam Bộ.
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>

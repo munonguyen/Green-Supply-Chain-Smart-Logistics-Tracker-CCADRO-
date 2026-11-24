@@ -63,6 +63,8 @@ describe('Public Careers Portal & Admin Job Application Onboarding', () => {
       target: { value: '790195009999' }
     });
 
+    fireEvent.change(screen.getByLabelText(/Ngày cấp GPLX/), { target: { value: '2025-01-01' } });
+    fireEvent.change(screen.getByLabelText(/Hạn GPLX/), { target: { value: '2030-01-01' } });
     fireEvent.click(screen.getByRole('button', { name: /Gửi Hồ Sơ Ứng Tuyển/i }));
 
     const appCodeEl = await screen.findByTestId('receipt-app-code');

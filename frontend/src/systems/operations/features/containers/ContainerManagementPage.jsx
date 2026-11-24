@@ -1,200 +1,834 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Building2, Plus, Search, Truck } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
+  Box,
+  Boxes,
+  Building2,
+  ChevronDown,
+  MapPin,
+  Package,
+  Plus,
+  RefreshCw,
+  Search,
+  Snowflake,
+  Truck,
+  UserRound,
+  X
+} from 'lucide-react';
+import SearchField from '../../../../shared/components/search/SearchField';
+import { useAuth } from '../../../../context/AuthContext';
+import {
+  containerOperationalIssues,
+  ContainerConnectionBadge,
+  formatSignalAge
+} from './ContainerConnection';
 import { api } from '../../../../services/api';
+import ContainerDetails, { ContainerStatus } from './ContainerDetails';
+import ContainerAttention from './ContainerAttention';
+import ContainerSearchFilters from './ContainerSearchFilters';
+import { EMPTY_CONTAINER_FILTERS, matchesContainerSearch } from './containerSearch';
+import { ContainerCreateCard, ManifestCreateCard } from './ContainerForms';
+import {
+  asList,
+  CONTAINER_STATUSES,
+  CONTAINER_TYPES,
+  EMPTY_CONTAINER,
+  EMPTY_ITEM,
+  formatDate,
+  formatNumber
+} from './containerPresentation';
+import './containers.css';
 
-const STATUSES = ['AVAILABLE', 'ASSIGNED', 'IN_TRANSIT', 'DELIVERED', 'MAINTENANCE'];
-const TYPES = ['DRY_20FT', 'DRY_40FT', 'REEFER_20FT', 'REEFER_40FT', 'FLAT_RACK', 'OPEN_TOP'];
-const emptyContainer = {
-  containerCode: '', containerType: 'DRY_40FT', isoType: '45G1', ownerName: '',
-  tareWeightTons: '', maxPayloadTons: '', cubicCapacityM3: '', isReefer: false,
-  responsibleCompanyId: '', responsibleCompanyCode: '', responsibleCompanyName: ''
-};
-const emptyItem = {
-  itemCode: '', shipmentCode: '', hubCode: '', cargoName: '', cargoCategory: '',
-  consigneeName: '', consigneePhone: '', deliveryAddress: '', deliveryZoneName: '',
-  deliveryLat: '', deliveryLng: '', weightKg: '', parcelCount: 1, requiredTempC: '',
-  requiresColdChain: false, slaWindow: 'Theo thỏa thuận'
-};
-const unwrap = (response) => response?.result ?? response;
-const statusLabel = {
-  AVAILABLE: 'Sẵn sàng', ASSIGNED: 'Đã phân công', IN_TRANSIT: 'Đang vận chuyển',
-  DELIVERED: 'Đã giao', MAINTENANCE: 'Bảo trì'
-};
+const requestError = (error, fallback) =>
+  error?.name === 'TimeoutError'
+    ? fallback + ' Máy chủ phản hồi quá chậm.'
+    : error?.message === 'Forbidden'
+      ? fallback + ' Tài khoản chưa có quyền truy cập dữ liệu này.'
+      : error?.message || fallback;
 
 export default function ContainerManagementPage() {
+  const { user } = useAuth();
+  const role = user?.role;
+  const canManage = ['ADMIN', 'DISPATCHER'].includes(role);
+  const [now, setNow] = useState(Date.now);
+  const [lastSuccessAt, setLastSuccessAt] = useState(null);
+  const [offline, setOffline] = useState(() => !navigator.onLine);
+  const listRequest = useRef(null);
+  const returnCode = useRef('');
+  const detailHeading = useRef(null);
   const [containers, setContainers] = useState([]);
-  const [companies, setCompanies] = useState([]);
-  const [vehicles, setVehicles] = useState([]);
-  const [hubs, setHubs] = useState([]);
-  const [items, setItems] = useState([]);
-  const [selectedCode, setSelectedCode] = useState('');
+  const [catalogues, setCatalogues] = useState({ companies: [], vehicles: [], hubs: [] });
+  const [selectedCode, setSelectedCode] = useState(() => new URLSearchParams(window.location.search).get('container') || '');
   const [query, setQuery] = useState('');
+  const [searchFilters, setSearchFilters] = useState(() => ({ ...EMPTY_CONTAINER_FILTERS }));
+  const hasAdvancedFilters = Object.values(searchFilters).some((value) => value !== '');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [attentionOnly, setAttentionOnly] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [saving, setSaving] = useState(false);
+  const [catalogueWarning, setCatalogueWarning] = useState('');
+  const [vehicleCountAvailable, setVehicleCountAvailable] = useState(false);
   const [containerForm, setContainerForm] = useState(null);
   const [itemForm, setItemForm] = useState(null);
+  const [itemTarget, setItemTarget] = useState('');
+  const [formError, setFormError] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [manifest, setManifest] = useState({ code: '', items: [], state: 'loading', error: '' });
+  const [manifestVersion, setManifestVersion] = useState(0);
 
-  const load = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const [containerRes, companyRes, vehicleRes, hubRes] = await Promise.all([
-        api.getContainers(), api.getCompanies(), api.getVehicles(), api.getDistributionHubs()
-      ]);
-      const list = unwrap(containerRes) || [];
-      setContainers(Array.isArray(list) ? list : []);
-      setCompanies(unwrap(companyRes) || []);
-      setVehicles(unwrap(vehicleRes) || []);
-      setHubs(unwrap(hubRes) || []);
-      setSelectedCode((current) => current || list?.[0]?.containerCode || '');
-    } catch (err) {
-      setError(err?.message || 'Không tải được dữ liệu quản lý container.');
-    } finally {
-      setLoading(false);
+  const refreshContainers = useCallback(() => {
+    if (listRequest.current) return listRequest.current;
+    const request = api
+      .getContainers({}, { signal: AbortSignal.timeout?.(12000) })
+      .then((response) => {
+        const priority = { IN_TRANSIT: 0, ASSIGNED: 1, AVAILABLE: 2, MAINTENANCE: 3, DELIVERED: 4 };
+        const receivedAt = Date.now();
+        setContainers(
+          asList(response).sort(
+            (left, right) =>
+              (priority[left.status] ?? 5) - (priority[right.status] ?? 5) ||
+              containerOperationalIssues(right, receivedAt).length -
+                containerOperationalIssues(left, receivedAt).length ||
+              left.containerCode.localeCompare(right.containerCode)
+          )
+        );
+        setLastSuccessAt(Date.now());
+        setError('');
+        return true;
+      })
+      .catch((failure) => {
+        setError(requestError(failure, 'Không tải được danh sách container.'));
+        return false;
+      })
+      .finally(() => {
+        listRequest.current = null;
+        setLoading(false);
+        setNow(Date.now());
+      });
+    listRequest.current = request;
+    return request;
+  }, []);
+
+  const load = useCallback(async () => {
+    const [, ...catalogueResults] = await Promise.allSettled([
+      refreshContainers(),
+      api.getCompanies(),
+      api.getVehicles(),
+      api.getDistributionHubs()
+    ]);
+    const keys = ['companies', 'vehicles', 'hubs'];
+    const labels = ['công ty', 'đầu kéo', 'cơ sở nhận'];
+    const unavailable = [];
+    const nextCatalogues = {};
+    catalogueResults.forEach((result, index) => {
+      nextCatalogues[keys[index]] = result.status === 'fulfilled' ? asList(result.value) : [];
+      if (result.status === 'rejected') unavailable.push(labels[index]);
+    });
+    setCatalogues(nextCatalogues);
+    setVehicleCountAvailable(catalogueResults[1].status === 'fulfilled');
+    setCatalogueWarning(
+      unavailable.length
+        ? 'Chưa tải được danh mục ' +
+            unavailable.join(', ') +
+            '. Danh sách container vẫn được hiển thị; hãy thử tải lại.'
+        : ''
+    );
+  }, [refreshContainers]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  useEffect(() => {
+    if (selectedCode || typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has('container')) return;
+    url.searchParams.delete('container');
+    window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+  }, [selectedCode]);
+
+  useEffect(() => {
+    const update = () => {
+      setOffline(!navigator.onLine);
+      setNow(Date.now());
+      if (!document.hidden && navigator.onLine) refreshContainers();
+    };
+    const timer = setInterval(update, 30000);
+    document.addEventListener('visibilitychange', update);
+    window.addEventListener('online', update);
+    window.addEventListener('offline', update);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', update);
+      window.removeEventListener('online', update);
+      window.removeEventListener('offline', update);
+    };
+  }, [refreshContainers]);
+
+  useEffect(() => {
+    if (selectedCode) {
+      detailHeading.current?.focus();
+      document.body.classList.add('container-modal-open');
+    } else {
+      document.body.classList.remove('container-modal-open');
+      if (returnCode.current) {
+        document.getElementById('open-container-' + returnCode.current)?.focus();
+        returnCode.current = '';
+      }
     }
-  };
 
-  useEffect(() => { load(); }, []);
+    const handleKeyDown = (e) => {
+      if (e.defaultPrevented || document.querySelector('.container-editor-dialog[open]')) return;
+      if (e.key === 'Tab' && selectedCode) {
+        const controls = [
+          ...document.querySelectorAll(
+            '.container-modal-card-window button, .container-modal-card-window input, .container-modal-card-window select, .container-modal-card-window textarea, .container-modal-card-window a[href]'
+          )
+        ].filter(
+          (element) =>
+            !element.disabled && element.tabIndex >= 0 && element.getClientRects().length > 0
+        );
+        const first = controls[0];
+        const last = controls.at(-1);
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last?.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first?.focus();
+        }
+      }
+      if (e.key === 'Escape' && selectedCode) {
+        returnCode.current = selectedCode;
+        setItemForm(null);
+        setSelectedCode('');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.classList.remove('container-modal-open');
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [selectedCode]);
 
-  const filteredContainers = useMemo(() => containers.filter((container) => {
-    const matchesStatus = statusFilter === 'ALL' || container.status === statusFilter;
-    const text = `${container.containerCode} ${container.responsibleCompanyName || ''} ${container.responsibleCompanyCode || ''} ${container.vehicleLicensePlate || ''} ${container.destinationName || ''}`.toLowerCase();
-    return matchesStatus && text.includes(query.toLowerCase());
-  }), [containers, statusFilter, query]);
-  const selected = containers.find((container) => container.containerCode === selectedCode) || null;
-  const counts = useMemo(() => Object.fromEntries(STATUSES.map((status) => [status, containers.filter((c) => c.status === status).length])), [containers]);
+  const filteredContainers = useMemo(
+    () =>
+      containers.filter((container) => {
+        return (
+          (statusFilter === 'ALL' || container.status === statusFilter) &&
+          (!attentionOnly || containerOperationalIssues(container, now).length > 0) &&
+          matchesContainerSearch(container, query, searchFilters, now)
+        );
+      }),
+    [containers, statusFilter, attentionOnly, query, searchFilters, now]
+  );
+  const selected = containers.find((container) => container.containerCode === selectedCode);
+  const activeCode = selected?.containerCode || '';
+  const counts = useMemo(
+    () =>
+      containers.reduce(
+        (result, container) => ({
+          ...result,
+          [container.status]: (result[container.status] || 0) + 1
+        }),
+        {}
+      ),
+    [containers]
+  );
+  const attentionCount = useMemo(
+    () =>
+      containers.filter((container) => containerOperationalIssues(container, now).length > 0)
+        .length,
+    [containers, now]
+  );
 
-  const loadManifest = async (containerCode) => {
-    if (!containerCode) return setItems([]);
-    try {
-      const response = await api.getContainerManifestItems({ containerCode });
-      setItems((unwrap(response) || []).filter((item) => !item.isDeleted));
-    } catch (err) {
-      setError(err?.message || 'Không tải được manifest của container.');
-      setItems([]);
-    }
-  };
-
-  useEffect(() => { loadManifest(selectedCode); }, [selectedCode]);
+  useEffect(() => {
+    let cancelled = false;
+    if (!activeCode) return undefined;
+    setManifest({ code: activeCode, items: [], state: 'loading', error: '' });
+    api
+      .getContainerManifestItems(
+        { containerCode: activeCode },
+        { signal: AbortSignal.timeout?.(12000) }
+      )
+      .then((response) => {
+        if (!cancelled)
+          setManifest({ code: activeCode, items: asList(response), state: 'ready', error: '' });
+      })
+      .catch((failure) => {
+        if (!cancelled)
+          setManifest({
+            code: activeCode,
+            items: [],
+            state: 'error',
+            error: requestError(failure, 'Không tải được manifest.')
+          });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeCode, manifestVersion]);
 
   const submitContainer = async (event) => {
     event.preventDefault();
+    if (saving) return;
     setSaving(true);
-    setError('');
+    setFormError('');
     try {
-      const company = companies.find((item) => item.id === containerForm.responsibleCompanyId);
+      const company = catalogues.companies.find(
+        (item) => item.id === containerForm.responsibleCompanyId
+      );
+      if (!company) throw new Error('Vui lòng chọn một công ty phụ trách hợp lệ.');
+      const { eSealNumber, ...fields } = containerForm;
       const payload = {
-        ...containerForm,
-        tareWeightTons: Number(containerForm.tareWeightTons),
-        maxPayloadTons: Number(containerForm.maxPayloadTons),
-        cubicCapacityM3: Number(containerForm.cubicCapacityM3),
-        responsibleCompanyCode: company?.companyCode || '',
-        responsibleCompanyName: company?.companyName || ''
+        ...fields,
+        containerCode: fields.containerCode.trim(),
+        cscApprovalCountry: fields.cscApprovalCountry.trim() || null,
+        cscApprovalReference: fields.cscApprovalReference.trim() || null,
+        cscManufactureDate: fields.cscManufactureDate || null,
+        cscInspectionScheme: fields.cscInspectionScheme || null,
+        cscAcepProgramNumber:
+          fields.cscInspectionScheme === 'ACEP' ? fields.cscAcepProgramNumber.trim() || null : null,
+        cscNextExaminationDate:
+          fields.cscInspectionScheme === 'PERIODIC' ? fields.cscNextExaminationDate || null : null,
+        tareWeightTons: Number(fields.tareWeightTons),
+        maxPayloadTons: Number(fields.maxPayloadTons),
+        cubicCapacityM3: fields.cubicCapacityM3 === '' ? null : Number(fields.cubicCapacityM3),
+        esealNumber: eSealNumber.trim() || null,
+        telematicsModel: fields.telematicsModel.trim() || null,
+        responsibleCompanyCode: company.companyCode,
+        responsibleCompanyName: company.companyName
       };
       await api.createContainer(payload);
       setContainerForm(null);
+      setQuery('');
+      setStatusFilter('ALL');
+      setAttentionOnly(false);
+      setSearchFilters({ ...EMPTY_CONTAINER_FILTERS });
       await load();
-      setSelectedCode(payload.containerCode);
-    } catch (err) {
-      setError(err?.message || 'Không tạo được hồ sơ container.');
-    } finally { setSaving(false); }
+    } catch (failure) {
+      setFormError(requestError(failure, 'Không tạo được hồ sơ container.'));
+    } finally {
+      setSaving(false);
+    }
   };
 
   const submitItem = async (event) => {
     event.preventDefault();
     setSaving(true);
-    setError('');
+    setFormError('');
     try {
+      if (
+        itemForm.requiresColdChain &&
+        !containers.find((container) => container.containerCode === itemTarget)?.isReefer
+      ) {
+        throw new Error('Hàng yêu cầu chuỗi lạnh cần được xếp vào container có thiết bị làm lạnh.');
+      }
       const payload = {
         ...itemForm,
-        deliveryLat: Number(itemForm.deliveryLat), deliveryLng: Number(itemForm.deliveryLng),
-        weightKg: Number(itemForm.weightKg), parcelCount: Number(itemForm.parcelCount),
-        requiredTempC: itemForm.requiredTempC === '' ? null : Number(itemForm.requiredTempC)
+        itemCode: itemForm.itemCode.trim().toUpperCase(),
+        deliveryLat: Number(itemForm.deliveryLat),
+        deliveryLng: Number(itemForm.deliveryLng),
+        weightKg: Number(itemForm.weightKg),
+        parcelCount: Number(itemForm.parcelCount),
+        requiredTempC: itemForm.requiresColdChain ? Number(itemForm.requiredTempC) : null
       };
-      await api.createContainerManifestItem(selectedCode, payload);
+      await api.createContainerManifestItem(itemTarget, payload);
       setItemForm(null);
-      await loadManifest(selectedCode);
-    } catch (err) {
-      setError(err?.message || 'Không thêm được mặt hàng vào manifest.');
-    } finally { setSaving(false); }
+      setManifestVersion((version) => version + 1);
+    } catch (failure) {
+      setFormError(requestError(failure, 'Không thêm được hàng hóa.'));
+    } finally {
+      setSaving(false);
+    }
   };
 
+  const openContainerForm = () => {
+    setFormError('');
+    setItemForm(null);
+    setContainerForm({ ...EMPTY_CONTAINER });
+  };
+  const openItemForm = () => {
+    if (itemForm && itemTarget === activeCode) return;
+    setFormError('');
+    setContainerForm(null);
+    setItemTarget(activeCode);
+    setItemForm({ ...EMPTY_ITEM, shipmentCode: selected?.assignedShipmentCode || '' });
+  };
+  const resetFilters = () => {
+    setQuery('');
+    setSearchFilters({ ...EMPTY_CONTAINER_FILTERS });
+    setStatusFilter('ALL');
+    setAttentionOnly(false);
+  };
+  const activeManifest =
+    manifest.code === activeCode ? manifest : { items: [], state: 'loading', error: '' };
+  const unavailable = loading || (error && containers.length === 0);
+
   return (
-    <div className="page-body">
-      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
-        <div><div className="eyebrow">Tài sản vận tải · Container & Manifest</div><h1 style={{ margin: '6px 0' }}>Quản lý Container</h1><p style={{ margin: 0, color: 'var(--text-muted)' }}>Theo dõi thiết bị, xe đầu kéo, công ty phụ trách và hàng hóa theo từng mã sản phẩm.</p></div>
-        <button className="btn btn-primary" type="button" onClick={() => setContainerForm({ ...emptyContainer })}><Plus size={16} /> Tạo container</button>
-      </div>
-      {error && <div role="alert" className="alert alert-error" style={{ margin: '14px 0' }}>{error}</div>}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(145px,1fr))', gap: 10, margin: '18px 0' }}>
-        {[['Tổng container', containers.length], ...STATUSES.map((status) => [statusLabel[status], counts[status] || 0]), ['Đầu kéo sẵn sàng', vehicles.filter((vehicle) => vehicle.status === 'AVAILABLE').length]].map(([label, value]) => <div className="card" key={label} style={{ padding: 14 }}><div style={{ color: 'var(--text-muted)', fontSize: 12 }}>{label}</div><strong style={{ fontSize: 22 }}>{value}</strong></div>)}
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(290px, 0.85fr) minmax(520px, 1.7fr)', gap: 16, alignItems: 'start' }}>
-        <section className="card" style={{ padding: 0, overflow: 'hidden' }}>
-          <div style={{ padding: 14, display: 'grid', gap: 10, borderBottom: '1px solid var(--border-color)' }}>
-            <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}><Search size={16} /><input aria-label="Tìm container" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Mã container, công ty, biển số" /></label>
-            <select aria-label="Lọc trạng thái container" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}><option value="ALL">Tất cả trạng thái</option>{STATUSES.map((status) => <option key={status} value={status}>{statusLabel[status]}</option>)}</select>
+    <div className="page-body container-page">
+      <header className="container-page-header">
+        <div>
+          <div className="eyebrow">Tài sản vận tải / Container & Manifest</div>
+          <h1>Quản lý Container</h1>
+          <p>Quản lý thiết bị, xe vận chuyển, đơn vị phụ trách và hàng hóa tại một nơi.</p>
+        </div>
+        <div className="container-page-actions">
+          <button
+            type="button"
+            className="container-icon-button"
+            title="Tải lại dữ liệu"
+            aria-label="Tải lại dữ liệu"
+            onClick={load}
+            disabled={loading}
+          >
+            <RefreshCw size={18} className={loading ? 'container-spin' : ''} />
+          </button>
+          {!selectedCode && canManage && (
+            <button
+              className="btn btn-primary"
+              type="button"
+              onClick={openContainerForm}
+              disabled={saving}
+              aria-expanded={!!containerForm}
+              aria-haspopup="dialog"
+            >
+              <Plus size={17} /> Tạo container
+            </button>
+          )}
+        </div>
+      </header>
+      {error && (
+        <div className="container-notice container-notice-error" role="alert">
+          {error}
+          <button type="button" className="container-text-button" onClick={load}>
+            Thử tải lại
+          </button>
+        </div>
+      )}
+      {catalogueWarning && (
+        <div className="container-notice" role="status">
+          {catalogueWarning}
+        </div>
+      )}
+      {!selectedCode && (
+        <section className="container-statistics" aria-label="Thống kê container">
+          <button
+            type="button"
+            className={'card container-statistic' + (statusFilter === 'ALL' ? ' is-active' : '')}
+            onClick={() => {
+              setStatusFilter('ALL');
+              setAttentionOnly(false);
+            }}
+            aria-pressed={statusFilter === 'ALL'}
+          >
+            <span>Tổng container</span>
+            <strong>{unavailable ? '—' : containers.length}</strong>
+          </button>
+          <button
+            type="button"
+            className={
+              'card container-statistic container-statistic-attention' +
+              (attentionOnly ? ' is-active' : '')
+            }
+            title="Thiếu thông tin điều phối, thiết bị/GPS chậm, thiếu dữ liệu nhiệt hoặc niêm phong báo lỗi"
+            onClick={() => setAttentionOnly((active) => !active)}
+            aria-pressed={attentionOnly}
+          >
+            <span>
+              <AlertTriangle size={13} /> Cần chú ý
+            </span>
+            <strong>{unavailable ? '—' : attentionCount}</strong>
+          </button>
+          {Object.entries(CONTAINER_STATUSES).map(([status, definition]) => (
+            <button
+              type="button"
+              key={status}
+              className={'card container-statistic' + (statusFilter === status ? ' is-active' : '')}
+              onClick={() => {
+                setStatusFilter(status);
+                setAttentionOnly(false);
+              }}
+              aria-pressed={statusFilter === status}
+            >
+              <span>
+                <i className={'container-dot container-tone-' + definition.tone} />
+                {definition.label}
+              </span>
+              <strong>{unavailable ? '—' : counts[status] || 0}</strong>
+            </button>
+          ))}
+          <div className="card container-statistic">
+            <span>
+              <Truck size={13} /> Đầu kéo sẵn sàng
+            </span>
+            <strong>
+              {loading || !vehicleCountAvailable
+                ? '—'
+                : catalogues.vehicles.filter((vehicle) => vehicle.status === 'AVAILABLE').length}
+            </strong>
           </div>
-          {loading ? <p style={{ padding: 16 }}>Đang tải...</p> : filteredContainers.length === 0 ? <p style={{ padding: 16, color: 'var(--text-muted)' }}>Không có container phù hợp.</p> : filteredContainers.map((container) => <button type="button" key={container.id} onClick={() => setSelectedCode(container.containerCode)} style={{ width: '100%', textAlign: 'left', border: 0, borderBottom: '1px solid var(--border-color)', background: container.containerCode === selectedCode ? 'var(--bg-subtle)' : 'transparent', color: 'inherit', padding: 14, cursor: 'pointer' }}>
-            <strong>{container.containerCode}</strong><span className="badge" style={{ float: 'right' }}>{statusLabel[container.status] || container.status}</span>
-            <div style={{ marginTop: 6, fontSize: 13, color: 'var(--text-muted)' }}>{container.responsibleCompanyName || 'Chưa gán công ty'} · {container.vehicleLicensePlate || 'Chưa gán xe'}</div>
-          </button>)}
         </section>
-        <section style={{ display: 'grid', gap: 14 }}>
-          {selected ? <>
-            <article className="card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}><div><div style={{ color: 'var(--text-muted)', fontSize: 12 }}>MÃ THIẾT BỊ CONTAINER</div><h2 style={{ margin: '4px 0' }}>{selected.containerCode}</h2></div><span className="badge">{statusLabel[selected.status] || selected.status}</span></div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 14, marginTop: 16 }}>
-                <div><Building2 size={15} /> <b>Công ty phụ trách</b><div>{selected.responsibleCompanyName || selected.responsibleCompanyCode || 'Chưa gán'}</div></div>
-                <div><Truck size={15} /> <b>Xe đầu kéo</b><div>{selected.vehicleLicensePlate || 'Chưa gán'} · {selected.vehicleTypeLabel || '—'}</div></div>
-                <div><b>Tài xế</b><div>{selected.driverName || 'Chưa gán'}</div><small>{selected.driverPhone || ''}</small></div>
-                <div><b>Loại / ISO</b><div>{selected.containerType} · {selected.isoType || '—'}</div></div>
-                <div><b>Tải trọng / thể tích</b><div>{selected.maxPayloadTons} t · {selected.cubicCapacityM3} m³</div></div>
-                <div><b>Niêm phong</b><div>{selected.eSealNumber || '—'} · {selected.eSealStatus || '—'}</div></div>
-                <div><b>Vận đơn</b><div>{selected.assignedShipmentCode || 'Chưa gán'}</div></div>
-                <div><b>Hành trình</b><div>{selected.originName || '—'} → {selected.destinationName || '—'}</div></div>
-              </div>
-              <div style={{ borderTop: '1px solid var(--border-color)', marginTop: 16, paddingTop: 12, color: 'var(--text-muted)', fontSize: 12 }}>Mã container là định danh thiết bị. Công ty khách hàng/phụ trách được lưu riêng và không thay thế mã ISO.</div>
-            </article>
-            <article className="card" style={{ padding: 0, overflow: 'hidden' }}>
-              <div style={{ padding: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}><div><h3 style={{ margin: 0 }}>Hàng hóa trong container</h3><small style={{ color: 'var(--text-muted)' }}>{items.length} mặt hàng/kiện trong manifest</small></div><button className="btn btn-secondary" type="button" onClick={() => setItemForm({ ...emptyItem })}><Plus size={15} /> Thêm mặt hàng</button></div>
-              {items.length === 0 ? <p style={{ padding: '0 16px 16px', color: 'var(--text-muted)' }}>Container này chưa có hàng hóa trong manifest.</p> : <div style={{ overflowX: 'auto' }}><table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 13 }}><thead><tr>{['Mã sản phẩm', 'Hàng hóa', 'Vận đơn', 'Kiện / kg', 'Người nhận', 'Cơ sở giao'].map((head) => <th key={head} style={{ padding: 11, borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>{head}</th>)}</tr></thead><tbody>{items.map((item) => <tr key={item.id}><td style={{ padding: 11 }}>{item.itemCode}</td><td style={{ padding: 11 }}>{item.cargoName}<div style={{ color: 'var(--text-muted)' }}>{item.cargoCategory}</div></td><td style={{ padding: 11 }}>{item.shipmentCode}</td><td style={{ padding: 11 }}>{item.parcelCount} / {item.weightKg}</td><td style={{ padding: 11 }}>{item.consigneeName}</td><td style={{ padding: 11 }}>{item.deliveryZoneName}<div style={{ color: 'var(--text-muted)' }}>{item.deliveryAddress}</div></td></tr>)}</tbody></table></div>}
-            </article>
-          </> : <div className="card" style={{ color: 'var(--text-muted)' }}>Chọn container để xem thông tin thiết bị và manifest.</div>}
-        </section>
+      )}
+      {containerForm && (
+        <ContainerCreateCard
+          form={containerForm}
+          setForm={setContainerForm}
+          companies={catalogues.companies}
+          onClose={() => setContainerForm(null)}
+          onSubmit={submitContainer}
+          saving={saving}
+          error={formError}
+        />
+      )}
+      <div className="container-sync-status">
+        {offline
+          ? 'Trình duyệt ngoại tuyến'
+          : error
+            ? 'Chưa tải được dữ liệu mới'
+            : 'Kiểm tra cập nhật mỗi 30 giây'}
+        {lastSuccessAt && ` · Lần tải gần nhất ${formatDate(lastSuccessAt)}`}
       </div>
 
-      {containerForm && <div className="modal-backdrop" role="presentation"><form className="modal" onSubmit={submitContainer} style={{ maxWidth: 680, maxHeight: '90vh', overflow: 'auto' }}><h2>Tạo hồ sơ container</h2><p>Mã container nhập theo nhãn định danh trên thiết bị; công ty phụ trách là thông tin vận hành riêng.</p><div className="form-grid">
-        <label>Mã container<input required value={containerForm.containerCode} onChange={(e) => setContainerForm({ ...containerForm, containerCode: e.target.value.toUpperCase() })} placeholder="ABCU1234567" /></label>
-        <label>Loại container<select value={containerForm.containerType} onChange={(e) => setContainerForm({ ...containerForm, containerType: e.target.value })}>{TYPES.map((type) => <option key={type}>{type}</option>)}</select></label>
-        <label>ISO type<input value={containerForm.isoType} onChange={(e) => setContainerForm({ ...containerForm, isoType: e.target.value })} /></label>
-        <label>Chủ sở hữu thiết bị<input value={containerForm.ownerName} onChange={(e) => setContainerForm({ ...containerForm, ownerName: e.target.value })} /></label>
-        <label>Công ty phụ trách<select required value={containerForm.responsibleCompanyId} onChange={(e) => setContainerForm({ ...containerForm, responsibleCompanyId: e.target.value })}><option value="">Chọn công ty</option>{companies.map((company) => <option key={company.id} value={company.id}>{company.companyCode} · {company.companyName}</option>)}</select></label>
-        <label>Tare weight (tấn)<input required type="number" min="0" step="0.01" value={containerForm.tareWeightTons} onChange={(e) => setContainerForm({ ...containerForm, tareWeightTons: e.target.value })} /></label>
-        <label>Tải trọng tối đa (tấn)<input required type="number" min="0.01" step="0.01" value={containerForm.maxPayloadTons} onChange={(e) => setContainerForm({ ...containerForm, maxPayloadTons: e.target.value })} /></label>
-        <label>Thể tích (m³)<input type="number" min="0" step="0.01" value={containerForm.cubicCapacityM3} onChange={(e) => setContainerForm({ ...containerForm, cubicCapacityM3: e.target.value })} /></label>
-        <label className="checkbox-row"><input type="checkbox" checked={containerForm.isReefer} onChange={(e) => setContainerForm({ ...containerForm, isReefer: e.target.checked })} /> Container lạnh</label>
-      </div><div className="modal-actions"><button type="button" className="btn btn-secondary" onClick={() => setContainerForm(null)}>Đóng</button><button className="btn btn-primary" disabled={saving}>{saving ? 'Đang lưu...' : 'Tạo hồ sơ'}</button></div></form></div>}
+      {/* DANH SÁCH CONTAINER (Luôn hiển thị trên nền làm việc chính) */}
+      <section className="card container-list-card" aria-label="Danh sách container">
+        <div className="container-list-heading">
+          <div>
+            <h2>Danh sách container</h2>
+            <p>
+              Đối chiếu phân công, hành trình, tín hiệu thiết bị và GPS để ưu tiên chuyến cần xử lý.
+            </p>
+          </div>
+          <span role="status" aria-live="polite">
+            {loading
+              ? 'Đang tải…'
+              : filteredContainers.length +
+                ' / ' +
+                containers.length +
+                (attentionOnly ? ' · chỉ mục cần chú ý' : '')}
+          </span>
+        </div>
+        <div className="container-filters">
+          <SearchField
+            id="container-search"
+            label="Tìm kiếm"
+            value={query}
+            onValueChange={setQuery}
+            placeholder="Mã container, vận đơn, xe, tài xế, chủ sở hữu, ISO, seal…"
+            hint="Tìm không dấu; có thể kết hợp nhiều từ khóa, ví dụ: Cát Lái 51C."
+            aria-label="Tìm container"
+          />
+          <div className="container-filter-group">
+            <label className="container-filter-label" htmlFor="container-status">
+              Trạng thái vận hành
+            </label>
+            <div className="container-select-control">
+              <select
+                id="container-status"
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value)}
+                aria-label="Lọc trạng thái container"
+              >
+                <option value="ALL">Tất cả trạng thái</option>
+                {Object.entries(CONTAINER_STATUSES).map(([status, definition]) => (
+                  <option key={status} value={status}>
+                    {definition.label}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={17} aria-hidden="true" />
+            </div>
+          </div>
+          {(query || statusFilter !== 'ALL' || attentionOnly || hasAdvancedFilters) && (
+            <button
+              type="button"
+              className="container-text-button container-reset"
+              onClick={resetFilters}
+            >
+              Xóa bộ lọc
+            </button>
+          )}
+        </div>
+        <ContainerSearchFilters filters={searchFilters} onChange={setSearchFilters} />
+        <div className="container-list-results" aria-busy={loading}>
+          {loading ? (
+            <p className="container-empty" role="status">
+              Đang tải container…
+            </p>
+          ) : error && containers.length === 0 ? (
+            <div className="container-empty">
+              <Box size={28} />
+              <h3>Chưa tải được dữ liệu</h3>
+              <p>Hãy thử tải lại danh sách container.</p>
+            </div>
+          ) : filteredContainers.length === 0 ? (
+            <div className="container-empty">
+              <Search size={28} />
+              <h3>{containers.length ? 'Không tìm thấy container' : 'Chưa có container'}</h3>
+              <p>
+                {containers.length
+                  ? attentionOnly && !query && statusFilter === 'ALL' && !hasAdvancedFilters
+                    ? 'Không có điểm cần chú ý theo dữ liệu hiện có.'
+                    : 'Thử thay đổi từ khóa hoặc bộ lọc trạng thái.'
+                  : 'Tạo hồ sơ đầu tiên để bắt đầu quản lý.'}
+              </p>
+              {containers.length > 0 && (
+                <button type="button" className="container-text-button" onClick={resetFilters}>
+                  Xóa bộ lọc
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="container-table-wrapper">
+              <table className="container-fleet-table" role="table">
+                <thead>
+                  <tr>
+                    <th scope="col">Container</th>
+                    <th scope="col">Phân công</th>
+                    <th scope="col">Chuyến & hành trình</th>
+                    <th scope="col">Vận hành</th>
+                    <th scope="col">Theo dõi</th>
+                    <th scope="col">Điểm cần chú ý</th>
+                    <th scope="col">Hồ sơ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredContainers.map((container) => (
+                    <tr
+                      key={container.containerCode}
+                      className={
+                        selectedCode === container.containerCode ? 'container-row-active' : ''
+                      }
+                      onClick={() => {
+                        setContainerForm(null);
+                        setSelectedCode(container.containerCode);
+                      }}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <th scope="row">
+                        <div className="container-cell-code-stack">
+                          <span className="container-code-chip">
+                            <Box size={14} />
+                            <strong>{container.containerCode}</strong>
+                          </span>
+                          <div className="container-type-chip-row">
+                            <span className="container-type-chip">
+                              {CONTAINER_TYPES[container.containerType] || container.containerType}
+                            </span>
+                            {container.isReefer && (
+                              <span className="container-reefer-chip">
+                                <Snowflake size={11} /> Chuỗi lạnh
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </th>
+                      <td data-label="Phân công">
+                        <div className="container-list-cell-stack">
+                          <span className="container-company-name">
+                            <Building2 size={12} />{' '}
+                            {container.responsibleCompanyName || 'Chưa có đơn vị phụ trách'}
+                          </span>
+                          <span className="container-plate-badge">
+                            <Truck size={12} /> {container.vehicleLicensePlate || 'Chưa gán xe'}
+                          </span>
+                          <span className="container-driver-badge">
+                            <UserRound size={12} /> {container.driverName || 'Chưa gán tài xế'}
+                          </span>
+                        </div>
+                      </td>
+                      <td data-label="Chuyến & hành trình">
+                        <div className="container-list-cell-stack">
+                          <span className="container-shipment-pill">
+                            <Package size={12} />{' '}
+                            {container.assignedShipmentCode || 'Chưa gán vận đơn'}
+                          </span>
+                          <div className="container-route-stack">
+                            <span className="route-point origin">
+                              {container.originName || 'Chưa có điểm đi'}
+                            </span>
+                            <span className="route-arrow-icon" aria-hidden="true">
+                              →
+                            </span>
+                            <span className="route-point destination">
+                              {container.destinationName || 'Chưa có điểm đến'}
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+                      <td data-label="Vận hành">
+                        <ContainerStatus status={container.status} />
+                      </td>
+                      <td data-label="Theo dõi">
+                        <div className="container-list-cell-stack">
+                          <ContainerConnectionBadge container={container} now={now} />
+                          <span className="container-location-badge">
+                            <MapPin size={12} /> {container.lastLocationName || 'Chưa có vị trí'}
+                          </span>
+                          <div className="container-telemetry-row">
+                            <span className="telemetry-sub">
+                              GPS · {formatSignalAge(container.lastPositionReceivedAt, now)}
+                            </span>
+                            <span className="telemetry-sub">
+                              Thiết bị · {formatSignalAge(container.lastTelemetryReceivedAt, now)}
+                            </span>
+                            {container.lastLocationName && (
+                              <span className="telemetry-sub">
+                                Vị trí · {formatSignalAge(container.lastLocationNameAt, now)}
+                              </span>
+                            )}
+                          </div>
+                          {container.lastProgressAt ? (
+                            <span className="container-progress-tag">
+                              Tiến độ {formatNumber(container.progressPct, '%')} ·{' '}
+                              {formatSignalAge(container.lastProgressAt, now)}
+                            </span>
+                          ) : (
+                            <span className="telemetry-sub">
+                              Chưa có tiến độ GPS được đóng dấu thời gian
+                            </span>
+                          )}
+                          {container.lastEtaAt && container.etaMinutes != null && (
+                            <span className="container-progress-tag">
+                              ETA {formatNumber(container.etaMinutes, ' phút')} ·{' '}
+                              {formatSignalAge(container.lastEtaAt, now)}
+                            </span>
+                          )}
+                          {container.isReefer && (
+                            <span className="telemetry-sub">
+                              Nhiệt cấp / hồi: {formatNumber(container.supplyAirTempC, ' °C')} /{' '}
+                              {formatNumber(container.returnAirTempC, ' °C')}
+                              {' · '}cấp {formatSignalAge(container.lastSupplyAirTempAt, now)}
+                              {' · '}hồi {formatSignalAge(container.lastReturnAirTempAt, now)}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td data-label="Điểm cần chú ý">
+                        <ContainerAttention
+                          code={container.containerCode}
+                          issues={containerOperationalIssues(container, now)}
+                        />
+                      </td>
+                      <td>
+                        <button
+                          id={'open-container-' + container.containerCode}
+                          className="btn btn-secondary container-open-detail-btn"
+                          type="button"
+                          aria-label={'Thông tin chi tiết ' + container.containerCode}
+                          onClick={() => {
+                            setContainerForm(null);
+                            setSelectedCode(container.containerCode);
+                          }}
+                        >
+                          Thông tin chi tiết <ArrowRight size={14} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </section>
 
-      {itemForm && <div className="modal-backdrop" role="presentation"><form className="modal" onSubmit={submitItem} style={{ maxWidth: 760, maxHeight: '90vh', overflow: 'auto' }}><h2>Thêm hàng hóa vào {selectedCode}</h2><p>Mỗi dòng manifest có mã hàng riêng để truy xuất khi đóng, giao nhận và đối soát.</p><div className="form-grid">
-        <label>Mã sản phẩm/kiện<input required value={itemForm.itemCode} onChange={(e) => setItemForm({ ...itemForm, itemCode: e.target.value.toUpperCase() })} placeholder="SKU-VNM-000123" /></label>
-        <label>Mã vận đơn<input required value={itemForm.shipmentCode} onChange={(e) => setItemForm({ ...itemForm, shipmentCode: e.target.value })} /></label>
-        <label>Hub nhận<select required value={itemForm.hubCode} onChange={(e) => setItemForm({ ...itemForm, hubCode: e.target.value })}><option value="">Chọn cơ sở nhận</option>{hubs.map((hub) => <option key={hub.id} value={hub.hubCode}>{hub.hubCode} · {hub.hubName}</option>)}</select></label>
-        <label>Tên hàng<input required value={itemForm.cargoName} onChange={(e) => setItemForm({ ...itemForm, cargoName: e.target.value })} /></label>
-        <label>Nhóm hàng<input required value={itemForm.cargoCategory} onChange={(e) => setItemForm({ ...itemForm, cargoCategory: e.target.value })} /></label>
-        <label>Số kiện<input required type="number" min="1" value={itemForm.parcelCount} onChange={(e) => setItemForm({ ...itemForm, parcelCount: e.target.value })} /></label>
-        <label>Khối lượng (kg)<input required type="number" min="0.01" step="0.01" value={itemForm.weightKg} onChange={(e) => setItemForm({ ...itemForm, weightKg: e.target.value })} /></label>
-        <label>Người nhận<input required value={itemForm.consigneeName} onChange={(e) => setItemForm({ ...itemForm, consigneeName: e.target.value })} /></label>
-        <label>Điện thoại người nhận<input required value={itemForm.consigneePhone} onChange={(e) => setItemForm({ ...itemForm, consigneePhone: e.target.value })} /></label>
-        <label>Khu vực giao<input required value={itemForm.deliveryZoneName} onChange={(e) => setItemForm({ ...itemForm, deliveryZoneName: e.target.value })} /></label>
-        <label>Địa chỉ giao<input required value={itemForm.deliveryAddress} onChange={(e) => setItemForm({ ...itemForm, deliveryAddress: e.target.value })} /></label>
-        <label>Vĩ độ<input required type="number" step="any" value={itemForm.deliveryLat} onChange={(e) => setItemForm({ ...itemForm, deliveryLat: e.target.value })} /></label>
-        <label>Kinh độ<input required type="number" step="any" value={itemForm.deliveryLng} onChange={(e) => setItemForm({ ...itemForm, deliveryLng: e.target.value })} /></label>
-        <label>SLA giao<input required value={itemForm.slaWindow} onChange={(e) => setItemForm({ ...itemForm, slaWindow: e.target.value })} /></label>
-        <label className="checkbox-row"><input type="checkbox" checked={itemForm.requiresColdChain} onChange={(e) => setItemForm({ ...itemForm, requiresColdChain: e.target.checked })} /> Yêu cầu chuỗi lạnh</label>
-      </div><div className="modal-actions"><button type="button" className="btn btn-secondary" onClick={() => setItemForm(null)}>Đóng</button><button className="btn btn-primary" disabled={saving}>{saving ? 'Đang lưu...' : 'Thêm vào manifest'}</button></div></form></div>}
+      {/* CARD ĐÈ LÊN TRANG (Modal Overlay Card Drawer) */}
+      {selectedCode && (
+        <div
+          className="container-modal-backdrop"
+          onClick={() => {
+            returnCode.current = selectedCode;
+            setItemForm(null);
+            setSelectedCode('');
+          }}
+          role="presentation"
+        >
+          <div
+            className="container-modal-card-window"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label={'Chi tiết container ' + (selected?.containerCode || activeCode)}
+          >
+            <header className="container-modal-topbar">
+              <button
+                ref={detailHeading}
+                className="container-back-link"
+                type="button"
+                onClick={() => {
+                  returnCode.current = selectedCode;
+                  setItemForm(null);
+                  setSelectedCode('');
+                }}
+              >
+                <ArrowLeft size={16} />
+                <span>Quay lại danh sách</span>
+              </button>
+              <div className="dispatch-window-context">
+                <Boxes size={15} />
+                <span>Bàn điều hành container</span>
+                <span className="dispatch-window-separator">/</span>
+                <strong>{activeCode}</strong>
+              </div>
+              <div className="container-modal-topbar-right">
+                <button
+                  type="button"
+                  className="container-modal-close-icon-btn"
+                  aria-label="Đóng chi tiết container"
+                  onClick={() => {
+                    returnCode.current = selectedCode;
+                    setItemForm(null);
+                    setSelectedCode('');
+                  }}
+                >
+                  <X size={19} />
+                </button>
+              </div>
+            </header>
+
+            {/* Scrollable body with ContainerDetails */}
+            <div className="container-modal-content-body">
+              {selected ? (
+                <ContainerDetails
+                  key={activeCode}
+                  container={selected}
+                  items={activeManifest.items}
+                  manifestState={activeManifest.state}
+                  manifestError={activeManifest.error}
+                  onRetryManifest={() => setManifestVersion((version) => version + 1)}
+                  manifestEditor={
+                    itemForm && (
+                      <ManifestCreateCard
+                        containerCode={itemTarget}
+                        form={itemForm}
+                        setForm={setItemForm}
+                        hubs={catalogues.hubs}
+                        onClose={() => setItemForm(null)}
+                        onSubmit={submitItem}
+                        saving={saving}
+                        error={formError}
+                      />
+                    )
+                  }
+                  onAddItem={openItemForm}
+                  canManage={canManage}
+                  role={role}
+                  companies={catalogues.companies}
+                  hubs={catalogues.hubs}
+                  now={now}
+                  onRefresh={refreshContainers}
+                  synchronization={{ state: offline ? 'offline' : error ? 'error' : 'ready' }}
+                />
+              ) : (
+                <p className="container-empty">Container không còn trong danh sách.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

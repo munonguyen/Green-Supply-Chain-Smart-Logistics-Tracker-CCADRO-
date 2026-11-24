@@ -130,7 +130,7 @@ describe('Role-Adapted Header & Comprehensive Business Settings', () => {
       <MemoryRouter>
         <ThemeProvider>
           <AuthProvider>
-            <Header title="Kiểm Toán Phát Thải GLEC v3 (UC12)" />
+            <Header title="Kiểm Toán Phát Thải GLEC v3" />
           </AuthProvider>
         </ThemeProvider>
       </MemoryRouter>

@@ -6,7 +6,7 @@ import { AuthProvider, getAccessibleWorkspaces, useAuth } from '../context/AuthC
 import { ThemeProvider } from '../context/ThemeContext';
 import LandingNavbar from '../systems/public/shared/LandingNavbar';
 import Sidebar from '../shared/layout/Sidebar';
-import SidebarAccountCard from '../shared/components/SidebarAccountCard';
+import SidebarAccountCard from '../shared/components/account/SidebarAccountCard';
 import { elasticSearchMatch } from '../utils/elasticSearch';
 
 function AuthHarness() {

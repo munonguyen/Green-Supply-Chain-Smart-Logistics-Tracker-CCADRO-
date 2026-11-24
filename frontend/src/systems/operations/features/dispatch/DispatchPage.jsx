@@ -1,132 +1,142 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Truck, UserCheck, ShieldCheck, Activity, Route, CheckCircle2, AlertTriangle } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ChevronDown,
+  Clock,
+  Info,
+  MapPin,
+  Package,
+  Route,
+  Send,
+  ShieldCheck,
+  Truck,
+  UserCheck
+} from 'lucide-react';
+import { api } from '../../../../services/api';
+import { DriverHistoryButton, DriverTransportHistory } from '../../../../shared/components/history/TransportHistory';
 import MapView from '../../../../shared/map/MapView';
 import RoutePolyline from '../../../../shared/map/RoutePolyline';
 import OriginMarker from '../../../../shared/map/OriginMarker';
 import DestinationMarker from '../../../../shared/map/DestinationMarker';
-import VehicleMarker from '../../../../shared/map/VehicleMarker';
-import { api } from '../../../../services/api';
-import { getRealRoadRoute } from '../../../../services/roadRoutingService';
+import RouteEvidence from '../../../../shared/map/RouteEvidence';
+import { formatDate, formatNumber } from '../containers/containerPresentation';
+import './dispatch.css';
 
-const DISPATCH_CORRIDOR = getRealRoadRoute('catlai', 'vsip').points;
-
-const FALLBACK_VEHICLES = [
-  {
-    id: 'a0000000-0000-0000-0000-000000000001',
-    vehicleCode: 'V001',
-    licensePlate: '51C-888.99',
-    fuelType: 'Xe đầu kéo điện (EV) / Euro 5',
-    payloadCapacityTons: 20.0,
-    status: 'AVAILABLE',
-    preTripPassed: true
-  },
-  {
-    id: 'a0000000-0000-0000-0000-000000000002',
-    vehicleCode: 'V002',
-    licensePlate: '51D-777.55',
-    fuelType: 'Diesel Sinh Học B5 + SCR Euro 5',
-    payloadCapacityTons: 25.0,
-    status: 'AVAILABLE',
-    preTripPassed: true
-  }
-];
-
-const FALLBACK_DRIVERS = [
-  {
-    id: 'b0000000-0000-0000-0000-000000000001',
-    driverCode: 'D001',
-    fullName: 'Nguyễn Văn Tài',
-    licenseType: 'FC (Container & Chuỗi lạnh)',
-    phone: '0901 234 567',
-    ecoScore: 98,
-    status: 'AVAILABLE'
-  },
-  {
-    id: 'b0000000-0000-0000-0000-000000000002',
-    driverCode: 'D002',
-    fullName: 'Trần Minh Quân',
-    licenseType: 'FC (Chuyên tuyến Cát Lái – VSIP)',
-    phone: '0903 456 789',
-    ecoScore: 95,
-    status: 'AVAILABLE'
-  }
-];
+const unwrap = (response) => response?.result ?? response;
+const list = (response) => (Array.isArray(unwrap(response)) ? unwrap(response) : []);
 
 export default function DispatchPage() {
   const { shipmentId } = useParams();
   const navigate = useNavigate();
-  const [vehicles, setVehicles] = useState(FALLBACK_VEHICLES);
-  const [drivers, setDrivers] = useState(FALLBACK_DRIVERS);
-  const [selectedVehicleId, setSelectedVehicleId] = useState(FALLBACK_VEHICLES[0].id);
-  const [selectedDriverId, setSelectedDriverId] = useState(FALLBACK_DRIVERS[0].id);
+  const [shipment, setShipment] = useState(null);
+  const [routeVersion, setRouteVersion] = useState(null);
+  const [vehicles, setVehicles] = useState([]);
+  const [drivers, setDrivers] = useState([]);
+  const [pinned, setPinned] = useState(null);
+  const [selectedVehicleId, setSelectedVehicleId] = useState('');
+  const [selectedDriverId, setSelectedDriverId] = useState('');
+  const [historyDriver, setHistoryDriver] = useState(null);
+  const [historyDriverId, setHistoryDriverId] = useState('');
+  const [loadErrors, setLoadErrors] = useState([]);
+  const [dispatchError, setDispatchError] = useState('');
   const [dispatching, setDispatching] = useState(false);
-  const [dispatchError, setDispatchError] = useState(null);
-
-  const selectedPlan = (() => {
-    try {
-      const raw = window.sessionStorage?.getItem('ccadro_selected_plan');
-      return raw ? JSON.parse(raw) : null;
-    } catch {
-      return null;
-    }
-  })();
-
-  const corridorPoints =
-    Array.isArray(selectedPlan?.waypoints) && selectedPlan.waypoints.length >= 2
-      ? selectedPlan.waypoints
-      : DISPATCH_CORRIDOR;
 
   useEffect(() => {
-    Promise.allSettled([api.getVehicles(), api.getDrivers()]).then(([vRes, dRes]) => {
-      const vList = vRes.status === 'fulfilled' ? vRes.value?.result ?? vRes.value : null;
-      const dList = dRes.status === 'fulfilled' ? dRes.value?.result ?? dRes.value : null;
-      if (Array.isArray(vList) && vList.length > 0) {
-        setVehicles(vList);
-        const ready = vList.find((v) => v.status === 'AVAILABLE') || vList[0];
-        if (ready?.id) setSelectedVehicleId(ready.id);
-      }
-      if (Array.isArray(dList) && dList.length > 0) {
-        setDrivers(dList);
-        if (dList[0]?.id) setSelectedDriverId(dList[0].id);
-      }
+    let active = true;
+    Promise.allSettled([
+      api.getShipmentById(shipmentId),
+      api.getActiveRouteVersion(shipmentId),
+      api.getVehicles(),
+      api.getDispatchDrivers(),
+      api.getContainers()
+    ]).then((results) => {
+      if (!active) return;
+      const failures = [];
+      const value = (index, label) => {
+        const result = results[index];
+        if (result.status === 'fulfilled') return unwrap(result.value);
+        failures.push(`${label}: ${result.reason?.message || 'chưa tải được'}`);
+        return null;
+      };
+      setShipment(value(0, 'Vận đơn'));
+      setRouteVersion(value(1, 'Lộ trình hiệu lực'));
+      const vehicleList = list({ result: value(2, 'Danh sách xe') });
+      const driverList = list({ result: value(3, 'Danh sách tài xế') });
+      const matched = list({ result: value(4, 'Container') }).find(
+        (container) => container.assignedShipmentId === shipmentId && container.status === 'ASSIGNED'
+      );
+      setPinned(matched || null);
+      setVehicles(vehicleList);
+      setDrivers(driverList);
+      setSelectedVehicleId(matched?.assignedVehicleId || '');
+      setSelectedDriverId(matched?.assignedDriverId || '');
+      setLoadErrors(failures);
     });
-  }, []);
+    return () => {
+      active = false;
+    };
+  }, [shipmentId]);
 
-  const activeVehicle = vehicles.find((v) => v.id === selectedVehicleId) || vehicles[0];
-  const activeDriver = drivers.find((d) => d.id === selectedDriverId) || drivers[0];
-  const isVehicleBlocked = activeVehicle?.status !== 'AVAILABLE';
-  const isDriverBlocked = activeDriver?.status !== 'AVAILABLE';
+  const activeVehicle = vehicles.find((vehicle) => vehicle.id === selectedVehicleId);
+  const activeDriver = drivers.find((driver) => driver.id === selectedDriverId);
+  const driverCheck = activeDriver
+    ? {
+        eligible: pinned
+          ? activeDriver.status === 'ASSIGNED' && !activeDriver.qualificationIssue
+          : activeDriver.eligible,
+        reasons: pinned && !activeDriver.qualificationIssue ? [] : activeDriver.reasons
+      }
+    : { eligible: false, reasons: ['Chưa chọn tài xế'] };
+  const vehicleBlocked =
+    !activeVehicle ||
+    activeVehicle.status !== (pinned ? 'ASSIGNED' : 'AVAILABLE') ||
+    activeVehicle.isDeleted;
 
-  const handleDispatchAndStart = async () => {
-    if (isVehicleBlocked || isDriverBlocked) {
+  const geometry = useMemo(() => {
+    if (!routeVersion?.routeGeoJson) return [];
+    try {
+      const parsed =
+        typeof routeVersion.routeGeoJson === 'string'
+          ? JSON.parse(routeVersion.routeGeoJson)
+          : routeVersion.routeGeoJson;
+      return (parsed.coordinates || []).map(([longitude, latitude]) => [latitude, longitude]);
+    } catch {
+      return [];
+    }
+  }, [routeVersion]);
+
+  const routeReady = Boolean(routeVersion?.id);
+  const vehicleReady = Boolean(activeVehicle) && !vehicleBlocked;
+  const driverReady = Boolean(activeDriver) && Boolean(driverCheck.eligible);
+  const gatesPassedCount = [routeReady, vehicleReady, driverReady].filter(Boolean).length;
+
+  const createDispatch = async () => {
+    if (vehicleBlocked || !driverCheck.eligible || !routeVersion?.id) {
       setDispatchError(
-        isVehicleBlocked
-          ? `Xe ${activeVehicle.vehicleCode} hiện không ở trạng thái sẵn sàng.`
-          : `Tài xế ${activeDriver.driverCode} hiện không ở trạng thái sẵn sàng.`
+        !routeVersion?.id
+          ? 'Chưa có RouteVersion hiệu lực.'
+          : vehicleBlocked
+            ? 'Xe không còn ở trạng thái sẵn sàng.'
+            : `Tài xế chưa đủ điều kiện: ${driverCheck.reasons.join(', ')}.`
       );
       return;
     }
-    setDispatchError(null);
+    setDispatchError('');
     setDispatching(true);
     try {
-      const dispatchRes = await api.createDispatchOrder({
-        dispatchCode: `DSP-${Date.now().toString().slice(-6)}`,
-        shipmentId: shipmentId || 'e0000000-0000-0000-0000-000000000001',
+      const response = await api.createDispatchOrder({
+        dispatchCode: `DSP-${Date.now().toString().slice(-8)}`,
+        shipmentId,
         vehicleId: activeVehicle.id,
         driverId: activeDriver.id
       });
-      const dispatchOrder = dispatchRes?.result ?? dispatchRes;
-      if (!dispatchOrder?.tripId) {
-        throw new Error('Lệnh điều phối không trả về mã chuyến đã khởi tạo.');
-      }
-      await api.startTrip(dispatchOrder.tripId);
+      const dispatchOrder = unwrap(response);
+      if (!dispatchOrder?.tripId) throw new Error('Lệnh điều phối chưa tạo được chuyến thực tế.');
       navigate(`/trips/${dispatchOrder.tripId}`);
-    } catch (err) {
-      setDispatchError(
-        err?.message ||
-          'Không thể kích hoạt chuyến xe thực tế vì Backend / Tracking Service (:8888) chưa kết nối. Hệ thống không tự tạo chuyến đi giả lập.'
-      );
+    } catch (failure) {
+      setDispatchError(failure.message || 'Backend từ chối hoặc không hoàn tất điều phối.');
     } finally {
       setDispatching(false);
     }
@@ -134,278 +144,514 @@ export default function DispatchPage() {
 
   return (
     <div className="page-body dispatch-workspace">
-      <div
-        className="dispatch-page-heading"
-      >
-        <div className="dispatch-heading-copy">
-          <div className="dispatch-eyebrow">ĐIỀU HÀNH VẬN TẢI / XUẤT BẾN</div>
-          <h2>Điều phối chuyến</h2>
-          <div className="dispatch-shipment-ref">
-            Vận đơn <code>{(shipmentId || 'SH-2026-081').slice(0, 12)}</code>
-          </div>
-        </div>
-        <div className="dispatch-heading-actions">
-          <span className="dispatch-stage"><span /> CHỜ XUẤT BẾN</span>
-          <Link to={`/planning/${shipmentId || 'e0000000-0000-0000-0000-000000000001'}`} className="btn btn-secondary">
-            <Route size={15} /> Lập tuyến
-          </Link>
-        </div>
-      </div>
-
-      <div className="dispatch-step-strip" aria-label="Các bước điều phối">
-        <div className="dispatch-step done"><span>1</span><b>Vận đơn & tuyến</b></div>
-        <i />
-        <div className="dispatch-step active"><span>2</span><b>Xe & tài xế</b></div>
-        <i />
-        <div className="dispatch-step"><span>3</span><b>Xuất bến</b></div>
-        <i />
-        <div className="dispatch-step"><span>4</span><b>Giám sát chuyến</b></div>
-      </div>
-
-      <div className="split-dispatch-grid">
-        {/* Left: Assigned Fleet Assets & Pre-Trip Verification */}
-        <div className="card">
-          <h3 style={{ fontSize: '1.08rem', fontWeight: 800, marginBottom: 14 }}>
-            Phân Công Phương Tiện &amp; Tài Xế Đủ Điều Kiện
-          </h3>
-
-          {dispatchError && (
-            <div
-              style={{
-                padding: '10px 12px',
-                borderRadius: '8px',
-                background: 'rgba(239, 68, 68, 0.14)',
-                border: '1px solid #ef4444',
-                color: '#ef4444',
-                fontSize: '0.82rem',
-                fontWeight: 600,
-                marginBottom: 14,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8
-              }}
-            >
-              <AlertTriangle size={16} />
-              <span>{dispatchError}</span>
-            </div>
-          )}
-
-          <div style={{ display: 'grid', gap: 14, marginBottom: 18 }}>
-            <div
-              style={{
-                background: 'rgba(56, 189, 248, 0.06)',
-                padding: 16,
-                borderRadius: 12,
-                    border: `1px solid ${isVehicleBlocked ? '#ef4444' : 'var(--border-color)'}`
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 10,
-                  marginBottom: 10,
-                  flexWrap: 'wrap'
-                }}
+      {/* Header & Workflow Progress */}
+      <section className="dispatch-header-card">
+        <header className="dispatch-page-heading">
+          <div className="dispatch-heading-copy">
+            <div className="dispatch-eyebrow">ĐIỀU HÀNH VẬN TẢI / KIỂM TRA TRƯỚC ĐIỀU PHỐI</div>
+            <h2>Phân công xe và tài xế</h2>
+            <div className="dispatch-shipment-meta">
+              <span>Vận đơn</span>
+              <code className="dispatch-ref-pill">{shipment?.shipmentCode || shipmentId}</code>
+              <span
+                className={`dispatch-status-chip ${
+                  shipment?.status ? 'dispatch-status-chip--ok' : 'dispatch-status-chip--neutral'
+                }`}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Truck size={20} color="#0ea5e9" />
-                  <b style={{ fontSize: '0.95rem' }}>
-                    {activeVehicle.vehicleCode || 'V001'} • {activeVehicle.licensePlate || '51C-888.99'}
-                  </b>
-                </div>
-                <select
-                  value={selectedVehicleId}
-                  onChange={(e) => setSelectedVehicleId(e.target.value)}
-                  style={{
-                    padding: '5px 10px',
-                    borderRadius: 8,
-                    border: '1px solid var(--border-color)',
-                    background: 'var(--bg-card)',
-                    color: 'var(--text-main)',
-                    fontSize: '0.8rem'
-                  }}
-                >
-                  {vehicles.map((v) => (
-                    <option key={v.id} value={v.id} disabled={v.status !== 'AVAILABLE'}>
-                      {v.vehicleCode} ({v.licensePlate}) — {v.status}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div style={{ fontSize: '0.83rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                • Loại phương tiện:{' '}
-                <strong style={{ color: 'var(--text-main)' }}>
-                  {activeVehicle.fuelType || activeVehicle.vehicleType || 'Xe đầu kéo điện (EV) / Euro 5'}
-                </strong>
-                <br />• Tải trọng tối đa:{' '}
-                <strong style={{ color: 'var(--text-main)' }}>
-                  {activeVehicle.payloadCapacityTons || 20.0} tấn
-                </strong>{' '}
-                (Đạt chuẩn GLEC v3)
-                <br />• Kiểm định Pre-trip (UC01):{' '}
-                <strong style={{ color: isVehicleBlocked || activeVehicle.preTripPassed === false ? '#ef4444' : 'var(--accent-green)' }}>
-                  {isVehicleBlocked ? `KHÔNG SẴN SÀNG (${activeVehicle.status})` : activeVehicle.preTripPassed === false ? 'PRE-TRIP CHƯA ĐẠT' : 'SẴN SÀNG'}
-                </strong>
-              </div>
-            </div>
-
-            <div
-              style={{
-                background: 'rgba(16, 185, 129, 0.06)',
-                padding: 16,
-                borderRadius: 12,
-                border: '1px solid rgba(16, 185, 129, 0.35)'
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 10,
-                  marginBottom: 10,
-                  flexWrap: 'wrap'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <UserCheck size={20} color="#10b981" />
-                  <b style={{ fontSize: '0.95rem' }}>
-                    Tài xế {activeDriver.driverCode || 'D001'} • {activeDriver.fullName}
-                  </b>
-                </div>
-                <select
-                  value={selectedDriverId}
-                  onChange={(e) => setSelectedDriverId(e.target.value)}
-                  style={{
-                    padding: '5px 10px',
-                    borderRadius: 8,
-                    border: '1px solid var(--border-color)',
-                    background: 'var(--bg-card)',
-                    color: 'var(--text-main)',
-                    fontSize: '0.8rem'
-                  }}
-                >
-                  {drivers.map((d) => (
-                    <option key={d.id} value={d.id} disabled={d.status !== 'AVAILABLE'}>
-                      {d.driverCode} — {d.fullName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div style={{ fontSize: '0.83rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                • Hạng bằng lái:{' '}
-                <strong style={{ color: 'var(--text-main)' }}>
-                  {activeDriver.licenseType || 'FC (Container & Chuỗi lạnh)'}
-                </strong>
-                <br />• Điện thoại liên lạc NOC:{' '}
-                <strong style={{ color: 'var(--text-main)' }}>
-                  {activeDriver.phone || '0901 234 567'}
-                </strong>
-                <br />• Điểm lái xe sinh thái (Eco-Driving):{' '}
-                <strong style={{ color: 'var(--accent-green)' }}>
-                  {activeDriver.ecoScore || 98}/100 điểm
-                </strong>
-              </div>
-            </div>
-          </div>
-
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: 10,
-              padding: '13px 15px',
-              background: 'rgba(16, 185, 129, 0.12)',
-              borderRadius: 12,
-              border: '1px solid rgba(16, 185, 129, 0.35)',
-              marginBottom: 20
-            }}
-          >
-            <ShieldCheck size={20} color="#10b981" style={{ flexShrink: 0, marginTop: 2 }} />
-            <div style={{ fontSize: '0.83rem', lineHeight: 1.5 }}>
-              <strong style={{ color: 'var(--accent-green)', display: 'block', marginBottom: 2 }}>
-                Đã khóa Phiên bản Lộ trình Xanh v1 (PostGIS Buffer 50m / 200m)
-              </strong>
-              Thiết bị định vị GPS trên xe {activeVehicle.vehicleCode || 'V001'} đã đồng bộ tọa độ
-              với trung tâm chỉ huy NOC. Sẵn sàng kích hoạt luồng giám sát thời gian thực.
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleDispatchAndStart}
-            disabled={dispatching || isVehicleBlocked || isDriverBlocked}
-            className="btn btn-primary"
-            style={{ width: '100%', justifyContent: 'center', padding: '12px 18px' }}
-          >
-            <Activity size={17} />
-            <span>
-              {dispatching
-                ? 'Đang Tạo Lệnh Điều Phối & Khởi Hành...'
-                : 'Khóa Lệnh Điều Phối & Kích Hoạt Giám Sát 3D (UC07 → UC09)'}
-            </span>
-          </button>
-        </div>
-
-        {/* Right: 3D Locked Corridor Map Preview */}
-        <div className="card dispatch-map-panel" style={{ padding: 16 }}>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 12,
-              flexWrap: 'wrap',
-              gap: 8
-            }}
-          >
-            <div>
-              <h3 style={{ fontSize: '1.02rem', fontWeight: 800, margin: 0 }}>
-                Bản Đồ 3D Hành Lang Xuất Bến Đã Khóa ({selectedPlan?.candidateName || 'Cát Lái → VSIP 1'})
-              </h3>
-              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                Cự ly:{' '}
-                {selectedPlan ? (selectedPlan.distanceMeters / 1000).toFixed(1) : '27.3'} km • Dự toán
-                phát thải: {selectedPlan?.estimatedCo2Kg || '21.84'} kg CO2e (-14.7%)
+                {shipment?.status || 'Chưa xác định'}
               </span>
             </div>
-            <span className="badge badge-green">
-              <CheckCircle2 size={13} /> SẴN SÀNG XUẤT BẾN
-            </span>
           </div>
 
-          <MapView
-            center={corridorPoints[Math.floor(corridorPoints.length / 2)] || [10.843, 106.755]}
-            zoom={11}
-            height="430px"
-            defaultLayer="google_hybrid"
-            default3D={true}
-            defaultPitch={38}
-            hudTitle={`Phiên bản tuyến v1 • Xe ${activeVehicle.vehicleCode || 'V001'} sẵn sàng xuất bến`}
-          >
-            <RoutePolyline
-              positions={corridorPoints}
-              color="#10b981"
-              weight={5}
-              showCorridorBuffer={true}
-            />
-            <OriginMarker position={corridorPoints[0]} title="Điểm xuất bến: Cảng Cát Lái" />
-            <DestinationMarker
-              position={corridorPoints[corridorPoints.length - 1]}
-              title="Điểm giao hàng: KCN VSIP 1 Bình Dương"
-            />
-            <VehicleMarker
-              position={corridorPoints[0]}
-              vehicleCode={activeVehicle.vehicleCode || 'V001'}
-              speedKmh={0}
-              status="ON_ROUTE"
-              title={`Xe ${activeVehicle.vehicleCode || 'V001'} (${activeVehicle.licensePlate || '51C-888.99'}) đang chờ lệnh xuất bến`}
-            />
-          </MapView>
+          <div className="dispatch-heading-actions">
+            <Link to={`/planning/${shipmentId}`} className="btn btn-secondary">
+              <Route size={15} /> Mở lập tuyến
+            </Link>
+          </div>
+        </header>
+
+        <nav className="dispatch-step-strip" aria-label="Tiến trình điều phối">
+          <div className={`dispatch-step ${routeReady ? 'done' : ''}`}>
+            <span>1</span>
+            <b>Lập &amp; chốt lộ trình</b>
+          </div>
+          <i aria-hidden="true" />
+          <div className="dispatch-step active">
+            <span>2</span>
+            <b>Phân công xe &amp; tài xế</b>
+          </div>
+          <i aria-hidden="true" />
+          <div className="dispatch-step">
+            <span>3</span>
+            <b>Pre-trip &amp; giám sát chuyến</b>
+          </div>
+        </nav>
+      </section>
+
+      {loadErrors.length > 0 && (
+        <div className="dispatch-alert dispatch-alert--error" role="alert">
+          <AlertTriangle size={17} />
+          <div>Thiếu dữ liệu để xét điều kiện: {loadErrors.join(' · ')}</div>
         </div>
+      )}
+
+      {dispatchError && (
+        <div className="dispatch-alert dispatch-alert--error" role="alert">
+          <AlertTriangle size={17} />
+          <div>{dispatchError}</div>
+        </div>
+      )}
+
+      {/* 3 Readiness Summary Cards */}
+      <section className="dispatch-readiness-grid" aria-label="Tóm tắt sẵn sàng điều phối">
+        <article className="dispatch-stat-card">
+          <div className="dispatch-stat-card__top">
+            <span className="dispatch-stat-card__label">Vận đơn</span>
+            <span className="dispatch-stat-card__icon">
+              <Package size={16} />
+            </span>
+          </div>
+          <strong className="dispatch-stat-card__value">
+            {shipment?.shipmentCode || 'Chưa tải được'}
+          </strong>
+          <small className="dispatch-stat-card__sub">
+            Trạng thái: {shipment?.status || 'Chưa xác định'}
+          </small>
+        </article>
+
+        <article className="dispatch-stat-card">
+          <div className="dispatch-stat-card__top">
+            <span className="dispatch-stat-card__label">Lộ trình hiệu lực</span>
+            <span
+              className={`dispatch-stat-card__icon ${
+                routeReady ? '' : 'dispatch-stat-card__icon--amber'
+              }`}
+            >
+              <Route size={16} />
+            </span>
+          </div>
+          <strong className="dispatch-stat-card__value">
+            {routeVersion?.id ? `Phiên bản ${routeVersion.versionNumber}` : 'Chưa chốt'}
+          </strong>
+          <small className="dispatch-stat-card__sub">
+            {routeVersion
+              ? `${formatNumber(Number(routeVersion.totalDistanceMeters || 0) / 1000, ' km')} · ${formatDate(routeVersion.createdAt)}`
+              : 'Bắt buộc trước khi dispatch'}
+          </small>
+        </article>
+
+        <article className="dispatch-stat-card">
+          <div className="dispatch-stat-card__top">
+            <span className="dispatch-stat-card__label">Giờ giao cam kết</span>
+            <span className="dispatch-stat-card__icon dispatch-stat-card__icon--blue">
+              <Clock size={16} />
+            </span>
+          </div>
+          <strong className="dispatch-stat-card__value">
+            {shipment?.deliveryDeadline ? formatDate(shipment.deliveryDeadline) : 'Chưa khai báo'}
+          </strong>
+          <small className="dispatch-stat-card__sub">
+            Đối chiếu ETA tại trang theo dõi sau khi tạo chuyến
+          </small>
+        </article>
+      </section>
+
+      {/* Main 2-Column Workspace */}
+      <div className="dispatch-main-grid">
+        {/* Left Column: Vehicle & Driver Assignment */}
+        <div className="dispatch-config-col">
+          {/* Vehicle Selection */}
+          <section className="dispatch-section-card">
+            <div className="dispatch-section-head">
+              <h3 className="dispatch-section-title">
+                <span className="dispatch-section-icon">
+                  <Truck size={18} />
+                </span>
+                <span>Chọn phương tiện</span>
+              </h3>
+              <span
+                className={`dispatch-status-chip ${
+                  vehicleReady
+                    ? 'dispatch-status-chip--ok'
+                    : activeVehicle
+                      ? 'dispatch-status-chip--danger'
+                      : 'dispatch-status-chip--neutral'
+                }`}
+              >
+                {vehicleReady ? 'Sẵn sàng' : activeVehicle ? 'Không khả dụng' : 'Chưa chọn'}
+              </span>
+            </div>
+
+            <label className="dispatch-field">
+              <span className="dispatch-field__label">Xe đang sẵn sàng</span>
+              <div className="dispatch-select-wrap">
+                <select
+                  className="dispatch-select"
+                  disabled={Boolean(pinned)}
+                  value={selectedVehicleId}
+                  onChange={(event) => setSelectedVehicleId(event.target.value)}
+                >
+                  <option value="">Chọn xe</option>
+                  {vehicles.map((vehicle) => (
+                    <option
+                      key={vehicle.id}
+                      value={vehicle.id}
+                      disabled={
+                        vehicle.status !== (pinned ? 'ASSIGNED' : 'AVAILABLE') || vehicle.isDeleted
+                      }
+                    >
+                      {vehicle.vehicleCode} · {vehicle.plateNumber} · {vehicle.status} · tải{' '}
+                      {vehicle.maxPayloadTons ?? '—'} tấn
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown size={16} className="dispatch-select-chevron" />
+              </div>
+            </label>
+
+            {activeVehicle ? (
+              <>
+                <div className="dispatch-spec-row">
+                  <div className="dispatch-spec-item">
+                    <span>Nhiên liệu</span>
+                    <strong>{activeVehicle.fuelType || '—'}</strong>
+                    <Link
+                      to={'/vehicle-fuels?vehicle=' + encodeURIComponent(activeVehicle.id)}
+                      style={{ fontSize: 11, color: '#059669', fontWeight: 600, textDecoration: 'none' }}
+                    >
+                      Chọn nhiên liệu &amp; dự toán CO₂ →
+                    </Link>
+                  </div>
+                  <div className="dispatch-spec-item">
+                    <span>Chuẩn khí thải</span>
+                    <strong>Euro {activeVehicle.euroStandard || '—'}</strong>
+                  </div>
+                  <div className="dispatch-spec-item">
+                    <span>Tải trọng tối đa</span>
+                    <strong>{formatNumber(activeVehicle.maxPayloadTons, ' tấn')}</strong>
+                  </div>
+                </div>
+                <p className="dispatch-confirm-note">
+                  <Info size={15} />
+                  <span>Hệ thống kiểm tra tải trọng trước khi phân công.</span>
+                </p>
+              </>
+            ) : (
+              !vehicles.length && (
+                <div className="dispatch-empty-note">
+                  <Info size={15} />
+                  <span>Danh sách phương tiện trống hoặc chưa kết nối được dữ liệu đội xe.</span>
+                </div>
+              )
+            )}
+          </section>
+
+          {/* Driver Qualification & Selection */}
+          <section className="dispatch-section-card">
+            <div className="dispatch-section-head">
+              <h3 className="dispatch-section-title">
+                <span className="dispatch-section-icon">
+                  <UserCheck size={18} />
+                </span>
+                <span>Hồ sơ tài xế và điều kiện phân công</span>
+              </h3>
+              <span
+                className={`dispatch-status-chip ${
+                  driverReady
+                    ? 'dispatch-status-chip--ok'
+                    : activeDriver
+                      ? 'dispatch-status-chip--danger'
+                      : 'dispatch-status-chip--neutral'
+                }`}
+              >
+                {driverReady ? 'Đủ điều kiện' : activeDriver ? 'Chưa đạt' : 'Chưa chọn'}
+              </span>
+            </div>
+
+            {pinned && (
+              <div className="dispatch-alert dispatch-alert--info">
+                <Info size={16} />
+                <span>Xe và tài xế đã giữ chỗ cho container {pinned.containerCode}.</span>
+              </div>
+            )}
+
+            <label className="dispatch-field">
+              <span className="dispatch-field__label">Tài xế thực hiện chuyến</span>
+              <div className="dispatch-select-wrap">
+                <select
+                  className="dispatch-select"
+                  disabled={Boolean(pinned)}
+                  value={selectedDriverId}
+                  onChange={(event) => setSelectedDriverId(event.target.value)}
+                >
+                  <option value="">Chọn tài xế đủ điều kiện</option>
+                  {drivers.map((driver) => (
+                    <option
+                      key={driver.id}
+                      value={driver.id}
+                      disabled={!pinned && !driver.eligible}
+                    >
+                      {driver.driverCode} · {driver.fullName} ·{' '}
+                      {driver.eligible ? 'Đủ điều kiện' : driver.reasons.join(', ')}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown size={16} className="dispatch-select-chevron" />
+              </div>
+            </label>
+
+            {activeDriver && (
+              <>
+                <dl className="driver-qualification-grid">
+                  <div>
+                    <dt>Nhân viên</dt>
+                    <dd>
+                      {activeDriver.employeeCode || activeDriver.driverCode} ·{' '}
+                      {activeDriver.fullName}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Vai trò / duyệt</dt>
+                    <dd>
+                      {activeDriver.employeeCode ? 'Tài xế' : 'Chưa liên kết'} ·{' '}
+                      {activeDriver.verificationStatus || 'Chưa duyệt'}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>GPLX</dt>
+                    <dd>
+                      {activeDriver.licenseClass || 'Thiếu hạng'} ·{' '}
+                      {activeDriver.maskedLicense || 'Thiếu số'}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Ngày hết hạn</dt>
+                    <dd>{activeDriver.licenseExpiryDate || 'Chưa khai báo'}</dd>
+                  </div>
+                  <div>
+                    <dt>Hồ sơ sức khỏe</dt>
+                    <dd>{activeDriver.healthCheckPassed ? 'Đạt' : 'Chưa đạt/chưa có'}</dd>
+                  </div>
+                  <div>
+                    <dt>Tập huấn</dt>
+                    <dd>
+                      {activeDriver.safetyTrainingCertified ? 'Đã xác nhận' : 'Chưa xác nhận'}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>HOS liên tục / ngày</dt>
+                    <dd>
+                      {activeDriver.hosContinuousMin ?? '—'} / {activeDriver.hosDailyMin ?? '—'}{' '}
+                      phút
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Ngày cấp GPLX</dt>
+                    <dd>{activeDriver.licenseIssueDate || 'Chưa khai báo'}</dd>
+                  </div>
+                </dl>
+
+                {driverCheck.eligible ? (
+                  <p className="driver-qualification-ok">
+                    <ShieldCheck size={16} />
+                    <span>
+                      Các trường kiểm tra trên hồ sơ hiện đạt. Backend vẫn kiểm tra lại khi tạo
+                      lệnh.
+                    </span>
+                  </p>
+                ) : (
+                  <p className="driver-qualification-block">
+                    <AlertTriangle size={16} />
+                    <span>Chưa thể phân công: {driverCheck.reasons.join(' · ')}</span>
+                  </p>
+                )}
+              </>
+            )}
+
+            {!drivers.length && (
+              <div className="dispatch-empty-note">
+                <Info size={15} />
+                <span>
+                  Danh sách tài xế rỗng hoặc dịch vụ không truy cập được; không dùng dữ liệu giả.
+                </span>
+              </div>
+            )}
+
+            {drivers.length > 0 && (
+              <div className="dispatch-history-bar">
+                <label className="dispatch-field">
+                  <span className="dispatch-field__label">Tra lịch sử tài xế</span>
+                  <div className="dispatch-select-wrap">
+                    <select
+                      className="dispatch-select"
+                      value={historyDriverId}
+                      onChange={(event) => setHistoryDriverId(event.target.value)}
+                    >
+                      <option value="">Chọn tài xế để tra cứu</option>
+                      {drivers.map((driver) => (
+                        <option key={driver.id} value={driver.id}>
+                          {driver.fullName} · {driver.driverCode}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown size={16} className="dispatch-select-chevron" />
+                  </div>
+                </label>
+                {(historyDriverId || activeDriver) && (
+                  <DriverHistoryButton
+                    onClick={() =>
+                      setHistoryDriver(
+                        drivers.find((driver) => driver.id === historyDriverId) || activeDriver
+                      )
+                    }
+                  />
+                )}
+              </div>
+            )}
+          </section>
+        </div>
+
+        {/* Right Column: Readiness Checklist, Route Preview & Confirm */}
+        <aside className="dispatch-summary-col" aria-label="Cổng kiểm tra và xác nhận điều phối">
+          <section className="dispatch-section-card">
+            <div className="dispatch-section-head">
+              <h3 className="dispatch-section-title">
+                <span className="dispatch-section-icon">
+                  <ShieldCheck size={18} />
+                </span>
+                <span>Điều kiện xuất bến</span>
+              </h3>
+              <span
+                className={`dispatch-status-chip ${
+                  gatesPassedCount === 3
+                    ? 'dispatch-status-chip--ok'
+                    : 'dispatch-status-chip--warn'
+                }`}
+              >
+                {gatesPassedCount}/3 đạt
+              </span>
+            </div>
+
+            <div className="dispatch-gate-list">
+              <div className={`dispatch-gate-item ${routeReady ? 'is-ready' : ''}`}>
+                <span className="dispatch-gate-item__icon">
+                  {routeReady ? <CheckCircle2 size={17} /> : <Clock size={17} />}
+                </span>
+                <div className="dispatch-gate-item__body">
+                  <strong>1. Lộ trình hiệu lực</strong>
+                  <span>
+                    {routeReady
+                      ? `Phiên bản ${routeVersion.versionNumber} đã khóa`
+                      : 'Chưa chốt lộ trình tại bước lập tuyến'}
+                  </span>
+                </div>
+              </div>
+
+              <div className={`dispatch-gate-item ${vehicleReady ? 'is-ready' : ''}`}>
+                <span className="dispatch-gate-item__icon">
+                  {vehicleReady ? <CheckCircle2 size={17} /> : <Clock size={17} />}
+                </span>
+                <div className="dispatch-gate-item__body">
+                  <strong>2. Phương tiện vận tải</strong>
+                  <span>
+                    {vehicleReady
+                      ? `${activeVehicle.vehicleCode} · ${activeVehicle.plateNumber}`
+                      : activeVehicle
+                        ? 'Phương tiện không ở trạng thái sẵn sàng'
+                        : 'Chưa chọn xe thực hiện chuyến'}
+                  </span>
+                </div>
+              </div>
+
+              <div className={`dispatch-gate-item ${driverReady ? 'is-ready' : ''}`}>
+                <span className="dispatch-gate-item__icon">
+                  {driverReady ? <CheckCircle2 size={17} /> : <Clock size={17} />}
+                </span>
+                <div className="dispatch-gate-item__body">
+                  <strong>3. Tài xế đủ điều kiện</strong>
+                  <span>
+                    {driverReady
+                      ? `${activeDriver.fullName} · ${activeDriver.driverCode}`
+                      : activeDriver
+                        ? driverCheck.reasons.join(', ')
+                        : 'Chưa chọn tài xế đủ điều kiện'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {geometry.length >= 2 && (
+              <div className="dispatch-map-box">
+                <MapView
+                  center={geometry[Math.floor(geometry.length / 2)]}
+                  zoom={10}
+                  height={250}
+                  defaultLayer="google_hybrid"
+                >
+                  <OriginMarker position={geometry[0]} title="Điểm đầu theo RouteVersion" />
+                  <DestinationMarker
+                    position={geometry[geometry.length - 1]}
+                    title="Điểm cuối theo RouteVersion"
+                  />
+                  <RoutePolyline
+                    positions={geometry}
+                    routingMetadataJson={routeVersion?.routingMetadataJson}
+                    color="#10b981"
+                    weight={5}
+                  />
+                </MapView>
+              </div>
+            )}
+
+            {routeVersion?.routingMetadataJson && <RouteEvidence candidate={routeVersion} />}
+
+            {routeVersion && geometry.length < 2 && (
+              <div className="dispatch-empty-note">
+                <MapPin size={15} />
+                <span>
+                  Có RouteVersion nhưng API chưa cung cấp hình học để vẽ. Bản đồ không thay bằng
+                  tuyến mẫu.
+                </span>
+              </div>
+            )}
+
+            <div className="dispatch-confirm-bar">
+              <p className="dispatch-confirm-note">
+                <Clock size={15} />
+                <span>
+                  Tài xế nhận chuyến và thực hiện Pre-trip trong khoang lái trước khi khởi hành.
+                </span>
+              </p>
+              <button
+                className="btn btn-primary dispatch-submit-btn"
+                type="button"
+                onClick={createDispatch}
+                disabled={
+                  dispatching ||
+                  vehicleBlocked ||
+                  !driverCheck.eligible ||
+                  !routeVersion?.id ||
+                  loadErrors.length > 0
+                }
+              >
+                <Send size={16} />
+                <span>{dispatching ? 'Đang xác minh & tạo chuyến…' : 'Phân công chuyến'}</span>
+              </button>
+            </div>
+          </section>
+
+          <div className="dispatch-disclaimer">
+            <Info size={15} />
+            <span>
+              Hồ sơ giấy tờ trong app chỉ chứng minh dữ liệu đã khai báo/được kiểm duyệt nội bộ;
+              chưa có kết nối tra cứu GPLX với cơ quan cấp phép hoặc HOS từ tachograph, nên các
+              nguồn này cần được kết nối trước khi vận hành production.
+            </span>
+          </div>
+        </aside>
       </div>
+
+      <DriverTransportHistory driver={historyDriver} onClose={() => setHistoryDriver(null)} />
     </div>
   );
 }

@@ -13,32 +13,20 @@ import {
   UserPlus
 } from 'lucide-react';
 import { useAuth, getDefaultPortalPath } from '../../../../context/AuthContext';
-import CcadroLogo from '../../../../shared/components/CcadroLogo';
+import CcadroLogo from '../../../../shared/components/ui/CcadroLogo';
 import { IMAGES, VIDEOS } from '../../shared/landingContent';
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const requireBackend = searchParams.get('backend') === 'required';
-  const { user, login, logout } = useAuth();
+  const { login } = useAuth();
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  const handleClearCurrentSession = async () => {
-    setError('');
-    setLoading(true);
-    try {
-      if (logout) {
-        await logout();
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -263,44 +251,6 @@ export default function LoginPage() {
               Nhập thông tin tài khoản của bạn để tiếp tục
             </p>
           </div>
-
-          {user && (
-            <div
-              data-testid="active-session-notice"
-              style={{
-                padding: '12px 14px',
-                borderRadius: 12,
-                background: 'rgba(245, 158, 11, 0.14)',
-                border: '1px solid rgba(245, 158, 11, 0.4)',
-                color: '#fde68a',
-                fontSize: '0.82rem',
-                marginBottom: 18,
-                display: 'grid',
-                gap: 8
-              }}
-            >
-              <div>
-                Phiên hiện tại đang giữ tài khoản <code>@{user.username}</code> ({user.role}). Đăng nhập tài khoản mới hoặc đăng xuất sẽ đưa Token cũ vào Blacklist.
-              </div>
-              <button
-                type="button"
-                disabled={loading}
-                onClick={handleClearCurrentSession}
-                style={{
-                  padding: '7px 12px',
-                  borderRadius: 8,
-                  border: '1px solid rgba(251, 191, 36, 0.5)',
-                  background: 'rgba(15, 23, 42, 0.65)',
-                  color: '#fef3c7',
-                  fontSize: '0.78rem',
-                  fontWeight: 700,
-                  cursor: 'pointer'
-                }}
-              >
-                Đăng xuất & Hủy Token cũ ngay
-              </button>
-            </div>
-          )}
 
           {/* Login Form */}
           <form onSubmit={handleSubmit}>

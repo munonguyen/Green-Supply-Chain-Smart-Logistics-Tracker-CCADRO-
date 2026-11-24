@@ -254,7 +254,10 @@ describe('Admin Branches CRUD, Staff-by-Role CRUD & Revenue Dashboard', () => {
       await screen.findByText(/Chưa đủ điều kiện phê duyệt nghiệp vụ/i)
     ).toBeInTheDocument();
 
-    // Check healthCheckPassed box -> approve succeeds
+    // A container driver also needs the appropriate license class and dates.
+    fireEvent.change(within(screen.getByRole('dialog', { name: /Trần Quốc Tuấn/i })).getByLabelText('Hạng Bằng'), { target: { value: 'CE' } });
+    fireEvent.change(within(screen.getByRole('dialog', { name: /Trần Quốc Tuấn/i })).getByLabelText('Ngày sinh'), { target: { value: '1980-01-01' } });
+    fireEvent.change(within(screen.getByRole('dialog', { name: /Trần Quốc Tuấn/i })).getByLabelText('Ngày cấp GPLX'), { target: { value: '2025-01-01' } });
     fireEvent.click(screen.getByLabelText(/Đạt giấy khám sức khỏe/i));
     fireEvent.click(screen.getByRole('button', { name: /Phê Duyệt Đạt Chuẩn Nghiệp Vụ/i }));
 

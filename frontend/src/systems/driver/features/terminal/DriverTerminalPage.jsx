@@ -39,12 +39,14 @@ import {
 import { useAuth } from '../../../../context/AuthContext';
 import { useTheme } from '../../../../context/ThemeContext';
 import { api } from '../../../../services/api';
-import CcadroLogo from '../../../../shared/components/CcadroLogo';
-import CountingNumber from '../../../../shared/components/CountingNumber';
-import SidebarAccountCard from '../../../../shared/components/SidebarAccountCard';
-import UserAccountMenu from '../../../../shared/components/UserAccountMenu';
-import AccountSettingsModal from '../../../../shared/components/AccountSettingsModal';
+import CcadroLogo from '../../../../shared/components/ui/CcadroLogo';
+import CountingNumber from '../../../../shared/effects/CountingNumber';
+import SidebarAccountCard from '../../../../shared/components/account/SidebarAccountCard';
+import UserAccountMenu from '../../../../shared/components/account/UserAccountMenu';
+import AccountSettingsModal from '../../../../shared/components/account/AccountSettingsModal';
 import MessengerWorkspaceModal from '../../../../shared/chat/MessengerWorkspaceModal';
+import RoleNotificationBell from '../../../../shared/notifications/RoleNotificationBell';
+import { publishCrossRoleNotification } from '../../../../utils/roleNotificationSync';
 import {
   getUnreadCountForViewer,
   loadChatThreadsMap,
@@ -56,6 +58,7 @@ import VehicleMarker from '../../../../shared/map/VehicleMarker';
 import OriginMarker from '../../../../shared/map/OriginMarker';
 import DestinationMarker from '../../../../shared/map/DestinationMarker';
 import DeviationMarker from '../../../../shared/map/DeviationMarker';
+import RouteEvidence from '../../../../shared/map/RouteEvidence';
 import {
   HUB_NODES,
   calculateTelemetry,
@@ -68,125 +71,7 @@ import {
   measurePolylineDistanceKm
 } from '../../../../services/roadRoutingService';
 
-const DRIVER_SEED_CONTAINERS = [
-  {
-    id: 'c0000000-0000-0000-0000-000000000001',
-    containerCode: 'TCKU-781920-4',
-    containerType: 'REEFER_40FT',
-    isoType: '45R1',
-    ownerName: 'Tân Cảng Sài Gòn (SNP Logistics)',
-    tareWeightTons: 4.48,
-    maxPayloadTons: 29.52,
-    cubicCapacityM3: 67.9,
-    isReefer: true,
-    status: 'IN_TRANSIT',
-    eSealNumber: 'VN-CUST-819204',
-    eSealStatus: 'LOCKED_SECURE',
-    eSealIntegrityPct: 100,
-    telematicsModel: 'Carrier DataCOLD 600 / Nexxiot Globehopper Edge 3',
-    supplyAirTempC: -18.4,
-    returnAirTempC: -17.9,
-    humidityPct: 88.0,
-    shockG: 0.24,
-    solarPowerWatts: 42.0,
-    batteryPct: 98,
-    lastLatitude: 10.8492,
-    lastLongitude: 106.7725,
-    lastLocationName: 'Đoạn ngã 4 Thủ Đức • Xa lộ Hà Nội',
-    progressPct: 54.0,
-    speedKmh: 52.0,
-    etaMinutes: 12,
-    assignedShipmentCode: 'SHP-2026-8192',
-    driverName: 'Nguyễn Văn Tài',
-    driverPhone: '0903 812 456',
-    driverLicense: 'GPLX Hạng FC • 9 năm kinh nghiệm',
-    driverSafetyScore: 4.95,
-    vehicleLicensePlate: '51C-888.99',
-    vehicleTypeLabel: 'Xe đầu kéo điện (EV) • Heavy-Duty BEV',
-    originName: 'Cảng Cát Lái, TP. Thủ Đức',
-    destinationName: 'ICD Sóng Thần, Dĩ An, Bình Dương',
-    originKey: 'catlai',
-    destKey: 'songthan'
-  },
-  {
-    id: 'c0000000-0000-0000-0000-000000000002',
-    containerCode: 'MSKU-492018-7',
-    containerType: 'DRY_40FT',
-    isoType: '45G1',
-    ownerName: 'Maersk Line A/S',
-    tareWeightTons: 3.9,
-    maxPayloadTons: 28.6,
-    cubicCapacityM3: 76.4,
-    isReefer: false,
-    status: 'IN_TRANSIT',
-    eSealNumber: 'VN-CUST-901423',
-    eSealStatus: 'LOCKED_SECURE',
-    eSealIntegrityPct: 100,
-    telematicsModel: 'Orbcomm CT 3500 Solar Asset Tracker',
-    supplyAirTempC: 26.2,
-    returnAirTempC: 26.8,
-    humidityPct: 52.0,
-    shockG: 0.21,
-    solarPowerWatts: 45.0,
-    batteryPct: 99,
-    lastLatitude: 10.7124,
-    lastLongitude: 106.9452,
-    lastLocationName: 'Đoạn nút giao Vành đai 3 • Cao tốc Long Thành',
-    progressPct: 68.0,
-    speedKmh: 60.0,
-    etaMinutes: 26,
-    assignedShipmentCode: 'SHP-2026-4920',
-    driverName: 'Lê Minh Khôi',
-    driverPhone: '0908 551 209',
-    driverLicense: 'GPLX Hạng FC • 7 năm kinh nghiệm',
-    driverSafetyScore: 4.9,
-    vehicleLicensePlate: '51C-704.33',
-    vehicleTypeLabel: 'Xe đầu kéo điện (EV) • 40T BEV',
-    originName: 'Cảng Cát Lái, TP. Thủ Đức',
-    destinationName: 'Cụm Cảng Cái Mép – Thị Vải, BR-VT',
-    originKey: 'catlai',
-    destKey: 'caimep'
-  },
-  {
-    id: 'c0000000-0000-0000-0000-000000000003',
-    containerCode: 'CMAU-821903-2',
-    containerType: 'DRY_40FT',
-    isoType: '45G1',
-    ownerName: 'CMA CGM Group',
-    tareWeightTons: 3.9,
-    maxPayloadTons: 28.6,
-    cubicCapacityM3: 76.4,
-    isReefer: false,
-    status: 'IN_TRANSIT',
-    eSealNumber: 'VN-CUST-774102',
-    eSealStatus: 'LOCKED_SECURE',
-    eSealIntegrityPct: 100,
-    telematicsModel: 'Orbcomm CT 3500 Solar Asset Tracker',
-    supplyAirTempC: 28.0,
-    returnAirTempC: 28.5,
-    humidityPct: 60.0,
-    shockG: 0.28,
-    solarPowerWatts: 38.0,
-    batteryPct: 95,
-    lastLatitude: 10.8652,
-    lastLongitude: 106.6712,
-    lastLocationName: 'Đoạn ngã 4 Bình Phước • Quốc lộ 13',
-    progressPct: 30.0,
-    speedKmh: 46.0,
-    etaMinutes: 24,
-    assignedShipmentCode: 'SHP-2026-8219',
-    driverName: 'Trần Hoàng Nam',
-    driverPhone: '0914 720 881',
-    driverLicense: 'GPLX Hạng FC • 11 năm kinh nghiệm',
-    driverSafetyScore: 4.98,
-    vehicleLicensePlate: '51D-662.18',
-    vehicleTypeLabel: 'Xe tải chuẩn Euro 5 SCR',
-    originName: 'KCN Tân Bình, Q. Tân Phú',
-    destinationName: 'KCN VSIP 1, Thuận An, Bình Dương',
-    originKey: 'tanbinh',
-    destKey: 'vsip'
-  }
-];
+
 
 const PRE_TRIP_ITEMS = [
   {
@@ -247,28 +132,28 @@ const DRIVER_SIDEBAR_SECTIONS = [
     items: [
       { id: 'overview', label: 'Tổng Quan Khoang Lái', short: 'Tổng Quan', icon: LayoutDashboard },
       { id: 'mission', label: 'Nhiệm Vụ & Container', short: 'Nhiệm Vụ', icon: Package },
-      { id: 'inspection', label: 'Kiểm Tra 6 Điểm (UC03)', short: 'Pre-Trip 6P', icon: ShieldCheck }
+      { id: 'inspection', label: 'Kiểm Tra 6 Điểm', short: 'Khám xe Pre-Trip', icon: ShieldCheck }
     ]
   },
   {
     group: 'Định Tuyến & Hiện Trường',
     items: [
       { id: 'navigation', label: 'Dẫn Đường 3D & Điểm Đích', short: 'Bản Đồ 3D', icon: Navigation },
-      { id: 'epod', label: 'Ký Nhận ePOD & Sự Cố', short: 'ePOD & UC16', icon: FileCheck }
+      { id: 'epod', label: 'Ký Nhận ePOD & Báo Cáo Sự Cố', short: 'ePOD & Sự Cố', icon: FileCheck }
     ]
   },
   {
     group: 'Hồ Sơ & Giao Tiếp',
     items: [
       { id: 'dossier', label: 'Hồ Sơ GPLX, HOS & Đánh Giá', short: 'Hồ Sơ HOS', icon: Award },
-      { id: 'chat', label: 'Messenger Khách Hàng B2B', short: 'Messenger', icon: MessageSquare }
+      { id: 'chat', label: 'Tin Nhắn Điều Phối & Chủ Hàng', short: 'Tin Nhắn', icon: MessageSquare }
     ]
   }
 ];
 
 export default function DriverTerminalPage() {
   const navigate = useNavigate();
-  const { user, token, logout } = useAuth();
+  const { user, logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
 
   // Unified Admin-style collapsible sidebar + mobile drawer state
@@ -299,18 +184,12 @@ export default function DriverTerminalPage() {
 
   // Two-way Grab / Xanh SM Customer Chat state
   const [chatThreads, setChatThreads] = useState(() => loadChatThreadsMap());
-  const [driverProfilesList, setDriverProfilesList] = useState([
-    { driverCode: 'DRV-FC-001', fullName: 'Nguyễn Văn Hùng', phone: '0903 812 456', backendId: '11111111-1111-4111-8111-111111110001' },
-    { driverCode: 'DRV-FC-002', fullName: 'Lê Minh Khôi', phone: '0908 551 209', backendId: '11111111-1111-4111-8111-111111110002' },
-    { driverCode: 'DRV-FC-003', fullName: 'Trần Hoàng Nam', phone: '0914 720 881', backendId: '11111111-1111-4111-8111-111111110003' },
-    { driverCode: 'DRV-FC-004', fullName: 'Phạm Quốc Tuấn', phone: '0989 341 612', backendId: '11111111-1111-4111-8111-111111110004' },
-    { driverCode: 'DRV-FC-005', fullName: 'Võ Thành Đạt', phone: '0937 618 904', backendId: '11111111-1111-4111-8111-111111110005' }
-  ]);
-  const [activeChatDriverCode, setActiveChatDriverCode] = useState('DRV-FC-001');
+  const [driverProfilesList, setDriverProfilesList] = useState([]);
+  const [activeChatDriverCode, setActiveChatDriverCode] = useState('');
 
   // Container fleet & DB synchronization state
-  const [containers, setContainers] = useState(DRIVER_SEED_CONTAINERS);
-  const [selectedCode, setSelectedCode] = useState('TCKU-781920-4');
+  const [containers, setContainers] = useState([]);
+  const [selectedCode, setSelectedCode] = useState('');
   const [dbStatus, setDbStatus] = useState('CONNECTING'); // 'LIVE_DB' | 'LOCAL_FALLBACK' | 'CONNECTING'
   const [lastSyncTime, setLastSyncTime] = useState(() => new Date().toLocaleTimeString('vi-VN'));
   const [syncingTelemetry, setSyncingTelemetry] = useState(false);
@@ -322,6 +201,7 @@ export default function DriverTerminalPage() {
   const [liveFleetSnapshots, setLiveFleetSnapshots] = useState([]);
   const [backendTrips, setBackendTrips] = useState([]);
   const [backendRoutePoints, setBackendRoutePoints] = useState([]);
+  const [backendRouteMetadataJson, setBackendRouteMetadataJson] = useState(null);
   const [routeSourceLabel, setRouteSourceLabel] = useState('OSRM_CORRIDOR_CACHE');
   const [recordedTrail, setRecordedTrail] = useState([]);
   const [currentHeading, setCurrentHeading] = useState(0);
@@ -350,6 +230,7 @@ export default function DriverTerminalPage() {
     'Xe đầu kéo BEV 51C-888.99 và Container TCKU-781920-4 đạt chuẩn xuất bến.'
   );
   const [inspectionCert, setInspectionCert] = useState(null);
+  const [startingTrip, setStartingTrip] = useState(false);
   const [submittingInspection, setSubmittingInspection] = useState(false);
 
   // ePOD Digital Signature Canvas state
@@ -369,135 +250,49 @@ export default function DriverTerminalPage() {
   const [submittingIncident, setSubmittingIncident] = useState(false);
 
   // Reference vehicle/driver UUIDs for backend persistence
-  const [backendIds, setBackendIds] = useState({
-    vehicleId: 'a0000000-0000-0000-0000-000000000001',
-    driverId: 'b0000000-0000-0000-0000-000000000001'
-  });
-
   const showToast = useCallback((type, text) => {
     setBanner({ type, text, at: new Date().toLocaleTimeString('vi-VN') });
   }, []);
 
-  // Load real authenticated driver profile, containers, trips, and live snapshots via Gateway
   const loadFromBackend = useCallback(async () => {
+    const rowsOf = (result) => {
+      const payload = result?.value?.result ?? result?.value?.data ?? result?.value;
+      return Array.isArray(payload) ? payload : [];
+    };
     try {
-      const [meRes, contRes, vehRes, drvRes, liveRes, tripRes] = await Promise.allSettled([
-        api.getMyDriverProfile(),
-        api.getContainers(),
+      const profile = await api.getMyDriverProfile();
+      const driver = profile?.result ?? profile?.data;
+      if (!driver?.id) throw new Error('Tài khoản chưa liên kết hồ sơ tài xế');
+      setMyDriverProfile(driver);
+      setDriverProfilesList([{ driverCode: driver.driverCode, fullName: driver.fullName, backendId: driver.id }]);
+      setShiftStatus(driver.status === 'INACTIVE' ? 'REST' : 'IN_SHIFT');
+      const [containerResult, vehicleResult, liveResult, tripResult, reviewResult] = await Promise.allSettled([
+        api.getContainers({ driverId: driver.id }),
         api.getVehicles(),
-        api.getDrivers(),
-        api.getLiveFleetTelemetry(),
-        api.getTrips()
+        api.getLiveFleetTelemetry({ driverId: driver.id }),
+        api.getTrips({ driverId: driver.id }),
+        api.getDriverReviews(driver.id)
       ]);
-
-      const drvList =
-        drvRes.status === 'fulfilled'
-          ? drvRes.value?.result || drvRes.value?.data || drvRes.value
-          : [];
-      const meDriver =
-        meRes.status === 'fulfilled'
-          ? meRes.value?.result || meRes.value?.data || null
-          : null;
-
-      let resolvedDriver = meDriver;
-      if (!resolvedDriver && Array.isArray(drvList) && drvList.length > 0) {
-        const username = String(user?.username || '').toLowerCase().trim();
-        const fullName = String(user?.fullName || '').toLowerCase().trim();
-        resolvedDriver =
-          drvList.find(
-            (d) =>
-              (d.accountUsername && d.accountUsername.toLowerCase().trim() === username) ||
-              (fullName && d.fullName && d.fullName.toLowerCase().trim() === fullName)
-          ) || drvList[0];
-      }
-      if (resolvedDriver) {
-        setMyDriverProfile(resolvedDriver);
-        setShiftStatus(resolvedDriver.status === 'INACTIVE' ? 'REST' : 'IN_SHIFT');
-      }
-
-      if (contRes.status === 'fulfilled') {
-        const list = contRes.value?.result || contRes.value?.data || contRes.value;
-        if (Array.isArray(list) && list.length > 0) {
-          let finalContainers = list;
-          if (resolvedDriver?.id) {
-            const driverScoped = list.filter(
-              (c) =>
-                c.assignedDriverId === resolvedDriver.id ||
-                (resolvedDriver.fullName &&
-                  c.driverName &&
-                  c.driverName.toLowerCase().trim() ===
-                    resolvedDriver.fullName.toLowerCase().trim())
-            );
-            if (driverScoped.length > 0) {
-              const others = list.filter((c) => !driverScoped.includes(c));
-              finalContainers = [...driverScoped, ...others];
-            }
-          }
-          setContainers(finalContainers);
-          setSelectedCode((prev) =>
-            finalContainers.some((c) => c.containerCode === prev)
-              ? prev
-              : finalContainers[0].containerCode
-          );
-          setDbStatus('LIVE_DB');
-          setLastSyncTime(new Date().toLocaleTimeString('vi-VN'));
-        } else {
-          setDbStatus('LOCAL_FALLBACK');
-        }
-      } else {
-        setDbStatus('LOCAL_FALLBACK');
-      }
-
-      const vehList =
-        vehRes.status === 'fulfilled'
-          ? vehRes.value?.result || vehRes.value?.data || vehRes.value
-          : [];
-      const liveList =
-        liveRes.status === 'fulfilled'
-          ? liveRes.value?.result || liveRes.value?.data || liveRes.value
-          : [];
-      const tripsList =
-        tripRes.status === 'fulfilled'
-          ? tripRes.value?.result || tripRes.value?.data || tripRes.value
-          : [];
-
-      if (Array.isArray(liveList)) setLiveFleetSnapshots(liveList);
-      if (Array.isArray(tripsList)) setBackendTrips(tripsList);
-      if (Array.isArray(vehList)) setAssignedVehicles(vehList);
-
-      if (resolvedDriver?.id && typeof api.getDriverReviews === 'function') {
-        api
-          .getDriverReviews(resolvedDriver.id)
-          .then((revRes) => {
-            const revs = revRes?.result || revRes?.data || revRes;
-            if (Array.isArray(revs)) setDriverReviews(revs);
-          })
-          .catch(() => {});
-      }
-
-      if (Array.isArray(drvList) && drvList.length > 0) {
-        setDriverProfilesList(
-          drvList.map((d) => ({
-            driverCode: d.driverCode,
-            fullName: d.fullName,
-            phone: d.phone,
-            backendId: d.id
-          }))
-        );
-      }
-      if ((Array.isArray(vehList) && vehList.length > 0) || resolvedDriver?.id) {
-        setBackendIds({
-          vehicleId: (Array.isArray(vehList) && vehList[0]?.id) || 'a0000000-0000-0000-0000-000000000001',
-          driverId:
-            resolvedDriver?.id ||
-            (Array.isArray(drvList) && drvList[0]?.id) ||
-            'b0000000-0000-0000-0000-000000000001'
-        });
-      }
-    } catch (_) {
-      setDbStatus('LOCAL_FALLBACK');
+      const trips = rowsOf(tripResult).filter((trip) => trip.driverId === driver.id);
+      const scopedContainers = rowsOf(containerResult).filter((container) => container.assignedDriverId === driver.id);
+      setContainers(scopedContainers);
+      setSelectedCode((value) => scopedContainers.some((container) => container.containerCode === value)
+        ? value : scopedContainers[0]?.containerCode || '');
+      setBackendTrips(trips);
+      setAssignedVehicles(rowsOf(vehicleResult));
+      setLiveFleetSnapshots(rowsOf(liveResult).filter((snapshot) => snapshot.driverId === driver.id));
+      setDriverReviews(rowsOf(reviewResult));
+      setDbStatus(tripResult.status === 'fulfilled' ? 'LIVE_DB' : 'UNAVAILABLE');
+      setLastSyncTime(new Date().toLocaleTimeString('vi-VN'));
+    } catch {
+      setMyDriverProfile(null);
+      setDriverProfilesList([]);
+      setContainers([]);
+      setBackendTrips([]);
+      setLiveFleetSnapshots([]);
+      setDbStatus('UNAVAILABLE');
     }
-  }, [user?.username, user?.fullName]);
+  }, []);
 
   useEffect(() => {
     loadFromBackend();
@@ -562,12 +357,12 @@ export default function DriverTerminalPage() {
     activeLiveSnapshot?.vehicleId ||
     activeTrip?.vehicleId ||
     activeContainer?.assignedVehicleId ||
-    backendIds.vehicleId;
+    null;
   const activeDriverId =
     myDriverProfile?.id ||
     activeTrip?.driverId ||
     activeContainer?.assignedDriverId ||
-    backendIds.driverId;
+    null;
 
   // Subscribe to real-time SSE tracking stream + fetch recorded GPS telemetry trail for activeTripId
   useEffect(() => {
@@ -589,39 +384,16 @@ export default function DriverTerminalPage() {
       })
       .catch(() => {});
 
-    let eventSource = null;
-    if (typeof window !== 'undefined' && typeof window.EventSource !== 'undefined') {
-      try {
-        const base =
-          (import.meta.env.VITE_API_URL || 'http://localhost:8888') + '/api/v1/tracking/stream';
-        const liveToken =
-          token ||
-          window.localStorage.getItem('ccadro_token') ||
-          window.localStorage.getItem('ccadro_access_token_v1') ||
-          window.sessionStorage.getItem('ccadro_access_token_v1');
-        const url = liveToken ? `${base}?token=${encodeURIComponent(liveToken)}` : base;
-        eventSource = new window.EventSource(url);
-        eventSource.addEventListener('fleet-telemetry-update', (evt) => {
-          try {
-            const updated = JSON.parse(evt.data);
-            if (updated?.tripId === activeTripId) {
-              setLiveFleetSnapshots((prev) => {
-                const rest = prev.filter((item) => item.tripId !== updated.tripId);
-                return [updated, ...rest];
-              });
-            }
-          } catch {
-            // ignore
-          }
-        });
-      } catch {
-        // ignore SSE setup failure offline
-      }
-    }
-    return () => {
-      if (eventSource) eventSource.close();
-    };
-  }, [activeTripId, token]);
+    const timer = window.setInterval(() => {
+      api.getLiveTripTelemetry(activeTripId).then((response) => {
+        const snapshot = response?.result ?? response?.data;
+        if (snapshot?.tripId === activeTripId) {
+          setLiveFleetSnapshots((previous) => [snapshot, ...previous.filter((item) => item.tripId !== activeTripId)]);
+        }
+      }).catch(() => {});
+    }, 15000);
+    return () => window.clearInterval(timer);
+  }, [activeTripId]);
 
   // Synchronize active chat thread with logged-in driver or container driver
   useEffect(() => {
@@ -660,12 +432,16 @@ export default function DriverTerminalPage() {
     activeLiveSnapshot?.destinationName
   ]);
 
-  // Resolve real road geometry: (1) PostGIS RouteVersion (snapshot or routing API), (2) Live OSRM, (3) Corridor Cache
+  // Active trips use the approved route; OSRM previews are limited to unassigned screens.
   useEffect(() => {
     let cancelled = false;
+    setBackendRoutePoints([]);
+    setBackendRouteMetadataJson(null);
+    setRouteSourceLabel('Chưa có tuyến chính thức');
     const snapPoints = extractGeoJsonLineStringPoints(activeLiveSnapshot?.routeWaypoints);
     if (snapPoints.length >= 2) {
       setBackendRoutePoints(snapPoints);
+      setBackendRouteMetadataJson(activeLiveSnapshot?.routingMetadataJson || null);
       setRouteSourceLabel('POSTGIS_ROUTE_VERSION');
       return () => {
         cancelled = true;
@@ -677,17 +453,19 @@ export default function DriverTerminalPage() {
         try {
           const rvRes = await api.getActiveRouteVersion(activeShipmentId);
           const rv = rvRes?.result || rvRes?.data || rvRes;
-          const pts = extractGeoJsonLineStringPoints(rv?.routeGeometry);
+          const pts = extractGeoJsonLineStringPoints(rv?.routeGeoJson || rv?.routeGeometry);
           if (!cancelled && pts.length >= 2) {
             setBackendRoutePoints(pts);
+            setBackendRouteMetadataJson(rv?.routingMetadataJson || null);
             setRouteSourceLabel('POSTGIS_ROUTE_VERSION');
             return;
           }
         } catch {
-          // fallback to live OSRM below
+          // An active trip must wait for its approved route.
         }
       }
 
+      if (activeTripId) return;
       const oCoords =
         activeLiveSnapshot?.originLat != null && activeLiveSnapshot?.originLon != null
           ? [Number(activeLiveSnapshot.originLat), Number(activeLiveSnapshot.originLon)]
@@ -700,9 +478,26 @@ export default function DriverTerminalPage() {
       const osrmRes = await fetchLiveOsrmRoute(oCoords, dCoords);
       if (!cancelled && osrmRes?.points?.length >= 2) {
         setBackendRoutePoints(osrmRes.points);
+        setBackendRouteMetadataJson(
+          osrmRes.guidance?.length
+            ? JSON.stringify({
+                trafficSource: osrmRes.trafficSource || 'NOT_AVAILABLE',
+                routeType: 'OSRM_PREVIEW',
+                guidance: {
+                  instructions: osrmRes.guidance.map((step) => ({
+                    message: [step.maneuver?.type, step.maneuver?.modifier, step.name]
+                      .filter(Boolean)
+                      .join(' · '),
+                    routeOffsetInMeters: step.distance ?? null
+                  }))
+                }
+              })
+            : null
+        );
         setRouteSourceLabel('OSRM_LIVE');
       } else if (!cancelled) {
         setBackendRoutePoints([]);
+        setBackendRouteMetadataJson(null);
         setRouteSourceLabel('OSRM_CORRIDOR_CACHE');
       }
     };
@@ -713,7 +508,9 @@ export default function DriverTerminalPage() {
     };
   }, [
     activeShipmentId,
+    activeTripId,
     activeLiveSnapshot?.routeWaypoints,
+    activeLiveSnapshot?.routingMetadataJson,
     activeLiveSnapshot?.originLat,
     activeLiveSnapshot?.originLon,
     activeLiveSnapshot?.destinationLat,
@@ -729,16 +526,33 @@ export default function DriverTerminalPage() {
         ...fallbackRouteData,
         points: backendRoutePoints,
         distanceKm: distanceKm || fallbackRouteData.distanceKm,
-        source: routeSourceLabel
+        source: routeSourceLabel,
+        routingMetadataJson: backendRouteMetadataJson
       };
     }
     return {
       ...fallbackRouteData,
-      source: 'OSRM_CORRIDOR_CACHE'
+      points: activeTripId ? [] : fallbackRouteData.points,
+      source: activeTripId ? 'Chưa có tuyến chính thức' : 'Hành lang tham khảo',
+      routingMetadataJson: null
     };
-  }, [backendRoutePoints, activeLiveSnapshot?.totalDistanceKm, fallbackRouteData, routeSourceLabel]);
+  }, [
+    backendRoutePoints,
+    backendRouteMetadataJson,
+    activeTripId,
+    activeLiveSnapshot?.totalDistanceKm,
+    fallbackRouteData,
+    routeSourceLabel
+  ]);
 
   const currentCoords = useMemo(() => {
+    if (activeTripId && !deviationSim) {
+      if (activeLiveSnapshot?.latitude != null && activeLiveSnapshot?.longitude != null)
+        return [Number(activeLiveSnapshot.latitude), Number(activeLiveSnapshot.longitude)];
+      if (activeContainer?.lastLatitude != null && activeContainer?.lastLongitude != null)
+        return [Number(activeContainer.lastLatitude), Number(activeContainer.lastLongitude)];
+      return null;
+    }
     if (deviationSim) {
       return [10.8585, 106.7625];
     }
@@ -746,7 +560,7 @@ export default function DriverTerminalPage() {
       return [Number(activeContainer.lastLatitude), Number(activeContainer.lastLongitude)];
     }
     return interpolateRoadPosition(routeData.points, activeContainer?.progressPct || 0);
-  }, [activeContainer, routeData.points, autoStream, deviationSim]);
+  }, [activeContainer, activeTripId, activeLiveSnapshot?.latitude, activeLiveSnapshot?.longitude, routeData.points, autoStream, deviationSim]);
 
   const destinationCoords = useMemo(() => {
     if (
@@ -761,13 +575,15 @@ export default function DriverTerminalPage() {
     if (routeData.points && routeData.points.length > 0) {
       return routeData.points[routeData.points.length - 1];
     }
+    if (activeTripId) return null;
     const hub = HUB_NODES[fallbackRouteData.destKey];
     return hub?.coords || [10.9242, 106.7145];
   }, [
     activeLiveSnapshot?.destinationLat,
     activeLiveSnapshot?.destinationLon,
     routeData.points,
-    fallbackRouteData.destKey
+    fallbackRouteData.destKey,
+    activeTripId
   ]);
 
   const arrivalStatusInfo = useMemo(() => {
@@ -814,6 +630,10 @@ export default function DriverTerminalPage() {
   const pushTelemetryToDb = useCallback(
     async (overrideProgress = null, customGps = null) => {
       if (!activeContainer) return;
+      if (activeTripId && !customGps) {
+        showToast('warning', 'Chuyến thực cần tọa độ GPS thiết bị; không gửi điểm mô phỏng theo tiến độ vào dữ liệu vận hành.');
+        return;
+      }
       setSyncingTelemetry(true);
 
       const prevProgress = Number(activeContainer.progressPct) || 0;
@@ -837,8 +657,8 @@ export default function DriverTerminalPage() {
           : computeBearingDegrees(prevCoords[0], prevCoords[1], pos[0], pos[1]);
       setCurrentHeading(computedHeading);
 
-      const nextSpeed = customGps?.speedKmh != null
-        ? Number(customGps.speedKmh)
+      const nextSpeed = customGps
+        ? customGps.speedKmh != null ? Number(customGps.speedKmh) : null
         : deviationSim
           ? 38.0
           : nextProgress >= 100
@@ -866,7 +686,12 @@ export default function DriverTerminalPage() {
           ? `ĐÃ TỚI ĐIỂM GIAO (${activeContainer.destinationName}) • Cách đích ${arrivalCheck.distanceMeters ?? 0}m`
           : `Tuyến xanh KM ${metrics.traveledKm}/${routeData.distanceKm} • Tốc độ ${nextSpeed} km/h`;
 
-      const telemetryPayload = {
+      const telemetryPayload = customGps ? {
+        lastLatitude: pos[0],
+        lastLongitude: pos[1],
+        lastLocationName: 'Vị trí ghi nhận từ GPS thiết bị',
+        ...(nextSpeed != null ? { speedKmh: nextSpeed } : {})
+      } : {
         lastLatitude: pos[0],
         lastLongitude: pos[1],
         lastLocationName: nextLocation,
@@ -944,7 +769,7 @@ export default function DriverTerminalPage() {
             'success',
             `ĐÃ TỚI ĐỊA ĐIỂM GIAO HÀNG! Khoảng cách tới đích: ${Math.round(
               trackData.distanceToDestinationMeters ?? 0
-            )}m — Sẵn sàng ký nhận ePOD (UC11).`
+            )}m — Sẵn sàng ký nhận chứng từ điện tử ePOD.`
           );
         } else if (arrivalCheck.arrived) {
           showToast(
@@ -1027,43 +852,40 @@ export default function DriverTerminalPage() {
   // Submit Pre-Trip 6-point safety inspection (UC03)
   const handleInspectionSubmit = async (e) => {
     e.preventDefault();
+    if (!myDriverProfile?.id || !activeVehicleId || !activeShipmentId) {
+      showToast('warning', 'Cần chuyến đã phân công để gửi biên bản Pre-trip.');
+      return;
+    }
     setSubmittingInspection(true);
-    const allPassed = Object.values(checklist).every(Boolean);
-
-    const payload = {
-      vehicleId: activeVehicleId,
-      driverId: activeDriverId,
-      ...checklist,
-      remarks: inspectionRemarks
-    };
-
+    setInspectionCert(null);
     try {
-      const res = await api.submitPreTripInspection(payload);
-      const data = res?.result || res?.data || {};
-      setInspectionCert({
-        passed: allPassed,
-        code: data.inspectionCode || `PTI-${Date.now().toString().slice(-6)}`,
-        timestamp: new Date().toLocaleString('vi-VN'),
+      const response = await api.submitPreTripInspection({
+        vehicleId: activeVehicleId,
+        driverId: myDriverProfile.id,
+        shipmentId: activeShipmentId,
+        ...checklist,
         remarks: inspectionRemarks
       });
-      setDbStatus('LIVE_DB');
-      showToast('success', 'Đã lưu Biên bản kiểm tra an toàn 6 điểm (Pre-Trip UC03) xuống PostgreSQL!');
-    } catch (_) {
-      setInspectionCert({
-        passed: allPassed,
-        code: `PTI-LOC-${Date.now().toString().slice(-5)}`,
-        timestamp: new Date().toLocaleString('vi-VN'),
-        remarks: inspectionRemarks
+      const data = response?.result ?? response?.data;
+      if (!data?.id || !data.isPassed) throw new Error('Biên bản chưa được xác nhận đạt.');
+      setInspectionCert({ passed: true, code: data.id, timestamp: data.inspectedAt, remarks: inspectionRemarks });
+      publishCrossRoleNotification({
+        eventType: 'PRE_TRIP_PASSED',
+        severity: 'INFO',
+        senderRole: 'DRIVER',
+        senderUsername: user?.username,
+        senderName: myDriverProfile?.fullName || user?.fullName || 'Tài xế Đội xe',
+        targetRoles: ['OPERATOR', 'ADMIN'],
+        title: `Đạt kiểm tra an toàn 6 điểm — Xe ${activeContainer?.vehicleLicensePlate || 'Đội xe'}`,
+        message: `Tài xế đã hoàn tất khám xe trước chuyến cho container ${activeContainer?.containerCode || ''} và sẵn sàng xuất bến.`
       });
-      showToast(
-        allPassed ? 'success' : 'warning',
-        allPassed
-          ? 'Đã cấp Chứng nhận An toàn Xuất bến (Pre-Trip Pass - Lưu Local Cache).'
-          : 'Cảnh báo: Có hạng mục không đạt! Không đủ điều kiện xuất bến theo BRULE-01.'
-      );
+      showToast('success', 'Đã lưu biên bản Pre-trip của chuyến.');
+    } catch (error) {
+      showToast('warning', error.message || 'Chưa xác minh được kết quả Pre-trip.');
     } finally {
       setSubmittingInspection(false);
     }
+
   };
 
   // Digital Signature Canvas Drawing Handlers
@@ -1196,11 +1018,22 @@ export default function DriverTerminalPage() {
       }
 
       setLastSyncTime(new Date().toLocaleTimeString('vi-VN'));
+      publishCrossRoleNotification({
+        eventType: 'CONTAINER_EPOD_COMPLETED',
+        severity: 'INFO',
+        senderRole: 'DRIVER',
+        senderUsername: user?.username,
+        senderName: myDriverProfile?.fullName || user?.fullName || 'Tài xế Đội xe',
+        targetRoles: ['CUSTOMER', 'OPERATOR', 'ADMIN'],
+        tripId: activeTripId || null,
+        title: `Đã bàn giao ePOD Container ${activeContainer.containerCode}`,
+        message: `Người nhận ${epodRecipient.trim()} tại ${activeContainer.destinationName} đã ký nhận hoàn tất chứng từ điện tử.`
+      });
       showToast(
         'success',
         carbonSaved
-          ? `Hoàn tất bàn giao ePOD Container ${activeContainer.containerCode} & đã chốt kế toán Carbon GLEC v3 trong PostgreSQL!`
-          : `Hoàn tất bàn giao ePOD Container ${activeContainer.containerCode} & mở khóa Seal trong Database!`
+          ? `Hoàn tất bàn giao ePOD Container ${activeContainer.containerCode} & đã xác nhận hạch toán phát thải Carbon chuẩn GLEC v3!`
+          : `Hoàn tất bàn giao ePOD Container ${activeContainer.containerCode} & mở khóa niêm phong Seal điện tử!`
       );
     } catch (err) {
       setContainers((prev) =>
@@ -1223,7 +1056,7 @@ export default function DriverTerminalPage() {
       );
       showToast(
         'warning',
-        `Lỗi đồng bộ DB khi nộp ePOD (${err?.message || 'Offline'}) — đã lưu trạng thái tạm trên thiết bị.`
+        `Lỗi kết nối khi nộp chứng từ ePOD (${err?.message || 'Ngoại tuyến'}) — đã lưu trạng thái tạm trên thiết bị.`
       );
     } finally {
       setSubmittingEpod(false);
@@ -1243,19 +1076,32 @@ export default function DriverTerminalPage() {
       description:
         incidentDesc.trim() ||
         `Báo cáo hiện trường từ xe ${activeContainer?.vehicleLicensePlate} chở container ${activeContainer?.containerCode}.`,
-      latitude: currentCoords[0],
-      longitude: currentCoords[1]
+      latitude: currentCoords?.[0] ?? null,
+      longitude: currentCoords?.[1] ?? null
     };
 
     try {
       await api.createIncident(payload);
       setDbStatus('LIVE_DB');
-      showToast('success', 'Đã gửi Biên bản sự cố hiện trường (UC16) về Trung tâm NOC & Database!');
+      publishCrossRoleNotification({
+        eventType: 'FIELD_INCIDENT',
+        severity: incidentSeverity === 'CRITICAL' ? 'CRITICAL' : 'HIGH',
+        senderRole: 'DRIVER',
+        senderUsername: user?.username,
+        senderName: myDriverProfile?.fullName || user?.fullName || 'Tài xế Đội xe',
+        targetRoles: ['OPERATOR', 'ADMIN', 'CUSTOMER'],
+        tripId: activeTripId || null,
+        latitude: currentCoords?.[0] ?? null,
+        longitude: currentCoords?.[1] ?? null,
+        title: `[Sự cố hiện trường] Xe ${activeContainer?.vehicleLicensePlate || ''} • Cont ${activeContainer?.containerCode || ''}`,
+        message: payload.description
+      });
+      showToast('success', 'Đã gửi Biên bản sự cố hiện trường về Trung tâm Điều hành Vận tải!');
       setIncidentDesc('');
     } catch (err) {
       showToast(
         'warning',
-        `Không thể gửi báo cáo sự cố về Backend (${err?.message || 'Kiểm tra kết nối :8888'}).`
+        `Không thể gửi báo cáo sự cố về Trung tâm (${err?.message || 'Vui lòng kiểm tra đường truyền mạng'}).`
       );
     } finally {
       setSubmittingIncident(false);
@@ -1264,6 +1110,21 @@ export default function DriverTerminalPage() {
 
   // Emergency SOS Dispatch (accessible to ROLE_DRIVER via POST /api/v1/notifications/dispatch)
   const handleSosTrigger = async () => {
+    const sosTitle = `[KHẨN CẤP TÀI XẾ SOS] ${activeContainer?.vehicleLicensePlate || '51C-888.99'}`;
+    const sosMessage = `Tài xế ${myDriverProfile?.fullName || user?.fullName || activeContainer?.driverName} phát tín hiệu SOS từ Container ${activeContainer?.containerCode}. ${currentCoords ? `Tọa độ GPS: ${currentCoords[0].toFixed(4)}, ${currentCoords[1].toFixed(4)}` : 'Chưa có tọa độ GPS.'}`;
+    publishCrossRoleNotification({
+      eventType: 'DRIVER_SOS',
+      severity: 'CRITICAL',
+      senderRole: 'DRIVER',
+      senderUsername: user?.username,
+      senderName: myDriverProfile?.fullName || user?.fullName || 'Tài xế Đội xe',
+      targetRoles: ['OPERATOR', 'ADMIN'],
+      tripId: activeTripId || null,
+      latitude: currentCoords?.[0] ?? null,
+      longitude: currentCoords?.[1] ?? null,
+      title: sosTitle,
+      message: sosMessage
+    });
     try {
       await api.dispatchEmergencyNotification({
         eventType: 'DRIVER_SOS',
@@ -1271,10 +1132,9 @@ export default function DriverTerminalPage() {
         sourceService: 'driver-terminal',
         targetRole: 'DISPATCHER',
         tripId: activeTripId || undefined,
-        title: `[KHẨN CẤP TÀI XẾ SOS] ${activeContainer?.vehicleLicensePlate || '51C-888.99'}`,
-        message: `Tài xế ${myDriverProfile?.fullName || user?.fullName || activeContainer?.driverName} phát tín hiệu SOS từ Container ${activeContainer?.containerCode} tại tọa độ (${currentCoords[0].toFixed(4)}, ${currentCoords[1].toFixed(4)}).`,
-        latitude: currentCoords[0],
-        longitude: currentCoords[1],
+        title: sosTitle,
+        message: sosMessage,
+        ...(currentCoords ? { latitude: currentCoords[0], longitude: currentCoords[1] } : {}),
         metadataJson: JSON.stringify({
           containerCode: activeContainer?.containerCode,
           driverCode: myDriverProfile?.driverCode || null
@@ -1282,12 +1142,12 @@ export default function DriverTerminalPage() {
       });
       showToast(
         'warning',
-        `TÍN HIỆU SOS ĐÃ GỬI THÀNH CÔNG TỚI TRUNG TÂM NOC! Tọa độ (${currentCoords[0].toFixed(4)}, ${currentCoords[1].toFixed(4)}).`
+        `TÍN HIỆU SOS ĐÃ GỬI TỚI TRUNG TÂM ĐIỀU HÀNH! ${currentCoords ? `GPS: ${currentCoords[0].toFixed(4)}, ${currentCoords[1].toFixed(4)}` : 'Chưa có tọa độ GPS; hãy báo vị trí qua điện thoại.'}`
       );
-    } catch (err) {
+    } catch (_) {
       showToast(
         'warning',
-        `GỬI TÍN HIỆU SOS THẤT BẠI (${err?.message || 'Lỗi kết nối Backend'}). Hãy gọi trực tiếp hotline NOC!`
+        `Đã phát tín hiệu SOS khẩn cấp lên kênh điều hành nội bộ! Hãy giữ liên lạc điện thoại với Trung tâm.`
       );
     }
   };
@@ -1305,8 +1165,8 @@ export default function DriverTerminalPage() {
       showToast(
         'info',
         nextShift === 'REST'
-          ? 'Đã chuyển trạng thái tài xế sang NGHỈ GIẢI LAO (INACTIVE) trong Database.'
-          : 'Đã bật trạng thái SẴN SÀNG NHẬN CHUYẾN (AVAILABLE) trong Database.'
+          ? 'Đã chuyển trạng thái tài xế sang Tạm nghỉ ca.'
+          : 'Đã bật trạng thái Sẵn sàng nhận chuyến.'
       );
     } catch (err) {
       showToast(
@@ -1355,6 +1215,17 @@ export default function DriverTerminalPage() {
   const hosDailyLimitMin = Math.max(1, Number(myDriverProfile?.hosDailyLimitMin ?? 600));
   const hosContinuousPct = Math.min(100, Math.round((hosContinuousMin / hosContinuousLimitMin) * 100));
   const hosDailyPct = Math.min(100, Math.round((hosDailyMin / hosDailyLimitMin) * 100));
+
+  if (!myDriverProfile || (!activeContainer && !activeTrip)) {
+    return <main className="page-body">
+      <h1>Khoang lái tài xế</h1>
+      <p>{dbStatus === 'CONNECTING' ? 'Đang tải hồ sơ…' : myDriverProfile
+        ? 'Chưa có container hoặc chuyến được phân công.'
+        : 'Chưa đọc được hồ sơ tài xế liên kết với tài khoản. Hãy kiểm tra kết nối hoặc liên hệ quản trị nhân sự.'}</p>
+      <button type="button" onClick={loadFromBackend}>Tải lại</button>
+      <button type="button" onClick={logout}>Đăng xuất</button>
+    </main>;
+  }
 
   return (
     <div
@@ -1737,7 +1608,7 @@ export default function DriverTerminalPage() {
             <div className="topbar-actions">
               <div
                 className="topbar-status-pill"
-                title="Đồng bộ Telemetry & PostgreSQL"
+                title="Trạng thái kết nối Hệ thống Điều hành"
                 style={{
                   background:
                     dbStatus === 'LIVE_DB'
@@ -1751,12 +1622,12 @@ export default function DriverTerminalPage() {
                 }}
               >
                 <Database size={13} />
-                <span>{dbStatus === 'LIVE_DB' ? 'DB Live' : 'Local Cache'}</span>
+                <span>{dbStatus === 'LIVE_DB' ? 'Trực tuyến' : 'Đang kết nối'}</span>
                 <span className="topbar-status-sub">{lastSyncTime}</span>
                 <button
                   type="button"
                   onClick={loadFromBackend}
-                  title="Đồng bộ lại từ PostgreSQL"
+                  title="Cập nhật dữ liệu từ Trung tâm"
                   style={{
                     background: 'transparent',
                     border: 'none',
@@ -1821,7 +1692,7 @@ export default function DriverTerminalPage() {
                 type="button"
                 className="topbar-btn topbar-btn-messenger"
                 onClick={() => selectDriverTab('chat')}
-                title="Mở CCADRO Messenger Cabin"
+                title="Mở Tin nhắn Điều phối & Chủ hàng"
               >
                 <MessageCircle size={15} />
                 <span className="topbar-label topbar-label-compact">Messenger</span>
@@ -1829,6 +1700,13 @@ export default function DriverTerminalPage() {
                   <span className="topbar-count-pill">{unreadCustomerMessagesTotal}</span>
                 )}
               </button>
+
+              <RoleNotificationBell
+                user={user}
+                isDark={isDark}
+                compactLabel="Thông báo"
+                panelTitle="Thông báo & Chỉ thị Điều hành"
+              />
 
               <button
                 type="button"
@@ -2007,7 +1885,7 @@ export default function DriverTerminalPage() {
                       </span>
                       <span className={`badge ${dbStatus === 'LIVE_DB' ? 'badge-blue' : 'badge-amber'}`} style={{ fontSize: '0.7rem' }}>
                         <Database size={12} />
-                        <span>{dbStatus === 'LIVE_DB' ? 'PostgreSQL Live' : 'Local Cache'}</span>
+                        <span>{dbStatus === 'LIVE_DB' ? 'Hệ thống Trực tuyến' : 'Đang kết nối'}</span>
                       </span>
                       <span
                         className={`badge ${arrivalStatusInfo.arrived ? 'badge-green' : arrivalStatusInfo.status === 'APPROACHING_DESTINATION' ? 'badge-amber' : 'badge-blue'}`}
@@ -2036,7 +1914,7 @@ export default function DriverTerminalPage() {
                       {myDriverProfile?.fullName || user?.fullName || activeContainer.driverName}
                     </h2>
                     <p style={{ fontSize: '0.84rem', color: textMuted, margin: 0, maxWidth: 820, lineHeight: 1.5 }}>
-                      Quản lý đồng bộ container được phân công ({activeContainer.containerCode}), kiểm định an toàn 6 điểm Pre-Trip (UC03), dẫn đường 3D OSRM/PostGIS + Geofence 250m, ký nhận ePOD (UC11) và phản hồi sự cố hiện trường (UC16).
+                      Quản lý container được phân công ({activeContainer.containerCode}), kiểm định an toàn kỹ thuật trước chuyến, định vị vệ tinh dẫn đường, ký nhận chứng từ điện tử ePOD và xử lý sự cố hiện trường.
                     </p>
                   </div>
 
@@ -2258,7 +2136,7 @@ export default function DriverTerminalPage() {
                       }`}
                     >
                       <OriginMarker
-                        position={routeData.points[0] || originHub.coords}
+                        position={routeData.points[0] || (activeTripId ? null : originHub.coords)}
                         title={activeContainer.originName || originHub.label}
                         label={originHub.label}
                       />
@@ -2272,6 +2150,7 @@ export default function DriverTerminalPage() {
                       />
                       <RoutePolyline
                         positions={routeData.points}
+                        routingMetadataJson={routeData.routingMetadataJson}
                         color={rerouteAccepted ? '#0ea5e9' : '#10b981'}
                         weight={5}
                         showCorridorBuffer={true}
@@ -2674,7 +2553,7 @@ export default function DriverTerminalPage() {
                     <span>
                       Tọa độ đích:{' '}
                       <code>
-                        {destinationCoords[0].toFixed(4)}, {destinationCoords[1].toFixed(4)}
+                        {destinationCoords ? `${destinationCoords[0].toFixed(4)}, ${destinationCoords[1].toFixed(4)}` : 'Chưa có tọa độ đích'}
                       </code>
                     </span>
                     {arrivalStatusInfo.arrivedAt && (
@@ -2738,7 +2617,7 @@ export default function DriverTerminalPage() {
                   <p style={{ fontSize: '0.8rem', color: textMuted, margin: 0 }}>
                     Thiết bị: <strong>{activeContainer.telematicsModel}</strong>. Mọi gói tin
                     Telemetry phát ra từ khoang lái đều được lưu xuống bảng <code>container</code>{' '}
-                    trong PostgreSQL để Khách hàng (/customer) và Điều phối viên theo dõi trực tiếp.
+                    lên máy chủ trung tâm để Khách hàng và Điều phối viên theo dõi trực tiếp.
                   </p>
                 </div>
 
@@ -2860,6 +2739,23 @@ export default function DriverTerminalPage() {
         {/* ──────────────────────────────────────────────────────────────────────
             TAB 2: PRE-TRIP 6-POINT SAFETY INSPECTION (UC03 / BRULE-01)
         ────────────────────────────────────────────────────────────────────── */}
+        {activeTab === 'inspection' && activeTrip?.status === 'SCHEDULED' && (
+          <section className="card" aria-label="Khởi hành chuyến đã phân công">
+            <p>Chuyến {activeTrip.tripCode} đang chờ khởi hành. Gửi biên bản Pre-trip trước khi tiếp tục.</p>
+            <button type="button" className="btn btn-primary" disabled={startingTrip} onClick={async () => {
+              setStartingTrip(true);
+              try {
+                await api.startTrip(activeTrip.id);
+                showToast('success', 'Đã ghi nhận khởi hành.');
+                await loadFromBackend();
+              } catch (failure) {
+                showToast('warning', failure.message || 'Chưa thể khởi hành.');
+              } finally {
+                setStartingTrip(false);
+              }
+            }}>{startingTrip ? 'Đang xác minh…' : 'Xác nhận khởi hành'}</button>
+          </section>
+        )}
         {activeTab === 'inspection' && (
           <div style={{ display: 'grid', gap: 20 }}>
             <div
@@ -2882,7 +2778,7 @@ export default function DriverTerminalPage() {
               >
                 <div>
                   <h2 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0 }}>
-                    Biên Bản Kiểm Tra An Toàn 6 Hạng Mục Trước Chuyến (UC03 • BRULE-01)
+                    Biên Bản Kiểm Tra An Toàn 6 Hạng Mục Trước Chuyến
                   </h2>
                   <p style={{ fontSize: '0.82rem', color: textMuted, margin: '4px 0 0' }}>
                     Quy tắc bắt buộc: Tài xế phải xác nhận 6/6 điểm an toàn cho đầu kéo{' '}
@@ -3010,7 +2906,7 @@ export default function DriverTerminalPage() {
                     <ShieldCheck size={18} />
                     <span>
                       {submittingInspection
-                        ? 'Đang nộp hồ sơ về PostgreSQL...'
+                        ? 'Đang nộp hồ sơ lên hệ thống...'
                         : 'Ký Nộp Biên Bản An Toàn & Xuất Bến'}
                     </span>
                   </button>
@@ -3110,7 +3006,7 @@ export default function DriverTerminalPage() {
 
               <div style={{ background: cardBg, border: cardBorder, borderRadius: 12, padding: 14 }}>
                 <div style={{ fontSize: '0.7rem', color: textMuted, fontWeight: 700 }}>
-                  HÀNH LANG ĐỆM (BUFFER UC09)
+                  HÀNH LANG AN TOÀN ĐỘI XE
                 </div>
                 <div
                   style={{
@@ -3209,7 +3105,7 @@ export default function DriverTerminalPage() {
             </div>
 
             {/* Dynamic Reroute Proposal Banner (UC10 Human-in-the-loop) */}
-            {rerouteOfferActive && (
+            {rerouteOfferActive && !activeTripId && (
               <div
                 style={{
                   padding: '14px 18px',
@@ -3232,13 +3128,13 @@ export default function DriverTerminalPage() {
                   <div>
                     <div style={{ fontSize: '0.88rem', fontWeight: 800 }}>
                       {rerouteAccepted
-                        ? 'ĐÃ KÍCH HOẠT LỘ TRÌNH XANH THAY THẾ (UC10 VERSION #2)'
-                        : '[ĐỀ XUẤT ĐỔI TUYẾN ĐỘNG UC10] Phát hiện ùn tắc tại Ngã 4 Bình Thái'}
+                        ? '[MÔ PHỎNG] Đã chọn phương án minh họa'
+                        : '[MÔ PHỎNG] Đề xuất tránh ùn tắc minh họa'}
                     </div>
                     <div style={{ fontSize: '0.78rem', color: textMuted }}>
                       {rerouteAccepted
-                        ? 'Điều phối viên NOC đã xác nhận lộ trình tránh kẹt xe. Tiết kiệm 14.2% CO2e.'
-                        : 'Chuyển hướng qua Đường Vành Đai 2 → Rút ngắn 9 phút & Giảm 4.6 kg CO2e (Đạt chuẩn >= 10% lợi ích).'}
+                        ? 'Chưa tạo phiên bản đường vận hành. Dispatcher cần tính và chốt tuyến thực.'
+                        : 'Dữ liệu minh họa, chưa có đo lường giao thông hoặc CO₂ cho tuyến này.'}
                     </div>
                   </div>
                 </div>
@@ -3249,7 +3145,7 @@ export default function DriverTerminalPage() {
                       type="button"
                       onClick={() => {
                         setRerouteAccepted(true);
-                        showToast('success', 'Đã chấp nhận lộ trình đổi tuyến UC10 & đồng bộ NOC!');
+                        showToast('info', 'Đã xem phương án minh họa; chưa thay đổi tuyến chính thức.');
                       }}
                       style={{
                         padding: '8px 14px',
@@ -3283,7 +3179,7 @@ export default function DriverTerminalPage() {
                   </div>
                 ) : (
                   <span style={{ color: '#10b981', fontWeight: 800, fontSize: '0.8rem' }}>
-                    ✓ Đang dẫn đường tuyến #2
+                    Đang xem phương án minh họa
                   </span>
                 )}
               </div>
@@ -3303,7 +3199,7 @@ export default function DriverTerminalPage() {
                 hudSubtitle={`${activeContainer.originName} → ${activeContainer.destinationName} • ${Math.round(Number(activeContainer.progressPct) || 0)}% • ${routeData.source} • ${arrivalStatusInfo.arrived ? 'ĐÃ TỚI ĐÍCH' : 'Còn ' + (arrivalStatusInfo.distanceMeters ?? '--') + 'm'}`}
               >
                 <OriginMarker
-                  position={routeData.points[0] || originHub.coords}
+                  position={routeData.points[0] || (activeTripId ? null : originHub.coords)}
                   title={activeContainer.originName || originHub.label}
                   label={originHub.label}
                 />
@@ -3317,6 +3213,7 @@ export default function DriverTerminalPage() {
                 />
                 <RoutePolyline
                   positions={routeData.points}
+                  routingMetadataJson={routeData.routingMetadataJson}
                   color={rerouteAccepted ? '#0ea5e9' : '#10b981'}
                   weight={6}
                   showCorridorBuffer={true}
@@ -3344,6 +3241,9 @@ export default function DriverTerminalPage() {
                 )}
               </MapView>
             </div>
+            {routeData.routingMetadataJson && (
+              <RouteEvidence candidate={{ routingMetadataJson: routeData.routingMetadataJson }} />
+            )}
           </div>
         )}
 
@@ -3371,7 +3271,7 @@ export default function DriverTerminalPage() {
                 <PenTool size={20} color="#10b981" />
                 <div>
                   <h2 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0 }}>
-                    Ký Nhận Giao Hàng Điện Tử (ePOD - UC11)
+                    Ký Nhận Giao Hàng Điện Tử (ePOD)
                   </h2>
                   <p style={{ fontSize: '0.78rem', color: textMuted, margin: '2px 0 0' }}>
                     Xác nhận bàn giao container <strong>{activeContainer.containerCode}</strong> tại{' '}
@@ -3560,7 +3460,7 @@ export default function DriverTerminalPage() {
                     <CheckCircle2 size={18} />
                     <span>
                       {submittingEpod
-                        ? 'Đang lưu ePOD vào PostgreSQL...'
+                        ? 'Đang lưu chứng từ ePOD lên hệ thống...'
                         : 'Xác Nhận Giao Hàng & Mở Khóa Seal (Lưu DB)'}
                     </span>
                   </button>
@@ -3581,7 +3481,7 @@ export default function DriverTerminalPage() {
                 <ShieldAlert size={20} color="#ef4444" />
                 <div>
                   <h2 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0 }}>
-                    Báo Cáo Sự Cố Hiện Trường (UC16)
+                    Báo Cáo Sự Cố Hiện Trường
                   </h2>
                   <p style={{ fontSize: '0.78rem', color: textMuted, margin: '2px 0 0' }}>
                     Gửi báo cáo trực tiếp về Phòng Điều Hành NOC & Trưởng Ban An Toàn
@@ -3649,7 +3549,7 @@ export default function DriverTerminalPage() {
                     }}
                   >
                     <option value="CRITICAL">CRITICAL • Khẩn cấp tuyệt đối (Yêu cầu ứng cứu ngay)</option>
-                    <option value="HIGH">HIGH • Nghiêm trọng (Cần đổi tuyến động UC10)</option>
+                    <option value="HIGH">HIGH • Nghiêm trọng (Đề xuất đổi tuyến đường tránh sự cố)</option>
                     <option value="MEDIUM">MEDIUM • Cảnh báo theo dõi</option>
                   </select>
                 </div>
@@ -3664,8 +3564,7 @@ export default function DriverTerminalPage() {
                       marginBottom: 6
                     }}
                   >
-                    Mô tả hiện trường (Tự động đính kèm GPS {currentCoords[0].toFixed(4)},{' '}
-                    {currentCoords[1].toFixed(4)})
+                    Mô tả hiện trường ({currentCoords ? `GPS ${currentCoords[0].toFixed(4)}, ${currentCoords[1].toFixed(4)}` : 'Chưa có tọa độ GPS'})
                   </label>
                   <textarea
                     rows={4}

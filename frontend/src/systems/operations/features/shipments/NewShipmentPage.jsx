@@ -87,7 +87,7 @@ export default function NewShipmentPage() {
             <Package size={22} color="var(--accent-green)" />
             <div>
               <h2 style={{ fontSize: '1.3rem', fontWeight: 800, margin: 0 }}>
-                Đăng Ký Vận Đơn Hàng Hóa Mới (UC04)
+                Đăng Ký Vận Đơn Hàng Hóa Mới
               </h2>
               <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '2px 0 0' }}>
                 Khởi tạo thông số kiện hàng và tọa độ hành lang trước khi tính toán lộ trình Pareto 3D

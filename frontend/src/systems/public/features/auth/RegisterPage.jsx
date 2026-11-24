@@ -15,7 +15,7 @@ import {
   UserPlus
 } from 'lucide-react';
 import { useAuth } from '../../../../context/AuthContext';
-import CcadroLogo from '../../../../shared/components/CcadroLogo';
+import CcadroLogo from '../../../../shared/components/ui/CcadroLogo';
 import { IMAGES, VIDEOS } from '../../shared/landingContent';
 
 const INDUSTRIES = [

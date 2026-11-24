@@ -16,7 +16,8 @@ import {
   Users,
   XCircle
 } from 'lucide-react';
-import ElasticSearchBar from '../../../../shared/components/ElasticSearchBar';
+import SearchToolbar from '../../../../shared/components/search/SearchToolbar';
+import { DriverHistoryButton, DriverTransportHistory } from '../../../../shared/components/history/TransportHistory';
 import { elasticSearchMatch } from '../../../../utils/elasticSearch';
 import { api } from '../../../../services/api';
 import StaffComplianceModal from '../../shared/StaffComplianceModal';
@@ -61,7 +62,9 @@ function createInitialForm(focusMode) {
     verificationStatus: 'PENDING_REVIEW',
     backgroundCheckPassed: true,
     licenseNumber: '',
-    licenseClass: defaultRole === 'HUB_SHIPPER' ? 'A1' : 'FC',
+    licenseClass: defaultRole === 'HUB_SHIPPER' ? 'A1' : 'CE',
+    dateOfBirth: '',
+    licenseIssueDate: '',
     licenseExpiryDate: '',
     healthCheckPassed: false,
     safetyTrainingCertified: false,
@@ -132,6 +135,7 @@ export default function AdminStaffByRoleTab({
   const [searchQuery, setSearchQuery] = useState('');
   const [staffForm, setStaffForm] = useState(() => createInitialForm(focusMode));
   const [complianceTargetId, setComplianceTargetId] = useState(null);
+  const [historyDriver, setHistoryDriver] = useState(null);
   const [feedback, setFeedback] = useState(null);
   const [saving, setSaving] = useState(false);
 
@@ -283,7 +287,9 @@ export default function AdminStaffByRoleTab({
       verificationStatus: member.verificationStatus || 'PENDING_REVIEW',
       backgroundCheckPassed: Boolean(member.backgroundCheckPassed),
       licenseNumber: member.licenseNumber || '',
-      licenseClass: member.licenseClass || 'FC',
+      licenseClass: member.licenseClass || (member.roleCode === 'HUB_SHIPPER' ? 'A1' : 'CE'),
+      dateOfBirth: member.dateOfBirth || '',
+      licenseIssueDate: member.licenseIssueDate || '',
       licenseExpiryDate: member.licenseExpiryDate || '',
       healthCheckPassed: Boolean(member.healthCheckPassed),
       safetyTrainingCertified: Boolean(member.safetyTrainingCertified),
@@ -338,6 +344,8 @@ export default function AdminStaffByRoleTab({
       backgroundCheckPassed: Boolean(staffForm.backgroundCheckPassed),
       licenseNumber: staffForm.licenseNumber?.trim().toUpperCase() || null,
       licenseClass: staffForm.licenseClass?.trim().toUpperCase() || null,
+      dateOfBirth: staffForm.dateOfBirth || null,
+      licenseIssueDate: staffForm.licenseIssueDate || null,
       licenseExpiryDate: staffForm.licenseExpiryDate || null,
       healthCheckPassed: Boolean(staffForm.healthCheckPassed),
       safetyTrainingCertified: Boolean(staffForm.safetyTrainingCertified),
@@ -361,7 +369,7 @@ export default function AdminStaffByRoleTab({
           : await api.createStaff(payload);
         savedRecord = res?.result ?? res?.data ?? res;
       } catch (apiErr) {
-        if (apiErr?.status && apiErr.status >= 400 && apiErr.status < 500) {
+        if ((staffForm.roleCode === 'DRIVER' && import.meta.env.VITE_DEMO_MODE !== 'true') || (apiErr?.status && apiErr.status >= 400 && apiErr.status < 500)) {
           throw apiErr;
         }
         const current = getLocalStaff(true);
@@ -424,10 +432,10 @@ export default function AdminStaffByRoleTab({
   const handleVerifySubmit = async (member, candidate) => {
     let savedRecord = null;
     try {
-      const res = await api.verifyStaff(member.id, candidate);
+      const res = await api.verifyStaff(member.id, { ...candidate, dateOfBirth: candidate.dateOfBirth || null, licenseIssueDate: candidate.licenseIssueDate || null });
       savedRecord = res?.result ?? res?.data ?? res;
     } catch (apiErr) {
-      if (apiErr?.status && apiErr.status >= 400 && apiErr.status < 500) {
+      if ((member.roleCode === 'DRIVER' && import.meta.env.VITE_DEMO_MODE !== 'true') || (apiErr?.status && apiErr.status >= 400 && apiErr.status < 500)) {
         throw apiErr;
       }
       const nextList = getLocalStaff(true).map((item) =>
@@ -573,7 +581,7 @@ export default function AdminStaffByRoleTab({
             Xe: <strong>{m.assignedVehiclePlate || '--'}</strong> • Hạn: {m.licenseExpiryDate || '--'}
           </div>
           <div style={{ fontSize: '0.7rem', color: Number(m.demeritPoints || 0) > 5 ? '#f87171' : '#10b981' }}>
-            Phạt BRULE-18: {m.demeritPoints || 0}/20đ
+            Điểm trừ an toàn: {m.demeritPoints || 0}/20đ
           </div>
         </div>
       );
@@ -615,6 +623,8 @@ export default function AdminStaffByRoleTab({
         <ClipboardCheck size={13} />
         <span>Kiểm duyệt</span>
       </button>
+      {member.roleCode === 'DRIVER' && member.id &&
+        <DriverHistoryButton onClick={() => setHistoryDriver(member)} />}
       {!member.isDeleted && isAdmin && (
         <button
           type="button"
@@ -886,14 +896,13 @@ export default function AdminStaffByRoleTab({
               alignItems: 'center'
             }}
           >
-            <ElasticSearchBar
+            <SearchToolbar
               value={searchQuery}
               onChange={setSearchQuery}
-              placeholder="Tìm mã NV, họ tên, số GPLX, biển số xe, mã chứng chỉ, chi nhánh..."
+              label="Tìm nhân sự"
+              placeholder="Mã nhân viên, họ tên, biển số hoặc chi nhánh…"
               totalCount={visiblePool.length}
               matchedCount={elasticResult.items.length}
-              tookMs={elasticResult.tookMs}
-              rounded={8}
             />
             <select
               aria-label="Lọc theo chi nhánh"
@@ -1217,12 +1226,22 @@ export default function AdminStaffByRoleTab({
                       value={staffForm.licenseClass}
                       onChange={(e) => setStaffForm({ ...staffForm, licenseClass: e.target.value })}
                     >
-                      <option value="FC">FC</option>
+                      <option value="CE">CE · Đầu kéo sơ mi rơ moóc</option>
+                      <option value="FC">FC · GPLX cấp trước 01/01/2025</option>
                       <option value="C">C</option>
                       <option value="B2">B2</option>
                       <option value="A1">A1</option>
                     </select>
                   </div>
+                  {staffForm.roleCode === 'DRIVER' && [
+                    ['dateOfBirth', 'Ngày sinh'],
+                    ['licenseIssueDate', 'Ngày cấp GPLX']
+                  ].map(([field, label]) => (
+                    <label key={field} className="form-label">{label}
+                      <input className="form-input" type="date" value={staffForm[field]}
+                        onChange={(event) => setStaffForm({ ...staffForm, [field]: event.target.value })} />
+                    </label>
+                  ))}
                   <div>
                     <label className="form-label" htmlFor="staff-license-exp">Hạn GPLX</label>
                     <input
@@ -1316,7 +1335,7 @@ export default function AdminStaffByRoleTab({
                     onChange={(e) =>
                       setStaffForm({ ...staffForm, inspectionScope: e.target.value })
                     }
-                    placeholder="PRE_TRIP_UC01, GLEC_V3_CARBON_UC12"
+                    placeholder="Kiểm định xe, Kiểm toán Carbon"
                   />
                 </div>
               </div>
@@ -1379,6 +1398,7 @@ export default function AdminStaffByRoleTab({
         onClose={() => setComplianceTargetId(null)}
         onSubmitVerification={handleVerifySubmit}
       />
+      <DriverTransportHistory staff driver={historyDriver} onClose={() => setHistoryDriver(null)} />
     </div>
   );
 }

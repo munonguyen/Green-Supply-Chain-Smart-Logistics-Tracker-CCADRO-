@@ -633,8 +633,8 @@ describe('B2B Contract, SLA Settlement, Net-30 Credit & Payment Webhook E2E Flow
       expect(screen.getAllByText(/PKG-DB-0001 → PKG-DB-0003/i).length).toBeGreaterThan(0);
     });
 
-    // 2. HUB_MANAGER can open Kho Tài khoản & Bảo mật IAM tab and view hub_iam directory + audit log
-    const iamButtons = screen.getAllByRole('button', { name: /Kho Tài khoản & Bảo mật IAM/i });
+    // 2. HUB_MANAGER can open Kho Tài khoản & IAM tab and view hub_iam directory + audit log
+    const iamButtons = screen.getAllByRole('button', { name: /Kho Tài khoản/i });
     fireEvent.click(iamButtons[0]);
     expect(await screen.findByTestId('hub-iam-row-shipper')).toBeInTheDocument();
     expect(screen.getByTestId('hub-iam-row-hub_inspector_bn')).toBeInTheDocument();

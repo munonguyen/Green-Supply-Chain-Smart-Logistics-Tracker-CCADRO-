@@ -1,3 +1,4 @@
+import SearchField from '../../../shared/components/search/SearchField';
 import React, { useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import {
@@ -8,12 +9,11 @@ import {
   Leaf,
   MapPin,
   Package,
-  Search,
   Thermometer,
   Truck
 } from 'lucide-react';
 import { DEMO_SHIPMENTS } from './landingContent';
-import { CountingNumber } from '../../../shared/components/CountingNumber';
+import { CountingNumber } from '../../../shared/effects/CountingNumber';
 
 const STORAGE_KEY_USER_SHIPMENTS = 'ccadro_user_booked_shipments_v2';
 
@@ -114,16 +114,14 @@ export default function HeroTrackingWidget() {
 
             <div>
               <form className="lp-track__form" onSubmit={handleSearch}>
-                <div className="lp-input-icon">
-                  <Search size={16} />
-                  <input
-                    className="lp-input"
-                    type="text"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Nhập mã vận đơn (VD: SH001)"
-                  />
-                </div>
+                <SearchField
+                  label="Mã vận đơn"
+                  hideLabel
+                  value={query}
+                  onValueChange={setQuery}
+                  placeholder="Nhập mã vận đơn (VD: SH001)"
+                  style={{ flex: 1 }}
+                />
                 <button type="submit" className="lp-btn lp-btn--primary lp-btn--sm">
                   Tra cứu
                 </button>

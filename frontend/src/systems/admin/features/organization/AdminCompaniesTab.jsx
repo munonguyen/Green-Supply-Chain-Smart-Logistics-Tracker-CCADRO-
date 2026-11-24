@@ -12,7 +12,7 @@ import {
 import { useAuth } from '../../../../context/AuthContext';
 import { elasticSearchMatch } from '../../../../utils/elasticSearch';
 import { formatMillionVnd } from '../../../../utils/formatters';
-import { ElasticSearchBar } from '../../../../shared/components/SharedPrimitives';
+import { SearchToolbar } from '../../../../shared/components/ui/SharedPrimitives';
 
 const EMPTY_COMPANY_FORM = {
   id: null,
@@ -35,6 +35,7 @@ const EMPTY_COMPANY_FORM = {
 export default function AdminCompaniesTab({ isAdmin }) {
   const {
     companies = [],
+    identityLoading = false,
     accounts = [],
     adminCreateCompany,
     adminUpdateCompany,
@@ -238,7 +239,7 @@ export default function AdminCompaniesTab({ isAdmin }) {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 420px), 1fr))',
           gap: '22px',
           alignItems: 'start'
         }}
@@ -254,17 +255,17 @@ export default function AdminCompaniesTab({ isAdmin }) {
           </p>
 
           <div style={{ marginBottom: 14 }}>
-            <ElasticSearchBar
+            <SearchToolbar
               value={searchQuery}
               onChange={setSearchQuery}
-              placeholder="Tìm mã công ty, tên công ty, MST, người đại diện..."
+              label="Tìm công ty"
+              loading={identityLoading}
+              placeholder="Mã công ty, tên hoặc mã số thuế…"
               totalCount={visibleCompanies.length}
               matchedCount={elasticCompanies.items.length}
-              tookMs={elasticCompanies.tookMs}
               showDeleted={showDeleted}
               onToggleDeleted={() => setShowDeleted((p) => !p)}
               deletedCount={deletedCount}
-              rounded={8}
             />
           </div>
 

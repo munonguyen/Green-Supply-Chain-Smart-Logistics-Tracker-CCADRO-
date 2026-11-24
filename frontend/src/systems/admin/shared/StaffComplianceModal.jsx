@@ -42,7 +42,9 @@ export default function StaffComplianceModal({
       safetyTrainingCertified: Boolean(staff.safetyTrainingCertified),
       canSignOffCompliance: Boolean(staff.canSignOffCompliance),
       licenseNumber: staff.licenseNumber || '',
-      licenseClass: staff.licenseClass || 'FC',
+      licenseClass: staff.licenseClass || (staff.roleCode === 'HUB_SHIPPER' ? 'A1' : 'CE'),
+      dateOfBirth: staff.dateOfBirth || '',
+      licenseIssueDate: staff.licenseIssueDate || '',
       licenseExpiryDate: staff.licenseExpiryDate || '',
       certificationCode: staff.certificationCode || '',
       certificateExpiryDate: staff.certificateExpiryDate || '',
@@ -230,12 +232,22 @@ export default function StaffComplianceModal({
                   value={draft.licenseClass}
                   onChange={(e) => setDraft({ ...draft, licenseClass: e.target.value })}
                 >
-                  <option value="FC">FC (Đầu kéo Container)</option>
+                  <option value="CE">CE · Đầu kéo sơ mi rơ moóc</option>
+                  <option value="FC">FC · GPLX cấp trước 01/01/2025</option>
                   <option value="C">C (Xe tải EV/Diesel)</option>
                   <option value="B2">B2 (Xe tải nhẹ)</option>
                   <option value="A1">A1 (Shipper xe máy điện)</option>
                 </select>
               </div>
+              {staff.roleCode === 'DRIVER' && [
+                ['dateOfBirth', 'Ngày sinh'],
+                ['licenseIssueDate', 'Ngày cấp GPLX']
+              ].map(([field, label]) => (
+                <label key={field} className="form-label">{label}
+                  <input type="date" className="form-input" value={draft[field]}
+                    onChange={(event) => setDraft({ ...draft, [field]: event.target.value })} />
+                </label>
+              ))}
               <div>
                 <label className="form-label" htmlFor="verify-license-expiry">Hạn GPLX</label>
                 <input
@@ -266,7 +278,7 @@ export default function StaffComplianceModal({
                 </span>
               )}
               <span>
-                Điểm phạt an toàn BRULE-18:{' '}
+                Điểm trừ an toàn vận hành:{' '}
                 <strong style={{ color: Number(staff.demeritPoints || 0) > 5 ? '#ef4444' : '#10b981' }}>
                   {staff.demeritPoints || 0}/20 điểm
                 </strong>
@@ -329,7 +341,7 @@ export default function StaffComplianceModal({
                 className="form-input"
                 value={draft.inspectionScope}
                 onChange={(e) => setDraft({ ...draft, inspectionScope: e.target.value })}
-                placeholder="VD: PRE_TRIP_UC01, GLEC_V3_CARBON_UC12, HUB_POD_PHOTO"
+                placeholder="VD: Kiểm định kỹ thuật, Kiểm toán phát thải, Đối soát POD"
               />
             </div>
           </div>

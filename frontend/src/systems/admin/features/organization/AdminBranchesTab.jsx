@@ -13,7 +13,7 @@ import {
   Users,
   XCircle
 } from 'lucide-react';
-import { ElasticSearchBar } from '../../../../shared/components/SharedPrimitives';
+import { SearchToolbar } from '../../../../shared/components/ui/SharedPrimitives';
 import { elasticSearchMatch } from '../../../../utils/elasticSearch';
 import { formatCompactVnd, formatMillionVnd, formatVnd } from '../../../../utils/formatters';
 import { api } from '../../../../services/api';
@@ -447,14 +447,13 @@ export default function AdminBranchesTab({ isAdmin = true, onBranchesChanged }) 
           </div>
 
           <div style={{ marginBottom: '12px' }}>
-            <ElasticSearchBar
+            <SearchToolbar
               value={searchQuery}
               onChange={setSearchQuery}
-              placeholder="Tìm mã chi nhánh (BR-*), tên hub, tỉnh thành, trưởng chi nhánh..."
+              label="Tìm chi nhánh"
+              placeholder="Mã chi nhánh, tên hub hoặc tỉnh thành…"
               totalCount={visiblePool.length}
               matchedCount={elasticResult.items.length}
-              tookMs={elasticResult.tookMs}
-              rounded={8}
             />
           </div>
 

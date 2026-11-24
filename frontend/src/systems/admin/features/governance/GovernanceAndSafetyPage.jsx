@@ -21,7 +21,7 @@ import { api } from '../../../../services/api';
 import { useAuth, ENTERPRISE_ROLES, ALL_SYSTEM_PERMISSIONS } from '../../../../context/AuthContext';
 import { useTheme } from '../../../../context/ThemeContext';
 import { elasticSearchMatch } from '../../../../utils/elasticSearch';
-import ElasticSearchBar from '../../../../shared/components/ElasticSearchBar';
+import SearchToolbar from '../../../../shared/components/search/SearchToolbar';
 import UserCompanyDetailModal from '../../shared/UserCompanyDetailModal';
 import AdminCompaniesTab from '../organization/AdminCompaniesTab';
 import AdminBranchesTab from '../organization/AdminBranchesTab';
@@ -421,7 +421,7 @@ export default function GovernanceAndSafetyPage({
               ? [{ id: 'RBAC', label: '🔐 Quản Lý Tài Khoản & Phân Quyền (Admin IAM)', icon: Users }]
               : []),
             { id: 'PRETRIP', label: '🛠️ Kiểm tra trước chuyến', icon: ClipboardCheck },
-            { id: 'INCIDENT', label: '🚨 Báo Cáo Sự Cố & Điểm Phạt (UC16-18)', icon: AlertOctagon }
+            { id: 'INCIDENT', label: '🚨 Báo Cáo Sự Cố & Điểm Phạt', icon: AlertOctagon }
           ].map((tab) => (
             <button
               key={tab.id}
@@ -722,17 +722,17 @@ export default function GovernanceAndSafetyPage({
 
               {/* Elastic Search & Soft Delete Toggle */}
               <div style={{ marginBottom: 14 }}>
-                <ElasticSearchBar
+                <SearchToolbar
                   value={searchQuery}
                   onChange={setSearchQuery}
-                  placeholder="Elastic search: username, họ tên không dấu, vai trò, phòng ban, hub..."
+                  label="Tìm tài khoản"
+                  loading={identityLoading}
+                  placeholder="Tên đăng nhập, họ tên, vai trò hoặc phòng ban…"
                   totalCount={visiblePortalAccounts.length}
                   matchedCount={filteredAccounts.length}
-                  tookMs={elasticAccountsResult.tookMs}
                   showDeleted={showDeletedAccounts}
                   onToggleDeleted={() => setShowDeletedAccounts((prev) => !prev)}
                   deletedCount={deletedAccountCount}
-                  rounded={8}
                 />
               </div>
 
@@ -1506,10 +1506,10 @@ export default function GovernanceAndSafetyPage({
       {activeTab === 'PRETRIP' && (
         <div className="card" style={{ maxWidth: '820px' }}>
           <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '6px' }}>
-            Biên Bản Kiểm Tra An Toàn Kỹ Thuật 6 Hạng Mục Trước Chuyến (UC03 / BRULE-01)
+            Biên Bản Kiểm Tra An Toàn Kỹ Thuật 6 Hạng Mục Trước Chuyến
           </h3>
           <p style={{ fontSize: '0.82rem', color: '#94a3b8', marginBottom: '18px' }}>
-            Quy tắc bất biến <strong>BRULE-01</strong>: Nếu bất kỳ hạng mục nào trong 6 hạng mục
+            Quy định an toàn bắt buộc: Nếu bất kỳ hạng mục nào trong 6 hạng mục
             dưới đây không đạt (<code>false</code>), phương tiện lập tức bị khóa sang trạng thái{' '}
             <code>MAINTENANCE</code> và chặn xuất bến.
           </p>
@@ -1613,11 +1613,11 @@ export default function GovernanceAndSafetyPage({
         >
           <div className="card">
             <h3 style={{ fontSize: '1.08rem', fontWeight: 700, marginBottom: '8px' }}>
-              Báo Cáo Sự Cố Hiện Trường (UC16 &amp; BRULE-17)
+              Báo Cáo Sự Cố Hiện Trường
             </h3>
             <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '14px' }}>
               Khi gửi báo cáo sự cố, hệ thống lập tức phát bản tin khẩn cấp tới Trung tâm Điều phối.
-              Theo <strong>BRULE-17</strong>, báo cáo sự cố không bao giờ tự động trừ điểm tài xế.
+              Theo quy chuẩn an toàn, việc gửi báo cáo sự cố độc lập với quy trình đánh giá kỷ luật tài xế.
             </p>
 
             {incidentStatus && (
@@ -1725,12 +1725,12 @@ export default function GovernanceAndSafetyPage({
 
           <div className="card">
             <h3 style={{ fontSize: '1.08rem', fontWeight: 700, marginBottom: '8px' }}>
-              Quản Trị Điểm Phạt Tài Xế (UC18 / BRULE-18)
+              Quản Trị Điểm Phạt &amp; Kỷ Luật An Toàn Tài Xế
             </h3>
             <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '14px' }}>
               Ngưỡng cảnh báo tự động: <strong>10 điểm</strong> = Cảnh cáo an toàn (
               <code>WARNING_ISSUED</code>) • <strong>20 điểm</strong> = Chuyển Hội đồng Nhân sự xem
-              xét kỷ luật nhưng <strong>không tự động khóa tài khoản</strong> (BRULE-18).
+              xét kỷ luật nhưng <strong>không tự động khóa tài khoản</strong> khi chưa có quyết định phê duyệt.
             </p>
             <p role="status">Chưa kết nối luồng thẩm định và tổng hợp điểm phạt tại màn hình này. Xem hồ sơ thực tế trước khi ra quyết định kỷ luật.</p>
           </div>

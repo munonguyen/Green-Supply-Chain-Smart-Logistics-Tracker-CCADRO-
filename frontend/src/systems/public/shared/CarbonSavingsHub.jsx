@@ -22,7 +22,7 @@ import {
   MONTHLY_SAVINGS,
   POWERTRAINS
 } from './landingContent';
-import { CountingNumber } from '../../../shared/components/CountingNumber';
+import { CountingNumber } from '../../../shared/effects/CountingNumber';
 import MapView from '../../../shared/map/MapView';
 import RoutePolyline from '../../../shared/map/RoutePolyline';
 import VehicleMarker from '../../../shared/map/VehicleMarker';

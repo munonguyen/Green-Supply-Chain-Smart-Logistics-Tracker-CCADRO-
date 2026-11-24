@@ -4,8 +4,8 @@ import { AnimatePresence, motion } from 'motion/react';
 import { LogIn, Menu, Moon, Sun, UserPlus, X } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
 import { useAuth, getAccessibleWorkspaces } from '../../../context/AuthContext';
-import CcadroLogo from '../../../shared/components/CcadroLogo';
-import UserAccountMenu from '../../../shared/components/UserAccountMenu';
+import CcadroLogo from '../../../shared/components/ui/CcadroLogo';
+import UserAccountMenu from '../../../shared/components/account/UserAccountMenu';
 import { NAV_LINKS } from './landingContent';
 import { useScrolled } from './useLandingScroll';
 

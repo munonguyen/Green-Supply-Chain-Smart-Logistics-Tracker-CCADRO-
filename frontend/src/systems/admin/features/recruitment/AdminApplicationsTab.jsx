@@ -11,14 +11,14 @@ import {
   XCircle
 } from 'lucide-react';
 import {
-  ElasticSearchBar,
+  SearchToolbar,
   KpiStatCard,
   ModalDialog,
   StatusBadge,
   StatusBanner,
   sharedInputStyle,
   sharedLabelStyle
-} from '../../../../shared/components/SharedPrimitives';
+} from '../../../../shared/components/ui/SharedPrimitives';
 import { elasticSearchMatch } from '../../../../utils/elasticSearch';
 import { formatVnd } from '../../../../utils/formatters';
 import { api } from '../../../../services/api';
@@ -372,11 +372,13 @@ export default function AdminApplicationsTab({ isAdmin = true, actorUsername = '
               </option>
             ))}
           </select>
-          <div style={{ minWidth: 250 }}>
-            <ElasticSearchBar
+          <div style={{ minWidth: 0, flex: '1 1 250px', maxWidth: '100%' }}>
+            <SearchToolbar
               value={searchQuery}
               onChange={setSearchQuery}
-              placeholder="Tìm mã đơn, tên, CCCD, GPLX..."
+              label="Tìm hồ sơ ứng tuyển"
+              loading={loading}
+              placeholder="Mã hồ sơ, họ tên, CCCD hoặc GPLX…"
             />
           </div>
         </div>

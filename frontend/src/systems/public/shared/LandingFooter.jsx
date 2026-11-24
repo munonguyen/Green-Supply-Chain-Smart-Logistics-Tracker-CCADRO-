@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Lock, Mail, MapPin, Phone, ShieldCheck, UserPlus } from 'lucide-react';
-import CcadroLogo from '../../../shared/components/CcadroLogo';
+import CcadroLogo from '../../../shared/components/ui/CcadroLogo';
 import { NAV_LINKS } from './landingContent';
 
 export default function LandingFooter() {
