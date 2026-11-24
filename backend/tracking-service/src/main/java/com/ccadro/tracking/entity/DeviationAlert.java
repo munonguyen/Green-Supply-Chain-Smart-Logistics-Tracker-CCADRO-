@@ -1,5 +1,10 @@
 package com.ccadro.tracking.entity;
 
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
+
 import jakarta.persistence.*;
 import org.locationtech.jts.geom.Point;
 
@@ -9,6 +14,10 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "deviation_alert")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class DeviationAlert {
 
     @Id
@@ -53,33 +62,4 @@ public class DeviationAlert {
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
-
-    public DeviationAlert() {}
-
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-    public UUID getTripId() { return tripId; }
-    public void setTripId(UUID tripId) { this.tripId = tripId; }
-    public String getSeverity() { return severity; }
-    public void setSeverity(String severity) { this.severity = severity; }
-    public BigDecimal getDeviationDistanceMeters() { return deviationDistanceMeters; }
-    public void setDeviationDistanceMeters(BigDecimal deviationDistanceMeters) { this.deviationDistanceMeters = deviationDistanceMeters; }
-    public Point getLocationGeom() { return locationGeom; }
-    public void setLocationGeom(Point locationGeom) { this.locationGeom = locationGeom; }
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
-    public Instant getDetectedAt() { return detectedAt; }
-    public void setDetectedAt(Instant detectedAt) { this.detectedAt = detectedAt; }
-    public Instant getResolvedAt() { return resolvedAt; }
-    public void setResolvedAt(Instant resolvedAt) { this.resolvedAt = resolvedAt; }
-    public Integer getPersistenceCount() { return persistenceCount; }
-    public void setPersistenceCount(Integer persistenceCount) { this.persistenceCount = persistenceCount; }
-    public Integer getDurationSeconds() { return durationSeconds; }
-    public void setDurationSeconds(Integer durationSeconds) { this.durationSeconds = durationSeconds; }
-    public String getThresholdVersion() { return thresholdVersion; }
-    public void setThresholdVersion(String thresholdVersion) { this.thresholdVersion = thresholdVersion; }
-    public UUID getRouteVersionId() { return routeVersionId; }
-    public void setRouteVersionId(UUID routeVersionId) { this.routeVersionId = routeVersionId; }
-    public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 }

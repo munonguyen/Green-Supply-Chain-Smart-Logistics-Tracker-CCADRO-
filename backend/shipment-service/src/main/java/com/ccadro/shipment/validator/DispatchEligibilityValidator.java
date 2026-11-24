@@ -48,35 +48,6 @@ public class DispatchEligibilityValidator {
     public void validateVehicleAndDriverEligibility(Shipment shipment, UUID vehicleId, UUID driverId) {
         validateVehicle(shipment, vehicleId);
         validateDriver(driverId);
-        validateLatestPreTripInspection(vehicleId, driverId);
-    }
-
-    private void validateLatestPreTripInspection(UUID vehicleId, UUID driverId) {
-        try {
-            ApiResponse<Map<String, Object>> inspectionResp = assetRestClient.get()
-                    .uri("/api/v1/assets/vehicles/{id}/inspections/latest", vehicleId)
-                    .retrieve()
-                    .body(new ParameterizedTypeReference<>() {});
-
-            Map<String, Object> inspection = inspectionResp == null ? null : inspectionResp.getResult();
-            if (inspection == null
-                    || !Boolean.TRUE.equals(inspection.get("isPassed"))
-                    || !driverId.toString().equalsIgnoreCase(String.valueOf(inspection.get("driverId")))) {
-                throw new AppException(ErrorCode.INVALID_REQUEST_ARGUMENT,
-                        "Cần biên bản Pre-trip đạt, gắn với đúng xe và tài xế trước khi điều phối");
-            }
-        } catch (HttpClientErrorException.NotFound e) {
-            throw new AppException(ErrorCode.INVALID_REQUEST_ARGUMENT,
-                    "Phương tiện chưa có biên bản Pre-trip hợp lệ trước khi điều phối");
-        } catch (AppException e) {
-            throw e;
-        } catch (Exception e) {
-            if (strictRemoteValidation) {
-                throw new AppException(ErrorCode.INVALID_REQUEST_ARGUMENT,
-                        "Không thể xác minh biên bản Pre-trip cho phương tiện " + vehicleId + ": " + e.getMessage());
-            }
-            log.warn("Non-strict mode: Không thể xác minh Pre-trip xe {}: {}", vehicleId, e.getMessage());
-        }
     }
 
     private void validateVehicle(Shipment shipment, UUID vehicleId) {
@@ -125,7 +96,7 @@ public class DispatchEligibilityValidator {
     private void validateDriver(UUID driverId) {
         try {
             ApiResponse<Map<String, Object>> driverResp = assetRestClient.get()
-                    .uri("/api/v1/assets/drivers/{id}", driverId)
+                    .uri("/api/v1/assets/drivers/dispatch-eligibility/{id}", driverId)
                     .retrieve()
                     .body(new ParameterizedTypeReference<>() {});
 
@@ -133,9 +104,11 @@ public class DispatchEligibilityValidator {
                 throw new AppException(ErrorCode.DRIVER_NOT_FOUND);
             }
 
-            String driverStatus = String.valueOf(driverResp.getResult().get("status"));
-            if (!"AVAILABLE".equalsIgnoreCase(driverStatus)) {
-                throw new AppException(ErrorCode.DRIVER_NOT_AVAILABLE);
+            Map<String, Object> assessment = driverResp.getResult();
+            if (!Boolean.TRUE.equals(assessment.get("eligible"))) {
+                throw new AppException("AVAILABLE".equals(assessment.get("status"))
+                        ? ErrorCode.DRIVER_LICENSE_INVALID : ErrorCode.DRIVER_NOT_AVAILABLE,
+                        "Tài xế chưa đủ điều kiện phân công · " + assessment.get("reasons"));
             }
         } catch (HttpClientErrorException.NotFound e) {
             throw new AppException(ErrorCode.DRIVER_NOT_FOUND);
@@ -151,14 +124,14 @@ public class DispatchEligibilityValidator {
     }
 
     /**
-     * Đồng bộ cập nhật trạng thái phương tiện -> IN_TRANSIT và tài xế -> ON_TRIP sau khi xuất bến thành công.
+     * Đồng bộ cập nhật trạng thái phương tiện -> ASSIGNED và tài xế -> ASSIGNED sau khi xuất bến thành công.
      */
     public void updateAssetStatusesOnDispatch(UUID vehicleId, UUID driverId) {
         try {
             assetRestClient.put()
                     .uri(uriBuilder -> uriBuilder
                             .path("/api/v1/assets/vehicles/{id}/status")
-                            .queryParam("status", "IN_TRANSIT")
+                            .queryParam("status", "ASSIGNED")
                             .build(vehicleId))
                     .retrieve()
                     .toBodilessEntity();
@@ -166,11 +139,11 @@ public class DispatchEligibilityValidator {
             assetRestClient.put()
                     .uri(uriBuilder -> uriBuilder
                             .path("/api/v1/assets/drivers/{id}/status")
-                            .queryParam("status", "ON_TRIP")
+                            .queryParam("status", "ASSIGNED")
                             .build(driverId))
                     .retrieve()
                     .toBodilessEntity();
-            log.info("Cập nhật trạng thái thành công: Xe {} -> IN_TRANSIT, Tài xế {} -> ON_TRIP", vehicleId, driverId);
+            log.info("Cập nhật trạng thái thành công: Xe {} -> ASSIGNED, Tài xế {} -> ASSIGNED", vehicleId, driverId);
         } catch (Exception e) {
             if (strictRemoteValidation) {
                 throw new AppException(ErrorCode.INVALID_REQUEST_ARGUMENT,

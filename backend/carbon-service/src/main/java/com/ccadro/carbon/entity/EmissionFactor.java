@@ -1,5 +1,10 @@
 package com.ccadro.carbon.entity;
 
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
+
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -7,6 +12,10 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "emission_factor")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class EmissionFactor {
 
     @Id
@@ -45,31 +54,4 @@ public class EmissionFactor {
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt = Instant.now();
-
-    public EmissionFactor() {}
-
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-    public String getFactorCode() { return factorCode; }
-    public void setFactorCode(String factorCode) { this.factorCode = factorCode; }
-    public String getFuelType() { return fuelType; }
-    public void setFuelType(String fuelType) { this.fuelType = fuelType; }
-    public String getVehicleCategory() { return vehicleCategory; }
-    public void setVehicleCategory(String vehicleCategory) { this.vehicleCategory = vehicleCategory; }
-    public String getEuroStandard() { return euroStandard; }
-    public void setEuroStandard(String euroStandard) { this.euroStandard = euroStandard; }
-    public BigDecimal getEmptyFactorKgPerKm() { return emptyFactorKgPerKm; }
-    public void setEmptyFactorKgPerKm(BigDecimal emptyFactorKgPerKm) { this.emptyFactorKgPerKm = emptyFactorKgPerKm; }
-    public BigDecimal getFullFactorKgPerKm() { return fullFactorKgPerKm; }
-    public void setFullFactorKgPerKm(BigDecimal fullFactorKgPerKm) { this.fullFactorKgPerKm = fullFactorKgPerKm; }
-    public BigDecimal getDefaultTonneKmFactor() { return defaultTonneKmFactor; }
-    public void setDefaultTonneKmFactor(BigDecimal defaultTonneKmFactor) { this.defaultTonneKmFactor = defaultTonneKmFactor; }
-    public String getSourceReference() { return sourceReference; }
-    public void setSourceReference(String sourceReference) { this.sourceReference = sourceReference; }
-    public boolean isActive() { return isActive; }
-    public void setActive(boolean active) { isActive = active; }
-    public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
-    public Instant getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
 }

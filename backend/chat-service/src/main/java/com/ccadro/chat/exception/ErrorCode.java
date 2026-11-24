@@ -1,8 +1,11 @@
 package com.ccadro.chat.exception;
 
+import lombok.Getter;
+
 import org.springframework.http.HttpStatus;
 
 /** Status and default message used by service/client boundaries. */
+@Getter
 public enum ErrorCode {
     INVALID_REQUEST(HttpStatus.BAD_REQUEST, "Dữ liệu chat không hợp lệ"),
     UNAUTHENTICATED(HttpStatus.UNAUTHORIZED, "Đăng nhập để sử dụng chat"),
@@ -21,7 +24,4 @@ public enum ErrorCode {
         this.status = status;
         this.message = message;
     }
-
-    public HttpStatus getStatus() { return status; }
-    public String getMessage() { return message; }
 }

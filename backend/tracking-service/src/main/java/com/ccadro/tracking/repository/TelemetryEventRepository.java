@@ -10,6 +10,7 @@ import java.util.UUID;
 
 @Repository
 public interface TelemetryEventRepository extends JpaRepository<TelemetryEvent, UUID> {
+    Optional<TelemetryEvent> findByExternalEventId(UUID externalEventId);
     List<TelemetryEvent> findByTripIdOrderByTimestampAsc(UUID tripId);
     List<TelemetryEvent> findTop3ByTripIdAndQualityPassedTrueOrderByTimestampDesc(UUID tripId);
     Optional<TelemetryEvent> findFirstByTripIdAndQualityPassedTrueOrderByTimestampDesc(UUID tripId);

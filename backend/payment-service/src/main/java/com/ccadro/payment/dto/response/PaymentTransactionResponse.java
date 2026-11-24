@@ -1,5 +1,7 @@
 package com.ccadro.payment.dto.response;
 
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
@@ -8,6 +10,8 @@ import java.util.UUID;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class PaymentTransactionResponse {
     private UUID id;
     private String transactionCode;

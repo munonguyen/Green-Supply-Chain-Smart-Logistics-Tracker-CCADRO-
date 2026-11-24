@@ -70,6 +70,7 @@ class FleetTelemetryServiceTest {
         when(tripRepository.findActiveContainerTelemetryRows()).thenReturn(List.of());
         when(tripRepository.findAll()).thenReturn(List.of(trip));
         when(tripRepository.findActiveRouteDistanceMeters(tripId)).thenReturn(Optional.of(28000.0));
+        when(tripRepository.findRemainingRouteDistanceMeters(tripId,10.835,106.752)).thenReturn(Optional.of(14000.0));
         when(telemetryEventRepository.findFirstByTripIdAndQualityPassedTrueOrderByTimestampDesc(tripId))
                 .thenReturn(Optional.of(event));
 
@@ -87,6 +88,64 @@ class FleetTelemetryServiceTest {
         assertEquals("RED_DEVIATION", snap.getDeviationStatus());
         assertEquals("LIVE_TELEMETRY_DB", snap.getDataSource());
         assertTrue(snap.getCo2SavedKg() > 0.0);
+    }
+
+    private Object[] nativeRow() {
+        Object[] row = new Object[43];
+        row[0] = UUID.randomUUID(); row[1] = "TRIP-A"; row[2] = "EN_ROUTE";
+        row[4] = UUID.randomUUID(); row[10] = 10.7; row[11] = 106.6;
+        row[13] = 10.9; row[14] = 106.8; row[21] = 30000.0;
+        row[22] = 10.8; row[23] = 106.7; row[24] = 40;
+        row[28] = Instant.parse("2026-11-21T08:00:00Z"); row[29] = "CONT-A";
+        row[31] = 10.85; row[32] = 106.75; row[34] = 20;
+        row[41] = Instant.parse("2026-11-21T08:01:00Z"); row[42] = UUID.randomUUID();
+        return row;
+    }
+
+    @Test
+    void selectsTheNewestCompletePositionAndItsOwnTimestamp() {
+        var service = new FleetTelemetryService(tripRepository, telemetryEventRepository, new CcadroProperties(),
+            new JacksonRouteWaypointDecoder(new ObjectMapper()));
+        Object[] row = nativeRow();
+        LiveFleetTelemetryResponse result = org.springframework.test.util.ReflectionTestUtils.invokeMethod(service, "mapNativeTripRow", (Object) row);
+        assertNotNull(result);
+        assertEquals(10.85, result.getLatitude()); assertEquals(106.75, result.getLongitude());
+        assertEquals("CONTAINER_IOT_DB", result.getDataSource());
+        assertEquals(row[41], result.getLastTelemetryAt()); assertEquals(row[42], result.getContainerId());
+        assertEquals(20.0, result.getSpeedKmh());
+        row[41] = Instant.parse("2026-11-21T07:59:00Z");
+        result = org.springframework.test.util.ReflectionTestUtils.invokeMethod(service, "mapNativeTripRow", (Object) row);
+        assertNotNull(result);
+        assertEquals(10.8, result.getLatitude()); assertEquals(106.7, result.getLongitude());
+        assertEquals("LIVE_TELEMETRY_DB", result.getDataSource()); assertEquals(row[28], result.getLastTelemetryAt());
+    }
+
+    @Test
+    void neverCombinesCoordinatesFromDifferentSourcesOrInventsMissingPositions() {
+        var service = new FleetTelemetryService(tripRepository, telemetryEventRepository, new CcadroProperties(),
+            new JacksonRouteWaypointDecoder(new ObjectMapper()));
+        Object[] row = nativeRow(); row[23] = null;
+        LiveFleetTelemetryResponse result = org.springframework.test.util.ReflectionTestUtils.invokeMethod(service, "mapNativeTripRow", (Object) row);
+        assertNotNull(result); assertEquals(10.85, result.getLatitude()); assertEquals(106.75, result.getLongitude());
+        row[31] = 91.0;
+        result = org.springframework.test.util.ReflectionTestUtils.invokeMethod(service, "mapNativeTripRow", (Object) row);
+        assertNotNull(result); assertNull(result.getLatitude()); assertNull(result.getLongitude());
+        assertNull(result.getLastTelemetryAt()); assertEquals("GPS_NOT_AVAILABLE", result.getDataSource());
+    }
+
+    @Test
+    void standaloneContainerKeepsContainerIdentityAndHasNoInventedTripId() {
+        var service = new FleetTelemetryService(tripRepository, telemetryEventRepository, new CcadroProperties(),
+            new JacksonRouteWaypointDecoder(new ObjectMapper()));
+        Object[] row = new Object[28]; row[0] = UUID.randomUUID(); row[1] = "CONT-X"; row[2] = "IN_TRANSIT";
+        row[12] = 10.8; row[13] = 106.7;
+        LiveFleetTelemetryResponse result = org.springframework.test.util.ReflectionTestUtils.invokeMethod(service, "mapActiveContainerRow", (Object) row);
+        assertNotNull(result); assertEquals(row[0], result.getContainerId()); assertNull(result.getTripId());
+        assertNull(result.getLastTelemetryAt(), "A profile update must not count as a position timestamp");
+        assertNull(result.getRouteWaypoints());
+        row[12] = "91"; row[13] = "106.7";
+        result = org.springframework.test.util.ReflectionTestUtils.invokeMethod(service, "mapActiveContainerRow", (Object) row);
+        assertNotNull(result); assertNull(result.getLatitude()); assertNull(result.getLongitude());
     }
 
     @Test
@@ -215,6 +274,29 @@ class FleetTelemetryServiceTest {
         assertNotNull(trip.getDistanceToDestinationMeters());
         assertTrue(trip.getDistanceToDestinationMeters().doubleValue() <= 250.0);
         verify(tripRepository, atLeastOnce()).save(trip);
+    }
+
+    @Test
+    void mapsRoutingMetadataJsonFromActiveRouteVersionInNativeQueries() {
+        var service = new FleetTelemetryService(tripRepository, telemetryEventRepository, new CcadroProperties(),
+                new JacksonRouteWaypointDecoder(new ObjectMapper()));
+        Object[] tripRow = new Object[44];
+        tripRow[0] = UUID.randomUUID(); tripRow[1] = "TRIP-META"; tripRow[2] = "EN_ROUTE";
+        tripRow[4] = UUID.randomUUID(); tripRow[21] = 30000.0;
+        tripRow[40] = "{\"type\":\"LineString\",\"coordinates\":[[106.7,10.8],[106.8,10.9]]}";
+        tripRow[43] = "{\"trafficSource\":\"TOMTOM_AVAILABLE_LIVE_AND_HISTORICAL\",\"summary\":{\"trafficDelayInSeconds\":180}}";
+        LiveFleetTelemetryResponse tripSnap = org.springframework.test.util.ReflectionTestUtils.invokeMethod(service, "mapNativeTripRow", (Object) tripRow);
+        assertNotNull(tripSnap);
+        assertEquals(tripRow[43], tripSnap.getRoutingMetadataJson());
+
+        Object[] containerRow = new Object[29];
+        containerRow[0] = UUID.randomUUID(); containerRow[1] = "CONT-META"; containerRow[2] = "IN_TRANSIT";
+        containerRow[12] = 10.8; containerRow[13] = 106.7;
+        containerRow[27] = "{\"type\":\"LineString\",\"coordinates\":[[106.7,10.8],[106.8,10.9]]}";
+        containerRow[28] = "{\"trafficSource\":\"TOMTOM_AVAILABLE_LIVE_AND_HISTORICAL\"}";
+        LiveFleetTelemetryResponse containerSnap = org.springframework.test.util.ReflectionTestUtils.invokeMethod(service, "mapActiveContainerRow", (Object) containerRow);
+        assertNotNull(containerSnap);
+        assertEquals(containerRow[28], containerSnap.getRoutingMetadataJson());
     }
 }
 

@@ -14,6 +14,8 @@ import java.util.UUID;
 
 @Repository
 public interface ShipmentRepository extends JpaRepository<Shipment, UUID> {
+    @Query(value = "SELECT * FROM shipment WHERE id = :id FOR NO KEY UPDATE", nativeQuery = true)
+    Optional<Shipment> findForDispatch(@Param("id") UUID id);
     Optional<Shipment> findByShipmentCode(String shipmentCode);
     List<Shipment> findByCustomerId(String customerId);
     List<Shipment> findByCustomerIdOrderByCreatedAtDesc(String customerId);

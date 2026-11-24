@@ -12,6 +12,8 @@ import java.util.UUID;
 
 @Repository
 public interface TripRepository extends JpaRepository<Trip, UUID> {
+    @Query(value="SELECT * FROM trip WHERE id=:id FOR NO KEY UPDATE",nativeQuery=true)
+    Optional<Trip> findForDeviceTelemetry(@Param("id") UUID id);
     Optional<Trip> findByTripCode(String tripCode);
     Optional<Trip> findByShipmentId(UUID shipmentId);
     List<Trip> findByDriverId(UUID driverId);
@@ -31,7 +33,9 @@ public interface TripRepository extends JpaRepository<Trip, UUID> {
                 te.speed_kmh, te.heading_degrees, te.distance_from_route_meters, te.battery_percentage, te.timestamp,
                 c.container_code, c.supply_air_temp_c, c.last_latitude, c.last_longitude,
                 c.last_location_name, c.c_speed, c.progress_pct, c.eta_minutes, c.battery_pct,
-                t.arrived_at, t.arrival_status, ST_AsGeoJSON(rv.route_geometry) AS route_geojson
+                t.arrived_at, t.arrival_status, ST_AsGeoJSON(rv.route_geometry) AS route_geojson,
+                COALESCE(c.last_position_observed_at, c.last_position_received_at) AS position_timestamp, c.id AS container_id,
+                rv.routing_metadata_json
             FROM trip t
             LEFT JOIN vehicle v ON v.id = t.vehicle_id
             LEFT JOIN driver d ON d.id = t.driver_id
@@ -46,12 +50,12 @@ public interface TripRepository extends JpaRepository<Trip, UUID> {
                 SELECT te1.location_geom, te1.speed_kmh, te1.heading_degrees,
                        te1.distance_from_route_meters, te1.battery_percentage, te1.timestamp
                 FROM telemetry_event te1
-                WHERE te1.trip_id = t.id AND COALESCE(te1.quality_passed, true) = true
+                WHERE te1.trip_id = t.id AND te1.quality_passed = true
                 ORDER BY te1.timestamp DESC
                 LIMIT 1
             ) te ON true
             LEFT JOIN LATERAL (
-                SELECT c1.container_code, c1.supply_air_temp_c, c1.last_latitude, c1.last_longitude,
+                SELECT c1.id, c1.last_position_received_at, c1.last_position_observed_at, c1.container_code, c1.supply_air_temp_c, c1.last_latitude, c1.last_longitude,
                        c1.last_location_name, c1.speed_kmh AS c_speed, c1.progress_pct,
                        c1.eta_minutes, c1.battery_pct
                 FROM container c1
@@ -82,7 +86,9 @@ public interface TripRepository extends JpaRepository<Trip, UUID> {
                 te.speed_kmh, te.heading_degrees, te.distance_from_route_meters, te.battery_percentage, te.timestamp,
                 c.container_code, c.supply_air_temp_c, c.last_latitude, c.last_longitude,
                 c.last_location_name, c.c_speed, c.progress_pct, c.eta_minutes, c.battery_pct,
-                t.arrived_at, t.arrival_status, ST_AsGeoJSON(rv.route_geometry) AS route_geojson
+                t.arrived_at, t.arrival_status, ST_AsGeoJSON(rv.route_geometry) AS route_geojson,
+                COALESCE(c.last_position_observed_at, c.last_position_received_at) AS position_timestamp, c.id AS container_id,
+                rv.routing_metadata_json
             FROM trip t
             LEFT JOIN vehicle v ON v.id = t.vehicle_id
             LEFT JOIN driver d ON d.id = t.driver_id
@@ -97,12 +103,12 @@ public interface TripRepository extends JpaRepository<Trip, UUID> {
                 SELECT te1.location_geom, te1.speed_kmh, te1.heading_degrees,
                        te1.distance_from_route_meters, te1.battery_percentage, te1.timestamp
                 FROM telemetry_event te1
-                WHERE te1.trip_id = t.id AND COALESCE(te1.quality_passed, true) = true
+                WHERE te1.trip_id = t.id AND te1.quality_passed = true
                 ORDER BY te1.timestamp DESC
                 LIMIT 1
             ) te ON true
             LEFT JOIN LATERAL (
-                SELECT c1.container_code, c1.supply_air_temp_c, c1.last_latitude, c1.last_longitude,
+                SELECT c1.id, c1.last_position_received_at, c1.last_position_observed_at, c1.container_code, c1.supply_air_temp_c, c1.last_latitude, c1.last_longitude,
                        c1.last_location_name, c1.speed_kmh AS c_speed, c1.progress_pct,
                        c1.eta_minutes, c1.battery_pct
                 FROM container c1
@@ -126,10 +132,11 @@ public interface TripRepository extends JpaRepository<Trip, UUID> {
                 c.origin_name, c.destination_name,
                 c.last_latitude, c.last_longitude, c.last_location_name,
                 c.speed_kmh, c.progress_pct, c.eta_minutes,
-                c.supply_air_temp_c, c.battery_pct, c.updated_at,
+                c.supply_air_temp_c, c.battery_pct, COALESCE(c.last_position_observed_at, c.last_position_received_at),
                 ST_Y(s.origin_geom) AS origin_lat, ST_X(s.origin_geom) AS origin_lon,
                 ST_Y(s.destination_geom) AS dest_lat, ST_X(s.destination_geom) AS dest_lon,
-                t.id AS linked_trip_id, t.arrived_at, ST_AsGeoJSON(rv.route_geometry) AS route_geojson
+                t.id AS linked_trip_id, t.arrived_at, ST_AsGeoJSON(rv.route_geometry) AS route_geojson,
+                rv.routing_metadata_json
             FROM container c
             LEFT JOIN LATERAL (
                 SELECT s1.id, s1.origin_geom, s1.destination_geom
@@ -210,4 +217,15 @@ public interface TripRepository extends JpaRepository<Trip, UUID> {
             LIMIT 1
             """, nativeQuery = true)
     Optional<Double> findActiveRouteDistanceMeters(@Param("tripId") UUID tripId);
+
+    @Query(value = """
+        SELECT ST_Length(ST_LineSubstring(rv.route_geometry,
+            ST_LineLocatePoint(rv.route_geometry, ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)), 1)::geography)
+        FROM trip t JOIN route_version rv ON rv.id = COALESCE(t.active_route_version_id,
+            (SELECT rv2.id FROM route_version rv2 WHERE rv2.shipment_id=t.shipment_id AND rv2.is_active=true
+             ORDER BY rv2.version_number DESC LIMIT 1))
+        WHERE t.id=:tripId AND rv.route_geometry IS NOT NULL LIMIT 1
+        """, nativeQuery = true)
+    Optional<Double> findRemainingRouteDistanceMeters(@Param("tripId") UUID tripId, @Param("lat") double latitude,
+        @Param("lng") double longitude);
 }

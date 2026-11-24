@@ -1,10 +1,14 @@
 package com.ccadro.payment.dto.response;
 
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class PaymentSummaryResponse {
     private String customerId;
     private long totalTransactions;

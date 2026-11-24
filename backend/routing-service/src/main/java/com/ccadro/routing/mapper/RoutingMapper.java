@@ -22,6 +22,8 @@ public interface RoutingMapper {
     RouteCandidate toEntity(RouteCandidateData data);
 
     @Mapping(target = "isSelected", source = "selected")
+    @Mapping(target = "geometryGeoJson", source = "waypointsJson")
+    @Mapping(target = "routingMetadataJson", source = "metricsBreakdownJson")
     RouteCandidateResponse toResponse(RouteCandidate entity);
 
     List<RouteCandidateResponse> toResponseList(List<RouteCandidate> entities);

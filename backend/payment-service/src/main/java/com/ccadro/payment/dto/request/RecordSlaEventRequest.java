@@ -1,9 +1,14 @@
 package com.ccadro.payment.dto.request;
 
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class RecordSlaEventRequest {
 
     @NotBlank(message = "Loại sự kiện SLA (eventType) không được để trống")

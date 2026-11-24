@@ -104,8 +104,10 @@ public class TripService {
         Optional<Trip> existing = tripRepository.findByShipmentId(request.getShipmentId());
         if (existing.isPresent()) {
             Trip current = existing.get();
-            if (current.getActiveRouteVersionId() == null && request.getActiveRouteVersionId() != null) {
+            if ("SCHEDULED".equals(current.getStatus()) && current.getStartTime() == null) {
                 current.setActiveRouteVersionId(request.getActiveRouteVersionId());
+                current.setVehicleId(request.getVehicleId());
+                current.setDriverId(request.getDriverId());
                 current.setUpdatedAt(Instant.now());
                 return tripRepository.save(current);
             }

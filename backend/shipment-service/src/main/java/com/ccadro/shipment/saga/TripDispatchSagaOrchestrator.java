@@ -13,7 +13,7 @@ import com.ccadro.shipment.repository.DispatchOrderRepository;
 import com.ccadro.shipment.repository.OutboxEventRepository;
 import com.ccadro.shipment.repository.SagaStateLogRepository;
 import com.ccadro.shipment.repository.ShipmentRepository;
-import com.ccadro.shipment.validator.DispatchEligibilityValidator;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +34,7 @@ import java.util.UUID;
 /**
  * Trip Dispatch Orchestration Saga (UC06):
  * Quản lý giao dịch phân tán giữa 4 Microservices (Shipment, Asset, Routing, Tracking)
- * Tự động chạy Compensating Transactions mở khóa xe/tài xế nếu các bước sau bị sự cố.
+ * Giữ chỗ xe và tài xế cùng giao dịch PostgreSQL với lệnh điều phối.
  */
 @Service
 @Slf4j
@@ -46,7 +46,7 @@ public class TripDispatchSagaOrchestrator {
     final DispatchOrderRepository dispatchOrderRepository;
     final SagaStateLogRepository sagaStateLogRepository;
     final OutboxEventRepository outboxEventRepository;
-    final DispatchEligibilityValidator dispatchEligibilityValidator;
+    final DispatchReservation dispatchReservation;
     final DispatchOrderMapper dispatchOrderMapper;
     final ObjectMapper objectMapper;
 
@@ -56,15 +56,12 @@ public class TripDispatchSagaOrchestrator {
     @Value("${services.tracking.url:http://localhost:8084}")
     String trackingServiceUrl = "http://localhost:8084";
 
-    @Value("${services.asset.url:http://localhost:8081}")
-    String assetServiceUrl = "http://localhost:8081";
-
     @Value("${ccadro.dispatch.strict-remote-validation:true}")
     boolean strictRemoteValidation = true;
 
-    @Transactional(noRollbackFor = AppException.class)
+    @Transactional
     public DispatchOrderResponse executeDispatchSaga(DispatchOrderRequest request) {
-        Shipment shipment = shipmentRepository.findById(request.getShipmentId())
+        Shipment shipment = shipmentRepository.findForDispatch(request.getShipmentId())
                 .orElseThrow(() -> new AppException(ErrorCode.SHIPMENT_NOT_FOUND));
 
         if (Boolean.TRUE.equals(shipment.getIsDeleted())) {
@@ -96,16 +93,14 @@ public class TripDispatchSagaOrchestrator {
         DispatchOrder dispatchOrder = dispatchOrderMapper.toEntity(request);
         dispatchOrder.setStatus("PROCESSING");
         dispatchOrder.setDispatchedAt(Instant.now());
-        dispatchOrderRepository.save(dispatchOrder);
 
-        boolean assetReservationStarted = false;
         try {
-            // Bước 2: Thẩm định điều kiện xuất bến & Khóa tài sản (Asset Service)
-            dispatchEligibilityValidator.validateVehicleAndDriverEligibility(
-                    shipment, request.getVehicleId(), request.getDriverId());
-            assetReservationStarted = true;
-            dispatchEligibilityValidator.updateAssetStatusesOnDispatch(
-                    request.getVehicleId(), request.getDriverId());
+            UUID containerId = dispatchReservation.reserve(shipment, request.getVehicleId(), request.getDriverId());
+            if (request.getContainerId() != null && !request.getContainerId().equals(containerId)) {
+                throw new AppException(ErrorCode.INVALID_REQUEST_ARGUMENT, "Container không khớp phân công của vận đơn");
+            }
+            dispatchOrder.setContainerId(containerId);
+            dispatchOrderRepository.save(dispatchOrder);
 
             sagaLog.setCurrentStep("STEP_2_LOCK_ROUTE");
             sagaStateLogRepository.save(sagaLog);
@@ -119,6 +114,10 @@ public class TripDispatchSagaOrchestrator {
             // Bước 4: Khởi tạo chuyến xe tại Tracking Service
             UUID tripId = registerTripWithTrackingService(shipment.getId(), request.getVehicleId(), request.getDriverId(), activeRouteVersionId,
                     shipment.getCustomerId());
+
+            if (tripId == null || activeRouteVersionId == null) {
+                throw new AppException(ErrorCode.INVALID_REQUEST_ARGUMENT, "Cần tuyến hiệu lực và xác nhận tạo chuyến trước khi phát lệnh");
+            }
 
             // Bước 5: Hoàn tất thành công (SUCCEEDED)
             if (activeRouteVersionId != null) {
@@ -151,28 +150,6 @@ public class TripDispatchSagaOrchestrator {
 
         } catch (Exception ex) {
             log.error("Saga TRIP_DISPATCH_SAGA_UC06 thất bại tại bước {}: {}", sagaLog.getCurrentStep(), ex.getMessage());
-            sagaLog.setSagaStatus("COMPENSATING");
-            sagaLog.setFailureReason(ex.getMessage());
-            sagaStateLogRepository.save(sagaLog);
-
-            // Giao dịch bù trừ (Compensating Transaction) nếu xe/tài xế đã bị khóa
-            if (assetReservationStarted) {
-                compensateAssetReservation(request.getVehicleId(), request.getDriverId());
-            }
-
-            dispatchOrder.setStatus("FAILED");
-            dispatchOrderRepository.save(dispatchOrder);
-
-            sagaLog.setCurrentStep("COMPENSATED");
-            sagaLog.setSagaStatus("ROLLED_BACK");
-            sagaStateLogRepository.save(sagaLog);
-
-            saveOutboxEvent("DISPATCH_ORDER", dispatchOrder.getId(), "SAGA_COMPENSATED",
-                    "ccadro.shipment.saga-compensated", Map.of(
-                            "dispatchCode", dispatchOrder.getDispatchCode(),
-                            "reason", ex.getMessage()
-                    ));
-
             if (ex instanceof AppException appException) {
                 throw appException;
             }
@@ -237,33 +214,6 @@ public class TripDispatchSagaOrchestrator {
             }
             log.warn("Non-strict mode: Tracking service chưa ghi nhận chuyến cho đơn {}: {}", shipmentId, e.getMessage());
             return null;
-        }
-    }
-
-    /**
-     * Giao dịch bù trừ (Compensating Transaction): Mở khóa phương tiện và tài xế về AVAILABLE.
-     */
-    private void compensateAssetReservation(UUID vehicleId, UUID driverId) {
-        try {
-            RestClient assetClient = RestClient.builder().baseUrl(assetServiceUrl).build();
-            assetClient.put()
-                    .uri(uriBuilder -> uriBuilder
-                            .path("/api/v1/assets/vehicles/{id}/status")
-                            .queryParam("status", "AVAILABLE")
-                            .build(vehicleId))
-                    .retrieve()
-                    .toBodilessEntity();
-
-            assetClient.put()
-                    .uri(uriBuilder -> uriBuilder
-                            .path("/api/v1/assets/drivers/{id}/status")
-                            .queryParam("status", "AVAILABLE")
-                            .build(driverId))
-                    .retrieve()
-                    .toBodilessEntity();
-            log.warn("Đã thực hiện bù trừ Saga thành công: Mở khóa Xe {} và Tài xế {} về AVAILABLE", vehicleId, driverId);
-        } catch (Exception e) {
-            log.error("Lỗi khi thực hiện bù trừ giải phóng xe/tài xế: {}", e.getMessage());
         }
     }
 

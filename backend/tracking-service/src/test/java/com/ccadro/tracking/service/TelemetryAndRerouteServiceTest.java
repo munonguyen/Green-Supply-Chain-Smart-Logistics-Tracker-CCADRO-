@@ -107,6 +107,21 @@ class TelemetryAndRerouteServiceTest {
     }
 
     @Test
+    void estimatedRerouteCannotBeAcceptedWithoutRoadGeometry() {
+        var service = new RerouteProposalService(rerouteProposalRepository, tripRepository,
+            rerouteProposalMapper, notificationPublisher);
+        var proposal = new RerouteProposal();
+        proposal.setId(UUID.randomUUID());
+        proposal.setStatus("PENDING_DISPATCHER");
+        when(rerouteProposalRepository.findById(proposal.getId())).thenReturn(Optional.of(proposal));
+        assertThrows(com.ccadro.tracking.exception.AppException.class, () -> service.decideRerouteProposal(proposal.getId(),
+            com.ccadro.tracking.dto.request.RerouteApprovalRequest.builder().decision("ACCEPTED").build()));
+        assertEquals("PENDING_DISPATCHER", proposal.getStatus());
+        verify(rerouteProposalRepository, never()).save(any());
+        verifyNoInteractions(tripRepository);
+    }
+
+    @Test
     void evaluateDeviationAndReroute_shouldTriggerRedAlertAndEnforceBenefitAndCooldownRules() {
         CcadroProperties props = new CcadroProperties();
         RerouteProposalService rerouteService = new RerouteProposalService(
@@ -142,8 +157,6 @@ class TelemetryAndRerouteServiceTest {
             return a;
         });
         when(rerouteProposalRepository.findFirstByTripIdOrderByCreatedAtDesc(tripId)).thenReturn(Optional.empty());
-        when(tripRepository.findActiveRouteDistanceMeters(tripId)).thenReturn(Optional.of(30000.0));
-        when(tripRepository.findById(tripId)).thenReturn(Optional.empty());
         when(rerouteProposalRepository.save(any(RerouteProposal.class))).thenAnswer(inv -> {
             RerouteProposal rp = inv.getArgument(0);
             rp.setId(UUID.randomUUID());
@@ -161,6 +174,9 @@ class TelemetryAndRerouteServiceTest {
         deviationService.evaluateDeviationStateMachine(tripId, p3, 50.0, 200.0);
 
         verify(deviationAlertRepository).save(argThat(a -> "RED".equals(a.getSeverity())));
+        verify(rerouteProposalRepository, never()).save(any());
+        // Policy-only estimates remain distinguishable from routes returned by a road provider.
+        rerouteService.evaluateDynamicReroute(tripId, "POLICY_PREVIEW", BigDecimal.valueOf(30000), BigDecimal.valueOf(24000));
         verify(rerouteProposalRepository).save(argThat(p ->
                 "PENDING_DISPATCHER".equals(p.getStatus())
                         && p.getBenefitRatio().compareTo(new BigDecimal("0.1000")) >= 0));

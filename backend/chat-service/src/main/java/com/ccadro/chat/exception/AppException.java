@@ -1,7 +1,10 @@
 package com.ccadro.chat.exception;
 
+import lombok.Getter;
+
 import org.springframework.web.server.ResponseStatusException;
 
+@Getter
 public class AppException extends ResponseStatusException {
     private final ErrorCode errorCode;
 
@@ -11,8 +14,6 @@ public class AppException extends ResponseStatusException {
         super(errorCode.getStatus(), message);
         this.errorCode = errorCode;
     }
-
-    public ErrorCode getErrorCode() { return errorCode; }
 
     public static AppException invalidRequest(String message) {
         return new AppException(ErrorCode.INVALID_REQUEST, message);

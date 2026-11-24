@@ -20,6 +20,11 @@ public class RerouteProposalResponse {
     BigDecimal proposedDistanceMeters;
     BigDecimal benefitRatio;
     String status;
+    boolean routeGeometryAvailable;
+    UUID sourceCandidateId;
+    BigDecimal proposedDurationSeconds;
+    String routingMetadataJson;
+    java.util.List<java.util.List<Double>> routeWaypoints;
     Instant createdAt;
 }
 

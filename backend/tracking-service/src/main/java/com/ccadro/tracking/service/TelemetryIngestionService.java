@@ -87,6 +87,23 @@ public class TelemetryIngestionService {
 
     @Transactional
     public TelemetryEvent ingestTelemetry(IngestTelemetryRequest req) {
+        if (req.getExternalEventId()!=null) {
+            var trip=tripRepository.findForDeviceTelemetry(req.getTripId())
+                .orElseThrow(() -> new com.ccadro.tracking.exception.AppException(com.ccadro.tracking.exception.ErrorCode.TRIP_NOT_FOUND));
+            var previous=telemetryEventRepository.findByExternalEventId(req.getExternalEventId());
+            if(previous.isPresent()) {
+                if(!req.getTripId().equals(previous.get().getTripId())) {
+                    throw new com.ccadro.tracking.exception.AppException(com.ccadro.tracking.exception.ErrorCode.INVALID_REQUEST_ARGUMENT,
+                        "Mã gói tin đã thuộc chuyến khác");
+                }
+                return previous.get();
+            }
+            if(Boolean.TRUE.equals(trip.getIsDeleted()) || !java.util.List.of("EN_ROUTE","DELAYED").contains(trip.getStatus())
+                || !trip.getVehicleId().equals(req.getVehicleId())) {
+                throw new com.ccadro.tracking.exception.AppException(com.ccadro.tracking.exception.ErrorCode.INVALID_REQUEST_ARGUMENT,
+                    "Chuyến không còn nhận gói tin thiết bị");
+            }
+        }
         TelemetryEvent event = trackingMapper.toEntity(req);
 
         // 1. SOP-10: GPS Quality Gate (chống nhiễu nhảy tọa độ / tốc độ âm hoặc vượt ngưỡng maxValidSpeedKmh)
