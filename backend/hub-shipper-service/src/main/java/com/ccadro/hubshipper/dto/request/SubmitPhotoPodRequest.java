@@ -18,5 +18,18 @@ public class SubmitPhotoPodRequest {
     String proofImageCaption;
 
     String recipientPodName;
+
+    String handoverMethod;
+
+    Double measuredTempC;
+
+    /**
+     * COLLECTED_CASH or COLLECTED_QR (when codAmountVnd > 0)
+     */
+    String codCollectionMethod;
+
+    String recipientOtpInput;
+
+    String podSignatureNote;
 }
 

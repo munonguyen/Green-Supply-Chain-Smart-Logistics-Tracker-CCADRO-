@@ -17,3 +17,4 @@ class OpenApiConfigTest {
         assertTrue(api.getComponents().getSecuritySchemes().containsKey("bearerAuth"));
     }
 }
+

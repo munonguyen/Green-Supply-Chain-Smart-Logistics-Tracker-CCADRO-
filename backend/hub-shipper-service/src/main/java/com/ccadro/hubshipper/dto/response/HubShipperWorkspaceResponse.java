@@ -20,5 +20,7 @@ public class HubShipperWorkspaceResponse {
     List<HubLocalShipper> hubShippers;
     List<HubTaskRangeAssignment> rangeAssignments;
     List<ContainerCargoManifestItem> manifestItems;
+    List<HubShipperShiftSettlement> shiftSettlements;
+    List<HubShipperCodRemittance> codRemittances;
 }
 

@@ -10,9 +10,26 @@ import org.mapstruct.*;
 public interface HubWorkspaceMapper {
     @Mapping(target="isolatedHubCode", source="hubCode")
     @Mapping(target="strictHubIsolationEnforced", constant="true")
+    @Mapping(target="shiftSettlements", ignore=true)
+    @Mapping(target="codRemittances", ignore=true)
     HubShipperWorkspaceResponse workspace(String hubCode, LocalDistributionHub hub, HubShipperPolicy policy,
             HubLocalShipper activeShipper, List<HubLocalShipper> hubShippers,
             List<HubTaskRangeAssignment> rangeAssignments, List<ContainerCargoManifestItem> manifestItems);
+
+    @Mapping(target="isolatedHubCode", source="hubCode")
+    @Mapping(target="strictHubIsolationEnforced", constant="true")
+    @Mapping(target="codRemittances", ignore=true)
+    HubShipperWorkspaceResponse workspace(String hubCode, LocalDistributionHub hub, HubShipperPolicy policy,
+            HubLocalShipper activeShipper, List<HubLocalShipper> hubShippers,
+            List<HubTaskRangeAssignment> rangeAssignments, List<ContainerCargoManifestItem> manifestItems,
+            List<HubShipperShiftSettlement> shiftSettlements);
+
+    @Mapping(target="isolatedHubCode", source="hubCode")
+    @Mapping(target="strictHubIsolationEnforced", constant="true")
+    HubShipperWorkspaceResponse workspace(String hubCode, LocalDistributionHub hub, HubShipperPolicy policy,
+            HubLocalShipper activeShipper, List<HubLocalShipper> hubShippers,
+            List<HubTaskRangeAssignment> rangeAssignments, List<ContainerCargoManifestItem> manifestItems,
+            List<HubShipperShiftSettlement> shiftSettlements, List<HubShipperCodRemittance> codRemittances);
 
     @Mapping(target="username", source="username")
     @Mapping(target="scope", source="scope")
